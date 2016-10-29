@@ -11,4 +11,4 @@ RUN wget https://sourceforge.net/projects/c-munipack/files/C-Munipack%202.1%20St
 RUN tar xvfz cmunipack-2.1.14.tar.gz
 RUN cd cmunipack-2.1.14 && chmod +x ./configure && ./configure && make && make install && ldconfig
 USER $NB_USER
-RUN pip2 install astropy upsilon && pip3 install astropy upsilon
+RUN pip2 install astropy upsilon pyreadline && pip3 install astropy upsilon pyreadline
