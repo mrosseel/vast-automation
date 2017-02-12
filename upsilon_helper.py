@@ -18,8 +18,9 @@ def read_pos(star):
     df = df[df['MAG'] < 99]
     return (df['X'].iloc[1], df['Y'].iloc[1])
 
-def predict_star_list(all_star_list):
+def predict_star_list(all_star_list, output_file):
     rf_model = upsilon.load_rf_model()
+    full_list = []
     for star in all_star_list:
         try:
             df = read_lightcurve(star)
@@ -33,5 +34,11 @@ def predict_star_list(all_star_list):
             label, probability, flag = upsilon.predict(rf_model, features)
             print("star, label, probability, flag")
             print(star, label, probability, flag)
+            full_list.append([star, label, probability, flag])
         except:
             print(star, 'error')
+            full_list.append([star, 'NA', 'NA', 'NA'])
+
+    df=pd.DataFrame(full_list,columns=['star', 'label', 'probability', 'flag'])
+    print(df.head())
+    df.to_csv(output_file, index=False)

@@ -1,3 +1,4 @@
+import os
 
 basedir = os.getcwd()+'/inputfiles/WWCrA/'
 lightcurve_dir = basedir + "outstars/"
