@@ -4,6 +4,8 @@ import upsilon_helper
 import pandas as pd
 import os
 import numpy as np
+import multiprocessing as mp
+import tqdm
 
 # import matplotlib as mp
 # import matplotlib.pyplot as plt
@@ -18,17 +20,6 @@ select_star_list = [143,6394,598,2675,3111,2584]
 single_star_list = [598]
 all_star_list = range(1,1000)
 star_list = all_star_list
-
-
-
-
-#cell 3
-#!pwd
-#!rm {init.basedir+'*.fts'}
-#!konve {init.basedir+'*.fit'} -o {init.basedir+'kout??????.fts'}
-#!muniphot {init.basedir+'*.fts'} -p muniphot.conf -o {init.basedir+'phot??????.pht'}
-#!munimatch -s sp_fields=1 {init.basedir+'phot0000001.pht'} {init.basedir+'phot??????.pht'} -o {init.basedir+'match??????.pht'}
-#!munifind -a {aperture} {init.basedir+'munifind.txt'} {init.basedir+'match*'}
 
 # INDEX MEAN_MAG STDEV GOODPOINTS
 def read_munifind(filename):
@@ -61,27 +52,38 @@ def do_best_comps(df):
 
     return check_stars_str
 
-def write_lightcurve(checkstar, star_list, aperture, lightcurve_dir, check_stars_str):
-    for star in star_list:
-        print("lightcurve:", star)
+def write_photometry_and_match():
+    # !rm {init.basedir+'*.fts'}
+    os.system('rm '+init.basedir+'*.fts')
+    # !konve {init.basedir+'*.fit'} -o {init.basedir+'kout??????.fts'}
+    os.system('konve '+init.basedir+'*.fit -o '+init.basedir+'kout??????.fts')
+    # !muniphot {init.basedir+'*.fts'} -p muniphot.conf -o {init.basedir+'phot??????.pht'}
+    os.system('muniphot '+init.basedir+'*.fts -p muniphot.conf -o '+init.basedir+'phot??????.pht')
+    # !munimatch -s sp_fields=1 {init.basedir+'phot0000001.pht'} {init.basedir+'phot??????.pht'} -o {init.basedir+'match??????.pht'}
+    os.system('munimatch -s sp_fields=1 '+init.basedir+'phot0000001.pht '+init.basedir+'phot??????.pht -o '+init.basedir+'match??????.pht')
+    # !munifind -a {aperture} {init.basedir+'munifind.txt'} {init.basedir+'match*'}
+    os.system('munifind -a '+str(init.aperture)+' '+init.basedir+'munifind.txt '+init.basedir+'match*')
+
+def write_lightcurve(star):
 #        print("--verbose -a ", str(aperture), " -q --object ", str(star), " -v ", str(star),
 #              " -c ", str(check_stars_str), (lightcurve_dir + str(star) + ".txt"), (init.basedir+'match*.pht'))
-        os.system("munilist -a "+str(aperture)+ " -q --object "+ str(star)+ " -v "+ str(star)+ " -c "+ check_stars_str+ " " + init.lightcurve_dir + str(star) + ".txt "+ init.basedir+'match*.pht >/dev/null')
+    os.system("munilist -a "+str(init.aperture)+ " -q --object "+ str(star)+ " -v "+ str(star)+ " -c "+ check_stars_str+ " " + init.lightcurve_dir + str(star) + ".txt "+ init.basedir+'match*.pht >/dev/null')
 #        !munilist --verbose -a {str(aperture)} -q --object {str(star)} -v {str(star)} -c {str(8)} {lightcurve_dir + str(star) + ".txt"} {init.basedir+'match*.pht'}
 
-def write_pos(star_list, aperture, lightcurve_dir):
-    for star in star_list:
-        print("pos:", star)
-        os.system("munilist -a " + str(aperture)+ " -q --obj-plot --object "+ str(star)+ " " + init.lightcurve_dir + "pos_" + str(star) + ".txt "+ init.basedir+'match*.pht >/dev/null')
+def write_pos(star):
+    os.system("munilist -a " + str(init.aperture)+ " -q --obj-plot --object "+ str(star)+ " " + init.lightcurve_dir + "pos_" + str(star) + ".txt "+ init.basedir+'match*.pht >/dev/null')
 
 def do_write_post_and_curve(df, check_stars_str):
     #star_list = (143,264,2675,1045,847,1193)
     call(["mkdir", init.lightcurve_dir])
-    write_pos(star_list, init.aperture, init.lightcurve_dir)
-    write_lightcurve(6, star_list, init.aperture, init.lightcurve_dir, check_stars_str) # TODO hard-coded checkstar
+    pool = mp.Pool(8)
+    print("Writing star positions for ",len(star_list),"stars into ",init.lightcurve_dir)
+    for _ in tqdm.tqdm(pool.imap_unordered(write_pos, star_list), total=len(star_list)):
+        pass
+    for _ in tqdm.tqdm(pool.imap_unordered(write_lightcurve, star_list), total=len(star_list)):
+        pass
 
-
+write_photometry_and_match()
 df = read_munifind(init.basedir+'munifind.txt')
 check_stars_str = do_best_comps(df)
 do_write_post_and_curve(df, check_stars_str)
-upsilon_helper.predict_star_list(all_star_list)

@@ -12,7 +12,9 @@ RUN tar xvfz cmunipack.tar.gz
 RUN cd cmunipack-2.1.15 && chmod +x ./configure && ./configure && make && make install && ldconfig
 USER $NB_USER
 #RUN pip2 install astropy pyfftw pyreadline &&
-RUN pip3 install astropy pyreadline pyfftw
+RUN pip3 install astropy pyreadline pyfftw tqdm
+# needs at least scikit 0.18.1
+RUN pip3 install --upgrade scikit-learn
 RUN git clone https://github.com/mrosseel/upsilon.git
 USER root
 RUN cd upsilon && python3 setup.py install
