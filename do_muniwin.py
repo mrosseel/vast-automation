@@ -52,17 +52,23 @@ def do_best_comps(df):
 
     return check_stars_str
 
-def write_photometry_and_match():
+def write_photometry():
     # !rm {init.basedir+'*.fts'}
     os.system('rm '+init.basedir+'*.fts')
     # !konve {init.basedir+'*.fit'} -o {init.basedir+'kout??????.fts'}
     os.system('konve '+init.basedir+'*.fit -o '+init.basedir+'kout??????.fts')
     # !muniphot {init.basedir+'*.fts'} -p muniphot.conf -o {init.basedir+'phot??????.pht'}
     os.system('muniphot '+init.basedir+'*.fts -p muniphot.conf -o '+init.basedir+'phot??????.pht')
+
+def write_match(base_photometry_file):
+    os.system('rm '+init.basedir+'match*')
     # !munimatch -s sp_fields=1 {init.basedir+'phot0000001.pht'} {init.basedir+'phot??????.pht'} -o {init.basedir+'match??????.pht'}
-    os.system('munimatch -s sp_fields=1 '+init.basedir+'phot0000001.pht '+init.basedir+'phot??????.pht -o '+init.basedir+'match??????.pht')
+    os.system('munimatch -s sp_fields=1 '+base_photometry_file+' '+init.basedir+'phot??????.pht -o '+init.basedir+'match??????.pht')
+
+def write_munifind():
     # !munifind -a {aperture} {init.basedir+'munifind.txt'} {init.basedir+'match*'}
     os.system('munifind -a '+str(init.aperture)+' '+init.basedir+'munifind.txt '+init.basedir+'match*')
+
 
 def write_lightcurve(star):
 #        print("--verbose -a ", str(aperture), " -q --object ", str(star), " -v ", str(star),
@@ -83,7 +89,9 @@ def do_write_post_and_curve(df, check_stars_str):
     for _ in tqdm.tqdm(pool.imap_unordered(write_lightcurve, star_list), total=len(star_list)):
         pass
 
-write_photometry_and_match()
+#write_photometry()
+#write_match(init.basedir+'phot000047.pht')
+write_munifind()
 df = read_munifind(init.basedir+'munifind.txt')
 check_stars_str = do_best_comps(df)
 do_write_post_and_curve(df, check_stars_str)
