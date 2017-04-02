@@ -96,6 +96,7 @@ def do_write_post_and_curve(df, star_list, check_stars_str):
     for _ in tqdm.tqdm(pool.imap_unordered(write_lightcurve, star_list), total=len(star_list)):
         pass
 
+
 #write_photometry()
 #write_match(init.basedir+'phot000046.pht')
 write_munifind()
