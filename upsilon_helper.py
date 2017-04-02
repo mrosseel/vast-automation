@@ -46,6 +46,7 @@ def save_results(result_list, output_file):
     df.to_csv(output_file, index=False)
 
 def predict_star(star):
+    print("star:",star)
     try:
         df = read_lightcurve(star)
         mag = df['V-C']

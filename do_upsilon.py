@@ -7,6 +7,7 @@ import tqdm
 from functools import partial
 
 def start_upsilon(star_list):
+    print("Starting upsilon with nr stars", len(star_list))
     pool = Pool(8)
     func = partial(upsilon_helper.predict_star)
     result_list = []
@@ -16,6 +17,6 @@ def start_upsilon(star_list):
         pass
     return result_list
 
-my_result_list = start_upsilon(range(1,1000))
+my_result_list = start_upsilon(range(1,100))
 upsilon_output =init.basedir+'upsilon_output.txt'
 upsilon_helper.save_results(my_result_list, upsilon_output)
