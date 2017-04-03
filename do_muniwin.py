@@ -87,7 +87,7 @@ def do_write_pos(df, star_list, check_stars_str):
     for _ in tqdm.tqdm(pool.imap_unordered(write_pos, star_list), total=len(star_list)):
         pass
 
-def do_write_curve(df, star_list, check_stars_str):
+def do_write_curve(star_list, check_stars_str):
     call(["mkdir", init.lightcurve_dir])
     pool = mp.Pool(8)
     print("Writing star lightcurves for ",len(star_list),"stars into ",init.lightcurve_dir)
@@ -102,11 +102,10 @@ def run():
     df = read_munifind(init.basedir+'munifind.txt')
     check_stars_str = do_best_comps(df)
     write_munifind_check_stars()
-    df = read_munifind(init.basedir+'munifind.txt')
     #star_list = (143,264,2675,1045,847,1193)
     star_list = init.all_star_list
-    do_write_curve(df, star_list, check_stars_str)
-    #do_write_pos(df, star_list, check_stars_str)
+    do_write_curve(star_list, check_stars_str)
+    #do_write_pos(star_list, check_stars_str)
 
 logger = mp.log_to_stderr()
 logger.setLevel(mp.SUBDEBUG)
