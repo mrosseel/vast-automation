@@ -39,13 +39,16 @@ def do_best_comps(df):
     print(check_stars_str)
     return check_stars_str
 
-def write_photometry():
-    print("write photometry")
+def write_convert_fits():
+    print("convert fits files to fts")
     # !rm {init.basedir+'*.fts'}
     os.system('rm '+init.basedir+'*.fts')
-    os.system('rm '+init.basedir+'*.pht')
     # !konve {init.basedir+'*.fit'} -o {init.basedir+'kout??????.fts'}
     os.system('konve '+init.basedir+'*.fit -o '+init.basedir+'kout??????.fts')
+
+def write_photometry();
+    print("write photometry")
+    os.system('rm '+init.basedir+'*.pht')
     # !muniphot {init.basedir+'*.fts'} -p muniphot.conf -o {init.basedir+'phot??????.pht'}
     os.system('muniphot '+init.basedir+'*.fts -p muniphot.conf -o '+init.basedir+'phot??????.pht')
 
@@ -92,6 +95,7 @@ def do_write_curve(df, star_list, check_stars_str):
         pass
 
 def run():
+    write_convert_fits()
     write_photometry()
     write_match(init.basedir+'phot000046.pht')
     write_munifind()
