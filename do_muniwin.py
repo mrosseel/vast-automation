@@ -1,14 +1,15 @@
 import init
 import astropy_helper
-import upsilon_helper
+#import upsilon_helper
 import pandas as pd
 import numpy as np
 import multiprocessing as mp
 import logging
 import tqdm
-import os
+import os, sys
 import subprocess
 from subprocess import call
+from functools import partial
 
 # INDEX MEAN_MAG STDEV GOODPOINTS
 def read_munifind(filename):
@@ -24,20 +25,21 @@ def getBestComparisonStars(df):
     maxPoints = df['GOODPOINTS'].max()
     df = df[df['GOODPOINTS'] > maxPoints*0.99]
     df_lowest_stdev = df.sort_values('STDEV')
-    comparison_stars = df_lowest_stdev.head(10)
+    comparison_stars = df_lowest_stdev.head(12)
     print("Comparison stars: ", comparison_stars)
     return comparison_stars
 
-def do_best_comps(df):
-    bestcomps = getBestComparisonStars(df)
-    print(bestcomps)
+def do_best_comps(bestcomps):
     check_stars = []
     for index, row in bestcomps.iterrows():
         #print(row, '\n')
         check_stars.append(int(row['STAR']))
-    check_stars_str = ','.join(map(str, check_stars))
-    print(check_stars_str)
-    return check_stars_str
+    return check_stars
+
+def join_check_stars(check_stars, exclude_star):
+    check_stars = filter(lambda star: star != exclude_star, check_stars)
+    check_stars_string = ','.join(map(str, check_stars))
+    return check_stars_string
 
 def write_convert_fits():
     print("convert fits files to fts")
@@ -46,7 +48,7 @@ def write_convert_fits():
     # !konve {init.basedir+'*.fit'} -o {init.basedir+'kout??????.fts'}
     os.system('konve '+init.basedir+'*.fit -o '+init.basedir+'kout??????.fts')
 
-def write_photometry();
+def write_photometry():
     print("write photometry")
     os.system('rm '+init.basedir+'*.pht')
     # !muniphot {init.basedir+'*.fts'} -p muniphot.conf -o {init.basedir+'phot??????.pht'}
@@ -63,51 +65,57 @@ def write_munifind():
     # !munifind -a {aperture} {init.basedir+'munifind.txt'} {init.basedir+'match*'}
     os.system('munifind -a '+str(init.aperture)+' '+init.basedir+'munifind.txt '+init.basedir+'match*')
 
-def write_munifind_check_stars():
-    print("write munifind check stars")
+def write_munifind_check_stars(check_star):
+    print("write munifind check stars using check star:", check_star)
     # !munifind -a {aperture} {init.basedir+'munifind.txt'} {init.basedir+'match*'}
-    os.system('munifind -a '+str(init.aperture)+' '+' -c '+ check_stars_str+' '+init.basedir+'munifind.txt '+init.basedir+'match*')
+    os.system('munifind -a '+str(init.aperture)+' '+' -c '+ str(check_star) +' '+init.basedir+'munifind.txt '+init.basedir+'match*')
 
 
 
-def write_lightcurve(star):
-#    print("curve:", star)
-#        print("--verbose -a ", str(aperture), " -q --object ", str(star), " -v ", str(star),
-#              " -c ", str(check_stars_str), (lightcurve_dir + str(star) + ".txt"), (init.basedir+'match*.pht'))
-    os.system("munilist -a "+str(init.aperture)+ " -q --object "+ str(star)+ " -v "+ str(star)+ " -c "+ check_stars_str+ " " + init.lightcurve_dir + 'curve_' + str(star).zfill(5) + ".txt "+ init.basedir+'match*.pht >/dev/null')
-#        !munilist --verbose -a {str(aperture)} -q --object {str(star)} -v {str(star)} -c {str(8)} {lightcurve_dir + str(star) + ".txt"} {init.basedir+'match*.pht'}
+def write_lightcurve(star, check_stars_list):
+    check_stars = join_check_stars(check_stars_list, star)
+    os.system("munilist -a "+str(init.aperture)+ " -q --object "+ str(star)+ " -v "+ str(star)+ " -c "+ check_stars + " " + init.lightcurve_dir + 'curve_' + str(star).zfill(5) + ".txt "+ init.basedir+'match*.pht >/dev/null')
+    #print("--verbose -a ", str(init.aperture), " -q --object ", str(star), " -v ", str(star), " -c ", check_stars, (init.lightcurve_dir + 'curve_' + str(star).zfill(5) + ".txt "), (init.basedir+'match*.pht  >/dev/null'))
+    # !munilist --verbose -a {str(aperture)} -q --object {str(star)} -v {str(star)} -c {str(8)} {lightcurve_dir + str(star) + ".txt"} {init.basedir+'match*.pht'}
 
-def write_pos(star):
+
+#TODO add check stars to this command?
+def write_pos(star, check_stars_list):
+    check_stars = join_check_stars(check_stars_list, star)
     os.system("munilist -a " + str(init.aperture)+ " -q --obj-plot --object "+ str(star)+ " " + init.lightcurve_dir + "pos_" + str(star).zfill(5) + ".txt "+ init.basedir+'match*.pht >/dev/null')
 
-def do_write_pos(df, star_list, check_stars_str):
+def do_write_pos(df, star_list, check_stars_list):
     call(["mkdir", init.lightcurve_dir])
     pool = mp.Pool(8)
+    func = partial(write_pos, check_stars=check_stars_list)
     print("Writing star positions for ",len(star_list),"stars into ",init.lightcurve_dir)
-    for _ in tqdm.tqdm(pool.imap_unordered(write_pos, star_list), total=len(star_list)):
+    for _ in tqdm.tqdm(pool.imap_unordered(func, star_list), total=len(star_list)):
         pass
 
-def do_write_curve(star_list, check_stars_str):
+def do_write_curve(star_list, check_stars_list):
     call(["mkdir", init.lightcurve_dir])
     pool = mp.Pool(8)
+    func = partial(write_lightcurve, check_stars_list=check_stars_list)
     print("Writing star lightcurves for ",len(star_list),"stars into ",init.lightcurve_dir)
-    for _ in tqdm.tqdm(pool.imap_unordered(write_lightcurve, star_list), total=len(star_list)):
+    for _ in tqdm.tqdm(pool.imap_unordered(func, star_list), total=len(star_list)):
         pass
 
 def run():
-    write_convert_fits()
-    write_photometry()
+    #write_convert_fits()
+    #write_photometry()
     write_match(init.basedir+'phot000046.pht')
     write_munifind()
     df = read_munifind(init.basedir+'munifind.txt')
-    check_stars_str = do_best_comps(df)
-    write_munifind_check_stars()
+    bestcomps = getBestComparisonStars(df)
+    print("bestcomps: ", bestcomps)
+    check_stars_list = do_best_comps(bestcomps)
+    print("check_stars_list: ", check_stars_list)
+    write_munifind_check_stars(check_stars_list[0])
     #star_list = (143,264,2675,1045,847,1193)
     star_list = init.all_star_list
-    do_write_curve(star_list, check_stars_str)
-    #do_write_pos(star_list, check_stars_str)
+    do_write_curve(star_list, check_stars_list)
+    #do_write_pos(star_list, check_stars_list)
 
-logger = mp.log_to_stderr()
-logger.setLevel(mp.SUBDEBUG)
-check_stars_str = ""
+#logger = mp.log_to_stderr()
+#logger.setLevel(mp.SUBDEBUG)
 run()

@@ -9,14 +9,12 @@ import os
 import multiprocessing as mp
 import tqdm
 
-
-
 def set_seaborn_style():
     sns.set_context("notebook", font_scale=1.1)
     sns.set_style("ticks")
 
 def read_lightcurve(star):
-    #print("Reading lightcurve", star)
+    #print("Reading lightcurve", star, init.lightcurve_dir + 'curve_' + str(star).zfill(5) + '.txt')
     df = pd.read_csv(init.lightcurve_dir + 'curve_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
     df = df[df['V-C'] < 99]
     return preprocess_lightcurve(df)
@@ -30,6 +28,7 @@ def preprocess_lightcurve(df):
         print("len df:", len(df))
 
 def read_pos(star):
+    return "ERROR: position is not yet returned"
     try:
         df = pd.read_csv(init.lightcurve_dir + 'pos_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
         df2 = df[df['X'] > 0]
@@ -82,12 +81,11 @@ def store_curve_and_pos(star):
 
 def run():
     curve_and_pos = []
-
     set_seaborn_style()
     pool = mp.Pool(8)
-    #init.all_star_list = range(1,10)
-    print("Reading star positions, total size = ",len(init.all_star_list))
-    for _ in tqdm.tqdm(pool.imap_unordered(store_curve_and_pos, init.all_star_list), total=len(init.all_star_list)):
+    star_list = init.all_star_list
+    print("Reading star positions, total size = ",len(star_list))
+    for _ in tqdm.tqdm(pool.imap_unordered(store_curve_and_pos, star_list), total=len(init.all_star_list)):
         curve_and_pos.append(_)
         pass
     print("Plotting stars, total size = ",len(curve_and_pos))
@@ -95,9 +93,3 @@ def run():
         pass
 
 run()
-
-#try:
-#    for star in init.all_star_list:
-#        plot_lightcurve(read_lightcurve(star), read_pos(star), star)
-#except D:
-#    print("D", D)
