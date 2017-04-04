@@ -55,7 +55,7 @@ def write_photometry():
     os.system('muniphot '+init.basedir+'*.fts -p muniphot.conf -o '+init.basedir+'phot??????.pht')
 
 def write_match(base_photometry_file):
-    print("write match", base_photometry_file)
+    print("write match with base file:", base_photometry_file)
     os.system('rm '+init.basedir+'match*')
     # !munimatch -s sp_fields=1 {init.basedir+'phot0000001.pht'} {init.basedir+'phot??????.pht'} -o {init.basedir+'match??????.pht'}
     os.system('munimatch -s sp_fields=1 '+base_photometry_file+' '+init.basedir+'phot??????.pht -o '+init.basedir+'match??????.pht')
@@ -103,8 +103,8 @@ def do_write_curve(star_list, check_stars_list):
 def run():
     #write_convert_fits()
     #write_photometry()
-    write_match(init.basedir+'phot000046.pht')
-    write_munifind()
+    #write_match(init.basedir+'phot000046.pht')
+    #write_munifind()
     df = read_munifind(init.basedir+'munifind.txt')
     bestcomps = getBestComparisonStars(df)
     print("bestcomps: ", bestcomps)

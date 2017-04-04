@@ -17,6 +17,6 @@ def start_upsilon(star_list):
         pass
     return result_list
 
-my_result_list = start_upsilon(range(1,100))
+my_result_list = start_upsilon(init.all_star_list)
 upsilon_output =init.basedir+'upsilon_output.txt'
 upsilon_helper.save_results(my_result_list, upsilon_output)

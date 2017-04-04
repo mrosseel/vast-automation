@@ -1,6 +1,5 @@
 import init
-import pandas as pd
-import numpy as np
+import reading
 import matplotlib as mp
 mp.use('Agg') # needs no X server
 import matplotlib.pyplot as plt
@@ -9,34 +8,10 @@ import os
 import multiprocessing as mp
 import tqdm
 
+
 def set_seaborn_style():
     sns.set_context("notebook", font_scale=1.1)
     sns.set_style("ticks")
-
-def read_lightcurve(star):
-    #print("Reading lightcurve", star, init.lightcurve_dir + 'curve_' + str(star).zfill(5) + '.txt')
-    df = pd.read_csv(init.lightcurve_dir + 'curve_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
-    df = df[df['V-C'] < 99]
-    return preprocess_lightcurve(df)
-
-def preprocess_lightcurve(df):
-    try:
-        P = np.percentile(df['V-C'], [5, 95])
-        df2 = df[(df['V-C'] > P[0]) & (df['V-C'] < P[1])]
-        return df2
-    except IndexError:
-        print("len df:", len(df))
-
-def read_pos(star):
-    return "ERROR: position is not yet returned"
-    try:
-        df = pd.read_csv(init.lightcurve_dir + 'pos_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
-        df2 = df[df['X'] > 0]
-        df3 = df2[df['MAG'] < 99]
-        return (df3['X'].iloc[0], df3['Y'].iloc[0])
-    except IndexError:
-        print("df:",len(df),"df2:", len(df2),"df3:", len(df3))
-        print(len(df))
 
 def plot_lightcurve(tuple):
     try:
@@ -62,7 +37,7 @@ def plot_lightcurve(tuple):
         plt.ylabel('Mag')
         plt.ylim(2,0)
         plt.gca().invert_yaxis()
-        plt.ticklabel_format(style='plain', axis='x')
+        #plt.ticklabel_format(style='plain', axis='x')
         #fig = plt.figure(figsize=(70,10))
         #sns.plt.show()
         g.savefig(init.lightcurve_dir+str(star).zfill(5) )
@@ -73,7 +48,7 @@ def plot_lightcurve(tuple):
 
 def store_curve_and_pos(star):
     try:
-        tuple = star, read_lightcurve(star), read_pos(star)
+        tuple = star, reading.read_lightcurve(star), reading.read_pos(star)
         return tuple
     except FileNotFoundError:
         print("File not found error in store and curve for star", star)
