@@ -35,10 +35,13 @@ def save_results(result_list, output_file):
     print(df.head())
     df.to_csv(output_file, index=False)
 
-def predict_star(star):
+def predict_star(star, limit=-1):
     print("star:",star)
     #try:
     df = reading.read_lightcurve(star)
+    if(limit > 0):
+        df = df[:limit]
+        print("Restricting star", star, " to limit:", limit)
     mag = df['V-C']
     #date = df.index.values
     date = df['JD']

@@ -7,6 +7,7 @@ import seaborn as sns
 import os
 import multiprocessing as mp
 import tqdm
+import numpy as np
 
 
 def set_seaborn_style():
@@ -18,6 +19,7 @@ def plot_lightcurve(tuple):
         star = tuple[0]
         curve = tuple[1]
         pos = tuple[2]
+        curve = curve.replace(to_replace=99.99999, value=np.nan, inplace=False)
 
         curve_min = curve['V-C'].min()
         curve_max = curve['V-C'].max()
@@ -28,14 +30,16 @@ def plot_lightcurve(tuple):
         #insert counting column
         curve2.insert(0, 'Count', range(0, len(curve2)))
         g = sns.lmplot('Count', 'V-C',
-                   data=curve2,
+                   data=curve2, size=5, aspect=5,
                    fit_reg=False)
-
+        #g.map(plt.errorbar, "Count", "V-C", "s1", marker="o")
         plt.title('Star '+ str(star))
         #+ " : " + pixel_to_radec(wcs_config, pos[0], pos[1]).to_string('hmsdms') + ' - ' +str(pos[0]) + ', ' + str(pos[1]))
         plt.xlabel('Obs #')
         plt.ylabel('Mag')
         plt.ylim(2,0)
+        plt.xlim(0, len(curve2))
+        g.map(plt.errorbar, curve2['Count'], curve2['V-C'], yerr=curve2['s1'], fmt='o')
         plt.gca().invert_yaxis()
         #plt.ticklabel_format(style='plain', axis='x')
         #fig = plt.figure(figsize=(70,10))
@@ -48,7 +52,7 @@ def plot_lightcurve(tuple):
 
 def store_curve_and_pos(star):
     try:
-        tuple = star, reading.read_lightcurve(star), reading.read_pos(star)
+        tuple = star, reading.read_lightcurve(star,filter=False), reading.read_pos(star)
         return tuple
     except FileNotFoundError:
         print("File not found error in store and curve for star", star)
