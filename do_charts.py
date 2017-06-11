@@ -4,7 +4,6 @@ import matplotlib as mp
 mp.use('Agg') # needs no X server
 import matplotlib.pyplot as plt
 import seaborn as sns
-import os
 import multiprocessing as mp
 import tqdm
 import numpy as np
@@ -15,40 +14,46 @@ def set_seaborn_style():
     sns.set_style("ticks")
 
 def plot_lightcurve(tuple):
-    try:
-        star = tuple[0]
-        curve = tuple[1]
-        pos = tuple[2]
-        curve = curve.replace(to_replace=99.99999, value=np.nan, inplace=False)
+#    try:
+    star = tuple[0]
+    curve = tuple[1]
+    pos = tuple[2]
+    curve = curve.replace(to_replace=99.99999, value=np.nan, inplace=False)
 
-        curve_min = curve['V-C'].min()
-        curve_max = curve['V-C'].max()
-        curve2 = curve
-        #print("min, max:",curve_min,curve_max)
-        curve2['V-C'] = curve['V-C'] - curve_min
+    curve_min = curve['V-C'].min()
+    curve_max = curve['V-C'].max()
+    curve2_norm = curve
+    print("min, max:",curve_min,curve_max)
+    curve2_norm['V-C'] = curve['V-C']
 
-        #insert counting column
-        curve2.insert(0, 'Count', range(0, len(curve2)))
-        g = sns.lmplot('Count', 'V-C',
-                   data=curve2, size=5, aspect=5,
-                   fit_reg=False)
-        #g.map(plt.errorbar, "Count", "V-C", "s1", marker="o")
-        plt.title('Star '+ str(star))
-        #+ " : " + pixel_to_radec(wcs_config, pos[0], pos[1]).to_string('hmsdms') + ' - ' +str(pos[0]) + ', ' + str(pos[1]))
-        plt.xlabel('Obs #')
-        plt.ylabel('Mag')
-        plt.ylim(2,0)
-        plt.xlim(0, len(curve2))
-        g.map(plt.errorbar, curve2['Count'], curve2['V-C'], yerr=curve2['s1'], fmt='o')
-        plt.gca().invert_yaxis()
-        #plt.ticklabel_format(style='plain', axis='x')
-        #fig = plt.figure(figsize=(70,10))
-        #sns.plt.show()
-        g.savefig(init.lightcurve_dir+str(star).zfill(5) )
-        plt.close(g.fig)
-    except:
-        print("error", tuple)
+    N = len(curve2_norm)
 
+    #insert counting column
+    curve2_norm.insert(0, 'Count', range(0, len(curve2_norm)))
+    g = sns.lmplot('Count', 'V-C',
+               data=curve2_norm, size=5, aspect=5,scatter_kws={"s": 50},
+               fit_reg=False)
+    #print(curve2_norm.head(10))
+    plt.title('Star '+ str(star))
+    #+ " : " + pixel_to_radec(wcs_config, pos[0], pos[1]).to_string('hmsdms') + ' - ' +str(pos[0]) + ', ' + str(pos[1]))
+
+    #plt.xaxis.set_major_formatter(ticker.FuncFormatter(format_date))
+    #plt.set_title("Custom tick formatter")
+    #fig.autofmt_xdate()
+    plt.xlabel('Count')
+    plt.ylabel('Mag')
+    plt.ylim(curve_min+2,curve_min)
+    #plt.xlim(0, len(curve2_norm))
+    plt.gca().invert_yaxis()
+    #plt.ticklabel_format(style='plain', axis='x')
+    g.savefig(init.lightcurve_dir+str(star).zfill(5) )
+    plt.close(g.fig)
+#    except:
+#        print("error", tuple)
+
+def format_date(x, pos=None):
+    thisind = np.clip(int(x + 0.5), 0, N - 1)
+    return r.date[thisind].strftime('%Y-%m-%d')
 
 def store_curve_and_pos(star):
     try:

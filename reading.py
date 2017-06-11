@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 def read_lightcurve(star,filter=True,preprocess=True):
-    #print("Reading lightcurve", star, init.lightcurve_dir + 'curve_' + str(star).zfill(5) + '.txt')
+    print("Reading lightcurve", star, init.lightcurve_dir + 'curve_' + str(star).zfill(5) + '.txt')
     df = pd.read_csv(init.lightcurve_dir + 'curve_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
     if(filter):
         df = df[df['V-C'] < 99]

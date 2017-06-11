@@ -84,7 +84,7 @@ def write_pos(star, check_stars_list):
     check_stars = join_check_stars(check_stars_list, star)
     os.system("munilist -a " + str(init.aperture)+ " -q --obj-plot --object "+ str(star)+ " " + init.lightcurve_dir + "pos_" + str(star).zfill(5) + ".txt "+ init.basedir+'match*.pht >/dev/null')
 
-def do_write_pos(df, star_list, check_stars_list):
+def do_write_pos(star_list, check_stars_list):
     call(["mkdir", init.lightcurve_dir])
     pool = mp.Pool(8)
     func = partial(write_pos, check_stars=check_stars_list)
@@ -104,7 +104,7 @@ def run():
     #write_convert_fits()
     #write_photometry()
     #write_match(init.basedir+'phot000046.pht')
-    #write_munifind()
+    write_munifind()
     df = read_munifind(init.basedir+'munifind.txt')
     bestcomps = getBestComparisonStars(df)
     print("bestcomps: ", bestcomps)
