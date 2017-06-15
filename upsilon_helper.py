@@ -37,26 +37,26 @@ def save_results(result_list, output_file):
 
 def predict_star(star, limit=-1):
     print("star:",star)
-    #try:
-    df = reading.read_lightcurve(star)
-    if(limit > 0):
-        df = df[:limit]
-        print("Restricting star", star, " to limit:", limit)
-    mag = df['V-C']
-    #date = df.index.values
-    date = df['JD']
-    err = df['s1']
-    e_features = upsilon.ExtractFeatures(date, mag, err)
-    e_features.run()
-    features = e_features.get_features()
+    try:
+        df = reading.read_lightcurve(star)
+        if(limit > 0):
+            df = df[:limit]
+            print("Restricting star", star, " to limit:", limit)
+        mag = df['V-C']
+        #date = df.index.values
+        date = df['JD']
+        err = df['s1']
+        e_features = upsilon.ExtractFeatures(date, mag, err)
+        e_features.run()
+        features = e_features.get_features()
 
-    # Classify the light curve
-    label, probability, flag = upsilon.predict(rf_model, features)
-    print("star, label, probability, flag")
-    print(star, label, probability, flag)
-    return [star, label, probability, flag]
-    #except:
-    #    print(star, 'error')
-#        return [star, 'NA', 'NA', 'NA']
+        # Classify the light curve
+        label, probability, flag = upsilon.predict(rf_model, features)
+        print("star, label, probability, flag")
+        print(star, label, probability, flag)
+        return [star, label, probability, flag]
+    except:
+        print(star, 'error')
+        return [star, 'NA', 'NA', 'NA']
 
 rf_model = upsilon.load_rf_model()
