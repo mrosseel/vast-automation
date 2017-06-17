@@ -3,13 +3,16 @@ import pandas as pd
 import numpy as np
 
 def read_lightcurve(star,filter=True,preprocess=True):
-    print("Reading lightcurve", star, init.lightcurve_dir + 'curve_' + str(star).zfill(5) + '.txt')
-    df = pd.read_csv(init.lightcurve_dir + 'curve_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
-    if(filter):
-        df = df[df['V-C'] < 99]
-    if(preprocess):
-        df = preprocess_lightcurve(df)
-    return df
+    try:
+        #print("Reading lightcurve", star, init.lightcurve_dir + 'curve_' + str(star).zfill(5) + '.txt')
+        df = pd.read_csv(init.lightcurve_dir + 'curve_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
+        if(filter):
+            df = df[df['V-C'] < 99]
+        if(preprocess):
+            df = preprocess_lightcurve(df)
+        return df
+    except OSError:
+        print("OSError for star:", star)
 
 def preprocess_lightcurve(df):
     try:

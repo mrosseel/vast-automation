@@ -57,6 +57,6 @@ def predict_star(star, limit=-1):
         return [star, label, probability, flag]
     except:
         print(star, 'error')
-        return [star, 'NA', 'NA', 'NA']
+        return [star, 'NA', -1, 1]
 
 rf_model = upsilon.load_rf_model()

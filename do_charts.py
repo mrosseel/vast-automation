@@ -18,6 +18,9 @@ def plot_lightcurve(tuple):
     star = tuple[0]
     curve = tuple[1]
     pos = tuple[2]
+    if(curve is None):
+        print("Curve is None for star", star)
+        return
     curve = curve.replace(to_replace=99.99999, value=np.nan, inplace=False)
 
     curve_min = curve['V-C'].min()
