@@ -1,17 +1,27 @@
 # munipack-automation
 
-## Starting jupyter
+Docker is used to construct a light-weight virtual machine linux containing all necessary dependencies.
+Once you're in this VM, all python commands can be run.
 
-CMD: ./startJupyter.sh
-get docker_id
-CMD: docker exec -it docker_id bash
-CMD: jupyter notebook list
-open browser with the provided url
+## Starting Docker
 
-## Running python stuff
+* have a working docker installation: https://www.docker.com/community-edition
+* command: `./startJupyter.sh`
+* get docker_id
+* command: `docker exec -it docker_id bash`
 
-edit init.py to set all correct directories and values
-python do_muniwin.py
+##Command line usage
+
+###Init settings
+
+* take one reference frame and calculate a fits header using http://Astrometry.net
+* edit init.py to set all correct directories and values
+
+###Run
+
+* command: `python do_muniwin.py`
+
+###File overview
 
 * init.py : directory settings, stars to chart settings, ...
 * do_muniwin.py : start all 
@@ -19,6 +29,14 @@ python do_muniwin.py
 * do_upsilon.py : only do machine learning detection
 * do_profile.py : do performance profiling on the app (not sure if working)
 
-TODO:
-- capture upsilon extra data (minimum = period) to identify the main star
+##Jupyter usage (deprecated)
+* command: `jupyter notebook list`
+* open browser with the provided url
+
+
+## TODO
+
+- calculate star position
+- new ensemble comparison star calculation?
+- capture upsilon extra data (minimum = period) to identify the main star?
 - check error column for any stars having error bars > 1%
