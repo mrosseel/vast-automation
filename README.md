@@ -6,8 +6,11 @@ Once you're in this VM, all python commands can be run.
 ## Starting Docker
 
 * have a working docker installation: https://www.docker.com/community-edition
+* cd docker
+* docker build . -t miker/jupyter
+* cd ..
 * command: `./startJupyter.sh`
-* get docker_id
+* the startjupyter command returns a docker_id, copy it.
 * command: `docker exec -it docker_id bash`
 
 ##Command line usage
@@ -24,7 +27,7 @@ Once you're in this VM, all python commands can be run.
 ###File overview
 
 * init.py : directory settings, stars to chart settings, ...
-* do_muniwin.py : start all 
+* do_muniwin.py : start all
 * do_charts.py : only do charts
 * do_upsilon.py : only do machine learning detection
 * do_profile.py : do performance profiling on the app (not sure if working)

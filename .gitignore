@@ -1,3 +1,6 @@
 inputfiles
 cmunipack*
 *.pyc
+.idea/**/*
+.ipynb_checkpoints/**/*
+transfer/

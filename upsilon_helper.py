@@ -49,6 +49,7 @@ def predict_star(star, limit=-1):
         e_features = upsilon.ExtractFeatures(date, mag, err)
         e_features.run()
         features = e_features.get_features()
+        print(features)
 
         # Classify the light curve
         label, probability, flag = upsilon.predict(rf_model, features)

@@ -87,7 +87,7 @@ def write_pos(star, check_stars_list):
 def do_write_pos(star_list, check_stars_list):
     call(["mkdir", init.lightcurve_dir])
     pool = mp.Pool(8)
-    func = partial(write_pos, check_stars=check_stars_list)
+    func = partial(write_pos, check_stars_list=check_stars_list)
     print("Writing star positions for ",len(star_list),"stars into ",init.lightcurve_dir)
     for _ in tqdm.tqdm(pool.imap_unordered(func, star_list), total=len(star_list)):
         pass
@@ -100,10 +100,12 @@ def do_write_curve(star_list, check_stars_list):
     for _ in tqdm.tqdm(pool.imap_unordered(func, star_list), total=len(star_list)):
         pass
 
-def run():
-    #write_convert_fits()
-    #write_photometry()
-    #write_match(init.basedir+'phot000046.pht')
+def run_determine_reference_frame():
+    write_convert_fits()
+    write_photometry()
+
+def run_do_rest(reference_phot):
+    write_match(reference_phot)
     write_munifind()
     df = read_munifind(init.basedir+'munifind.txt')
     bestcomps = getBestComparisonStars(df)
@@ -114,8 +116,9 @@ def run():
     #star_list = (143,264,2675,1045,847,1193)
     star_list = init.all_star_list
     do_write_curve(star_list, check_stars_list)
-    #do_write_pos(star_list, check_stars_list)
+    do_write_pos(star_list, check_stars_list)
 
 #logger = mp.log_to_stderr()
 #logger.setLevel(mp.SUBDEBUG)
-run()
+#run_determine_reference_frame()
+run_do_rest(init.basedir+'phot000001.pht')
