@@ -1,8 +1,15 @@
 import os
+import shutil
 
 #basedir = os.getcwd()+'/inputfiles/WWCrA_allflat/'
 basedir = os.getcwd()+'/inputfiles/WWCrA2015/'
-lightcurve_dir = basedir + "outstars/"
+fitsdir = basedir + "fits/"
+convfitsdir = basedir + "converted_fits/"
+photometrydir = basedir + "photometry/"
+matchedphotometrydir = basedir + "matched_photometry/"
+resultdir = basedir + "results/"
+lightcurvedir = resultdir + "lightcurves/"
+posdir = resultdir + "positions/"
 
 ### CALIBRATION ###
 reference_frame = basedir + 'WWCrA#30V_000184527_FLAT.fit'
@@ -22,3 +29,7 @@ custom_muniwin = range(5776,10000)
 #custom_charts = range(1,5776)
 custom_charts = range(1,2164)
 all_star_list = range(1,138)
+
+def trash_and_recreate_dir(dir):
+    shutil.rmtree(dir, ignore_errors=True)
+    os.makedirs(dir, exist_ok=True)

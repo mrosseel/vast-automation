@@ -1,7 +1,6 @@
 from astropy import wcs
 from astropy.io import fits
 from astropy.coordinates import SkyCoord
-from astropy.vo.client import conesearch
 from astropy import units as u
 import numpy as np
 import pandas as pd
@@ -103,6 +102,7 @@ def test_code(reference_frame, xpos, ypos, arcsecond_width, arssecond_heigth):
     #result = pixel_to_radec(wcs_config, 1365, 1365)
     #print(result)
 
+    # conesearch is deprecated and moved to astroquery
     #conesearch.list_catalogs()
     #my_catalog = 'Guide Star Catalog v2 1'
     #c = SkyCoord.from_name('GSC 7911-3668')
@@ -157,5 +157,3 @@ print(w, jd)
 testing(w)
 pd.set_option('precision', 10)
 print(star_to_radec(1, w, jd))
-
-

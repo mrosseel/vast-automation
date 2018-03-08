@@ -1,6 +1,5 @@
 import upsilon_helper
 import init
-import upsilon
 from multiprocessing import Pool, Queue
 import tqdm
 
