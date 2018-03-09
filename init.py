@@ -10,15 +10,15 @@ matchedphotometrydir = basedir + "matched_photometry/"
 resultdir = basedir + "results/"
 lightcurvedir = resultdir + "lightcurves/"
 posdir = resultdir + "positions/"
+worldposdir = resultdir + "world_positions/"
 
 ### CALIBRATION ###
-reference_frame = basedir + 'WWCrA#30V_000184527_FLAT.fit'
-xpos = 717
-ypos = 654
+reference_frame = fitsdir + 'WWCrA#30V_000184527_FLAT.fit'
 reference_header = basedir + 'wcs.fits'
-reference_star = 73
-arcsecond_x = 47*60
-arcsecond_y = 47*60
+xpos = 962.856994023
+ypos = 711.327534113
+ra_deg = 271.4032917
+dec_deg = -43.8326111
 ### CALIBRATION
 
 aperture = 2

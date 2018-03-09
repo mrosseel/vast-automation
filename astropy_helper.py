@@ -84,7 +84,7 @@ def testing(w):
 
 
 def test_code(reference_frame, xpos, ypos, arcsecond_width, arssecond_heigth):
-    reference_frame_full = init.basedir +reference_frame
+    reference_frame_full = init.fitsdir +reference_frame
     fits_header = get_fits_header(reference_frame_full)
     object_ra = fits_header['OBJCTRA']
     object_dec = fits_header['OBJCTDEC']

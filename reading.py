@@ -5,7 +5,7 @@ import numpy as np
 def read_lightcurve(star,filter=True,preprocess=True):
     try:
         #print("Reading lightcurve", star, init.lightcurve_dir + 'curve_' + str(star).zfill(5) + '.txt')
-        df = pd.read_csv(init.lightcurve_dir + 'curve_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
+        df = pd.read_csv(init.lightcurvedir + 'curve_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
         if(filter):
             df = df[df['V-C'] < 99]
         if(preprocess):
@@ -27,7 +27,7 @@ def preprocess_lightcurve(df):
 def read_pos_old(star):
     return "TODO: position is not yet returned"
     try:
-        df = pd.read_csv(init.lightcurve_dir + 'pos_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
+        df = pd.read_csv(init.posdir + 'pos_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
         df2 = df[df['X'] > 0]
         df3 = df2[df['MAG'] < 99]
         return (df3['X'].iloc[0], df3['Y'].iloc[0])
@@ -38,7 +38,7 @@ def read_pos_old(star):
 
 def read_pos(star, jd):
     try:
-        df = pd.read_csv(init.lightcurve_dir + 'pos_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
+        df = pd.read_csv(init.posdir + 'pos_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
         print(df.head())
         df2 = df[df['X'] > 0]
         df3 = df2[df['MAG'] < 99]
