@@ -15,7 +15,8 @@ RUN pip install --upgrade pip
 RUN pip install numpy
 RUN pip install astropy pyreadline pyfftw tqdm
 # needs at least scikit 0.18.1
-RUN pip install --upgrade scikit-learn matplotlib
+#RUN pip install --upgrade scikit-learn matplotlib
+RUN conda update -y scikit-learn matplotlib
 #RUN git clone https://github.com/mrosseel/upsilon.git
 RUN git clone https://github.com/dwkim78/upsilon.git
 USER root

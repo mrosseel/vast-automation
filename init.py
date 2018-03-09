@@ -1,8 +1,8 @@
 import os
 import shutil
 
-#basedir = os.getcwd()+'/inputfiles/WWCrA_allflat/'
-basedir = os.getcwd()+'/inputfiles/WWCrA2015/'
+basedir = os.getcwd()+'/inputfiles/WWCrA_allflat/'
+#basedir = os.getcwd()+'/inputfiles/WWCrA2015/'
 fitsdir = basedir + "fits/"
 convfitsdir = basedir + "converted_fits/"
 photometrydir = basedir + "photometry/"
@@ -14,7 +14,7 @@ worldposdir = resultdir + "world_positions/"
 
 ### CALIBRATION ###
 reference_frame = fitsdir + 'WWCrA#30V_000184527_FLAT.fit'
-reference_header = basedir + 'wcs.fits'
+reference_header = basedir + 'new-image.fits'
 xpos = 962.856994023
 ypos = 711.327534113
 ra_deg = 271.4032917
