@@ -160,4 +160,4 @@ def run_do_rest(reference_phot, do_match, do_munifind, do_lightcurve, do_pos, do
 #logger.setLevel(mp.SUBDEBUG)
 #run_determine_reference_frame()
 run_do_rest(init.photometrydir+'phot000001.pht', do_match=False, do_munifind=False, do_lightcurve=False,
-            do_pos=False, do_calibrate=True, do_charts=False)
+            do_pos=True, do_calibrate=True, do_charts=False)

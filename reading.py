@@ -53,4 +53,4 @@ def read_pos(star, jd):
         #print("df:",len(df),"df2:", len(df2),"df3:", len(df3))
         print(len(df))
 
-read_pos(1, 1)
+#read_pos(1, 1)

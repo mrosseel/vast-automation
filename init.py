@@ -1,9 +1,10 @@
 import os
 import shutil
 
-codedir = os.getcwd()
-#basedir = os.getcwd()+'/inputfiles/WWCrA_allflat/'
-basedir = codedir +'/inputfiles/WWCrA2015/'
+codedir = '.'
+#os.getcwd()
+basedir = './inputfiles/WWCrA_allflat/'
+#basedir = codedir +'/inputfiles/WWCrA2015/'
 fitsdir = basedir + "fits/"
 convfitsdir = basedir + "converted_fits/"
 photometrydir = basedir + "photometry/"
@@ -31,7 +32,7 @@ custom_muniwin = range(5776,10000)
 #custom_charts = range(1,5776)
 custom_charts = range(1,2164)
 all_star_list = range(1,138)
-star_list = selection2
+star_list = all
 
 def trash_and_recreate_dir(dir):
     shutil.rmtree(dir, ignore_errors=True)
