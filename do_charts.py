@@ -2,7 +2,7 @@ from functools import partial
 
 import init
 import reading
-import astropy_helper
+#import astropy_helper
 import matplotlib as mp
 mp.use('Agg') # needs no X server
 import matplotlib.pyplot as plt
@@ -10,8 +10,7 @@ import seaborn as sns
 import multiprocessing as mp
 import tqdm
 import numpy as np
-
-
+import init
 
 def set_seaborn_style():
     sns.set_context("notebook", font_scale=1.1)
@@ -70,7 +69,6 @@ def store_curve_and_pos(star):
     except FileNotFoundError:
         print("File not found error in store and curve for star", star)
 
-
 def run():
     w, jd = astropy_helper.calculate_wcs_from_file(init.reference_header, init.reference_frame, init.xpos, init.ypos)
     curve_and_pos = []
@@ -85,5 +83,3 @@ def run():
     func = partial(plot_lightcurve, wcs_config=w)
     for _ in tqdm.tqdm(pool.imap_unordered(func, curve_and_pos), total=len(curve_and_pos)):
         pass
-
-run()

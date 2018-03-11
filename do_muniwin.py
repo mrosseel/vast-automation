@@ -1,5 +1,6 @@
 import init
 import do_calibration
+import do_charts
 from init import trash_and_recreate_dir
 import pandas as pd
 import multiprocessing as mp
@@ -7,7 +8,9 @@ import logging
 import tqdm
 import os, sys
 from functools import partial
+from subprocess import call
 import pickle
+import time
 
 # INDEX MEAN_MAG STDEV GOODPOINTS
 def read_munifind(filename):
@@ -73,39 +76,43 @@ def write_lightcurve(star, check_stars_list):
 
 #TODO add check stars to this command?
 def write_pos(star, check_stars_list):
+    start = time.time()
     check_stars = join_check_stars(check_stars_list, star)
-    os.system("munilist -a " + str(init.aperture)+ " -q --obj-plot --object "+ str(star)+ " " + get_pos_filename(star) + " " + init.matchedphotometrydir+'match*.pht >/dev/null')
+    #os.system("munilist -a " + str(init.aperture)+ " -q --obj-plot --object "+ str(star)+ " " + get_pos_filename(star) + " " + init.matchedphotometrydir+'match*.pht >/dev/null')
+    call("munilist -a " + str(init.aperture)+ " -q --obj-plot --object "+ str(star)+ " " + get_pos_filename(star) + " " + init.matchedphotometrydir+'match*.pht >/dev/null', shell=True)
+    end = time.time()
 
 def do_write_pos(star_list, check_stars_list):
     trash_and_recreate_dir(init.posdir)
-    pool = mp.Pool(8)
+    pool = mp.Pool(8, maxtasksperchild=100)
     func = partial(write_pos, check_stars_list=check_stars_list)
     print("Writing star positions for",len(star_list),"stars into",init.posdir)
-    for _ in tqdm.tqdm(pool.imap_unordered(func, star_list), total=len(star_list)):
+    for _ in tqdm.tqdm(pool.imap_unordered(func, star_list, 10), total=len(star_list)):
         pass
 
 def do_write_curve(star_list, check_stars_list):
     trash_and_recreate_dir(init.lightcurvedir)
-    pool = mp.Pool(8)
+    pool = mp.Pool(8, maxtasksperchild=100)
     func = partial(write_lightcurve, check_stars_list=check_stars_list)
     print("Writing star lightcurves for",len(star_list),"stars into",init.lightcurvedir)
-    for _ in tqdm.tqdm(pool.imap_unordered(func, star_list), total=len(star_list)):
+    for _ in tqdm.tqdm(pool.imap_unordered(func, star_list, 10), total=len(star_list)):
         pass
 
-def do_world_pos(wcs, star_list):
+def do_world_pos(wcs, star_list, reference_frame_index):
     trash_and_recreate_dir(init.worldposdir)
+    print("index", reference_frame_index)
     pool = mp.Pool(1)
-    func = partial(world_pos, wcs=wcs)
+    func = partial(world_pos, wcs=wcs, reference_frame_index=reference_frame_index)
     print("Writing world positions for",len(star_list),"stars into",init.posdir)
     for _ in tqdm.tqdm(pool.imap_unordered(func, star_list), total=len(star_list)):
         pass
 
 # TODO check that JD of first line is equal to JD of reference frame !
-def world_pos(star, wcs):
+def world_pos(star, wcs, reference_frame_index):
     #print("star", star)
     f = open(get_pos_filename(star))
     #print("star file opened", star)
-    pixel_coords = f.readlines()[2].split()[1:3]
+    pixel_coords = f.readlines()[2+reference_frame_index].split()[1:3]
     f.close()
     #print("pixel coords read of star", star, pixel_coords)
     world_coords = wcs.all_pix2world(float(pixel_coords[0]), float(pixel_coords[1]), 0, ra_dec_order=True)
@@ -125,7 +132,7 @@ def run_determine_reference_frame():
     write_convert_fits()
     write_photometry()
 
-def run_do_rest(reference_phot, do_match, do_munifind, do_lightcurve, do_pos, do_calibrate):
+def run_do_rest(reference_phot, do_match, do_munifind, do_lightcurve, do_pos, do_calibrate, do_charts):
     if do_match: write_match(reference_phot)
     if do_munifind:
         write_munifind()
@@ -137,17 +144,20 @@ def run_do_rest(reference_phot, do_match, do_munifind, do_lightcurve, do_pos, do
     else:
         with open ('check_stars_list.bin', 'rb') as fp:
             check_stars_list = pickle.load(fp)
-    #star_list = (1, 143,264,2675,1045,847,1193)
-    #star_list = (1, 73)
-    star_list = init.all
-    if do_lightcurve: do_write_curve(star_list, check_stars_list)
-    if do_pos: do_write_pos(star_list, check_stars_list)
+
+    if do_lightcurve: do_write_curve(init.star_list, check_stars_list)
+    if do_pos: do_write_pos(init.star_list, check_stars_list)
     if do_calibrate:
         wcs = do_calibration.calibrate()
-        do_world_pos(wcs, star_list)
+        reference_frame_index = do_calibration.find_reference_in_files(init.fitsdir)
+        do_world_pos(wcs, init.star_list, reference_frame_index)
+    if do_charts:
+        do_charts.run(reference_frame_index)
+
+
 
 #logger = mp.log_to_stderr()
 #logger.setLevel(mp.SUBDEBUG)
 #run_determine_reference_frame()
 run_do_rest(init.photometrydir+'phot000001.pht', do_match=False, do_munifind=False, do_lightcurve=False,
-            do_pos=True, do_calibrate=True)
+            do_pos=False, do_calibrate=True, do_charts=False)
