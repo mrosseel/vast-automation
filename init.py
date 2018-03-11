@@ -15,7 +15,7 @@ worldposdir = resultdir + "world_positions/"
 
 ### CALIBRATION ###
 reference_frame = 'WWCrA#30V_000184527_FLAT.fit'
-reference_header = basedir + 'wcs.fits'
+reference_header = basedir + 'new-image.fits'
 xpos = 962.856994023
 ypos = 711.327534113
 ra_deg = 271.4032917
