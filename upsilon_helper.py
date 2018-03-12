@@ -25,7 +25,7 @@ def predict_star_list(all_star_list, output_file):
             print("star, label, probability, flag")
             print(star, label, probability, flag)
             full_list.append([star, label, probability, flag])
-            print("result list", my_result_list)
+            #print("result list", my_result_list)
         except:
             print(star, 'error')
             full_list.append([star, 'NA', 'NA', 'NA'])

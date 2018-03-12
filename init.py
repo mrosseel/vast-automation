@@ -5,8 +5,8 @@ codedir = './'
 aperture = 2
 all = range(1,10000)
 thou = range(1,1000)
-selection = [1,2,3,137]
-selection2 = (1,2,3,73,137,143,264,2675,1045,847,1193)
+selection = [1,2,3,138]
+selection2 = (1,2,3,73,138,143,264,2675,1045,847,1193)
 custom_muniwin = range(5776,10000)
 #custom_charts = range(1,5776)
 custom_charts = range(1,2164)
@@ -23,19 +23,17 @@ nr_threads = multiprocessing.cpu_count() * 2
 
 do_match=False
 do_munifind=False
-do_lightcurve=True
+do_lightcurve=False
 do_lightcurve_resume=False
 do_pos=False
 do_pos_resume=False
 do_calibrate=False
-do_charting=False
-do_detection=False
+do_charting=True
+do_detection=True
 
 ### CALIBRATION ###
 reference_frame = 'WWCrA#30V_000184527_FLAT.fit'
 reference_header = basedir + 'new-image.fits'
-xpos = 962.856994023
-ypos = 711.327534113
 ra_deg = 271.4032917
 dec_deg = -43.8326111
 ### CALIBRATION

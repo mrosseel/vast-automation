@@ -160,11 +160,14 @@ def run_do_rest(reference_phot, do_match, do_munifind, do_lightcurve, do_lightcu
         df.to_csv(init.basedir+'distances_from_target_star.csv')
         print(df)
 
-    if do_charting:
-        do_charts.run(init.star_list)
-
     if do_detection:
         do_upsilon.run(init.star_list)
+        matches = do_calibration.findMatch()
+
+    if do_charting:
+        do_charts.run(matches)
+
+
 
 #logger = mp.log_to_stderr()
 #logger.setLevel(mp.SUBDEBUG)

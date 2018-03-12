@@ -72,19 +72,23 @@ def get_pos_filename(star):
 def get_worldpos_filename(star):
     return init.worldposdir + "worldpos_" + str(star).zfill(5) + ".txt"
 
-# searches for the last written star in the path, and returns a star list including that star so it can be overwritten
+# takes a star_list and a dir, and returns a reduced star list - all stars which already have a file in that dir are removed
 def reduce_star_list(star_list, the_path):
-    import re
     the_dir = os.listdir(the_path)
     the_dir.sort()
     found = []
-    for entry in the_dir:
-        m = re.search('\d+',entry)
-        found.append(int(m.group(0).lstrip('0')))
-    print(found)
+    for filename in the_dir:
+        found.append(filename_to_star(filename))
+    print("Found", len(found), "stars already processed in", the_path)
     return [item for item in star_list if item not in found]
 
+def filename_to_star(filename):
+    import re
+    m = re.search('\d+',filename)
+    return int(m.group(0).lstrip('0'))
+
 # read the world positions and return them in a dictionary
+# returns {'name': [ra.deg, dec.deg ]}
 def read_world_positions(the_path):
     the_dir = os.listdir(the_path)
     the_dir.sort()
@@ -92,7 +96,7 @@ def read_world_positions(the_path):
     for name in the_dir: # 'file' is a builtin type, 'name' is a less-ambiguous variable name.
         try:
             with open(the_path + name) as f: # No need to specify 'r': this is the default.
-                results[name] = f.readlines()[0].split(' ')
+                results[filename_to_star(name)] = f.readlines()[0].split(' ')
         except IOError as exc:
             if exc.errno != errno.EISDIR: # Do not fail if a directory is found, just ignore it.
                 raise # Propagate other kinds of IOError.

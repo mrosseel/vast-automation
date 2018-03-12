@@ -18,11 +18,13 @@ def set_seaborn_style():
     sns.set_context("notebook", font_scale=1.1)
     sns.set_style("ticks")
 
-def plot_lightcurve(tuple):
+def plot_lightcurve(tuple, matches):
 #    try:
     star = tuple[0]
     curve = tuple[1]
     pos = tuple[2]
+    star_match = matches[star][4]
+    separation = matches[star][7]
     coord = SkyCoord(pos[0], pos[1], unit='deg')
 
     if(curve is None):
@@ -44,8 +46,8 @@ def plot_lightcurve(tuple):
                data=used_curve, size=5, aspect=5,scatter_kws={"s": 50},
                fit_reg=False)
     #print(used_curve.head(10))
-    print(coord.ra.hms, coord.dec.dms)
-    plt.title('Star '+ str(star) + " : " + str(coord.ra.hms) + ' - ' + str(coord.dec.dms))
+    #print(coord.ra.hms, coord.dec.dms)
+    plt.title('Star '+ str(star) + " : " + str(coord.ra.hms) + ' - ' + str(coord.dec.dms) + " - " + str(star_match) + ", " + str(separation))
 
     #plt.xaxis.set_major_formatter(ticker.FuncFormatter(format_date))
     #plt.set_title("Custom tick formatter")
@@ -73,7 +75,8 @@ def store_curve_and_pos(star):
     except FileNotFoundError:
         print("File not found error in store and curve for star", star)
 
-def run(star_list):
+def run(matches):
+    star_list = [*matches] # unpack
     curve_and_pos = []
     set_seaborn_style()
     pool = mp.Pool(init.nr_threads)
@@ -83,6 +86,6 @@ def run(star_list):
         pass
     print("Plotting stars, total size = ",len(curve_and_pos))
     trash_and_recreate_dir(init.chartsdir)
-    func = partial(plot_lightcurve)
+    func = partial(plot_lightcurve, matches=matches)
     for _ in tqdm.tqdm(pool.imap_unordered(func, curve_and_pos), total=len(curve_and_pos)):
         pass

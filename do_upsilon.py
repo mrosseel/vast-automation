@@ -6,11 +6,11 @@ import tqdm
 from functools import partial
 
 def start_upsilon(star_list, star_limit):
-    print("Starting upsilon with nr stars", len(star_list))
+    #print("Starting upsilon with nr stars", len(star_list))
     pool = Pool(init.nr_threads)
     func = partial(upsilon_helper.predict_star,limit=star_limit)
     result_list = []
-    print("Predicting variability for ",len(star_list),"stars")
+    #print("Predicting variability for ",len(star_list),"stars")
     for _ in tqdm.tqdm(pool.imap_unordered(func, star_list, chunksize=10), total=len(star_list)):
         result_list.append(_)
         pass
