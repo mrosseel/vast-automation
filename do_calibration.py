@@ -13,6 +13,5 @@ def find_reference_in_files(the_path):
     the_dir = os.listdir(the_path)
     the_dir.sort()
     reference_frame_index = the_dir.index(init.reference_frame)
-    print(reference_frame_index)
+    return reference_frame_index
 
-find_reference_in_files(init.fitsdir)

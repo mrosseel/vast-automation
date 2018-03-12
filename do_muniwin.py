@@ -76,14 +76,17 @@ def write_lightcurve(star, check_stars_list):
 
 #TODO add check stars to this command?
 def write_pos(star, check_stars_list):
-    start = time.time()
-    check_stars = join_check_stars(check_stars_list, star)
+    #start = time.time()
+    #check_stars = join_check_stars(check_stars_list, star)
     #os.system("munilist -a " + str(init.aperture)+ " -q --obj-plot --object "+ str(star)+ " " + get_pos_filename(star) + " " + init.matchedphotometrydir+'match*.pht >/dev/null')
     call("munilist -a " + str(init.aperture)+ " -q --obj-plot --object "+ str(star)+ " " + get_pos_filename(star) + " " + init.matchedphotometrydir+'match*.pht >/dev/null', shell=True)
-    end = time.time()
+    #end = time.time()
 
-def do_write_pos(star_list, check_stars_list):
-    trash_and_recreate_dir(init.posdir)
+def do_write_pos(star_list, check_stars_list, isResume):
+    if not isResume:
+        trash_and_recreate_dir(init.posdir)
+    else:
+        star_list = search_last_star(star_list, init.posdir)
     pool = mp.Pool(8, maxtasksperchild=100)
     func = partial(write_pos, check_stars_list=check_stars_list)
     print("Writing star positions for",len(star_list),"stars into",init.posdir)
@@ -109,9 +112,9 @@ def do_world_pos(wcs, star_list, reference_frame_index):
 
 # TODO check that JD of first line is equal to JD of reference frame !
 def world_pos(star, wcs, reference_frame_index):
-    #print("star", star)
+    print("star", star)
     f = open(get_pos_filename(star))
-    #print("star file opened", star)
+    print("star file opened", star)
     pixel_coords = f.readlines()[2+reference_frame_index].split()[1:3]
     f.close()
     #print("pixel coords read of star", star, pixel_coords)
@@ -128,11 +131,21 @@ def get_pos_filename(star):
 def get_worldpos_filename(star):
     return init.worldposdir + "worldpos_" + str(star).zfill(5) + ".txt"
 
+# searches for the last written star in the path, and returns a star list including that star so it can be overwritten
+def search_last_star(star_list, the_path):
+    the_dir = os.listdir(the_path)
+    the_dir.sort()
+    import re
+    m = re.search('\d+',the_dir[-1])
+    last_star = int(m.group(0).lstrip('0'))
+    last_star_index = star_list.index(last_star)
+    return star_list[last_star_index:]
+
 def run_determine_reference_frame():
     write_convert_fits()
     write_photometry()
 
-def run_do_rest(reference_phot, do_match, do_munifind, do_lightcurve, do_pos, do_calibrate, do_charts):
+def run_do_rest(reference_phot, do_match, do_munifind, do_lightcurve, do_pos, do_pos_resume, do_calibrate, do_charts):
     if do_match: write_match(reference_phot)
     if do_munifind:
         write_munifind()
@@ -146,10 +159,11 @@ def run_do_rest(reference_phot, do_match, do_munifind, do_lightcurve, do_pos, do
             check_stars_list = pickle.load(fp)
 
     if do_lightcurve: do_write_curve(init.star_list, check_stars_list)
-    if do_pos: do_write_pos(init.star_list, check_stars_list)
+    if do_pos: do_write_pos(init.star_list, check_stars_list, do_pos_resume)
     if do_calibrate:
         wcs = do_calibration.calibrate()
         reference_frame_index = do_calibration.find_reference_in_files(init.fitsdir)
+        print("reference frame index", reference_frame_index)
         do_world_pos(wcs, init.star_list, reference_frame_index)
     if do_charts:
         do_charts.run(reference_frame_index)
@@ -160,4 +174,4 @@ def run_do_rest(reference_phot, do_match, do_munifind, do_lightcurve, do_pos, do
 #logger.setLevel(mp.SUBDEBUG)
 #run_determine_reference_frame()
 run_do_rest(init.photometrydir+'phot000001.pht', do_match=False, do_munifind=False, do_lightcurve=False,
-            do_pos=True, do_calibrate=True, do_charts=False)
+            do_pos=True, do_pos_resume=True, do_calibrate=True, do_charts=False)

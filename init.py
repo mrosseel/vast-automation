@@ -1,10 +1,10 @@
 import os
 import shutil
 
-codedir = '.'
+codedir = './'
 #os.getcwd()
-basedir = './inputfiles/WWCrA_allflat/'
-#basedir = codedir +'/inputfiles/WWCrA2015/'
+#basedir = codedir + 'inputfiles/WWCrA_allflat/'
+basedir =  codedir + 'inputfiles/WWCrA2015/'
 fitsdir = basedir + "fits/"
 convfitsdir = basedir + "converted_fits/"
 photometrydir = basedir + "photometry/"
