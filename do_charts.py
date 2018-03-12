@@ -10,17 +10,21 @@ import seaborn as sns
 import multiprocessing as mp
 import tqdm
 import numpy as np
+from astropy.coordinates import SkyCoord
 import init
+from reading import trash_and_recreate_dir
 
 def set_seaborn_style():
     sns.set_context("notebook", font_scale=1.1)
     sns.set_style("ticks")
 
-def plot_lightcurve(tuple, wcs_config):
+def plot_lightcurve(tuple):
 #    try:
     star = tuple[0]
     curve = tuple[1]
     pos = tuple[2]
+    coord = SkyCoord(pos[0], pos[1], unit='deg')
+
     if(curve is None):
         print("Curve is None for star", star)
         return
@@ -40,8 +44,8 @@ def plot_lightcurve(tuple, wcs_config):
                data=used_curve, size=5, aspect=5,scatter_kws={"s": 50},
                fit_reg=False)
     #print(used_curve.head(10))
-    coord = astropy_helper.pixel_to_radec(wcs_config, pos[1], pos[2])
-    plt.title('Star '+ str(star) + " : " + coord.to_string() + " " + coord.to_string('dms') + ' - ' + str(pos[1]) + str(pos[2]) + ', ' + str(pos[3]))
+    print(coord.ra.hms, coord.dec.dms)
+    plt.title('Star '+ str(star) + " : " + str(coord.ra.hms) + ' - ' + str(coord.dec.dms))
 
     #plt.xaxis.set_major_formatter(ticker.FuncFormatter(format_date))
     #plt.set_title("Custom tick formatter")
@@ -53,7 +57,7 @@ def plot_lightcurve(tuple, wcs_config):
     plt.gca().invert_yaxis()
     #g.map(plt.errorbar, used_curve['Count'], used_curve['V-C'], yerr=used_curve['s1'], fmt='o')
     #plt.ticklabel_format(style='plain', axis='x')
-    g.savefig(init.lightcurve_dir+str(star).zfill(5) )
+    g.savefig(init.chartsdir+str(star).zfill(5) )
     plt.close(g.fig)
 #    except:
 #        print("error", tuple)
@@ -64,22 +68,21 @@ def format_date(x, pos=None):
 
 def store_curve_and_pos(star):
     try:
-        tuple = star, reading.read_lightcurve(star,filter=False), reading.read_pos(star, 1) # TODO fake JD entered here !!!
+        tuple = star, reading.read_lightcurve(star,filter=False), reading.read_worldpos(star)
         return tuple
     except FileNotFoundError:
         print("File not found error in store and curve for star", star)
 
-def run():
-    w, jd = astropy_helper.calculate_wcs_from_file(init.reference_header, init.reference_frame, init.xpos, init.ypos)
+def run(star_list):
     curve_and_pos = []
     set_seaborn_style()
-    pool = mp.Pool(8)
-    star_list = init.all_star_list
+    pool = mp.Pool(init.nr_threads)
     print("Reading star positions, total size = ",len(star_list))
     for _ in tqdm.tqdm(pool.imap_unordered(store_curve_and_pos, star_list), total=len(init.all_star_list)):
         curve_and_pos.append(_)
         pass
     print("Plotting stars, total size = ",len(curve_and_pos))
-    func = partial(plot_lightcurve, wcs_config=w)
+    trash_and_recreate_dir(init.chartsdir)
+    func = partial(plot_lightcurve)
     for _ in tqdm.tqdm(pool.imap_unordered(func, curve_and_pos), total=len(curve_and_pos)):
         pass

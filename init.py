@@ -24,11 +24,12 @@ nr_threads = multiprocessing.cpu_count() * 2
 do_match=False
 do_munifind=False
 do_lightcurve=True
-do_lightcurve_resume=True
+do_lightcurve_resume=False
 do_pos=False
 do_pos_resume=False
-do_calibrate=True
-do_charts=False
+do_calibrate=False
+do_charting=False
+do_detection=False
 
 ### CALIBRATION ###
 reference_frame = 'WWCrA#30V_000184527_FLAT.fit'
@@ -49,4 +50,5 @@ resultdir = basedir + "results/"
 lightcurvedir = resultdir + "lightcurves/"
 posdir = resultdir + "positions/"
 worldposdir = resultdir + "world_positions/"
+chartsdir = resultdir + "charts/"
 #### DO NOT TOUCH ####
