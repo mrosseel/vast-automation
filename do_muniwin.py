@@ -1,6 +1,7 @@
 import init
 import do_calibration
 import do_charts
+import do_upsilon
 from reading import trash_and_recreate_dir
 from reading import search_last_star
 import pandas as pd
@@ -80,7 +81,7 @@ def write_pos(star, check_stars_list):
     #start = time.time()
     #check_stars = join_check_stars(check_stars_list, star)
     #os.system("munilist -a " + str(init.aperture)+ " -q --obj-plot --object "+ str(star)+ " " + get_pos_filename(star) + " " + init.matchedphotometrydir+'match*.pht >/dev/null')
-    call("munilist -a " + str(init.aperture)+ " -q --obj-plot --object "+ str(star)+ " " + get_pos_filename(star) + " " + init.matchedphotometrydir+'match*.pht >/dev/null', shell=True)
+    call("munilist -a " + str(init.aperture)+ " -q --obj-plot --object "+ str(star)+ " " + reading.get_pos_filename(star) + " " + init.matchedphotometrydir+'match*.pht >/dev/null', shell=True)
     #end = time.time()
 
 def do_write_pos(star_list, check_stars_list, isResume):
@@ -116,39 +117,33 @@ def do_world_pos(wcs, star_list, reference_frame_index):
 
 # TODO check that JD of first line is equal to JD of reference frame !
 def world_pos(star, wcs, reference_frame_index):
-    f = open(get_pos_filename(star))
+    f = open(reading.get_pos_filename(star))
     pixel_coords = f.readlines()[2+reference_frame_index].split()[1:3]
     f.close()
     #print("pixel coords read of star", star, pixel_coords)
     world_coords = wcs.all_pix2world(float(pixel_coords[0]), float(pixel_coords[1]), 0, ra_dec_order=True)
     #print("world coords for star", star, world_coords)
-    f2 = open(get_worldpos_filename(star), 'w')
+    f2 = open(reading.get_worldpos_filename(star), 'w')
     f2.write(str(world_coords[0]) + " " + str(world_coords[1]))
     f2.close()
-
-# helper function
-def get_pos_filename(star):
-    return init.posdir + "pos_" + str(star).zfill(5) + ".txt"
-
-def get_worldpos_filename(star):
-    return init.worldposdir + "worldpos_" + str(star).zfill(5) + ".txt"
 
 def run_determine_reference_frame():
     write_convert_fits()
     write_photometry()
 
-def run_do_rest(reference_phot, do_match, do_munifind, do_lightcurve, do_lightcurve_resume, do_pos, do_pos_resume, do_calibrate, do_charts):
+def run_do_rest(reference_phot, do_match, do_munifind, do_lightcurve, do_lightcurve_resume, do_pos, do_pos_resume,
+                do_calibrate, do_charting, do_detection):
     if do_match: write_match(reference_phot)
 
     if do_munifind:
         write_munifind()
         check_stars_list = do_best_comparison_stars(12)
-        with open('check_stars_list.bin', 'wb') as fp:
+        with open(init.basedir + 'check_stars_list.bin', 'wb') as fp:
             pickle.dump(check_stars_list, fp)
         print("check_stars_list: ", check_stars_list)
         write_munifind_check_stars(check_stars_list[0])
     else:
-        with open ('check_stars_list.bin', 'rb') as fp:
+        with open (init.basedir + 'check_stars_list.bin', 'rb') as fp:
             check_stars_list = pickle.load(fp)
 
     if do_lightcurve: do_write_curve(init.star_list, check_stars_list, do_lightcurve_resume)
@@ -164,8 +159,11 @@ def run_do_rest(reference_phot, do_match, do_munifind, do_lightcurve, do_lightcu
         df.to_csv(init.basedir+'distances_from_target_star.csv')
         print(df)
 
-    if do_charts:
-        do_charts.run(reference_frame_index)
+    if do_charting:
+        do_charts.run(init.star_list)
+
+    if do_detection:
+        do_upsilon.run(init.star_list)
 
 #logger = mp.log_to_stderr()
 #logger.setLevel(mp.SUBDEBUG)
@@ -173,4 +171,4 @@ def run_do_rest(reference_phot, do_match, do_munifind, do_lightcurve, do_lightcu
 run_do_rest(init.photometrydir+init.match_with_photometry_file,
             init.do_match, init.do_munifind, init.do_lightcurve, init.do_lightcurve_resume,
             init.do_pos, init.do_pos_resume, init.do_calibrate,
-            init.do_charts)
+            init.do_charting, init.do_detection)
