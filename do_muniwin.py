@@ -1,7 +1,8 @@
 import init
 import do_calibration
 import do_charts
-from init import trash_and_recreate_dir
+from reading import trash_and_recreate_dir
+from reading import search_last_star
 import pandas as pd
 import multiprocessing as mp
 import logging
@@ -12,7 +13,7 @@ from subprocess import call
 import pickle
 import time
 
-# INDEX MEAN_MAG STDEV GOODPOINTS
+# Munifind fields: INDEX MEAN_MAG STDEV GOODPOINTS
 def read_munifind(filename):
     df = pd.read_csv(filename, skiprows=[1], sep=' ')
     df.rename(columns = {'INDEX':'STAR'}, inplace = True)
@@ -131,22 +132,13 @@ def get_pos_filename(star):
 def get_worldpos_filename(star):
     return init.worldposdir + "worldpos_" + str(star).zfill(5) + ".txt"
 
-# searches for the last written star in the path, and returns a star list including that star so it can be overwritten
-def search_last_star(star_list, the_path):
-    the_dir = os.listdir(the_path)
-    the_dir.sort()
-    import re
-    m = re.search('\d+',the_dir[-1])
-    last_star = int(m.group(0).lstrip('0'))
-    last_star_index = star_list.index(last_star)
-    return star_list[last_star_index:]
-
 def run_determine_reference_frame():
     write_convert_fits()
     write_photometry()
 
 def run_do_rest(reference_phot, do_match, do_munifind, do_lightcurve, do_pos, do_pos_resume, do_calibrate, do_charts):
     if do_match: write_match(reference_phot)
+
     if do_munifind:
         write_munifind()
         check_stars_list = do_best_comparison_stars(12)
@@ -159,19 +151,25 @@ def run_do_rest(reference_phot, do_match, do_munifind, do_lightcurve, do_pos, do
             check_stars_list = pickle.load(fp)
 
     if do_lightcurve: do_write_curve(init.star_list, check_stars_list)
+
     if do_pos: do_write_pos(init.star_list, check_stars_list, do_pos_resume)
+
     if do_calibrate:
         wcs = do_calibration.calibrate()
         reference_frame_index = do_calibration.find_reference_in_files(init.fitsdir)
-        print("reference frame index", reference_frame_index)
+        print("Reference frame index", reference_frame_index)
         do_world_pos(wcs, init.star_list, reference_frame_index)
+        df = do_calibration.find_target_star(init.ra_deg, init.dec_deg, 50)
+        df.to_csv(init.basedir+'distances_from_target_star.csv')
+        print(df)
+
     if do_charts:
         do_charts.run(reference_frame_index)
-
-
 
 #logger = mp.log_to_stderr()
 #logger.setLevel(mp.SUBDEBUG)
 #run_determine_reference_frame()
-run_do_rest(init.photometrydir+'phot000001.pht', do_match=False, do_munifind=False, do_lightcurve=False,
-            do_pos=True, do_pos_resume=True, do_calibrate=True, do_charts=False)
+run_do_rest(init.photometrydir+init.match_with_photometry_file,
+            init.do_match, init.do_munifind, init.do_lightcurve,
+            init.do_pos, init.do_pos_resume, init.do_calibrate,
+            init.do_charts)

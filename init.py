@@ -1,18 +1,16 @@
-import os
-import shutil
-
 codedir = './'
-#os.getcwd()
+
 #basedir = codedir + 'inputfiles/WWCrA_allflat/'
 basedir =  codedir + 'inputfiles/WWCrA2015/'
-fitsdir = basedir + "fits/"
-convfitsdir = basedir + "converted_fits/"
-photometrydir = basedir + "photometry/"
-matchedphotometrydir = basedir + "matched_photometry/"
-resultdir = basedir + "results/"
-lightcurvedir = resultdir + "lightcurves/"
-posdir = resultdir + "positions/"
-worldposdir = resultdir + "world_positions/"
+
+match_with_photometry_file = 'phot000001.pht'
+do_match=False
+do_munifind=False
+do_lightcurve=True
+do_pos=True
+do_pos_resume=False
+do_calibrate=True
+do_charts=False
 
 ### CALIBRATION ###
 reference_frame = 'WWCrA#30V_000184527_FLAT.fit'
@@ -32,8 +30,14 @@ custom_muniwin = range(5776,10000)
 #custom_charts = range(1,5776)
 custom_charts = range(1,2164)
 all_star_list = range(1,138)
-star_list = all
+star_list = thou
 
-def trash_and_recreate_dir(dir):
-    shutil.rmtree(dir, ignore_errors=True)
-    os.makedirs(dir, exist_ok=True)
+# standard directories
+fitsdir = basedir + "fits/"
+convfitsdir = basedir + "converted_fits/"
+photometrydir = basedir + "photometry/"
+matchedphotometrydir = basedir + "matched_photometry/"
+resultdir = basedir + "results/"
+lightcurvedir = resultdir + "lightcurves/"
+posdir = resultdir + "positions/"
+worldposdir = resultdir + "world_positions/"
