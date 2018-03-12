@@ -73,14 +73,16 @@ def get_worldpos_filename(star):
     return init.worldposdir + "worldpos_" + str(star).zfill(5) + ".txt"
 
 # searches for the last written star in the path, and returns a star list including that star so it can be overwritten
-def search_last_star(star_list, the_path):
+def reduce_star_list(star_list, the_path):
+    import re
     the_dir = os.listdir(the_path)
     the_dir.sort()
-    import re
-    m = re.search('\d+',the_dir[-1])
-    last_star = int(m.group(0).lstrip('0'))
-    last_star_index = star_list.index(last_star)
-    return star_list[last_star_index:]
+    found = []
+    for entry in the_dir:
+        m = re.search('\d+',entry)
+        found.append(int(m.group(0).lstrip('0')))
+    print(found)
+    return [item for item in star_list if item not in found]
 
 # read the world positions and return them in a dictionary
 def read_world_positions(the_path):

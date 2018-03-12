@@ -4,7 +4,7 @@ import do_charts
 import do_upsilon
 import reading
 from reading import trash_and_recreate_dir
-from reading import search_last_star
+from reading import reduce_star_list
 import pandas as pd
 import multiprocessing as mp
 import logging
@@ -85,11 +85,11 @@ def write_pos(star, check_stars_list):
     call("munilist -a " + str(init.aperture)+ " -q --obj-plot --object "+ str(star)+ " " + reading.get_pos_filename(star) + " " + init.matchedphotometrydir+'match*.pht >/dev/null', shell=True)
     #end = time.time()
 
-def do_write_pos(star_list, check_stars_list, isResume):
-    if not isResume:
+def do_write_pos(star_list, check_stars_list, is_resume):
+    if not is_resume:
         trash_and_recreate_dir(init.posdir)
     else:
-        star_list = search_last_star(star_list, init.posdir)
+        star_list = reduce_star_list(star_list, init.posdir)
     pool = mp.Pool(init.nr_threads, maxtasksperchild=100)
     func = partial(write_pos, check_stars_list=check_stars_list)
     print("Writing star positions for",len(star_list),"stars into",init.posdir)
@@ -100,7 +100,7 @@ def do_write_curve(star_list, check_stars_list, is_resume):
     if not is_resume:
         trash_and_recreate_dir(init.lightcurvedir)
     else:
-        star_list = search_last_star(star_list, init.lightcurvedir)
+        star_list = reduce_star_list(star_list, init.lightcurvedir)
     pool = mp.Pool(init.nr_threads, maxtasksperchild=100)
     func = partial(write_lightcurve, check_stars_list=check_stars_list)
     print("Writing star lightcurves for",len(star_list),"stars into",init.lightcurvedir)
