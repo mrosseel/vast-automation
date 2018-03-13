@@ -17,11 +17,10 @@ all_star_list = range(1,138)
 
 #basedir = codedir + 'inputfiles/WWCrA_allflat/'
 basedir =  codedir + 'inputfiles/WWCrA2015/'
-match_with_photometry_file = 'phot000001.pht'
 star_list = thou
 nr_threads = multiprocessing.cpu_count() * 2
 
-do_match=False
+do_match=True
 do_munifind=False
 do_lightcurve=False
 do_lightcurve_resume=False
@@ -29,8 +28,8 @@ do_pos=False
 do_pos_resume=False
 do_calibrate=False
 do_upsilon=False
-do_naming=True
-do_charting=True
+do_naming=False
+do_charting=False
 
 ### CALIBRATION ###
 reference_frame = 'WWCrA#30V_000184527_FLAT.fit'

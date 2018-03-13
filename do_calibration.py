@@ -14,11 +14,17 @@ def calibrate():
     #print(w)
     return w
 
-def find_reference_in_files(the_path):
-    the_dir = os.listdir(the_path)
+def find_reference_frame_index():
+    the_dir = os.listdir(init.fitsdir)
     the_dir.sort()
     reference_frame_index = the_dir.index(init.reference_frame)
     return reference_frame_index
+
+# returns 'path + phot????.pht', the photometry file matched with the reference frame
+def find_reference_photometry(reference_frame_index):
+    the_dir = os.listdir(init.photometrydir)
+    the_dir.sort()
+    return init.photometrydir + the_dir[reference_frame_index]
 
 def find_target_star(target_ra_deg, target_dec_deg, nr_results):
     target = SkyCoord(target_ra_deg, target_dec_deg, unit='deg')

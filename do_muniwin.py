@@ -64,7 +64,7 @@ def write_match(base_photometry_file):
 
 def write_munifind():
     print("write munifind")
-    os.system('munifind -a '+str(init.aperture)+' '+init.basedir+'munifind_temp.txt '+init.matchedphotometrydir+'match*')
+    os.system('munifind -a '+str(init.aperture)+' '+init.basedir+'munifind.txt '+init.matchedphotometrydir+'match*')
 
 def write_munifind_check_stars(check_star):
     print("write munifind check stars using check star:", check_star)
@@ -121,9 +121,9 @@ def world_pos(star, wcs, reference_frame_index):
     f = open(reading.get_pos_filename(star))
     pixel_coords = f.readlines()[2+reference_frame_index].split()[1:3]
     f.close()
-    #print("pixel coords read of star", star, pixel_coords)
+    print("pixel coords read of star", star, pixel_coords)
     world_coords = wcs.all_pix2world(float(pixel_coords[0]), float(pixel_coords[1]), 0, ra_dec_order=True)
-    #print("world coords for star", star, world_coords)
+    print("world coords for star", star, world_coords)
     f2 = open(reading.get_worldpos_filename(star), 'w')
     f2.write(str(world_coords[0]) + " " + str(world_coords[1]))
     f2.close()
@@ -132,17 +132,22 @@ def run_determine_reference_frame():
     write_convert_fits()
     write_photometry()
 
-def run_do_rest(reference_phot, do_match, do_munifind, do_lightcurve, do_lightcurve_resume, do_pos, do_pos_resume,
+def run_do_rest(do_match, do_munifind, do_lightcurve, do_lightcurve_resume, do_pos, do_pos_resume,
                 do_calibrate, do_upsilon, do_naming, do_charting):
-    if do_match: write_match(reference_phot)
+    reference_frame_index = do_calibration.find_reference_frame_index()
+
+    if do_match:
+        write_match(do_calibration.find_reference_photometry(reference_frame_index))
 
     if do_munifind:
         write_munifind()
-        check_stars_list = do_best_comparison_stars(12)
-        with open(init.basedir + 'check_stars_list.bin', 'wb') as fp:
-            pickle.dump(check_stars_list, fp)
-        print("check_stars_list: ", check_stars_list)
-        write_munifind_check_stars(check_stars_list[0])
+        # we used to do something clever here, but the results are exactly the same as doing the normal thing.
+        # a bit too exactly even, but for now we just disable it.
+        #check_stars_list = do_best_comparison_stars(12)
+        #with open(init.basedir + 'check_stars_list.bin', 'wb') as fp:
+        #    pickle.dump(check_stars_list, fp)
+        #print("check_stars_list: ", check_stars_list)
+        #write_munifind_check_stars(check_stars_list[0])
     else:
         with open (init.basedir + 'check_stars_list.bin', 'rb') as fp:
             check_stars_list = pickle.load(fp)
@@ -153,7 +158,6 @@ def run_do_rest(reference_phot, do_match, do_munifind, do_lightcurve, do_lightcu
 
     if do_calibrate:
         wcs = do_calibration.calibrate()
-        reference_frame_index = do_calibration.find_reference_in_files(init.fitsdir)
         print("Reference frame index", reference_frame_index)
         do_world_pos(wcs, init.star_list, reference_frame_index)
         df = do_calibration.find_target_star(init.ra_deg, init.dec_deg, 50)
@@ -173,7 +177,6 @@ def run_do_rest(reference_phot, do_match, do_munifind, do_lightcurve, do_lightcu
 #logger = mp.log_to_stderr()
 #logger.setLevel(mp.SUBDEBUG)
 #run_determine_reference_frame()
-run_do_rest(init.photometrydir+init.match_with_photometry_file,
-            init.do_match, init.do_munifind, init.do_lightcurve, init.do_lightcurve_resume,
+run_do_rest(init.do_match, init.do_munifind, init.do_lightcurve, init.do_lightcurve_resume,
             init.do_pos, init.do_pos_resume, init.do_calibrate,
             init.do_upsilon, init.do_naming, init.do_charting)
