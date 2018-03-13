@@ -20,6 +20,8 @@ basedir =  codedir + 'inputfiles/WWCrA2015/'
 star_list = thou
 nr_threads = multiprocessing.cpu_count() * 2
 
+do_convert_fits=True
+do_photometry=True
 do_match=True
 do_munifind=False
 do_lightcurve=False

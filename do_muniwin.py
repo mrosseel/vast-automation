@@ -128,13 +128,15 @@ def world_pos(star, wcs, reference_frame_index):
     f2.write(str(world_coords[0]) + " " + str(world_coords[1]))
     f2.close()
 
-def run_determine_reference_frame():
-    write_convert_fits()
-    write_photometry()
-
-def run_do_rest(do_match, do_munifind, do_lightcurve, do_lightcurve_resume, do_pos, do_pos_resume,
+def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightcurve, do_lightcurve_resume, do_pos, do_pos_resume,
                 do_calibrate, do_upsilon, do_naming, do_charting):
     reference_frame_index = do_calibration.find_reference_frame_index()
+
+    if do_convert_fits:
+        write_convert_fits()
+
+    if do_photometry:
+        write_photometry()
 
     if do_match:
         write_match(do_calibration.find_reference_photometry(reference_frame_index))
@@ -176,7 +178,7 @@ def run_do_rest(do_match, do_munifind, do_lightcurve, do_lightcurve_resume, do_p
 
 #logger = mp.log_to_stderr()
 #logger.setLevel(mp.SUBDEBUG)
-#run_determine_reference_frame()
-run_do_rest(init.do_match, init.do_munifind, init.do_lightcurve, init.do_lightcurve_resume,
+
+run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_munifind, init.do_lightcurve, init.do_lightcurve_resume,
             init.do_pos, init.do_pos_resume, init.do_calibrate,
             init.do_upsilon, init.do_naming, init.do_charting)
