@@ -26,7 +26,7 @@ def read_munifind(filename):
 
 # gets the stars with a maximum of measurements and lowest stdev
 def getBestComparisonStars(nrOfStars):
-    df = read_munifind(init.basedir+'munifind_temp.txt')
+    df = read_munifind(init.basedir+'munifind.txt')
     maxPoints = df['GOODPOINTS'].max()
     df = df[df['GOODPOINTS'] > maxPoints*0.99]
     df_lowest_stdev = df.sort_values('STDEV')
@@ -143,7 +143,7 @@ def run_do_rest(do_match, do_munifind, do_lightcurve, do_lightcurve_resume, do_p
         write_munifind()
         # we used to do something clever here, but the results are exactly the same as doing the normal thing.
         # a bit too exactly even, but for now we just disable it.
-        #check_stars_list = do_best_comparison_stars(12)
+        check_stars_list = do_best_comparison_stars(12)
         #with open(init.basedir + 'check_stars_list.bin', 'wb') as fp:
         #    pickle.dump(check_stars_list, fp)
         #print("check_stars_list: ", check_stars_list)
