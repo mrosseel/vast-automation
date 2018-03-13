@@ -22,8 +22,8 @@ def predict_star_list(all_star_list, output_file):
 
             # Classify the light curve
             label, probability, flag = upsilon.predict(rf_model, features)
-            print("star, label, probability, flag")
-            print(star, label, probability, flag)
+            #print("star, label, probability, flag")
+            #print(star, label, probability, flag)
             full_list.append([star, label, probability, flag])
             #print("result list", my_result_list)
         except:
@@ -36,7 +36,7 @@ def save_results(result_list, output_file):
     df.to_csv(output_file, index=False)
 
 def predict_star(star, limit=-1):
-    print("star:",star)
+    #print("star:",star)
     try:
         df = reading.read_lightcurve(star)
         if(limit > 0):
@@ -49,12 +49,12 @@ def predict_star(star, limit=-1):
         e_features = upsilon.ExtractFeatures(date, mag, err)
         e_features.run()
         features = e_features.get_features()
-        print(features)
+        #print(features)
 
         # Classify the light curve
         label, probability, flag = upsilon.predict(rf_model, features)
-        print("star, label, probability, flag")
-        print(star, label, probability, flag)
+        #print("star, label, probability, flag")
+        #print(star, label, probability, flag)
         return [star, label, probability, flag]
     except:
         print(star, 'error')
