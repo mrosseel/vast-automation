@@ -133,7 +133,7 @@ def run_determine_reference_frame():
     write_photometry()
 
 def run_do_rest(reference_phot, do_match, do_munifind, do_lightcurve, do_lightcurve_resume, do_pos, do_pos_resume,
-                do_calibrate, do_charting, do_detection):
+                do_calibrate, do_upsilon, do_naming, do_charting):
     if do_match: write_match(reference_phot)
 
     if do_munifind:
@@ -160,13 +160,14 @@ def run_do_rest(reference_phot, do_match, do_munifind, do_lightcurve, do_lightcu
         df.to_csv(init.basedir+'distances_from_target_star.csv')
         print(df)
 
-    if do_detection:
+    if do_upsilon:
         do_upsilon.run(init.star_list)
-        matches = do_calibration.findMatch()
+
+    if do_naming:
+        matches = do_calibration.findNames()
 
     if do_charting:
         do_charts.run(matches)
-
 
 
 #logger = mp.log_to_stderr()
@@ -175,4 +176,4 @@ def run_do_rest(reference_phot, do_match, do_munifind, do_lightcurve, do_lightcu
 run_do_rest(init.photometrydir+init.match_with_photometry_file,
             init.do_match, init.do_munifind, init.do_lightcurve, init.do_lightcurve_resume,
             init.do_pos, init.do_pos_resume, init.do_calibrate,
-            init.do_charting, init.do_detection)
+            init.do_upsilon, init.do_naming, init.do_charting)

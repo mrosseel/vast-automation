@@ -69,7 +69,7 @@ def getVSX():
     return result
 
 # returns {'star_id': [label, probability, flag, SkyCoord, match_name, match_skycoord, match_type, separation_deg]}
-def findMatch():
+def findNames():
     vsx = getVSX()
     candidates = getCandidates()
     result = {}

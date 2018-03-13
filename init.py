@@ -28,8 +28,9 @@ do_lightcurve_resume=False
 do_pos=False
 do_pos_resume=False
 do_calibrate=False
+do_upsilon=False
+do_naming=True
 do_charting=True
-do_detection=True
 
 ### CALIBRATION ###
 reference_frame = 'WWCrA#30V_000184527_FLAT.fit'
