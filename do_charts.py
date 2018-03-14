@@ -43,7 +43,7 @@ def plot_lightcurve(tuple, matches):
     #insert counting column
     used_curve.insert(0, 'Count', range(0, len(used_curve)))
     g = sns.lmplot('Count', 'V-C',
-               data=used_curve, size=5, aspect=5,scatter_kws={"s": 50},
+               data=used_curve, size=5, aspect=5,scatter_kws={"s": 10},
                fit_reg=False)
     #print(used_curve.head(10))
     #print(coord.ra.hms, coord.dec.dms)

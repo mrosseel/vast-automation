@@ -15,14 +15,14 @@ all_star_list = range(1,138)
 
 #### SETTINGS for DO_MUNIWIN.PY ####
 
-#basedir = codedir + 'inputfiles/WWCrA_allflat/'
-basedir =  codedir + 'inputfiles/WWCrA2015/'
+basedir = codedir + 'inputfiles/WWCrA_allflat/'
+#basedir =  codedir + 'inputfiles/WWCrA2015/'
 star_list = thou
 nr_threads = multiprocessing.cpu_count() * 2
 
-do_convert_fits=True
-do_photometry=True
-do_match=True
+do_convert_fits=False
+do_photometry=False
+do_match=False
 do_munifind=False
 do_lightcurve=False
 do_lightcurve_resume=False
@@ -30,8 +30,8 @@ do_pos=False
 do_pos_resume=False
 do_calibrate=False
 do_upsilon=False
-do_naming=False
-do_charting=False
+do_naming=True
+do_charting=True
 
 ### CALIBRATION ###
 reference_frame = 'WWCrA#30V_000184527_FLAT.fit'

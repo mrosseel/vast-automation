@@ -129,7 +129,7 @@ def world_pos(star, wcs, reference_frame_index):
     f2.close()
 
 def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightcurve, do_lightcurve_resume, do_pos, do_pos_resume,
-                do_calibrate, do_upsilon, do_naming, do_charting):
+                do_calibrate, do_ml, do_naming, do_charting):
     reference_frame_index = do_calibration.find_reference_frame_index()
 
     if do_convert_fits:
@@ -166,7 +166,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         df.to_csv(init.basedir+'distances_from_target_star.csv')
         print(df)
 
-    if do_upsilon:
+    if do_ml:
         do_upsilon.run(init.star_list)
 
     if do_naming:
