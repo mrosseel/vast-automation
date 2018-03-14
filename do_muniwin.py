@@ -196,6 +196,7 @@ print("Calculating", len(init.star_list), "stars.\n", "convert_fits:", init.do_c
       "\nupsilon:\t", init.do_upsilon,
       "\nnaming:\t\t", init.do_naming,
       "\ncharting:\t", init.do_charting)
+input("Press Enter to continue...")
 run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_munifind, init.do_lightcurve, init.do_lightcurve_resume,
             init.do_pos, init.do_pos_resume, init.do_calibrate,
             init.do_upsilon, init.do_naming, init.do_charting)

@@ -47,7 +47,7 @@ def plot_lightcurve(tuple, matches):
                fit_reg=False)
     #print(used_curve.head(10))
     #print(coord.ra.hms, coord.dec.dms)
-    plt.title('Star '+ str(star) + ' pos: ' + get_hms_dms(coord)  +" - " + str(star_match) + ", " + str(separation))
+    plt.title('Star '+ str(star) + ', ' + str(star_match) +', position: ' + get_hms_dms(coord)  +", distance: " + str(separation))
 
     #plt.xaxis.set_major_formatter(ticker.FuncFormatter(format_date))
     #plt.set_title("Custom tick formatter")
@@ -65,8 +65,8 @@ def plot_lightcurve(tuple, matches):
 #        print("error", tuple)
 
 def get_hms_dms(coord):
-    return str(coord.ra.hms.h) + ' ' + str(coord.ra.hms.m) + ' ' + str(coord.ra.hms.s) + str(coord.dec.dms.d) + ' ' + str(coord.dec.dms.m) + ' ' + str(coord.dec.dms.s)
-
+    return str(coord.ra.hms.h) + ' ' + str(abs(coord.ra.hms.m)) + ' ' + str(abs(round(coord.ra.hms.s, 2))) \
+           + ' | ' + str(coord.dec.dms.d) + ' ' + str(abs(coord.dec.dms.m)) + ' ' + str(abs(round(coord.dec.dms.s, 1)))
 
 def format_date(x, pos=None):
     thisind = np.clip(int(x + 0.5), 0, N - 1)
@@ -85,7 +85,7 @@ def run(matches):
     set_seaborn_style()
     pool = mp.Pool(init.nr_threads)
     print("Reading star positions, total size = ",len(star_list))
-    for _ in tqdm.tqdm(pool.imap_unordered(store_curve_and_pos, star_list), total=len(init.all_star_list)):
+    for _ in tqdm.tqdm(pool.imap_unordered(store_curve_and_pos, star_list), total=len(star_list)):
         curve_and_pos.append(_)
         pass
     print("Plotting stars, total size = ",len(curve_and_pos))

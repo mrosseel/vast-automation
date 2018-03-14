@@ -46,16 +46,12 @@ def find_target_stars(max_deg_separation):
     df.sort_values(by='deg_separation', inplace=True)
     return df[:nr_results]
 
-def getVSX():
-    payload = {'key1': 'value1', 'key2': 'value2'}
-    r = requests.get('https://api.github.com/user', params=payload)
-
 # returns [star_id, label, probability, flag, SkyCoord]
-def getCandidates():
+def getCandidates(threshold_prob=0.5):
     df = pd.DataFrame.from_csv(init.basedir+'upsilon_output.txt')
     df.sort_values(by='probability', ascending=False)
     df=df[df['label'] != 'NonVar']
-    df=df[df["probability"] > 0.50]
+    df=df[df["probability"] > threshold_prob    ]
     df=df[df["flag"] != 1]
     positions=reading.read_world_positions(init.worldposdir)
     result = []
@@ -65,9 +61,9 @@ def getCandidates():
     return result
 
 # returns [index, skycoord, type]
-def getVSX():
+def getVSX(the_file):
     result = []
-    df = pd.DataFrame.from_csv(init.basedir+'SearchResults.csv')
+    df = pd.DataFrame.from_csv(the_file)
     #print(df.head())
     for index, row in df.iterrows():
         skycoord = SkyCoord(row['Coords'], unit=(u.hourangle, u.deg))
@@ -75,9 +71,10 @@ def getVSX():
     return result
 
 # returns {'star_id': [label, probability, flag, SkyCoord, match_name, match_skycoord, match_type, separation_deg]}
-def findNames():
-    vsx = getVSX()
-    candidates = getCandidates()
+def findNames(threshold_prob_candidates=0.5):
+    vsx = getVSX(init.basedir+'SearchResults.csv')
+    candidates = getCandidates(threshold_prob_candidates)
+    print("Got", len(candidates), "candidates and", len(vsx), "stars to check against.")
     result = {}
     for candidate in candidates:
         best_sep_deg = 360
