@@ -146,8 +146,8 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         # we used to do something clever here, but the results are exactly the same as doing the normal thing.
         # a bit too exactly even, but for now we just disable it.
         check_stars_list = do_best_comparison_stars(12)
-        #with open(init.basedir + 'check_stars_list.bin', 'wb') as fp:
-        #    pickle.dump(check_stars_list, fp)
+        with open(init.basedir + 'check_stars_list.bin', 'wb') as fp:
+           pickle.dump(check_stars_list, fp)
         #print("check_stars_list: ", check_stars_list)
         #write_munifind_check_stars(check_stars_list[0])
     else:
@@ -171,14 +171,30 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
 
     if do_naming:
         matches = do_calibration.findNames()
+        with open(init.basedir + 'matches.bin', 'wb') as fp:
+            pickle.dump(matches, fp)
+    else:
+        with open(init.basedir + 'matches.bin', 'wb') as fp:
+            matches = pickle.load(fp)
 
     if do_charting:
-        do_charts.run(matches)
+            do_charts.run(matches)
 
 
 #logger = mp.log_to_stderr()
 #logger.setLevel(mp.SUBDEBUG)
 
+print("Calculating", len(init.star_list), "stars.\n", "init.do_convert_fits", init.do_convert_fits,
+      "photometry", init.do_photometry,
+      "match", init.do_match,
+      "munifind", init.do_munifind,
+      "lightcurve", init.do_lightcurve,
+      "lightcurve_resume",init.do_lightcurve_resume,
+      "pos", init.do_pos,
+      "pos_resume", init.do_pos_resume, init.do_calibrate,init.do_calibrate,
+      "upsilon", init.do_upsilon,
+      "naming", init.do_naming,
+      "charting", init.do_charting)
 run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_munifind, init.do_lightcurve, init.do_lightcurve_resume,
             init.do_pos, init.do_pos_resume, init.do_calibrate,
             init.do_upsilon, init.do_naming, init.do_charting)

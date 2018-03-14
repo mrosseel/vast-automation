@@ -10,7 +10,7 @@ Once you're in this VM, all python commands can be run.
 * docker build . -t miker/jupyter
 * cd ..
 * command: `./startJupyter.sh`
-* the startjupyter command returns a docker_id, copy it.
+* the startjupyter command returns a *docker_id*, copy it.
 * command: `docker exec -it docker_id bash`
 
 ##Command line usage
@@ -26,20 +26,22 @@ Once you're in this VM, all python commands can be run.
 
 ###File overview
 
-* init.py : directory settings, stars to chart settings, ...
+* init.py : directory settings, processing settings
 * do_muniwin.py : start all
 * do_charts.py : only do charts
 * do_upsilon.py : only do machine learning detection
 * do_profile.py : do performance profiling on the app (not sure if working)
 
-##Jupyter usage (deprecated)
-* command: `jupyter notebook list`
-* open browser with the provided url
+##Jupyter lab usage
 
+The docker image also exposes a Jupyter lab instance on port 8888
+
+## Other
+
+* AAVSO VSX catalog can be downloaded here: http://cdsarc.u-strasbg.fr/viz-bin/Cat?cat=B%2Fvsx%2Fversions%2F2018-02-26&target=brief&
 
 ## TODO
 
-- calculate star position
 - new ensemble comparison star calculation?
-- capture upsilon extra data (minimum = period) to identify the main star?
+- capture upsilon extra data (minimum = period) ?
 - check error column for any stars having error bars > 1%
