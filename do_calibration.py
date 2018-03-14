@@ -80,13 +80,14 @@ def findNames():
     candidates = getCandidates()
     result = {}
     for candidate in candidates:
-        best_sep = 360
+        best_sep_deg = 360
+        best_sep_string = ""
         best_var = None
         for variable in vsx:
-            sep_deg = candidate[4].separation(variable[1]).degree
-            if(sep_deg < best_sep):
-                best_sep = sep_deg
+            sep = candidate[4].separation(variable[1])
+            if(sep.degree < best_sep_deg):
+                best_sep_deg = sep.degree
+                best_sep_string = sep.to_string()
                 best_var = variable
-        #candidate.append([best_var[0],best_var[1],best_var[2],best_sep])
-        result[candidate[0]] = [candidate[1],candidate[2],candidate[3],candidate[4],best_var[0],best_var[1],best_var[2],best_sep]
+        result[candidate[0]] = [candidate[1],candidate[2],candidate[3],candidate[4],best_var[0],best_var[1],best_var[2],best_sep_deg, best_sep_string]
     return result

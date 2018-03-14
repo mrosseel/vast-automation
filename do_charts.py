@@ -24,7 +24,7 @@ def plot_lightcurve(tuple, matches):
     curve = tuple[1]
     pos = tuple[2]
     star_match = matches[star][4]
-    separation = matches[star][7]
+    separation = matches[star][8]
     coord = SkyCoord(pos[0], pos[1], unit='deg')
 
     if(curve is None):
@@ -47,7 +47,7 @@ def plot_lightcurve(tuple, matches):
                fit_reg=False)
     #print(used_curve.head(10))
     #print(coord.ra.hms, coord.dec.dms)
-    plt.title('Star '+ str(star) + " : " + str(coord.ra.hms) + ' - ' + str(coord.dec.dms) + " - " + str(star_match) + ", " + str(separation))
+    plt.title('Star '+ str(star) + ' pos: ' + get_hms_dms(coord)  +" - " + str(star_match) + ", " + str(separation))
 
     #plt.xaxis.set_major_formatter(ticker.FuncFormatter(format_date))
     #plt.set_title("Custom tick formatter")
@@ -63,6 +63,10 @@ def plot_lightcurve(tuple, matches):
     plt.close(g.fig)
 #    except:
 #        print("error", tuple)
+
+def get_hms_dms(coord):
+    return str(coord.ra.hms.h) + ' ' + str(coord.ra.hms.m) + ' ' + str(coord.ra.hms.s) + str(coord.dec.dms.d) + ' ' + str(coord.dec.dms.m) + ' ' + str(coord.dec.dms.s)
+
 
 def format_date(x, pos=None):
     thisind = np.clip(int(x + 0.5), 0, N - 1)

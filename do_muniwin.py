@@ -1,7 +1,6 @@
 import init
 import do_calibration
 import do_charts
-import do_upsilon
 import reading
 from reading import trash_and_recreate_dir
 from reading import reduce_star_list
@@ -167,6 +166,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         print(df)
 
     if do_ml:
+        import do_upsilon # do it here because it takes some time at startup
         do_upsilon.run(init.star_list)
 
     if do_naming:
