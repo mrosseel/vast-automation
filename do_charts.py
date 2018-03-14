@@ -35,7 +35,7 @@ def plot_lightcurve(tuple, matches):
     curve_min = curve['V-C'].min()
     curve_max = curve['V-C'].max()
     curve2_norm = curve
-    print("star, min, max:",star, curve_min,curve_max)
+    #print("star, min, max:",star, curve_min,curve_max)
     curve2_norm['V-C'] = curve['V-C'] - curve_min
 
     used_curve = curve2_norm
@@ -43,7 +43,7 @@ def plot_lightcurve(tuple, matches):
     #insert counting column
     used_curve.insert(0, 'Count', range(0, len(used_curve)))
     g = sns.lmplot('Count', 'V-C',
-               data=used_curve, size=5, aspect=5,scatter_kws={"s": 10},
+               data=used_curve, size=20, aspect=5,scatter_kws={"s": 10},
                fit_reg=False)
     #print(used_curve.head(10))
     #print(coord.ra.hms, coord.dec.dms)

@@ -174,7 +174,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         with open(init.basedir + 'matches.bin', 'wb') as fp:
             pickle.dump(matches, fp)
     else:
-        with open(init.basedir + 'matches.bin', 'wb') as fp:
+        with open(init.basedir + 'matches.bin', 'rb') as fp:
             matches = pickle.load(fp)
 
     if do_charting:
@@ -184,17 +184,18 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
 #logger = mp.log_to_stderr()
 #logger.setLevel(mp.SUBDEBUG)
 
-print("Calculating", len(init.star_list), "stars.\n", "init.do_convert_fits", init.do_convert_fits,
-      "photometry", init.do_photometry,
-      "match", init.do_match,
-      "munifind", init.do_munifind,
-      "lightcurve", init.do_lightcurve,
-      "lightcurve_resume",init.do_lightcurve_resume,
-      "pos", init.do_pos,
-      "pos_resume", init.do_pos_resume, init.do_calibrate,init.do_calibrate,
-      "upsilon", init.do_upsilon,
-      "naming", init.do_naming,
-      "charting", init.do_charting)
+print("Calculating", len(init.star_list), "stars.\n", "convert_fits:", init.do_convert_fits,
+      "\nphotometry:\t", init.do_photometry,
+      "\nmatch:\t\t", init.do_match,
+      "\nmunifind:\t", init.do_munifind,
+      "\nlightcurve:\t", init.do_lightcurve,
+      "\nlightcurve_res:\t",init.do_lightcurve_resume,
+      "\npos:\t\t", init.do_pos,
+      "\npos_resume:\t", init.do_pos_resume, 
+      "\ncalibrate:\t", init.do_calibrate,
+      "\nupsilon:\t", init.do_upsilon,
+      "\nnaming:\t\t", init.do_naming,
+      "\ncharting:\t", init.do_charting)
 run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_munifind, init.do_lightcurve, init.do_lightcurve_resume,
             init.do_pos, init.do_pos_resume, init.do_calibrate,
             init.do_upsilon, init.do_naming, init.do_charting)
