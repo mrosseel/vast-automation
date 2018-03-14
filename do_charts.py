@@ -15,7 +15,7 @@ import init
 from reading import trash_and_recreate_dir
 
 def set_seaborn_style():
-    sns.set_context("notebook", font_scale=1.1)
+    sns.set_context("notebook", font_scale=4)
     sns.set_style("ticks")
 
 def plot_lightcurve(tuple, matches):
