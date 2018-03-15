@@ -45,3 +45,7 @@ The docker image also exposes a Jupyter lab instance on port 8888
 - new ensemble comparison star calculation?
 - capture upsilon extra data (minimum = period) ?
 - check error column for any stars having error bars > 1%
+
+## References
+
+* https://books.google.ae/books?id=g_K3-bQ8lTUC&pg=PA236&lpg=PA236&dq=munipack+aperture&source=bl&ots=P4BKKI25HG&sig=Lj9Kg6EZi2pwKZXK5Hk5_B4qcVg&hl=en&sa=X&ved=0ahUKEwj4qr6o4evZAhWILcAKHdtnAqYQ6AEIRDAE#v=onepage&q&f=false

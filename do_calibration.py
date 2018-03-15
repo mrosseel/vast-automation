@@ -26,6 +26,11 @@ def find_reference_photometry(reference_frame_index):
     the_dir.sort()
     return init.photometrydir + the_dir[reference_frame_index]
 
+def find_reference_matched(reference_frame_index):
+    the_dir = os.listdir(init.matchedphotometrydir)
+    the_dir.sort()
+    return init.matchedphotometrydir + the_dir[reference_frame_index]
+
 def find_target_star(target_ra_deg, target_dec_deg, nr_results):
     target = SkyCoord(target_ra_deg, target_dec_deg, unit='deg')
     result_dict = reading.read_world_positions(init.worldposdir)

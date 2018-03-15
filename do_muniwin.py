@@ -77,20 +77,20 @@ def write_lightcurve(star, check_stars_list):
 
 
 #TODO add check stars to this command?
-def write_pos(star, check_stars_list):
+def write_pos(star, check_stars_list, matched_reference_frame):
     #start = time.time()
     #check_stars = join_check_stars(check_stars_list, star)
     #os.system("munilist -a " + str(init.aperture)+ " -q --obj-plot --object "+ str(star)+ " " + get_pos_filename(star) + " " + init.matchedphotometrydir+'match*.pht >/dev/null')
-    call("munilist -a " + str(init.aperture)+ " -q --obj-plot --object "+ str(star)+ " " + reading.get_pos_filename(star) + " " + init.matchedphotometrydir+'match*.pht >/dev/null', shell=True)
+    call("munilist -a " + str(init.aperture)+ " -q --obj-plot --object "+ str(star)+ " " + reading.get_pos_filename(star) + " " + matched_reference_frame +' >/dev/null', shell=True)
     #end = time.time()
 
-def do_write_pos(star_list, check_stars_list, is_resume):
+def do_write_pos(star_list, check_stars_list, is_resume, matched_reference_frame):
     if not is_resume:
         trash_and_recreate_dir(init.posdir)
     else:
         star_list = reduce_star_list(star_list, init.posdir)
     pool = mp.Pool(init.nr_threads, maxtasksperchild=100)
-    func = partial(write_pos, check_stars_list=check_stars_list)
+    func = partial(write_pos, check_stars_list=check_stars_list, matched_reference_frame=matched_reference_frame)
     print("Writing star positions for",len(star_list),"stars into",init.posdir)
     for _ in tqdm.tqdm(pool.imap_unordered(func, star_list, 10), total=len(star_list)):
         pass
@@ -155,12 +155,12 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
 
     if do_lightcurve: do_write_curve(init.star_list, check_stars_list, do_lightcurve_resume)
 
-    if do_pos: do_write_pos(init.star_list, check_stars_list, do_pos_resume)
+    if do_pos: do_write_pos(init.star_list, check_stars_list, do_pos_resume, do_calibration.find_reference_matched(reference_frame_index))
 
     if do_calibrate:
         wcs = do_calibration.calibrate()
         print("Reference frame index", reference_frame_index)
-        do_world_pos(wcs, init.star_list, reference_frame_index)
+        do_world_pos(wcs, init.star_list, 0) # pass 0 for reference_frame_index because we only write one position
         df = do_calibration.find_target_star(init.ra_deg, init.dec_deg, 50)
         df.to_csv(init.basedir+'distances_from_target_star.csv')
         print(df)
