@@ -77,7 +77,7 @@ def getVSX(the_file):
     return result
 
 # returns {'star_id': [label, probability, flag, SkyCoord, match_name, match_skycoord, match_type, separation_deg]}
-def find_vsx_for_upsilon_candidates(threshold_prob_candidates=0.5):
+def find_vsx_for_upsilon_candidates(threshold_prob_candidates=0.5, max_separation=0.01):
     vsx = getVSX(init.basedir+'SearchResults.csv')
     candidates = getCandidates(threshold_prob_candidates)
     print("Got", len(candidates), "candidates and", len(vsx), "stars to check against.")
@@ -88,7 +88,7 @@ def find_vsx_for_upsilon_candidates(threshold_prob_candidates=0.5):
         best_var = None
         for variable in vsx:
             sep = candidate[4].separation(variable[1])
-            if(sep.degree < best_sep_deg):
+            if(sep.degree < max_separation and sep.degree < best_sep_deg):
                 best_sep_deg = sep.degree
                 best_sep_string = sep.to_string()
                 best_var = variable
