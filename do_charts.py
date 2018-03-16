@@ -18,13 +18,19 @@ def set_seaborn_style():
     sns.set_context("notebook", font_scale=4)
     sns.set_style("ticks")
 
-def plot_lightcurve(tuple, matches):
+# takes:  [ {'id': star_id, 'match': {'name': match_name, 'separation': separation_deg  } } ]
+def plot_lightcurve(tuple):
 #    try:
     star = tuple[0]
     curve = tuple[1]
     pos = tuple[2]
-    star_match = matches[star][4]
-    separation = matches[star][8]
+    if len(tuple) == 4:
+        star_match = chart_object['match']['name']
+        separation = chart_object['match']['separation']
+    else:
+        star_match = ''
+        separation = ''
+
     coord = SkyCoord(pos[0], pos[1], unit='deg')
 
     if(curve is None):
@@ -39,14 +45,13 @@ def plot_lightcurve(tuple, matches):
     curve2_norm['V-C'] = curve['V-C'] - curve_min
 
     used_curve = curve2_norm
+    used_curve_max = curve2_norm.max()
 
     #insert counting column
     used_curve.insert(0, 'Count', range(0, len(used_curve)))
     g = sns.lmplot('Count', 'V-C',
                data=used_curve, size=20, aspect=5,scatter_kws={"s": 10},
                fit_reg=False)
-    #print(used_curve.head(10))
-    #print(coord.ra.hms, coord.dec.dms)
     plt.title('Star '+ str(star) + ', ' + str(star_match) +', position: ' + get_hms_dms(coord)  +", distance: " + str(separation))
 
     #plt.xaxis.set_major_formatter(ticker.FuncFormatter(format_date))
@@ -54,7 +59,7 @@ def plot_lightcurve(tuple, matches):
     #fig.autofmt_xdate()
     plt.xlabel('Count')
     plt.ylabel('Mag relative to minimum ' + str(curve_max))
-    plt.ylim(2,0)
+    plt.ylim(max(2, used_curve_max),0)
     plt.xlim(0, len(used_curve))
     plt.gca().invert_yaxis()
     #g.map(plt.errorbar, used_curve['Count'], used_curve['V-C'], yerr=used_curve['s1'], fmt='o')
@@ -72,24 +77,32 @@ def format_date(x, pos=None):
     thisind = np.clip(int(x + 0.5), 0, N - 1)
     return r.date[thisind].strftime('%Y-%m-%d')
 
-def store_curve_and_pos(star):
+def store_curve_and_pos(chart_object):
     try:
+        print(chart_object)
+        star = chart_object['id']
         tuple = star, reading.read_lightcurve(star,filter=False), reading.read_worldpos(star)
+        if 'match' in chart_object.keys():
+            tuple= tuple + chart_object['match']
         return tuple
     except FileNotFoundError:
         print("File not found error in store and curve for star", star)
 
+# takes:  [ {'id': star_id, 'match': {'name': match_name, 'separation': separation_deg  } } ]
 def run(matches):
     star_list = [*matches] # unpack
     curve_and_pos = []
     set_seaborn_style()
     pool = mp.Pool(init.nr_threads)
     print("Reading star positions, total size = ",len(star_list))
-    for _ in tqdm.tqdm(pool.imap_unordered(store_curve_and_pos, star_list), total=len(star_list)):
+
+    func = partial(store_curve_and_pos)
+    for _ in tqdm.tqdm(pool.imap_unordered(func, star_list), total=len(star_list)):
         curve_and_pos.append(_)
         pass
     print("Plotting stars, total size = ",len(curve_and_pos))
     trash_and_recreate_dir(init.chartsdir)
-    func = partial(plot_lightcurve, matches=matches)
+
+    func = partial(plot_lightcurve)
     for _ in tqdm.tqdm(pool.imap_unordered(func, curve_and_pos), total=len(curve_and_pos)):
         pass

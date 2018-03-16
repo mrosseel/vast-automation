@@ -170,21 +170,28 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         do_upsilon.run(init.star_list)
 
     if do_naming:
-        matches = do_calibration.findNames()
+        matches = do_calibration.find_vsx_for_upsilon_candidates()
         with open(init.basedir + 'matches.bin', 'wb') as fp:
             pickle.dump(matches, fp)
     else:
         with open(init.basedir + 'matches.bin', 'rb') as fp:
             matches = pickle.load(fp)
 
+
     if do_charting:
-            do_charts.run(matches)
+        # matches: {'star_id': [label, probability, flag, SkyCoord, match_name, match_skycoord, match_type, separation_deg]}
+        # chart_objects:  [ {'id': star_id, 'match': {'name': match_name, 'separation': separation_deg  } } ]
+        chart_objects = []
+        for key in matches:
+            chart_objects.append({'id': key, 'match': {'name': matches[key][4], 'separation':matches[key][7]} })
+
+        do_charts.run(chart_objects)
 
 
 #logger = mp.log_to_stderr()
 #logger.setLevel(mp.SUBDEBUG)
 
-print("Calculating", len(init.star_list), "stars.\n", "convert_fits:", init.do_convert_fits,
+print("Calculating", len(init.star_list), "stars.", "\nconvert_fits:\t", init.do_convert_fits,
       "\nphotometry:\t", init.do_photometry,
       "\nmatch:\t\t", init.do_match,
       "\nmunifind:\t", init.do_munifind,
