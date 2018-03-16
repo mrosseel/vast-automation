@@ -92,7 +92,10 @@ def find_vsx_for_upsilon_candidates(threshold_prob_candidates=0.5, max_separatio
                 best_sep_deg = sep.degree
                 best_sep_string = sep.to_string()
                 best_var = variable
-        result[candidate[0]] = [candidate[1],candidate[2],candidate[3],candidate[4],best_var[0],best_var[1],best_var[2],best_sep_deg, best_sep_string]
+        if best_var == None:
+            result[candidate[0]] = [candidate[1],candidate[2],candidate[3],candidate[4],'','','',best_sep_deg, best_sep_string]
+        else:
+            result[candidate[0]] = [candidate[1],candidate[2],candidate[3],candidate[4],best_var[0],best_var[1],best_var[2],best_sep_deg, best_sep_string]
     return result
 
 # Takes in a list of known variables and maps them to the munipack-generated star numbers
