@@ -99,7 +99,7 @@ def find_vsx_for_upsilon_candidates(threshold_prob_candidates=0.5):
 # usage:
 # vsx = getVSX(init.basedir+'SearchResults.csv')
 # detections = reading.read_world_positions(init.worldposdir)
-# returns { 'name of VSX variable': [VSX_var_SkyCoord, best_separation_degrees, best_separation_string, best_starfit] }
+# returns { 'name of VSX variable': [VSX_var_SkyCoord, best_starfit, best_separation] }
 def find_star_for_known_vsx(vsx, detections, max_separation=0.01):
     ra2 = np.array([])
     dec2 = np.array([])

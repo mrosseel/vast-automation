@@ -25,8 +25,8 @@ def plot_lightcurve(tuple):
     curve = tuple[1]
     pos = tuple[2]
     if len(tuple) == 4:
-        star_match = chart_object['match']['name']
-        separation = chart_object['match']['separation']
+        star_match = tuple[3]['name']
+        separation = tuple[3]['separation']
     else:
         star_match = ''
         separation = ''
@@ -45,7 +45,7 @@ def plot_lightcurve(tuple):
     curve2_norm['V-C'] = curve['V-C'] - curve_min
 
     used_curve = curve2_norm
-    used_curve_max = curve2_norm.max()
+    used_curve_max = curve2_norm['V-C'].max()
 
     #insert counting column
     used_curve.insert(0, 'Count', range(0, len(used_curve)))
@@ -83,7 +83,7 @@ def store_curve_and_pos(chart_object):
         star = chart_object['id']
         tuple = star, reading.read_lightcurve(star,filter=False), reading.read_worldpos(star)
         if 'match' in chart_object.keys():
-            tuple= tuple + chart_object['match']
+            tuple= tuple + (chart_object['match'],)
         return tuple
     except FileNotFoundError:
         print("File not found error in store and curve for star", star)
@@ -100,9 +100,9 @@ def run(matches):
     for _ in tqdm.tqdm(pool.imap_unordered(func, star_list), total=len(star_list)):
         curve_and_pos.append(_)
         pass
+
     print("Plotting stars, total size = ",len(curve_and_pos))
     trash_and_recreate_dir(init.chartsdir)
-
     func = partial(plot_lightcurve)
     for _ in tqdm.tqdm(pool.imap_unordered(func, curve_and_pos), total=len(curve_and_pos)):
         pass

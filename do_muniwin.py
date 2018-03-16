@@ -177,13 +177,24 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         with open(init.basedir + 'matches.bin', 'rb') as fp:
             matches = pickle.load(fp)
 
+    chart_matches = False
+    chart_vsx = True
 
     if do_charting:
-        # matches: {'star_id': [label, probability, flag, SkyCoord, match_name, match_skycoord, match_type, separation_deg]}
-        # chart_objects:  [ {'id': star_id, 'match': {'name': match_name, 'separation': separation_deg  } } ]
         chart_objects = []
-        for key in matches:
-            chart_objects.append({'id': key, 'match': {'name': matches[key][4], 'separation':matches[key][7]} })
+        if chart_vsx:
+            vsx = do_calibration.getVSX(init.basedir+'SearchResults.csv')
+            detections = reading.read_world_positions(init.worldposdir)
+            # returns { 'name of VSX variable': [VSX_var_SkyCoord, best_separation_degrees, best_separation_string, best_starfit] }
+            result = do_calibration.find_star_for_known_vsx(vsx, detections)
+            for key in result:
+                chart_objects.append({'id': result[key][1], 'match': {'name': key, 'separation':result[key][2]} })
+
+        if chart_matches:
+            # matches: {'star_id': [label, probability, flag, SkyCoord, match_name, match_skycoord, match_type, separation_deg]}
+            # chart_objects:  [ {'id': star_id, 'match': {'name': match_name, 'separation': separation_deg  } } ]
+            for key in matches:
+                chart_objects.append({'id': key, 'match': {'name': matches[key][4], 'separation':matches[key][7]} })
 
         do_charts.run(chart_objects)
 
