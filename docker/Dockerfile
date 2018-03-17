@@ -13,7 +13,7 @@ RUN cd cmunipack-2.1.24 && chmod +x ./configure && ./configure && make && make i
 USER $NB_USER
 RUN pip install --upgrade pip
 RUN pip install numpy
-RUN pip install astropy pyreadline pyfftw tqdm photutils
+RUN pip install astropy pyreadline pyfftw tqdm photutils gatspy
 # needs at least scikit 0.18.1
 #RUN pip install --upgrade scikit-learn matplotlib
 RUN conda update -y scikit-learn matplotlib

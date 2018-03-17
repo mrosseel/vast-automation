@@ -7,6 +7,8 @@ from astropy import units as u
 import pandas as pd
 import numpy as np
 import requests
+from gatspy.periodic import LombScargleFast
+import matplotlib.pyplot as plt
 
 def calibrate():
     w = WCS(init.reference_header)
@@ -125,8 +127,6 @@ def find_star_for_known_vsx(vsx, detections, max_separation=0.01):
     return result
 
 def calculate_phase_diagram(star):
-    from gatspy.periodic import LombScargleFast
-    import matplotlib.pyplot as plt
     curve = reading.read_lightcurve(star)
     if curve is None:
         return
