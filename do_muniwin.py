@@ -130,6 +130,23 @@ def world_pos(star, wcs, reference_frame_index):
 def add_chart_object(chart_objects, id, match):
     chart_objects.append({'id': id, 'match': match })
 
+def get_chart_objects_vsx():
+    chart_objects = []
+    vsx = do_calibration.getVSX(init.basedir+'SearchResults.csv')
+    detections = reading.read_world_positions(init.worldposdir)
+    # returns { 'name of VSX variable': [VSX_var_SkyCoord, best_separation_degrees, best_separation_string, best_starfit] }
+    result = do_calibration.find_star_for_known_vsx(vsx, detections)
+    for key in result:
+        add_chart_object(chart_objects, result[key][1], {'name': key, 'separation':result[key][2]})
+    return chart_objects
+
+def get_chart_objects_matches(matches):
+    # matches: {'star_id': [label, probability, flag, SkyCoord, match_name, match_skycoord, match_type, separation_deg]}
+    # chart_objects:  [ {'id': star_id, 'match': {'name': match_name, 'separation': separation_deg  } } ]
+    for key in matches:
+        add_chart_object(chart_objects, key,{'name': matches[key][4], 'separation':matches[key][7]})
+
+
 def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightcurve, do_lightcurve_resume, do_pos, do_pos_resume,
                 do_calibrate, do_ml, do_naming, do_charting, do_phase_diagram):
     reference_frame_index = do_calibration.find_reference_frame_index()
@@ -184,29 +201,22 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     chart_vsx = True
 
     chart_objects = []
+    if chart_vsx:
+        chart_objects = get_chart_objects_vsx()
+
+    if chart_matches:
+        chart_objects = get_chart_objects_matches(matches)
+
+    if False:
+        add_chart_object(chart_objects, 227, None)
+
     if do_charting:
-        if chart_vsx:
-            vsx = do_calibration.getVSX(init.basedir+'SearchResults.csv')
-            detections = reading.read_world_positions(init.worldposdir)
-            # returns { 'name of VSX variable': [VSX_var_SkyCoord, best_separation_degrees, best_separation_string, best_starfit] }
-            result = do_calibration.find_star_for_known_vsx(vsx, detections)
-            for key in result:
-                add_chart_object(chart_objects, result[key][1], {'name': key, 'separation':result[key][2]})
-
-        if chart_matches:
-            # matches: {'star_id': [label, probability, flag, SkyCoord, match_name, match_skycoord, match_type, separation_deg]}
-            # chart_objects:  [ {'id': star_id, 'match': {'name': match_name, 'separation': separation_deg  } } ]
-            for key in matches:
-                add_chart_object(chart_objects, key,{'name': matches[key][4], 'separation':matches[key][7]})
-
         do_charts.run(chart_objects)
 
     if do_phase_diagram:
-        add_chart_object(chart_objects, 227, None)
         trash_and_recreate_dir(init.phasedir)
         for entry in chart_objects:
             do_calibration.calculate_phase_diagram(entry['id'])
-
 
 #logger = mp.log_to_stderr()
 #logger.setLevel(mp.SUBDEBUG)
