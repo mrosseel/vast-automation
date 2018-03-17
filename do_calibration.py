@@ -124,3 +124,28 @@ def find_star_for_known_vsx(vsx, detections, max_separation=0.01):
     print("Found", len(result), "matches")
     return result
 
+def calculate_phase_diagram(star):
+    from gatspy.periodic import LombScargleFast
+    import matplotlib.pyplot as plt
+    curve = reading.read_lightcurve(star)
+    if curve is None:
+        return
+    t_np = curve['JD'].as_matrix()
+    y_np = curve['V-C'].as_matrix()
+    dy_np = curve['s1'].as_matrix()
+    ls = LombScargleFast()
+    ls.optimizer.period_range = (0.1,10)
+    ls.fit(t_np,y_np)
+    period = ls.best_period
+    print("Best period: " + str(period) + " days")
+    # periodogramm
+    periods = np.linspace(0.1,10,1000)
+    scores = ls.score(periods)
+    fig=plt.figure(figsize=(18, 16), dpi= 80, facecolor='w', edgecolor='k')
+    plt.xlabel("Phase")
+    plt.ylabel("Diff mag")
+    plt.title("Lomb-Scargle-Periodogram for star "+str(star)+" period: " + str(period))
+    phased_t = np.fmod(t_np/period,1)
+    phased_lc = y_np[:]
+    plt.errorbar(phased_t,phased_lc,yerr=dy_np,linestyle='none',marker='o')
+    fig.savefig(init.phasedir+'phase'+str(star).zfill(5))

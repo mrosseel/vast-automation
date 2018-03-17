@@ -62,7 +62,7 @@ def plot_lightcurve(tuple):
     plt.ylim(max(2, used_curve_max),0)
     plt.xlim(0, len(used_curve))
     plt.gca().invert_yaxis()
-    #g.map(plt.errorbar, used_curve['Count'], used_curve['V-C'], yerr=used_curve['s1'], fmt='o')
+    #g.map(plt.errorbar, 'Count', 'V-C', yerr='s1', fmt='o')
     #plt.ticklabel_format(style='plain', axis='x')
     g.savefig(init.chartsdir+str(star).zfill(5) )
     plt.close(g.fig)

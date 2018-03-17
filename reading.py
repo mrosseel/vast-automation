@@ -6,10 +6,10 @@ import numpy as np
 import sys
 import errno
 
-def read_lightcurve(star,filter=True,preprocess=True):
+def read_lightcurve(star,filter=True,preprocess=True, directory=init.lightcurvedir):
     try:
         #print("Reading lightcurve", star, init.lightcurve_dir + 'curve_' + str(star).zfill(5) + '.txt')
-        df = pd.read_csv(init.lightcurvedir + 'curve_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
+        df = pd.read_csv(directory + 'curve_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
         if(filter):
             df = df[df['V-C'] < 99]
         if(preprocess):

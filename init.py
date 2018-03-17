@@ -15,8 +15,8 @@ all_star_list = range(1,138)
 
 #### SETTINGS for DO_MUNIWIN.PY ####
 
-basedir = codedir + 'inputfiles/WWCrA_allflat/'
-#basedir =  codedir + 'inputfiles/WWCrA2015/'
+#basedir = codedir + 'inputfiles/WWCrA_allflat/'
+basedir =  codedir + 'inputfiles/WWCrA2015/'
 star_list = thou
 nr_threads = multiprocessing.cpu_count() * 2
 
@@ -30,8 +30,9 @@ do_pos=False
 do_pos_resume=False
 do_calibrate=False
 do_upsilon=False
-do_naming=True
-do_charting=True
+do_naming=False
+do_charting=False
+do_phase_diagram=True
 
 ### CALIBRATION ###
 reference_frame = 'WWCrA#30V_000184527_FLAT.fit'
@@ -51,4 +52,5 @@ lightcurvedir = resultdir + "lightcurves/"
 posdir = resultdir + "positions/"
 worldposdir = resultdir + "world_positions/"
 chartsdir = resultdir + "charts/"
+phasedir = resultdir + "phasediagrams/"
 #### DO NOT TOUCH ####
