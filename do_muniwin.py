@@ -141,11 +141,12 @@ def get_chart_objects_vsx():
     return chart_objects
 
 def get_chart_objects_matches(matches):
+    chart_objects = []
     # matches: {'star_id': [label, probability, flag, SkyCoord, match_name, match_skycoord, match_type, separation_deg]}
     # chart_objects:  [ {'id': star_id, 'match': {'name': match_name, 'separation': separation_deg  } } ]
     for key in matches:
         add_chart_object(chart_objects, key,{'name': matches[key][4], 'separation':matches[key][7]})
-
+    return chart_objects
 
 def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightcurve, do_lightcurve_resume, do_pos, do_pos_resume,
                 do_calibrate, do_ml, do_naming, do_charting, do_phase_diagram):
@@ -197,8 +198,8 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         with open(init.basedir + 'matches.bin', 'rb') as fp:
             matches = pickle.load(fp)
 
-    chart_matches = False
-    chart_vsx = True
+    chart_matches = True
+    chart_vsx = False
 
     chart_objects = []
     if chart_vsx:
