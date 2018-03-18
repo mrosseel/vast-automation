@@ -142,10 +142,10 @@ def get_chart_objects_vsx():
 
 def get_chart_objects_matches(matches):
     chart_objects = []
-    # matches: {'star_id': [label, probability, flag, SkyCoord, match_name, match_skycoord, match_type, separation_deg]}
+    # matches: {'star_id': [label, probability, flag, SkyCoord, match_name, separation_deg]}
     # chart_objects:  [ {'id': star_id, 'match': {'name': match_name, 'separation': separation_deg  } } ]
     for key in matches:
-        add_chart_object(chart_objects, key,{'name': matches[key][4], 'separation':matches[key][7]})
+        add_chart_object(chart_objects, key,{'name': matches[key][4], 'separation':matches[key][5]})
     return chart_objects
 
 def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightcurve, do_lightcurve_resume, do_pos, do_pos_resume,
@@ -191,7 +191,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         do_upsilon.run(init.star_list)
 
     if do_naming:
-        matches = do_calibration.find_vsx_for_upsilon_candidates(0)
+        matches = do_calibration.find_new_vsx_for_upsilon_candidates()
         with open(init.basedir + 'matches.bin', 'wb') as fp:
             pickle.dump(matches, fp)
     else:

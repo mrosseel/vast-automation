@@ -11,6 +11,7 @@ from gatspy.periodic import LombScargleFast
 import matplotlib as mp
 mp.use('Agg') # needs no X server
 import matplotlib.pyplot as plt
+import vsx_pickle
 
 def calibrate():
     w = WCS(init.reference_header)
@@ -102,6 +103,25 @@ def find_vsx_for_upsilon_candidates(threshold_prob_candidates=0.5, max_separatio
             result[candidate[0]] = [candidate[1],candidate[2],candidate[3],candidate[4],best_var[0],best_var[1],best_var[2],best_sep_deg, best_sep_string]
     return result
 
+# returns {'star_id': [label, probability, flag, SkyCoord, match_name, match_skycoord, match_type, separation_deg]}
+def find_new_vsx_for_upsilon_candidates(threshold_prob_candidates=0.5, max_separation=0.01):
+    vsx_dict = vsx_pickle.read(init.vsx_catalog_path)
+    candidates = getCandidates(threshold_prob_candidates)
+    catalog = create_astropy_catalog(vsx_dict['ra_deg_np'], vsx_dict['dec_deg_np'])
+    print("Got", len(candidates), "candidates and", len(vsx_dict['ra_deg_np']), "stars to check against.")
+    result = {}
+    found = 0
+    for candidate in candidates:
+        print("Searching for", candidate[0])
+        idx, d2d, d3d = candidate[4].match_to_catalog_sky(catalog)
+        if d2d.degree < max_separation:
+            result[candidate[0]] = [candidate[1],candidate[2],candidate[3],candidate[4],vsx_dict['metadata'][idx]['Name'],d2d.degree]
+            found= found + 1
+        else:
+            result[candidate[0]] = [candidate[1],candidate[2],candidate[3],candidate[4],'','']
+    print("Found " + str(found) + " matches against the VSX catalog out of " + str(len(candidates)) + " candidates.")
+    return result
+
 # Takes in a list of known variables and maps them to the munipack-generated star numbers
 # usage:
 # vsx = getVSX(init.basedir+'SearchResults.csv')
@@ -110,13 +130,11 @@ def find_vsx_for_upsilon_candidates(threshold_prob_candidates=0.5, max_separatio
 def find_star_for_known_vsx(vsx, detections, max_separation=0.01):
     ra2 = np.array([])
     dec2 = np.array([])
-    print("Creating astropy Catalog...")
     # rewrite ra/dec to skycoord objects
     for key in detections:
         ra2 = np.append(ra2, [detections[key][0]])
         dec2 = np.append(dec2, [detections[key][1]])
-    print(ra2.shape, dec2.shape)
-    catalog = SkyCoord(ra=ra2, dec=dec2, unit='deg')
+    catalog = create_astropy_catalog(ra2, dec2)
     result = {}
     print("Searching best matches with max separation", max_separation, "...")
     for variable in vsx:
@@ -127,6 +145,10 @@ def find_star_for_known_vsx(vsx, detections, max_separation=0.01):
             print("Found result for ", variable[0], ":", result[variable[0]])
     print("Found", len(result), "matches")
     return result
+
+def create_astropy_catalog(ra_deg_np, dec_deg_np):
+    print("Creating astropy Catalog with " + str(len(ra_deg_np)) + " objects...")
+    return SkyCoord(ra=ra_deg_np, dec=dec_deg_np, unit='deg')
 
 def calculate_phase_diagram(star):
     print("Calculating phase diagram for", star)

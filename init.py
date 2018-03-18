@@ -30,9 +30,9 @@ do_pos=False
 do_pos_resume=False
 do_calibrate=False
 do_upsilon=False
-do_naming=False
+do_naming=True
 do_charting=False
-do_phase_diagram=True
+do_phase_diagram=False
 
 ### CALIBRATION ###
 reference_frame = 'WWCrA#30V_000184527_FLAT.fit'
@@ -53,4 +53,5 @@ posdir = resultdir + "positions/"
 worldposdir = resultdir + "world_positions/"
 chartsdir = resultdir + "charts/"
 phasedir = resultdir + "phasediagrams/"
+vsx_catalog_path = codedir + "vsx_catalog.bin"
 #### DO NOT TOUCH ####
