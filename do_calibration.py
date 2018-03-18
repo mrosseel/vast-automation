@@ -149,3 +149,4 @@ def calculate_phase_diagram(star):
     phased_lc = y_np[:]
     plt.errorbar(phased_t,phased_lc,yerr=dy_np,linestyle='none',marker='o')
     fig.savefig(init.phasedir+'phase'+str(star).zfill(5))
+    plt.close(fig)
