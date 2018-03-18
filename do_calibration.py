@@ -138,8 +138,6 @@ def calculate_phase_diagram(star):
     dy_np = curve['s1'].as_matrix()
     ls = LombScargleFast()
     period_max = np.max(t_np)-np.min(t_np)
-    print(period_max)
-    print(t_np)
     ls.optimizer.period_range = (0.01,period_max)
     ls.fit(t_np,y_np)
     period = ls.best_period
@@ -148,8 +146,16 @@ def calculate_phase_diagram(star):
     plt.xlabel("Phase")
     plt.ylabel("Diff mag")
     plt.title("Lomb-Scargle-Periodogram for star "+str(star)+" period: " + str(period))
+
+    # plotting + calculation of 'double' phase diagram from -1 to 1
     phased_t = np.fmod(t_np/period,1)
+    minus_one = lambda t: t - 1
+    minus_oner = np.vectorize(minus_one)
+    phased_t2 = minus_oner(phased_t)
     phased_lc = y_np[:]
-    plt.errorbar(phased_t,phased_lc,yerr=dy_np,linestyle='none',marker='o')
+    phased_t_final = np.append(phased_t2, phased_t)
+    phased_lc_final = np.append(phased_lc, phased_lc)
+    phased_err = np.append(dy_np, dy_np)
+    plt.errorbar(phased_t_final,phased_lc_final,yerr=phased_err,linestyle='none',marker='o')
     fig.savefig(init.phasedir+'phase'+str(star).zfill(5))
     plt.close(fig)
