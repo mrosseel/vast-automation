@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 import requests
 from gatspy.periodic import LombScargleFast
+mp.use('Agg') # needs no X server
 import matplotlib.pyplot as plt
 
 def calibrate():
