@@ -42,7 +42,10 @@ The docker image also exposes a Jupyter lab instance on port 8888
 
 ## TODO
 
+- ingest vsx datafile and create an optimised astropy catalog + metadata for
+later processing
 - new ensemble comparison star calculation?
+- aperture is now fixed at 2, do some experiments on 1 star to measure effect on error bars and results
 - capture upsilon extra data (minimum = period) ?
 - check error column for any stars having error bars > 1%
 

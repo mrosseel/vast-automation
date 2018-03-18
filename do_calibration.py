@@ -136,13 +136,11 @@ def calculate_phase_diagram(star):
     y_np = curve['V-C'].as_matrix()
     dy_np = curve['s1'].as_matrix()
     ls = LombScargleFast()
-    ls.optimizer.period_range = (0.1,10)
+    period_max = t_np[len(t_np)-1]-t_np[0]
+    ls.optimizer.period_range = (0.01,period_max)
     ls.fit(t_np,y_np)
     period = ls.best_period
     print("Best period: " + str(period) + " days")
-    # periodogramm
-    periods = np.linspace(0.1,10,1000)
-    scores = ls.score(periods)
     fig=plt.figure(figsize=(18, 16), dpi= 80, facecolor='w', edgecolor='k')
     plt.xlabel("Phase")
     plt.ylabel("Diff mag")
