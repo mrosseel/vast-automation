@@ -129,6 +129,7 @@ def find_star_for_known_vsx(vsx, detections, max_separation=0.01):
     return result
 
 def calculate_phase_diagram(star):
+    print("Calculating phase diagram for", star)
     curve = reading.read_lightcurve(star)
     if curve is None:
         return
@@ -136,7 +137,9 @@ def calculate_phase_diagram(star):
     y_np = curve['V-C'].as_matrix()
     dy_np = curve['s1'].as_matrix()
     ls = LombScargleFast()
-    period_max = t_np[len(t_np)-1]-t_np[0]
+    period_max = np.max(t_np)-np.min(t_np)
+    print(period_max)
+    print(t_np)
     ls.optimizer.period_range = (0.01,period_max)
     ls.fit(t_np,y_np)
     period = ls.best_period
