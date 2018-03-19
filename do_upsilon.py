@@ -62,12 +62,12 @@ def run(star_list):
     upsilon_output =init.basedir+'upsilon_output.txt'
     unsorted_result_list = start_upsilon(star_list, 5000)
     # save before sorting
-    upsilon_helper.save_results(unsorted_result_list, upsilon_output)
+    save_results(unsorted_result_list, upsilon_output)
     # sort on probability, descending - primary key
     sorted_result_list = sorted(unsorted_result_list, key=lambda result: result[2], reverse=True)
     # sort on danger flag, ascending - secondary key
     sorted_result_list = sorted(sorted_result_list, key=lambda result: result[3])
     # save #2 after sorting
-    upsilon_helper.save_results(sorted_result_list, upsilon_output)
+    save_results(sorted_result_list, upsilon_output)
 
 rf_model = upsilon.load_rf_model()
