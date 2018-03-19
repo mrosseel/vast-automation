@@ -3,6 +3,7 @@ import init
 import reading
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
+from astropy.coordinates import match_coordinates_sky
 from astropy import units as u
 import pandas as pd
 import numpy as np
@@ -63,7 +64,7 @@ def getCandidates(threshold_prob=0.5):
     df.sort_values(by='probability', ascending=False)
     df=df[df['label'] != 'NonVar']
     df=df[df["probability"] > threshold_prob]
-    df=df[df["flag"] != 1]
+    #df=df[df["flag"] != 1]
     positions=reading.read_world_positions(init.worldposdir)
     result = []
     for index, row in df.iterrows():
@@ -73,6 +74,7 @@ def getCandidates(threshold_prob=0.5):
 
 # returns [index, skycoord, type]
 def getVSX(the_file):
+    raise NotImplementedError
     result = []
     df = pd.DataFrame.from_csv(the_file)
     #print(df.head())
@@ -105,10 +107,9 @@ def find_vsx_for_upsilon_candidates(threshold_prob_candidates=0.5, max_separatio
 
 # returns {'star_id': [label, probability, flag, SkyCoord, match_name, match_skycoord, match_type, separation_deg]}
 def find_new_vsx_for_upsilon_candidates(threshold_prob_candidates=0.5, max_separation=0.01):
-    vsx_dict = vsx_pickle.read(init.vsx_catalog_path)
     candidates = getCandidates(threshold_prob_candidates)
-    catalog = create_astropy_catalog(vsx_dict['ra_deg_np'], vsx_dict['dec_deg_np'])
-    print("Got", len(candidates), "candidates and", len(vsx_dict['ra_deg_np']), "stars to check against.")
+    catalog, vsx_dict = create_vsx_astropy_catalog()
+    print("Got", len(candidates), "candidates and", len(catalog), "stars to check against.")
     result = {}
     found = 0
     for candidate in candidates:
@@ -127,19 +128,13 @@ def find_new_vsx_for_upsilon_candidates(threshold_prob_candidates=0.5, max_separ
 # vsx = getVSX(init.basedir+'SearchResults.csv')
 # detections = reading.read_world_positions(init.worldposdir)
 # returns { 'name of VSX variable': [VSX_var_SkyCoord, best_starfit, best_separation] }
-def find_star_for_known_vsx(vsx, detections, max_separation=0.01):
-    ra2 = np.array([])
-    dec2 = np.array([])
-    # rewrite ra/dec to skycoord objects
-    for key in detections:
-        ra2 = np.append(ra2, [detections[key][0]])
-        dec2 = np.append(dec2, [detections[key][1]])
-    catalog = create_astropy_catalog(ra2, dec2)
+def find_star_for_known_vsx(vsx_catalog, detections_catalog, max_separation=0.01):
     result = {}
     print("Searching best matches with max separation", max_separation, "...")
+    kdtree_cache = ""
     for variable in vsx:
         print("Searching for", variable[0])
-        idx, d2d, d3d = variable[1].match_to_catalog_sky(catalog)
+        idx, d2d, d3d = match_coordinates_sky(variable[1],detections_catalog, storedkdtree=kdtree_cache)
         if d2d.degree < max_separation:
             result[variable[0]] = [variable[1], idx+1, d2d.degree]
             print("Found result for ", variable[0], ":", result[variable[0]])
@@ -149,6 +144,19 @@ def find_star_for_known_vsx(vsx, detections, max_separation=0.01):
 def create_astropy_catalog(ra_deg_np, dec_deg_np):
     print("Creating astropy Catalog with " + str(len(ra_deg_np)) + " objects...")
     return SkyCoord(ra=ra_deg_np, dec=dec_deg_np, unit='deg')
+
+def create_detections_astropy_catalog(detections):
+    ra2 = np.array([])
+    dec2 = np.array([])
+    # rewrite ra/dec to skycoord objects
+    for key in detections:
+        ra2 = np.append(ra2, [detections[key][0]])
+        dec2 = np.append(dec2, [detections[key][1]])
+    return create_astropy_catalog(ra2, dec2)
+
+def create_vsx_astropy_catalog():
+    vsx_dict = vsx_pickle.read(init.vsx_catalog_path)
+    return create_astropy_catalog(vsx_dict['ra_deg_np'], vsx_dict['dec_deg_np']), vsx_dict
 
 def calculate_phase_diagram(star):
     print("Calculating phase diagram for", star)

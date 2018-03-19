@@ -35,6 +35,7 @@ def save_results(result_list, output_file):
     print(df.head())
     df.to_csv(output_file, index=False)
 
+# returns [ star, label, probability, flag ]
 def predict_star(star, limit=-1):
     #print("star:",star)
     try:

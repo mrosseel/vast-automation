@@ -191,7 +191,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         do_upsilon.run(init.star_list)
 
     if do_naming:
-        matches = do_calibration.find_new_vsx_for_upsilon_candidates()
+        matches = do_calibration.find_new_vsx_for_upsilon_candidates(0.1)
         with open(init.basedir + 'matches.bin', 'wb') as fp:
             pickle.dump(matches, fp)
     else:
