@@ -25,6 +25,10 @@ def save_results(result_list, output_file):
     column_names = ['star', 'label', 'probability', 'flag']
     columns_done = False
     for entry in result_list:
+        print(entry, len(entry))
+        if len(entry) < 5:
+            print(entry, len(entry))
+            continue
         features_dict = entry[4]
         entry = entry[:-1]
         for key in features_dict:
