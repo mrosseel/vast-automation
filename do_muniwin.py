@@ -198,9 +198,9 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         with open(init.basedir + 'matches.bin', 'rb') as fp:
             matches = pickle.load(fp)
 
-    chart_matches = False
+    chart_matches = True
     chart_vsx = False
-    chart_custom = True
+    chart_custom = False
 
     chart_objects = []
     if chart_vsx:
@@ -210,9 +210,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         chart_objects = get_chart_objects_matches(matches)
 
     if chart_custom:
-        add_chart_object(chart_objects, 138, None)
-        add_chart_object(chart_objects, 144, None)
-        add_chart_object(chart_objects, 227, None)
+        add_chart_object(chart_objects, 149, None)
 
     if do_charting:
         do_charts.run(chart_objects)
