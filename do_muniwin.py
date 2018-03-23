@@ -209,7 +209,6 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         elif(chart_custom):
             print("not implemented yet !!!!!!!!!!!!!!!!!!!!!!!!!")
 
-
         if do_add_vsx and not chart_vsx:
             star_descriptions = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions)
         # else:
