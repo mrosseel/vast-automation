@@ -117,7 +117,7 @@ def store_curve_and_pos(star, star_descriptions):
     star_description = [x for x in star_descriptions if x.local_id == star][0]
     try:
         tuple = star_description, reading.read_lightcurve(star,filter=False)
-        return tuple
+        plot_lightcurve(tuple)
     except FileNotFoundError:
         print("File not found error in store and curve for star", star)
 
@@ -127,14 +127,9 @@ def run(star_descriptions):
     curve_and_pos = []
     set_seaborn_style()
     pool = mp.Pool(init.nr_threads)
-    print("Reading star positions, total size = ",len(star_list))
+    trash_and_recreate_dir(init.chartsdir)
 
+    print("Reading and plotting star positions, total size = ",len(star_list))
     func = partial(store_curve_and_pos, star_descriptions=star_descriptions)
     for _ in tqdm.tqdm(pool.imap_unordered(func, star_list), total=len(star_list)):
-        curve_and_pos.append(_)
-        pass
-    print("Plotting stars, total size = ",len(curve_and_pos))
-    trash_and_recreate_dir(init.chartsdir)
-    func = partial(plot_lightcurve)
-    for _ in tqdm.tqdm(pool.imap_unordered(func, curve_and_pos), total=len(curve_and_pos)):
         pass
