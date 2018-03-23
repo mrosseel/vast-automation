@@ -11,6 +11,7 @@ import multiprocessing as mp
 import tqdm
 import numpy as np
 from astropy.coordinates import SkyCoord
+from gatspy.periodic import LombScargleFast
 import init
 from reading import trash_and_recreate_dir
 
@@ -21,17 +22,17 @@ def set_seaborn_style():
 # takes:  [ {'id': star_id, 'match': {'name': match_name, 'separation': separation_deg  } } ]
 def plot_lightcurve(tuple):
 #    try:
-    star = tuple[0]
+    star_description = tuple[0]
+    star = star_description.local_id
     curve = tuple[1]
-    pos = tuple[2]
-    if len(tuple) == 4:
-        star_match = tuple[3]['name']
-        separation = tuple[3]['separation']
+    if not star_description.match == None:
+        star_match = star_description.match[0]['catalog_dict']['name']
+        separation = star_description.match[0]['separation']
     else:
         star_match = ''
         separation = ''
 
-    coord = SkyCoord(pos[0], pos[1], unit='deg')
+    coord = star_description.coords
 
     if(curve is None):
         print("Curve is None for star", star)
@@ -69,6 +70,41 @@ def plot_lightcurve(tuple):
 #    except:
 #        print("error", tuple)
 
+def plot_phase_diagram(star_description, suffix='', period=None):
+    star = star_description.local_id
+    print("Calculating phase diagram for", star)
+    if period is None:
+        curve = reading.read_lightcurve(star)
+        print(curve)
+        if curve is None:
+            return
+        t_np = curve['JD'].as_matrix()
+        y_np = curve['V-C'].as_matrix()
+        dy_np = curve['s1'].as_matrix()
+        ls = LombScargleFast()
+        period_max = np.max(t_np)-np.min(t_np)
+        ls.optimizer.period_range = (0.01,period_max)
+        ls.fit(t_np,y_np)
+        period = ls.best_period
+    print("Best period: " + str(period) + " days")
+    fig=plt.figure(figsize=(18, 16), dpi= 80, facecolor='w', edgecolor='k')
+    plt.xlabel("Phase")
+    plt.ylabel("Diff mag")
+    plt.title("Lomb-Scargle-Periodogram for star "+str(star)+" period: " + str(period))
+
+    # plotting + calculation of 'double' phase diagram from -1 to 1
+    phased_t = np.fmod(t_np/period,1)
+    minus_one = lambda t: t - 1
+    minus_oner = np.vectorize(minus_one)
+    phased_t2 = minus_oner(phased_t)
+    phased_lc = y_np[:]
+    phased_t_final = np.append(phased_t2, phased_t)
+    phased_lc_final = np.append(phased_lc, phased_lc)
+    phased_err = np.append(dy_np, dy_np)
+    plt.errorbar(phased_t_final,phased_lc_final,yerr=phased_err,linestyle='none',marker='o')
+    fig.savefig(init.phasedir+'phase'+str(star).zfill(5)+suffix)
+    plt.close(fig)
+
 def get_hms_dms(coord):
     return str(coord.ra.hms.h) + ' ' + str(abs(coord.ra.hms.m)) + ' ' + str(abs(round(coord.ra.hms.s, 2))) \
            + ' | ' + str(coord.dec.dms.d) + ' ' + str(abs(coord.dec.dms.m)) + ' ' + str(abs(round(coord.dec.dms.s, 1)))
@@ -77,30 +113,26 @@ def format_date(x, pos=None):
     thisind = np.clip(int(x + 0.5), 0, N - 1)
     return r.date[thisind].strftime('%Y-%m-%d')
 
-def store_curve_and_pos(chart_object):
+def store_curve_and_pos(star, star_descriptions):
+    star_description = [x for x in star_descriptions if x.local_id == star][0]
     try:
-        print(chart_object)
-        star = chart_object['id']
-        tuple = star, reading.read_lightcurve(star,filter=False), reading.read_worldpos(star)
-        if 'match' in chart_object.keys():
-            tuple= tuple + (chart_object['match'],)
+        tuple = star_description, reading.read_lightcurve(star,filter=False)
         return tuple
     except FileNotFoundError:
         print("File not found error in store and curve for star", star)
 
 # takes:  [ {'id': star_id, 'match': {'name': match_name, 'separation': separation_deg  } } ]
-def run(matches):
-    star_list = [*matches] # unpack
+def run(star_descriptions):
+    star_list = [star.local_id for star in star_descriptions]
     curve_and_pos = []
     set_seaborn_style()
     pool = mp.Pool(init.nr_threads)
     print("Reading star positions, total size = ",len(star_list))
 
-    func = partial(store_curve_and_pos)
+    func = partial(store_curve_and_pos, star_descriptions=star_descriptions)
     for _ in tqdm.tqdm(pool.imap_unordered(func, star_list), total=len(star_list)):
         curve_and_pos.append(_)
         pass
-
     print("Plotting stars, total size = ",len(curve_and_pos))
     trash_and_recreate_dir(init.chartsdir)
     func = partial(plot_lightcurve)

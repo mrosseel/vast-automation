@@ -82,6 +82,7 @@ def reduce_star_list(star_list, the_path):
     print("Found", len(found), "stars already processed in", the_path)
     return [item for item in star_list if item not in found]
 
+# takes a filename and extracts the star number from it
 def filename_to_star(filename):
     import re
     m = re.search('\d+',filename)
