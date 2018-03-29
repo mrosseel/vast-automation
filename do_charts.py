@@ -29,7 +29,7 @@ def plot_lightcurve(tuple, comparison_stars):
     star_match, separation = get_match(star_description)
     coord = star_description.coords
     if not upsilon == None:
-        upsilon_text = ", Var: prob={0:.2f},type={}".format(upsilon['probability'], upsilon['type'])
+        upsilon_text = ", Var: prob={0:.2f},type={1}".format(upsilon['probability'], upsilon['vartype'])
     else:
         upsilon_text = ''
     if(curve is None):
@@ -47,7 +47,7 @@ def plot_lightcurve(tuple, comparison_stars):
     #insert counting column
     used_curve.insert(0, 'Count', range(0, len(used_curve)))
     g = sns.lmplot('Count', 'V-C',
-               data=used_curve, size=20, aspect=5,scatter_kws={"s": 10},
+               data=used_curve, size=20, aspect=5,scatter_kws={"s": 15},
                fit_reg=False)
     star_name = '' if star_match == '' else " ({} - dist:{:.4f})".format(star_match, separation)
     plt.title("Star {0}{1}, position: {2}{3}".format(star, star_name, get_hms_dms(coord), upsilon_text))
@@ -57,8 +57,9 @@ def plot_lightcurve(tuple, comparison_stars):
     #fig.autofmt_xdate()
     plt.xlabel('Count')
     plt.ylabel("Absolute Mag, comp star = {:2.2f}".format(comparison_stars[0].vmag))
-    plot_max = used_curve_max-2
-    plot_min = min(plot_max, used_curve_min)
+    plot_max = used_curve_max
+    plot_min = min(plot_max-1, used_curve_min)
+    #print('min', plot_min, 'max', plot_max, 'usedmin', used_curve_min, 'usedmax', used_curve_max)
     if np.isnan(plot_max) or np.isnan(plot_min):
         print("star is nan", star)
         return
@@ -89,6 +90,8 @@ def plot_phase_diagram(star_description, comparison_stars, suffix='', period=Non
         ls = LombScargleFast()
         period_max = np.max(t_np)-np.min(t_np)
         ls.optimizer.period_range = (0.01,period_max)
+        ls.fit(t_np,y_np)
+        period = ls.best_period
     print("Best period: " + str(period) + " days")
     fig=plt.figure(figsize=(18, 16), dpi= 80, facecolor='w', edgecolor='k')
     plt.xlabel("Phase")
@@ -105,6 +108,7 @@ def plot_phase_diagram(star_description, comparison_stars, suffix='', period=Non
     phased_lc_final = np.append(phased_lc, phased_lc)
     phased_lc_final = phased_lc_final + comparison_stars[0].vmag
     phased_err = np.append(dy_np, dy_np)
+    plt.gca().invert_yaxis()
     plt.errorbar(phased_t_final,phased_lc_final,yerr=phased_err,linestyle='none',marker='o')
     fig.savefig(init.phasedir+'phase'+str(star).zfill(5)+suffix)
     plt.close(fig)
