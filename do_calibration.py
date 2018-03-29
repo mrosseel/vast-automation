@@ -73,11 +73,20 @@ def get_candidates(threshold_prob=0.5, check_flag=False):
     positions = reading.read_world_positions(init.worldposdir)
     result = []
     for index, row in df.iterrows():
-        # print(index, row)
+        print("index, row", index, row)
         result.append(
             StarDescription(local_id=index, upsilon=(row['label'], row['probability'], row['flag'], row['period']),
                             coords=SkyCoord(positions[int(index)][0], positions[int(index)][1], unit='deg')))
     return result
+
+# returns StarDescription with filled in local_id, upsilon, coord
+def add_upsilon_data(star_descriptions):
+    df = pd.DataFrame.from_csv(init.basedir + 'upsilon_output.txt')
+    for star in star_descriptions:
+        row = df.iloc[df.index.get_loc(star.local_id)]
+        print('star', star.local_id, 'line=', row)
+        star.upsilon = (row['label'], row['probability'], row['flag'], row['period'])
+    return star_descriptions
 
 # returns list of star descriptions
 def get_star_descriptions(starlist=None):

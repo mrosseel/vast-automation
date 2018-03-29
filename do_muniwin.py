@@ -218,7 +218,8 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         if not chart_vsx: # chart_vsx already has the vsx mappingss
             star_descriptions = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions)
 
-        #do_calibration.add_apass_to_star_descriptions(star_descriptions)
+        if not chart_upsilon:
+            star_descriptions = do_calibration.add_upsilon_data(star_descriptions)
 
         with open(init.basedir + 'star_descriptions_to_chart.bin', 'wb') as fp:
              pickle.dump(star_descriptions, fp)
