@@ -224,7 +224,7 @@ def add_apass_to_star_descriptions(star_descriptions, radius=0.01, row_limit=2):
             continue
         if not apass.shape[0] == 1:
             # while testing, the first result was the closest, but let's not take any chances
-            distances = apass.apply(lambda x: star_descriptions.coords.separation(
+            distances = apass.apply(lambda x: star.coords.separation(
                 SkyCoord(x['RAJ2000'],
                          x['DEJ2000'], unit='deg')).hour, axis=1)
             minimum = distances.idxmin()
