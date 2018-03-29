@@ -5,7 +5,7 @@ codedir = './'
 aperture = 2
 all = range(1,10000)
 thou = range(1,1000)
-selection = [138,886]
+selection = [137,138,886]
 selection2 = (1,2,3,73,138,143,264,2675,1045,847,1193)
 custom_muniwin = range(5776,10000)
 #custom_charts = range(1,5776)
@@ -17,6 +17,7 @@ all_star_list = range(1,138)
 
 #basedir = codedir + 'inputfiles/WWCrA_allflat/'
 basedir =  codedir + 'inputfiles/WWCrA2015/'
+#basedir =  codedir + 'inputfiles/WWCrA_bigger/'
 star_list = selection
 nr_threads = multiprocessing.cpu_count() * 2
 

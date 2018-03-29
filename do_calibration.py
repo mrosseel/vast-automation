@@ -5,6 +5,8 @@ from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
 from astropy.coordinates import match_coordinates_sky
 from astropy import units as u
+from astropy.coordinates import Angle
+from astroquery.vizier import Vizier
 import pandas as pd
 import numpy as np
 import vsx_pickle
@@ -71,22 +73,24 @@ def get_candidates(threshold_prob=0.5, check_flag=False):
     positions = reading.read_world_positions(init.worldposdir)
     result = []
     for index, row in df.iterrows():
-        print(index, row)
+        # print(index, row)
         result.append(
             StarDescription(local_id=index, upsilon=(row['label'], row['probability'], row['flag'], row['period']),
                             coords=SkyCoord(positions[int(index)][0], positions[int(index)][1], unit='deg')))
     return result
 
-
 # returns list of star descriptions
-def get_detected_stars():
+def get_star_descriptions(starlist=None):
     # returns {'name': [ra.deg, dec.deg ]}
     positions = reading.read_world_positions(init.worldposdir)
     result = []
+    print(starlist)
     for key in positions:
-        result.append(StarDescription(local_id=reading.filename_to_star(str(key)), coords=SkyCoord(positions[key][0], positions[key][1], unit='deg')))
+        star_id = reading.filename_to_star(str(key))
+        if starlist is None or star_id in starlist:
+            result.append(StarDescription(local_id=reading.filename_to_star(str(key)),
+                                          coords=SkyCoord(positions[key][0], positions[key][1], unit='deg')))
     return result
-
 
 # returns [index, skycoord, type]
 def get_VSX(the_file):
@@ -99,10 +103,11 @@ def get_VSX(the_file):
         result.append(StarDescription(match={'index': index, 'type': row['Type']}, coord=skycoord))
     return result
 
+
 # returns {'star_id': [label, probability, flag, period, SkyCoord, match_name, match_skycoord, match_type, separation_deg]}
 def add_vsx_names_to_star_descriptions(star_descriptions, threshold_prob_candidates=0.5, max_separation=0.01):
     print("Adding VSX names to star descriptions")
-    result = star_descriptions # no deep copy for now
+    result = star_descriptions  # no deep copy for now
     # copy.deepcopy(star_descriptions)
     vsx_catalog, vsx_dict = create_vsx_astropy_catalog()
     star_catalog = create_star_descriptions_catalog(star_descriptions)
@@ -111,6 +116,7 @@ def add_vsx_names_to_star_descriptions(star_descriptions, threshold_prob_candida
     found = 0
     for index, entry in enumerate(d2d):
         if entry.value < max_separation:
+            print("type of vsx separation:", type(entry.value))
             vsx_index = idx[index]
             result[index].match = ('VSX', entry.value,
                                    {'name': vsx_dict['metadata'][vsx_index]['Name'],
@@ -120,7 +126,8 @@ def add_vsx_names_to_star_descriptions(star_descriptions, threshold_prob_candida
             found = found + 1
     return result
 
-#
+
+# returns StarDescription array
 def get_vsx_in_field(star_descriptions, max_separation=0.01):
     print("Adding VSX names to star descriptions")
     vsx_catalog, vsx_dict = create_vsx_astropy_catalog()
@@ -136,8 +143,8 @@ def get_vsx_in_field(star_descriptions, max_separation=0.01):
             result_entry.local_id = idx[index]
             result_entry.coords = star_coords
             result_entry.match = ('VSX', entry.value,
-                                   {'name': vsx_dict['metadata'][vsx_index]['Name'],
-                                    'coords': vsx_coords})
+                                  {'name': vsx_dict['metadata'][vsx_index]['Name'],
+                                   'coords': vsx_coords})
             result_entry.aavso_id = vsx_dict['metadata'][vsx_index]['Name']
             result.append(result_entry)
     print("Found {} stars".format(len(result)))
@@ -206,13 +213,75 @@ def create_star_descriptions_catalog(star_descriptions):
     return create_generic_astropy_catalog(ra2, dec2)
 
 
+def add_apass_to_star_descriptions(star_descriptions, radius=0.01):
+    print("apass input", len(star_descriptions))
+    radius_angle = Angle(radius, unit=u.deg)
+    for star in star_descriptions:
+        apass = get_apass_field(star.coords, radius_angle)
+        print(apass)
+        if apass is None or not apass.shape[0] == 1:
+            print("More/less results received from APASS than expected: {}".format(apass.shape[0] if not apass is None and not apass.shape is None else 0))
+            continue
+        star.vmag = apass['Vmag'][0]
+        print("Star {} has vmag {}".format(star.local_id, star.vmag))
+    return star_descriptions
+
+def get_apass_star_descriptions(center_coord, radius, row_limit=2):
+    field = get_apass_field(center_coord, radius, row_limit)
+    result = []
+    for index, row in field.iterrows():
+        result.append(StarDescription(coords=SkyCoord(row['RAJ2000'], row['DEJ2000'], unit='deg'), vmag=row['Vmag']))
+    return result
+
+def get_apass_field(center_coord, radius, row_limit=2):
+    """
+    Return all APASS stars from VizieR within the
+    given radius of the central point specified by center_coord.
+    Convert the format to the C.Kotnik private sequence file
+    format in a pandas dataframe.
+
+    Parameters
+    ----------
+    center_coord:  astropy.coordinates.SkyCoord specifying the field center
+    radius:        radius of field in astropy.coordinates.Angle
+
+    Returns
+    -------
+    apass_stars:   pandas.DataFrame containing the stars found converted
+                   to a private sequence file format with columns:
+                   Rec ID      AUID    RA      DEC     RA(deg) DEC(deg)        Label
+                   U   B       V       Rc      Ic      B-V
+                   U err       B err   V err   Rc err  Ic err  Comments
+    """
+
+    # Select all columns
+    v = Vizier(columns=['all'])
+
+    # Limit the number of rows returned to 5000 which should be more than enough
+    v.ROW_LIMIT = row_limit
+
+    result = v.query_region(center_coord,
+                            radius=radius,
+                            catalog=['II/336'])
+    apasstab = result[0].to_pandas() if len(result) > 0 else None
+    #print(apasstab['recno'].count(), " apass objects returned from Vizier")
+    #print(apasstab)
+    # apasstab.to_csv('foobar.csv')
+    return apasstab
+
+
 class StarDescription:
-    def __init__(self, local_id=None, aavso_id=None, coords=None, match=None, upsilon=None):
+    def __init__(self, local_id=None, aavso_id=None, coords=None, vmag=None, match=None, upsilon=None, label=None,
+                 xpos=None, ypos=None):
         self.local_id = local_id
         self.aavso_id = aavso_id
         self.coords = coords
+        self.vmag = vmag
         self._match = match
         self._upsilon = upsilon
+        self.xpos = xpos
+        self.ypos = ypos
+        self.label = self.local_id if label is None else label
 
     @property
     def upsilon(self):
@@ -231,4 +300,12 @@ class StarDescription:
     def match(self, val):
         catalog, separation, catalog_dict = val
         if self._match is None: self._match = []
-        self._match.append({'catalog': catalog, 'separation': separation, 'catalog_dict':catalog_dict})
+        self._match.append({'catalog': catalog, 'separation': separation, 'catalog_dict': catalog_dict})
+
+    def __repr__(self):
+        return "StarDescription({0},{1},{2},{3},{4},{5})".format(
+            self.local_id, self.aavso_id, self.coords, self.vmag, self._match, self._upsilon)
+
+    def __str__(self):
+        return "id: {0}, coords: {2}, vmag: {3}".format(
+            self.local_id, self.aavso_id, self.coords, self.vmag, self._match, self._upsilon)

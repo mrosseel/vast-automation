@@ -20,18 +20,12 @@ def set_seaborn_style():
     sns.set_style("ticks")
 
 # takes:  [ {'id': star_id, 'match': {'name': match_name, 'separation': separation_deg  } } ]
-def plot_lightcurve(tuple):
+def plot_lightcurve(tuple, comparison_stars):
 #    try:
     star_description = tuple[0]
     star = star_description.local_id
     curve = tuple[1]
-    if not star_description.match == None:
-        star_match = star_description.match[0]['catalog_dict']['name']
-        separation = star_description.match[0]['separation']
-    else:
-        star_match = ''
-        separation = ''
-
+    star_match, separation = get_match(star_description)
     coord = star_description.coords
 
     if(curve is None):
@@ -39,28 +33,32 @@ def plot_lightcurve(tuple):
         return
     curve = curve.replace(to_replace=99.99999, value=np.nan, inplace=False)
 
-    curve_min = curve['V-C'].min()
+
+    #curve_min = curve['V-C'].min()
     curve_max = curve['V-C'].max()
     curve2_norm = curve
     #print("star, min, max:",star, curve_min,curve_max)
-    curve2_norm['V-C'] = curve['V-C'] - curve_min
+    #curve2_norm['V-C'] = curve['V-C'] - curve_min
+    curve2_norm['V-C'] = curve['V-C'] + comparison_stars[0].vmag
 
     used_curve = curve2_norm
     used_curve_max = curve2_norm['V-C'].max()
+    used_curve_min = curve2_norm['V-C'].min()
 
     #insert counting column
     used_curve.insert(0, 'Count', range(0, len(used_curve)))
     g = sns.lmplot('Count', 'V-C',
                data=used_curve, size=20, aspect=5,scatter_kws={"s": 10},
                fit_reg=False)
-    plt.title('Star '+ str(star) + ', ' + str(star_match) +', position: ' + get_hms_dms(coord)  +", distance: " + str(separation))
+    star_name = '' if star_match == '' else " ({} - dist:{:.4f})".format(star_match, separation)
+    plt.title("Star {0}{1}, position: {2}".format(star, star_name, get_hms_dms(coord)))
 
     #plt.xaxis.set_major_formatter(ticker.FuncFormatter(format_date))
     #plt.set_title("Custom tick formatter")
     #fig.autofmt_xdate()
     plt.xlabel('Count')
-    plt.ylabel('Mag relative to minimum ' + str(curve_max))
-    plt.ylim(max(2, used_curve_max),0)
+    plt.ylabel("Absolute Mag, comp star = {:2.2f}".format(comparison_stars[0].vmag))
+    plt.ylim(max(used_curve_min+2, used_curve_max),used_curve_min)
     plt.xlim(0, len(used_curve))
     plt.gca().invert_yaxis()
     #g.map(plt.errorbar, 'Count', 'V-C', yerr='s1', fmt='o')
@@ -70,8 +68,10 @@ def plot_lightcurve(tuple):
 #    except:
 #        print("error", tuple)
 
-def plot_phase_diagram(star_description, suffix='', period=None):
+def plot_phase_diagram(star_description, comparison_stars, suffix='', period=None):
     star = star_description.local_id
+    star_match, separation = get_match(star_description)
+    match_string = "({})".format(star_match) if not star_match == '' else ''
     print("Calculating phase diagram for", star)
     if period is None:
         curve = reading.read_lightcurve(star)
@@ -89,8 +89,8 @@ def plot_phase_diagram(star_description, suffix='', period=None):
     print("Best period: " + str(period) + " days")
     fig=plt.figure(figsize=(18, 16), dpi= 80, facecolor='w', edgecolor='k')
     plt.xlabel("Phase")
-    plt.ylabel("Diff mag")
-    plt.title("Lomb-Scargle-Periodogram for star "+str(star)+" period: " + str(period))
+    plt.ylabel("Magnitude")
+    plt.title("Star {} {}, period: {:.5f} d".format(star, match_string, period))
 
     # plotting + calculation of 'double' phase diagram from -1 to 1
     phased_t = np.fmod(t_np/period,1)
@@ -100,29 +100,40 @@ def plot_phase_diagram(star_description, suffix='', period=None):
     phased_lc = y_np[:]
     phased_t_final = np.append(phased_t2, phased_t)
     phased_lc_final = np.append(phased_lc, phased_lc)
+    phased_lc_final = phased_lc_final + comparison_stars[0].vmag
     phased_err = np.append(dy_np, dy_np)
     plt.errorbar(phased_t_final,phased_lc_final,yerr=phased_err,linestyle='none',marker='o')
     fig.savefig(init.phasedir+'phase'+str(star).zfill(5)+suffix)
     plt.close(fig)
 
 def get_hms_dms(coord):
-    return str(coord.ra.hms.h) + ' ' + str(abs(coord.ra.hms.m)) + ' ' + str(abs(round(coord.ra.hms.s, 2))) \
-           + ' | ' + str(coord.dec.dms.d) + ' ' + str(abs(coord.dec.dms.m)) + ' ' + str(abs(round(coord.dec.dms.s, 1)))
+    return "{:2.0f}$^h$ {:02.0f}$^m$ {:02.2f}$^s$ | {:2.0f}$\degree$ {:02.0f}$'$ {:02.2f}$''$"\
+        .format(coord.ra.hms.h, abs(coord.ra.hms.m), abs(coord.ra.hms.s),
+                coord.dec.dms.d, abs(coord.dec.dms.m), abs(coord.dec.dms.s))
+
+def get_match(star_description):
+    if not star_description.match == None:
+        name = star_description.match[0]['catalog_dict']['name']
+        separation = star_description.match[0]['separation']
+    else:
+        name = ''
+        separation = ''
+    return name, separation
 
 def format_date(x, pos=None):
     thisind = np.clip(int(x + 0.5), 0, N - 1)
     return r.date[thisind].strftime('%Y-%m-%d')
 
-def store_curve_and_pos(star, star_descriptions):
+def store_curve_and_pos(star, star_descriptions, comparison_stars):
     star_description = [x for x in star_descriptions if x.local_id == star][0]
     try:
         tuple = star_description, reading.read_lightcurve(star,filter=False)
-        plot_lightcurve(tuple)
+        plot_lightcurve(tuple, comparison_stars)
     except FileNotFoundError:
         print("File not found error in store and curve for star", star)
 
 # takes:  [ {'id': star_id, 'match': {'name': match_name, 'separation': separation_deg  } } ]
-def run(star_descriptions):
+def run(star_descriptions, comparison_stars):
     star_list = [star.local_id for star in star_descriptions]
     curve_and_pos = []
     set_seaborn_style()
@@ -130,6 +141,6 @@ def run(star_descriptions):
     trash_and_recreate_dir(init.chartsdir)
 
     print("Reading and plotting star positions, total size = ",len(star_list))
-    func = partial(store_curve_and_pos, star_descriptions=star_descriptions)
+    func = partial(store_curve_and_pos, star_descriptions=star_descriptions, comparison_stars=comparison_stars)
     for _ in tqdm.tqdm(pool.imap_unordered(func, star_list), total=len(star_list)):
         pass

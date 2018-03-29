@@ -149,7 +149,7 @@ def world_pos(star, wcs, reference_frame_index):
 
 def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightcurve, do_lightcurve_resume, do_pos,
                 do_pos_resume,
-                do_calibrate, do_ml, do_add_vsx, do_charting, do_phase_diagram):
+                do_calibrate, do_ml, do_charting, do_phase_diagram):
     reference_frame_index = do_calibration.find_reference_frame_index()
 
     if do_convert_fits:
@@ -191,10 +191,16 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         import do_upsilon  # do it here because it takes some time at startup
         do_upsilon.run(init.star_list)
 
-    chart_premade = True
+    # parse comparison star from munifind.txt
+    comparison_star = reading.read_comparison_star()
+    comp_star_description = do_calibration.get_star_descriptions([comparison_star])
+    comparison_stars = do_calibration.add_apass_to_star_descriptions(comp_star_description)
+    print("Using comparison star", comparison_stars)
+
+    chart_premade = False
     chart_upsilon = False
-    chart_vsx = True
-    chart_custom = False
+    chart_vsx = False
+    chart_custom = True
     star_descriptions = []
 
     if chart_premade:
@@ -205,33 +211,34 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
             # now we generate a list of StarDescriptions, with which all further processing will be done
             star_descriptions = do_calibration.get_candidates(0.1)
         elif(chart_vsx):
-            star_descriptions = do_calibration.get_vsx_in_field(do_calibration.get_detected_stars(), 0.01)
+            star_descriptions = do_calibration.get_vsx_in_field(do_calibration.get_star_descriptions(), 0.01)
         elif(chart_custom):
-            print("not implemented yet !!!!!!!!!!!!!!!!!!!!!!!!!")
+            star_descriptions = do_calibration.get_star_descriptions(init.star_list)
 
-        if do_add_vsx and not chart_vsx:
+        if not chart_vsx: # chart_vsx already has the vsx mappingss
             star_descriptions = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions)
-        # else:
+
+        #do_calibration.add_apass_to_star_descriptions(star_descriptions)
 
         with open(init.basedir + 'star_descriptions_to_chart.bin', 'wb') as fp:
              pickle.dump(star_descriptions, fp)
 
     if do_charting:
-        do_charts.run(star_descriptions)
+        do_charts.run(star_descriptions, comparison_stars)
 
     if do_phase_diagram:
         trash_and_recreate_dir(init.phasedir)
         for star_description in star_descriptions:
             print("upsilon is ", star_description.upsilon, star_description.local_id)
             if not star_description == None:
-                do_charts.plot_phase_diagram(star_description, 'a')
+                do_charts.plot_phase_diagram(star_description, comparison_stars, suffix='a')
                 if not star_description.upsilon == None:
-                    do_charts.plot_phase_diagram(star_description, 'b', star_description.upsilon['period'])
+                    do_charts.plot_phase_diagram(star_description, comparison_stars, suffix='b', period=star_description.upsilon['period'])
 
     # logger = mp.log_to_stderr()
     # logger.setLevel(mp.SUBDEBUG)
 
-print("Calculating", len(init.star_list), "stars.", "\nconvert_fits:\t", init.do_convert_fits,
+print("Calculating", len(init.star_list), "stars from base dir:", init.basedir, "\nconvert_fits:\t", init.do_convert_fits,
 "\nphotometry:\t", init.do_photometry,
 "\nmatch:\t\t", init.do_match,
 "\nmunifind:\t", init.do_munifind,
@@ -241,10 +248,9 @@ print("Calculating", len(init.star_list), "stars.", "\nconvert_fits:\t", init.do
 "\npos_resume:\t", init.do_pos_resume,
 "\ncalibrate:\t", init.do_calibrate,
 "\nupsilon:\t", init.do_ml,
-"\nadd vsx:\t", init.do_add_vsx,
 "\ncharting:\t", init.do_charting,
 "\nphasediagram:\t", init.do_phase_diagram)
 input("Press Enter to continue...")
 run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_munifind, init.do_lightcurve,
 init.do_lightcurve_resume, init.do_pos, init.do_pos_resume, init.do_calibrate,
-init.do_ml, init.do_add_vsx, init.do_charting, init.do_phase_diagram)
+init.do_ml, init.do_charting, init.do_phase_diagram)

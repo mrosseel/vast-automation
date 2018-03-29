@@ -3,8 +3,9 @@ import os
 import shutil
 import pandas as pd
 import numpy as np
-import sys
 import errno
+import re
+
 
 def read_lightcurve(star,filter=True,preprocess=True, directory=init.lightcurvedir):
     try:
@@ -103,3 +104,12 @@ def read_world_positions(the_path):
                 raise # Propagate other kinds of IOError.
     return results
 
+def read_comparison_star():
+    with open(init.basedir + 'munifind.txt', 'r') as fp:
+        for i, line in enumerate(fp):
+            if i == 1:
+                print(line)# 26th line
+                m = re.search('Reference star:\s*(\d+),', line)
+                comparison_star = int(m.group(1))
+                break
+    return comparison_star
