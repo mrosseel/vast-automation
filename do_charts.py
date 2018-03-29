@@ -24,10 +24,14 @@ def plot_lightcurve(tuple, comparison_stars):
 #    try:
     star_description = tuple[0]
     star = star_description.local_id
+    upsilon = star_description.upsilon
     curve = tuple[1]
     star_match, separation = get_match(star_description)
     coord = star_description.coords
-
+    if not upsilon == None:
+        upsilon_text = ", Var: prob={0:.2f},type={}".format(upsilon['probability'], upsilon['type'])
+    else:
+        upsilon_text = ''
     if(curve is None):
         print("Curve is None for star", star)
         return
@@ -51,7 +55,7 @@ def plot_lightcurve(tuple, comparison_stars):
                data=used_curve, size=20, aspect=5,scatter_kws={"s": 10},
                fit_reg=False)
     star_name = '' if star_match == '' else " ({} - dist:{:.4f})".format(star_match, separation)
-    plt.title("Star {0}{1}, position: {2}".format(star, star_name, get_hms_dms(coord)))
+    plt.title("Star {0}{1}, position: {2}{3}".format(star, star_name, get_hms_dms(coord), upsilon_text))
 
     #plt.xaxis.set_major_formatter(ticker.FuncFormatter(format_date))
     #plt.set_title("Custom tick formatter")
@@ -73,19 +77,17 @@ def plot_phase_diagram(star_description, comparison_stars, suffix='', period=Non
     star_match, separation = get_match(star_description)
     match_string = "({})".format(star_match) if not star_match == '' else ''
     print("Calculating phase diagram for", star)
+    curve = reading.read_lightcurve(star)
+    if curve is None:
+        print("Curve of star {} is None".format(star))
+        return
+    t_np = curve['JD'].as_matrix()
+    y_np = curve['V-C'].as_matrix()
+    dy_np = curve['s1'].as_matrix()
     if period is None:
-        curve = reading.read_lightcurve(star)
-        print(curve)
-        if curve is None:
-            return
-        t_np = curve['JD'].as_matrix()
-        y_np = curve['V-C'].as_matrix()
-        dy_np = curve['s1'].as_matrix()
         ls = LombScargleFast()
         period_max = np.max(t_np)-np.min(t_np)
         ls.optimizer.period_range = (0.01,period_max)
-        ls.fit(t_np,y_np)
-        period = ls.best_period
     print("Best period: " + str(period) + " days")
     fig=plt.figure(figsize=(18, 16), dpi= 80, facecolor='w', edgecolor='k')
     plt.xlabel("Phase")
