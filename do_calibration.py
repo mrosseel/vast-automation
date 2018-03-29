@@ -116,7 +116,6 @@ def add_vsx_names_to_star_descriptions(star_descriptions, threshold_prob_candida
     found = 0
     for index, entry in enumerate(d2d):
         if entry.value < max_separation:
-            print("type of vsx separation:", type(entry.value))
             vsx_index = idx[index]
             result[index].match = ('VSX', entry.value,
                                    {'name': vsx_dict['metadata'][vsx_index]['Name'],

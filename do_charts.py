@@ -37,12 +37,7 @@ def plot_lightcurve(tuple, comparison_stars):
         return
     curve = curve.replace(to_replace=99.99999, value=np.nan, inplace=False)
 
-
-    #curve_min = curve['V-C'].min()
-    curve_max = curve['V-C'].max()
     curve2_norm = curve
-    #print("star, min, max:",star, curve_min,curve_max)
-    #curve2_norm['V-C'] = curve['V-C'] - curve_min
     curve2_norm['V-C'] = curve['V-C'] + comparison_stars[0].vmag
 
     used_curve = curve2_norm
@@ -62,7 +57,10 @@ def plot_lightcurve(tuple, comparison_stars):
     #fig.autofmt_xdate()
     plt.xlabel('Count')
     plt.ylabel("Absolute Mag, comp star = {:2.2f}".format(comparison_stars[0].vmag))
-    plt.ylim(max(used_curve_min+2, used_curve_max),used_curve_min)
+    plot_min = used_curve_min
+    plot_max = max(used_curve_min+2, used_curve_max)
+    print("Star:{},min:{},max:{}".format(star, plot_min, plot_max))
+    plt.ylim(plot_max,plot_min)
     plt.xlim(0, len(used_curve))
     plt.gca().invert_yaxis()
     #g.map(plt.errorbar, 'Count', 'V-C', yerr='s1', fmt='o')
