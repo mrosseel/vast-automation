@@ -213,17 +213,27 @@ def create_star_descriptions_catalog(star_descriptions):
     return create_generic_astropy_catalog(ra2, dec2)
 
 
-def add_apass_to_star_descriptions(star_descriptions, radius=0.01):
+def add_apass_to_star_descriptions(star_descriptions, radius=0.01, row_limit=2):
     print("apass input", len(star_descriptions))
     radius_angle = Angle(radius, unit=u.deg)
     for star in star_descriptions:
-        apass = get_apass_field(star.coords, radius_angle)
-        print(apass)
-        if apass is None or not apass.shape[0] == 1:
+        apass = get_apass_field(star.coords, radius=radius_angle, row_limit=row_limit)
+        if apass is None:
             print("More/less results received from APASS than expected: {}".format(apass.shape[0] if not apass is None and not apass.shape is None else 0))
+            print(apass)
             continue
-        star.vmag = apass['Vmag'][0]
-        print("Star {} has vmag {}".format(star.local_id, star.vmag))
+        if not apass.shape[0] == 1:
+            # while testing, the first result was the closest, but let's not take any chances
+            distances = apass.apply(lambda x: star_descriptions.coords.separation(
+                SkyCoord(x['RAJ2000'],
+                         x['DEJ2000'], unit='deg')).hour, axis=1)
+            minimum = distances.idxmin()
+            star.vmag = apass['Vmag'][minimum]
+            mindist = distances[minimum]
+        else:
+            star.vmag = apass['Vmag'][0]
+            mindist = star.coords.separation(SkyCoord(apass['RAJ2000'], apass['DEJ2000'], unit='deg'))
+        print("Star {} has vmag={}, dist={}".format(star.local_id, star.vmag, mindist))
     return star_descriptions
 
 def get_apass_star_descriptions(center_coord, radius, row_limit=2):
