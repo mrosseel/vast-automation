@@ -83,8 +83,11 @@ def get_candidates(threshold_prob=0.5, check_flag=False):
 def add_upsilon_data(star_descriptions):
     df = pd.DataFrame.from_csv(init.basedir + 'upsilon_output.txt')
     for star in star_descriptions:
-        row = df.iloc[df.index.get_loc(star.local_id)]
-        star.upsilon = (row['label'], row['probability'], row['flag'], row['period'])
+        try:
+            row = df.iloc[df.index.get_loc(star.local_id)]
+            star.upsilon = (row['label'], row['probability'], row['flag'], row['period'])
+        except:
+            continue
     return star_descriptions
 
 # returns list of star descriptions
