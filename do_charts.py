@@ -57,10 +57,13 @@ def plot_lightcurve(tuple, comparison_stars):
     #fig.autofmt_xdate()
     plt.xlabel('Count')
     plt.ylabel("Absolute Mag, comp star = {:2.2f}".format(comparison_stars[0].vmag))
-    plot_min = used_curve_min
-    plot_max = max(used_curve_min+2, used_curve_max)
-    print("Star:{},min:{},max:{}".format(star, plot_min, plot_max))
-    plt.ylim(plot_max,plot_min)
+    plot_max = used_curve_max-2
+    plot_min = min(plot_max, used_curve_min)
+    if np.isnan(plot_max) or np.isnan(plot_min):
+        print("star is nan", star)
+        return
+    #print("Star:{},dim:{},bright:{}".format(star, plot_dim, plot_bright))
+    plt.ylim(plot_min,plot_max)
     plt.xlim(0, len(used_curve))
     plt.gca().invert_yaxis()
     #g.map(plt.errorbar, 'Count', 'V-C', yerr='s1', fmt='o')
