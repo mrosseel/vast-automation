@@ -59,7 +59,7 @@ def plot_lightcurve(tuple, comparison_stars):
     plt.ylabel("Absolute Mag, comp star = {:2.2f}".format(comparison_stars[0].vmag))
     plot_max = used_curve_max
     plot_min = min(plot_max-1, used_curve_min)
-    #print('min', plot_min, 'max', plot_max, 'usedmin', used_curve_min, 'usedmax', used_curve_max)
+    print('min', plot_min, 'max', plot_max, 'usedmin', used_curve_min, 'usedmax', used_curve_max)
     if np.isnan(plot_max) or np.isnan(plot_min):
         print("star is nan", star)
         return
@@ -109,7 +109,7 @@ def plot_phase_diagram(star_description, comparison_stars, suffix='', period=Non
     phased_lc_final = phased_lc_final + comparison_stars[0].vmag
     phased_err = np.append(dy_np, dy_np)
     plt.gca().invert_yaxis()
-    plt.errorbar(phased_t_final,phased_lc_final,yerr=phased_err,linestyle='none',marker='o')
+    plt.errorbar(phased_t_final,phased_lc_final,yerr=phased_err,linestyle='none',marker='o', ecolor='r', elinewidth=1)
     fig.savefig(init.phasedir+'phase'+str(star).zfill(5)+suffix)
     plt.close(fig)
 
