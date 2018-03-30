@@ -24,14 +24,10 @@ def plot_lightcurve(tuple, comparison_stars):
 #    try:
     star_description = tuple[0]
     star = star_description.local_id
-    upsilon = star_description.upsilon
-    curve = tuple[1]
     star_match, separation = get_match(star_description)
+    upsilon_text = get_upsilon_string(star_description)
     coord = star_description.coords
-    if not upsilon == None:
-        upsilon_text = ", Var: prob={0:.2f},type={1}".format(upsilon['probability'], upsilon['vartype'])
-    else:
-        upsilon_text = ''
+    curve = tuple[1]
     if(curve is None):
         print("Curve is None for star", star)
         return
@@ -77,6 +73,7 @@ def plot_lightcurve(tuple, comparison_stars):
 def plot_phase_diagram(star_description, comparison_stars, suffix='', period=None):
     star = star_description.local_id
     star_match, separation = get_match(star_description)
+    upsilon_text = get_upsilon_string(star_description)
     match_string = "({})".format(star_match) if not star_match == '' else ''
     print("Calculating phase diagram for", star)
     curve = reading.read_lightcurve(star)
@@ -96,7 +93,7 @@ def plot_phase_diagram(star_description, comparison_stars, suffix='', period=Non
     fig=plt.figure(figsize=(18, 16), dpi= 80, facecolor='w', edgecolor='k')
     plt.xlabel("Phase")
     plt.ylabel("Magnitude")
-    plt.title("Star {} {}, period: {:.5f} d".format(star, match_string, period))
+    plt.title("Star {} {}, period: {:.5f} d{}".format(star, match_string, period, upsilon_text))
 
     # plotting + calculation of 'double' phase diagram from -1 to 1
     phased_t = np.fmod(t_np/period,1)
@@ -109,7 +106,7 @@ def plot_phase_diagram(star_description, comparison_stars, suffix='', period=Non
     phased_lc_final = phased_lc_final + comparison_stars[0].vmag
     phased_err = np.append(dy_np, dy_np)
     plt.gca().invert_yaxis()
-    plt.errorbar(phased_t_final,phased_lc_final,yerr=phased_err,linestyle='none',marker='o', ecolor='r', elinewidth=1)
+    plt.errorbar(phased_t_final,phased_lc_final,yerr=phased_err,linestyle='none',marker='o', ecolor='gray', elinewidth=1)
     fig.savefig(init.phasedir+'phase'+str(star).zfill(5)+suffix)
     plt.close(fig)
 
@@ -117,15 +114,6 @@ def get_hms_dms(coord):
     return "{:2.0f}$^h$ {:02.0f}$^m$ {:02.2f}$^s$ | {:2.0f}$\degree$ {:02.0f}$'$ {:02.2f}$''$"\
         .format(coord.ra.hms.h, abs(coord.ra.hms.m), abs(coord.ra.hms.s),
                 coord.dec.dms.d, abs(coord.dec.dms.m), abs(coord.dec.dms.s))
-
-def get_match(star_description):
-    if not star_description.match == None:
-        name = star_description.match[0]['catalog_dict']['name']
-        separation = star_description.match[0]['separation']
-    else:
-        name = ''
-        separation = ''
-    return name, separation
 
 def format_date(x, pos=None):
     thisind = np.clip(int(x + 0.5), 0, N - 1)
@@ -138,6 +126,26 @@ def store_curve_and_pos(star, star_descriptions, comparison_stars):
         plot_lightcurve(tuple, comparison_stars)
     except FileNotFoundError:
         print("File not found error in store and curve for star", star)
+
+# extract matching strings from star_descr
+def get_match(star_description):
+    if not star_description.match == None:
+        name = star_description.match[0]['catalog_dict']['name']
+        separation = star_description.match[0]['separation']
+    else:
+        name = ''
+        separation = ''
+    return name, separation
+
+# extract upsilon strings from star_descr
+def get_upsilon_string(star_description):
+    upsilon = star_description.upsilon
+    if not upsilon == None:
+        upsilon_text = ", Var: prob={0:.2f},type={1}".format(upsilon['probability'], upsilon['vartype'])
+    else:
+        upsilon_text = ''
+    return upsilon_text
+
 
 # takes:  [ {'id': star_id, 'match': {'name': match_name, 'separation': separation_deg  } } ]
 def run(star_descriptions, comparison_stars):
