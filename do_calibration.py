@@ -99,8 +99,7 @@ def get_star_descriptions(starlist=None):
     for key in positions:
         star_id = reading.filename_to_star(str(key))
         if starlist is None or star_id in starlist:
-            result.append(StarDescription(local_id=reading.filename_to_star(str(key)),
-                                          coords=SkyCoord(positions[key][0], positions[key][1], unit='deg')))
+            result.append(StarDescription(local_id=reading.filename_to_star(str(key)), coords=SkyCoord(positions[key][0], positions[key][1], unit='deg')))
     return result
 
 # returns [index, skycoord, type]
@@ -239,11 +238,13 @@ def add_apass_to_star_descriptions(star_descriptions, radius=0.01, row_limit=2):
                          x['DEJ2000'], unit='deg')).hour, axis=1)
             minimum = distances.idxmin()
             star.vmag = apass['Vmag'][minimum]
+            star.e_vmag = apass['e_Vmag'][minimum]
             mindist = distances[minimum]
         else:
             star.vmag = apass['Vmag'][0]
+            star.e_vmag = apass['e_Vmag'][0]
             mindist = star.coords.separation(SkyCoord(apass['RAJ2000'], apass['DEJ2000'], unit='deg'))
-        print("Star {} has vmag={}, dist={}".format(star.local_id, star.vmag, mindist))
+        print("Star {} has vmag={}, error={:.5f}, dist={}".format(star.local_id, star.vmag, star.e_vmag, mindist))
     return star_descriptions
 
 def get_apass_star_descriptions(center_coord, radius, row_limit=2):
@@ -289,14 +290,14 @@ def get_apass_field(center_coord, radius, row_limit=2):
     # apasstab.to_csv('foobar.csv')
     return apasstab
 
-
 class StarDescription:
-    def __init__(self, local_id=None, aavso_id=None, coords=None, vmag=None, match=None, upsilon=None, label=None,
+    def __init__(self, local_id=None, aavso_id=None, coords=None, vmag=None, e_vmag=None, match=None, upsilon=None, label=None,
                  xpos=None, ypos=None):
         self.local_id = local_id
         self.aavso_id = aavso_id
         self.coords = coords
         self.vmag = vmag
+        self.e_vmag = e_vmag
         self._match = match
         self._upsilon = upsilon
         self.xpos = xpos

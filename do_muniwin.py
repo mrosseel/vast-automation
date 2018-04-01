@@ -224,17 +224,8 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         with open(init.basedir + 'star_descriptions_to_chart.bin', 'wb') as fp:
              pickle.dump(star_descriptions, fp)
 
-    if do_charting:
-        do_charts.run(star_descriptions, comparison_stars)
-
-    if do_phase_diagram:
-        trash_and_recreate_dir(init.phasedir)
-        for star_description in star_descriptions:
-            print("upsilon is ", star_description.upsilon, star_description.local_id)
-            if not star_description == None:
-                do_charts.plot_phase_diagram(star_description, comparison_stars, suffix='a')
-                if not star_description.upsilon == None:
-                    do_charts.plot_phase_diagram(star_description, comparison_stars, suffix='b', period=star_description.upsilon['period'])
+    if do_charting or do_phase_diagram:
+        do_charts.run(star_descriptions, comparison_stars, do_charting, do_phase_diagram)
 
     # logger = mp.log_to_stderr()
     # logger.setLevel(mp.SUBDEBUG)
