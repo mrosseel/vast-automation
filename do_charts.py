@@ -13,6 +13,7 @@ import numpy as np
 from astropy.coordinates import SkyCoord
 from gatspy.periodic import LombScargleFast
 import init
+import star_description
 from reading import trash_and_recreate_dir
 
 TITLE_PAD=40
@@ -27,8 +28,8 @@ def plot_lightcurve(tuple, comparison_stars):
     star_description = tuple[0]
     curve = tuple[1]
     star = star_description.local_id
-    star_match, separation = get_match(star_description)
-    upsilon_text = get_upsilon_string(star_description)
+    star_match, separation = star_description.get_match_string(star_description)
+    upsilon_text = star_description.get_upsilon_string(star_description)
     coord = star_description.coords
     if(curve is None):
         print("Curve is None for star", star)
@@ -76,8 +77,8 @@ def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
     star_description = tuple[0]
     curve = tuple[1]
     star = star_description.local_id
-    star_match, separation = get_match(star_description)
-    upsilon_text = get_upsilon_string(star_description)
+    star_match, separation = star_description.get_match_string(star_description)
+    upsilon_text = star_description.get_upsilon_string(star_description)
     match_string = "({})".format(star_match) if not star_match == '' else ''
     print("Calculating phase diagram for", star)
     if curve is None:
@@ -129,26 +130,6 @@ def read_lightcurves(star_pos, star_descriptions):
         return tuple
     except FileNotFoundError:
         print("File not found error in store and curve for star", star_description.local_id)
-
-# extract matching strings from star_descr
-def get_match(star_description):
-    if not star_description.match == None:
-        name = star_description.match[0]['catalog_dict']['name']
-        separation = star_description.match[0]['separation']
-    else:
-        name = ''
-        separation = ''
-    return name, separation
-
-# extract upsilon strings from star_descr
-def get_upsilon_string(star_description):
-    upsilon = star_description.upsilon
-    if not upsilon == None:
-        upsilon_text = "\nVar: prob={0:.2f},type={1}".format(upsilon['probability'], upsilon['vartype'])
-    else:
-        upsilon_text = ''
-    return upsilon_text
-
 
 # reads lightcurves and passes them to lightcurve plot or phase plot
 def run(star_descriptions, comparison_stars, do_charts, do_phase):

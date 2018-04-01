@@ -1,6 +1,7 @@
 import os
 import init
 import reading
+from star_description import StarDescription
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
 from astropy.coordinates import match_coordinates_sky
@@ -290,43 +291,3 @@ def get_apass_field(center_coord, radius, row_limit=2):
     # apasstab.to_csv('foobar.csv')
     return apasstab
 
-class StarDescription:
-    def __init__(self, local_id=None, aavso_id=None, coords=None, vmag=None, e_vmag=None, match=None, upsilon=None, label=None,
-                 xpos=None, ypos=None):
-        self.local_id = local_id
-        self.aavso_id = aavso_id
-        self.coords = coords
-        self.vmag = vmag
-        self.e_vmag = e_vmag
-        self._match = match
-        self._upsilon = upsilon
-        self.xpos = xpos
-        self.ypos = ypos
-        self.label = self.local_id if label is None else label
-
-    @property
-    def upsilon(self):
-        return self._upsilon
-
-    @upsilon.setter
-    def upsilon(self, val):
-        vartype, probability, flag, period = val
-        self._upsilon = {'vartype': vartype, 'probability': probability, 'flag': flag, 'period': period}
-
-    @property
-    def match(self):
-        return self._match
-
-    @match.setter
-    def match(self, val):
-        catalog, separation, catalog_dict = val
-        if self._match is None: self._match = []
-        self._match.append({'catalog': catalog, 'separation': separation, 'catalog_dict': catalog_dict})
-
-    def __repr__(self):
-        return "StarDescription({0},{1},{2},{3},{4},{5})".format(
-            self.local_id, self.aavso_id, self.coords, self.vmag, self._match, self._upsilon)
-
-    def __str__(self):
-        return "id: {0}, coords: {2}, vmag: {3}".format(
-            self.local_id, self.aavso_id, self.coords, self.vmag, self._match, self._upsilon)

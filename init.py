@@ -31,9 +31,9 @@ do_pos=False
 do_pos_resume=False
 do_calibrate=False
 do_ml=False
-do_add_vsx=True
-do_charting=True
-do_phase_diagram=True
+do_charting=False
+do_phase_diagram=False
+do_reporting=True
 
 ### CALIBRATION ###
 reference_frame = 'WWCrA#30V_000184527_FLAT.fit'

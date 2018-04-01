@@ -12,7 +12,7 @@ import os, sys
 from functools import partial
 from subprocess import call
 import pickle
-import time
+import do_aavso_report
 
 
 # Munifind fields: INDEX MEAN_MAG STDEV GOODPOINTS
@@ -149,7 +149,7 @@ def world_pos(star, wcs, reference_frame_index):
 
 def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightcurve, do_lightcurve_resume, do_pos,
                 do_pos_resume,
-                do_calibrate, do_ml, do_charting, do_phase_diagram):
+                do_calibrate, do_ml, do_charting, do_phase_diagram, do_reporting):
     reference_frame_index = do_calibration.find_reference_frame_index()
 
     if do_convert_fits:
@@ -227,6 +227,10 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     if do_charting or do_phase_diagram:
         do_charts.run(star_descriptions, comparison_stars, do_charting, do_phase_diagram)
 
+    if do_reporting:
+        for star in star_descriptions:
+            do_aavso_report.report(star, comp_star_description)
+
     # logger = mp.log_to_stderr()
     # logger.setLevel(mp.SUBDEBUG)
 
@@ -241,8 +245,9 @@ print("Calculating", len(init.star_list), "stars from base dir:", init.basedir, 
 "\ncalibrate:\t", init.do_calibrate,
 "\nupsilon:\t", init.do_ml,
 "\ncharting:\t", init.do_charting,
-"\nphasediagram:\t", init.do_phase_diagram)
+"\nphasediagram:\t", init.do_phase_diagram,
+"\nreporting:\t", init.do_reporting)
 input("Press Enter to continue...")
 run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_munifind, init.do_lightcurve,
 init.do_lightcurve_resume, init.do_pos, init.do_pos_resume, init.do_calibrate,
-init.do_ml, init.do_charting, init.do_phase_diagram)
+init.do_ml, init.do_charting, init.do_phase_diagram, init.do_reporting)
