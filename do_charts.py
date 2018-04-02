@@ -13,7 +13,8 @@ import numpy as np
 from astropy.coordinates import SkyCoord
 from gatspy.periodic import LombScargleFast
 import init
-import star_description
+from star_description import get_match_string
+from star_description import get_upsilon_string
 from reading import trash_and_recreate_dir
 
 TITLE_PAD=40
@@ -28,8 +29,8 @@ def plot_lightcurve(tuple, comparison_stars):
     star_description = tuple[0]
     curve = tuple[1]
     star = star_description.local_id
-    star_match, separation = star_description.get_match_string(star_description)
-    upsilon_text = star_description.get_upsilon_string(star_description)
+    star_match, separation = get_match_string(star_description)
+    upsilon_text = get_upsilon_string(star_description)
     coord = star_description.coords
     if(curve is None):
         print("Curve is None for star", star)
@@ -58,7 +59,7 @@ def plot_lightcurve(tuple, comparison_stars):
     plt.ylabel("Absolute Mag, comp star = {:2.2f}".format(comparison_stars[0].vmag), labelpad=TITLE_PAD)
     plot_max = used_curve_max
     plot_min = min(plot_max-1, used_curve_min)
-    print('min', plot_min, 'max', plot_max, 'usedmin', used_curve_min, 'usedmax', used_curve_max)
+    #print('min', plot_min, 'max', plot_max, 'usedmin', used_curve_min, 'usedmax', used_curve_max)
     if np.isnan(plot_max) or np.isnan(plot_min):
         print("star is nan", star)
         return

@@ -21,7 +21,6 @@ def calibrate():
     # print(w)
     return w
 
-
 def find_reference_frame_index():
     the_dir = os.listdir(init.fitsdir)
     the_dir.sort()
@@ -96,7 +95,7 @@ def get_star_descriptions(starlist=None):
     # returns {'name': [ra.deg, dec.deg ]}
     positions = reading.read_world_positions(init.worldposdir)
     result = []
-    print(starlist)
+    print('list to get descriptions', starlist)
     for key in positions:
         star_id = reading.filename_to_star(str(key))
         if starlist is None or star_id in starlist:

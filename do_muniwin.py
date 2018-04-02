@@ -185,7 +185,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         do_world_pos(wcs, init.star_list, 0)  # pass 0 for reference_frame_index because we only write one position
         df = do_calibration.find_target_star(init.ra_deg, init.dec_deg, 50)
         df.to_csv(init.basedir + 'distances_from_target_star.csv')
-        print(df)
+        print("calibrate df", df)
 
     if do_ml:
         import do_upsilon  # do it here because it takes some time at startup
@@ -193,7 +193,9 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
 
     # parse comparison star from munifind.txt
     comparison_star = reading.read_comparison_star()
+    print('comparison star', comparison_star)
     comp_star_description = do_calibration.get_star_descriptions([comparison_star])
+    print('comparison star description', comp_star_description)
     comparison_stars = do_calibration.add_apass_to_star_descriptions(comp_star_description)
     print("Using comparison star", comparison_stars)
 
@@ -227,12 +229,18 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     if do_charting or do_phase_diagram:
         do_charts.run(star_descriptions, comparison_stars, do_charting, do_phase_diagram)
 
+    #import code
+    #code.InteractiveConsole(locals=dict(globals(), **locals())).interact()
     if do_reporting:
         for star in star_descriptions:
             do_aavso_report.report(star, comp_star_description)
 
     # logger = mp.log_to_stderr()
     # logger.setLevel(mp.SUBDEBUG)
+
+def interact():
+    import code
+    code.InteractiveConsole(locals=dict(globals(), **locals())).interact()
 
 print("Calculating", len(init.star_list), "stars from base dir:", init.basedir, "\nconvert_fits:\t", init.do_convert_fits,
 "\nphotometry:\t", init.do_photometry,

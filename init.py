@@ -5,7 +5,7 @@ codedir = './'
 aperture = 2
 all = range(1,10000)
 thou = range(1,1000)
-selection = [137,138,886]
+selection = [58, 137,138,886]
 selection2 = (1,2,3,73,138,143,264,2675,1045,847,1193)
 custom_muniwin = range(5776,10000)
 #custom_charts = range(1,5776)
@@ -29,17 +29,19 @@ do_lightcurve=False
 do_lightcurve_resume=False
 do_pos=False
 do_pos_resume=False
-do_calibrate=False
+do_calibrate=True
 do_ml=False
-do_charting=False
+do_charting=True
 do_phase_diagram=False
-do_reporting=True
+do_reporting=False
 
 ### CALIBRATION ###
 reference_frame = 'WWCrA#30V_000184527_FLAT.fit'
 reference_header = basedir + 'new-image.fits'
 ra_deg = 271.4032917
 dec_deg = -43.8326111
+sitelat = '-22 57 10'
+sitelong= '-68 10 49'
 ### CALIBRATION
 
 #### DO NOT TOUCH ####

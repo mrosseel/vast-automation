@@ -36,7 +36,7 @@ class StarDescription:
             self.local_id, self.aavso_id, self.coords, self.vmag, self._match, self._upsilon)
 
     def __str__(self):
-        return "id: {0}, coords: {2}, vmag: {3}".format(
+        return "local_id: {0}, aavso_id: {1}, coords: {2}, vmag: {3}".format(
             self.local_id, self.aavso_id, self.coords, self.vmag, self._match, self._upsilon)
 
 
