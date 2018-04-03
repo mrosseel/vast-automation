@@ -27,20 +27,6 @@ def preprocess_lightcurve(df):
     except IndexError:
         print("len df:", len(df))
 
-
-
-def read_pos_old(star):
-    return "TODO: position is not yet returned"
-    try:
-        df = pd.read_csv(init.posdir + 'pos_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
-        df2 = df[df['X'] > 0]
-        df3 = df2[df['MAG'] < 99]
-        return (df3['X'].iloc[0], df3['Y'].iloc[0])
-    except IndexError:
-        print("ERROR: IndexError")
-        #print("df:",len(df),"df2:", len(df2),"df3:", len(df3))
-        print(len(df))
-
 def read_pos(star, jd):
     try:
         df = pd.read_csv(init.posdir + 'pos_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')

@@ -37,14 +37,10 @@ def plot_lightcurve(tuple, comparison_stars):
     if(curve is None):
         print("Curve is None for star", star)
         return
-    curve = curve.replace(to_replace=99.99999, value=np.nan, inplace=False)
-
-    curve2_norm = curve
-    curve2_norm['V-C'] = curve['V-C'] + comparison_stars[0].vmag
-
-    used_curve = curve2_norm
-    used_curve_max = curve2_norm['V-C'].max()
-    used_curve_min = curve2_norm['V-C'].min()
+    #curve = curve.replace(to_replace=99.99999, value=np.nan, inplace=False) # we filter now
+    used_curve = curve
+    used_curve_max = used_curve['V-C'].max()
+    used_curve_min = used_curve['V-C'].min()
 
     #insert counting column
     used_curve.insert(0, 'Count', range(0, len(used_curve)))
@@ -91,11 +87,9 @@ def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
     y_np = curve['V-C'].as_matrix()
     dy_np = curve['s1'].as_matrix()
     if period is None:
-        ls = LombScargleFast()
         period_max = np.max(t_np)-np.min(t_np)
-        ls.optimizer.period_range = (0.01,period_max)
-        ls.optimizer.quiet = True
-        ls.fit(t_np,y_np)
+        ls = LombScargleFast(optimizer_kwds={'quiet': True, 'period_range': (0.01,period_max)}, silence_warnings=True)\
+            .fit(t_np,y_np)
         period = ls.best_period
     #print("Best period: " + str(period) + " days")
     fig=plt.figure(figsize=(18, 16), dpi= 80, facecolor='w', edgecolor='k')
@@ -111,7 +105,7 @@ def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
     phased_lc = y_np[:]
     phased_t_final = np.append(phased_t2, phased_t)
     phased_lc_final = np.append(phased_lc, phased_lc)
-    phased_lc_final = phased_lc_final + comparison_stars[0].vmag
+    #phased_lc_final = phased_lc_final + comparison_stars[0].vmag
     phased_err = np.append(dy_np, dy_np)
     plt.gca().invert_yaxis()
     plt.errorbar(phased_t_final,phased_lc_final,yerr=phased_err,linestyle='none',marker='o', ecolor='gray', elinewidth=1)
@@ -130,10 +124,13 @@ def format_date(x, pos=None):
 def read_lightcurves(star_pos, star_descriptions, comparison_stars, do_charts, do_phase):
     star_description = star_descriptions[star_pos]
     try:
-        tuple = star_description, reading.read_lightcurve(star_description.local_id,filter=False)
-        if len(tuple[1]) == 0:
+        df = reading.read_lightcurve(star_description.local_id,filter=True)
+        if len(df) == 0:
             print("No lightcurve found for star", star_description.local_id)
             return
+        # adding vmag of comparison star to all diff mags
+        df['V-C'] = df['V-C'] + comparison_stars[0].vmag
+        tuple = star_description, df
         if do_charts:
             plot_lightcurve(tuple, comparison_stars=comparison_stars)
         if do_phase:
