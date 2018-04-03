@@ -77,7 +77,7 @@ def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
     curve = tuple[1]
     star = star_description.local_id
     star_match, separation = get_match_string(star_description)
-    match_string = "({})".format(star_match) if not star_match == '' else ''
+    match_string = " ({})".format(star_match) if not star_match == '' else ''
     upsilon_text = get_upsilon_string(star_description)
     #print("Calculating phase diagram for", star)
     if curve is None:
@@ -95,7 +95,7 @@ def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
     fig=plt.figure(figsize=(18, 16), dpi= 80, facecolor='w', edgecolor='k')
     plt.xlabel("Phase", labelpad=TITLE_PAD)
     plt.ylabel("Magnitude", labelpad=TITLE_PAD)
-    plt.title("Star {} {}, period: {:.5f} d{}".format(star, match_string, period, upsilon_text), pad=TITLE_PAD)
+    plt.title("Star {}{}, period: {:.5f} d{}".format(star, match_string, period, upsilon_text), pad=TITLE_PAD)
     plt.tight_layout()
     # plotting + calculation of 'double' phase diagram from -1 to 1
     phased_t = np.fmod(t_np/period,1)

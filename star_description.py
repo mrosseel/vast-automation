@@ -54,7 +54,8 @@ def get_match_string(star_description):
 def get_upsilon_string(star_description):
     upsilon = star_description.upsilon
     if not upsilon == None:
-        upsilon_text = "\nVar: prob={0:.2f},type={1}".format(upsilon['probability'], upsilon['vartype'])
+        upsilon_text = "\nVar: prob={0:.2f}({1}),type={2}".format(upsilon['probability'], upsilon['flag'],
+                                                                  upsilon['vartype'])
     else:
         upsilon_text = ''
     return upsilon_text
