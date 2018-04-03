@@ -63,7 +63,7 @@ def plot_lightcurve(tuple, comparison_stars):
     plot_min = min(plot_max-1, used_curve_min)
     #print('min', plot_min, 'max', plot_max, 'usedmin', used_curve_min, 'usedmax', used_curve_max)
     if np.isnan(plot_max) or np.isnan(plot_min):
-        print("star is nan", star)
+        print("star is nan:", star)
         return
     #print("Star:{},dim:{},bright:{}".format(star, plot_dim, plot_bright))
     plt.ylim(plot_min,plot_max)
@@ -131,6 +131,9 @@ def read_lightcurves(star_pos, star_descriptions, comparison_stars, do_charts, d
     star_description = star_descriptions[star_pos]
     try:
         tuple = star_description, reading.read_lightcurve(star_description.local_id,filter=False)
+        if len(tuple[1]) == 0:
+            print("No lightcurve found for star", star_description.local_id)
+            return
         if do_charts:
             plot_lightcurve(tuple, comparison_stars=comparison_stars)
         if do_phase:
