@@ -42,9 +42,9 @@ The docker image also exposes a Jupyter lab instance on port 8888
 
 ## TODO
 
+- increase max_stars from 10.000 to unlimited so we can select the best reference frame
 - new ensemble comparison star calculation?
 - aperture is now fixed at 2, do some experiments on 1 star to measure effect on error bars and results
-- capture upsilon extra data (minimum = period) ?
 - check error column for any stars having error bars > 1%
 
 ## References
