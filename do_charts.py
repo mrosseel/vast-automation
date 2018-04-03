@@ -30,6 +30,8 @@ def plot_lightcurve(tuple, comparison_stars):
     curve = tuple[1]
     star = star_description.local_id
     star_match, separation = get_match_string(star_description)
+    match_string = "({})".format(star_match) if not star_match == '' else ''
+    star_name = '' if star_match == '' else " ({} - dist:{:.4f})".format(star_match, separation)
     upsilon_text = get_upsilon_string(star_description)
     coord = star_description.coords
     if(curve is None):
@@ -49,7 +51,7 @@ def plot_lightcurve(tuple, comparison_stars):
     g = sns.lmplot('Count', 'V-C',
                data=used_curve, size=20, aspect=5,scatter_kws={"s": 15},
                fit_reg=False)
-    star_name = '' if star_match == '' else " ({} - dist:{:.4f})".format(star_match, separation)
+
     plt.title("Star {0}{1}, position: {2}{3}".format(star, star_name, get_hms_dms(coord), upsilon_text), pad=TITLE_PAD)
 
     #plt.xaxis.set_major_formatter(ticker.FuncFormatter(format_date))
@@ -78,10 +80,10 @@ def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
     star_description = tuple[0]
     curve = tuple[1]
     star = star_description.local_id
-    star_match, separation = star_description.get_match_string(star_description)
-    upsilon_text = star_description.get_upsilon_string(star_description)
+    star_match, separation = get_match_string(star_description)
     match_string = "({})".format(star_match) if not star_match == '' else ''
-    print("Calculating phase diagram for", star)
+    upsilon_text = get_upsilon_string(star_description)
+    #print("Calculating phase diagram for", star)
     if curve is None:
         print("Curve of star {} is None".format(star))
         return
@@ -92,9 +94,10 @@ def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
         ls = LombScargleFast()
         period_max = np.max(t_np)-np.min(t_np)
         ls.optimizer.period_range = (0.01,period_max)
+        ls.optimizer.quiet = True
         ls.fit(t_np,y_np)
         period = ls.best_period
-    print("Best period: " + str(period) + " days")
+    #print("Best period: " + str(period) + " days")
     fig=plt.figure(figsize=(18, 16), dpi= 80, facecolor='w', edgecolor='k')
     plt.xlabel("Phase", labelpad=TITLE_PAD)
     plt.ylabel("Magnitude", labelpad=TITLE_PAD)
@@ -124,39 +127,30 @@ def format_date(x, pos=None):
     thisind = np.clip(int(x + 0.5), 0, N - 1)
     return r.date[thisind].strftime('%Y-%m-%d')
 
-def read_lightcurves(star_pos, star_descriptions):
+def read_lightcurves(star_pos, star_descriptions, comparison_stars, do_charts, do_phase):
     star_description = star_descriptions[star_pos]
     try:
         tuple = star_description, reading.read_lightcurve(star_description.local_id,filter=False)
-        return tuple
+        if do_charts:
+            plot_lightcurve(tuple, comparison_stars=comparison_stars)
+        if do_phase:
+            plot_phase_diagram(tuple, comparison_stars=comparison_stars)
     except FileNotFoundError:
         print("File not found error in store and curve for star", star_description.local_id)
 
 # reads lightcurves and passes them to lightcurve plot or phase plot
 def run(star_descriptions, comparison_stars, do_charts, do_phase):
-    CHUNK = 10
+    CHUNK = 100
     # star_list = [star.local_id for star in star_descriptions]
     star_list = range(0, len(star_descriptions))
-    lightcurves = []
     set_seaborn_style()
     pool = mp.Pool(init.nr_threads)
 
-    print("Reading star positions, total size = ",len(star_list))
-    func = partial(read_lightcurves, star_descriptions=star_descriptions)
-    for _ in tqdm.tqdm(pool.imap_unordered(func, star_list, CHUNK), total=len(init.all_star_list)):
-        lightcurves.append(_)
-        pass
-
     if do_charts:
-        print("Plotting lightcurve, total size = ",len(lightcurves))
         trash_and_recreate_dir(init.chartsdir)
-        func = partial(plot_lightcurve, comparison_stars=comparison_stars)
-        for _ in tqdm.tqdm(pool.imap_unordered(func, lightcurves, CHUNK), total=len(lightcurves)):
-            pass
-
     if do_phase:
-        print("Plotting phase diagrams, total size = ",len(lightcurves))
         trash_and_recreate_dir(init.phasedir)
-        func = partial(plot_phase_diagram, comparison_stars=comparison_stars)
-        for _ in tqdm.tqdm(pool.imap_unordered(func, lightcurves, CHUNK), total=len(lightcurves)):
-            pass
+
+    func = partial(read_lightcurves, star_descriptions=star_descriptions, comparison_stars=comparison_stars, do_charts=do_charts, do_phase=do_phase)
+    for _ in tqdm.tqdm(pool.imap_unordered(func, star_list, chunksize=CHUNK), total=len(star_descriptions)):
+        pass

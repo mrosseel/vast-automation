@@ -63,7 +63,8 @@ def read_worldpos(star):
         return f.readlines()[0].split(' ')
 
 def trash_and_recreate_dir(dir):
-    shutil.rmtree(dir, ignore_errors=True)
+    os.system('rm -fr "%s"' % dir)
+    #shutil.rmtree(dir, ignore_errors=True)
     os.makedirs(dir, exist_ok=True)
 
 # helper function
