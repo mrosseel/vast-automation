@@ -150,7 +150,6 @@ def world_pos(star, wcs, reference_frame_index):
 def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightcurve, do_lightcurve_resume, do_pos,
                 do_pos_resume,
                 do_calibrate, do_ml, do_charting, do_phase_diagram, do_reporting):
-    reference_frame_index = do_calibration.find_reference_frame_index()
 
     if do_convert_fits:
         write_convert_fits()
@@ -158,6 +157,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     if do_photometry:
         write_photometry()
 
+    reference_frame_index = do_calibration.find_reference_frame_index()
     if do_match:
         write_match(do_calibration.find_reference_photometry(reference_frame_index))
 
@@ -224,7 +224,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
             star_descriptions = do_calibration.add_upsilon_data(star_descriptions)
 
         with open(init.basedir + 'star_descriptions_to_chart.bin', 'wb') as fp:
-             pickle.dump(star_descriptions, fp)
+            pickle.dump(star_descriptions, fp)
 
     if do_charting or do_phase_diagram:
         do_charts.run(star_descriptions, comparison_stars, do_charting, do_phase_diagram)
