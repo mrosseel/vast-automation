@@ -96,15 +96,6 @@ do_charting = True
 do_phase_diagram = True
 do_reporting = False
 
-### CALIBRATION ###
-reference_frame = 'WWCrA#30V_000184527_FLAT.fit'
-reference_header = basedir + 'new-image.fits'
-ra_deg = 271.4032917
-dec_deg = -43.8326111
-sitelat = '-22 57 10'
-sitelong = '-68 10 49'
-### CALIBRATION
-
 #### DO NOT TOUCH ####
 # standard directories
 fitsdir = basedir + "fits/"
@@ -119,3 +110,13 @@ chartsdir = resultdir + "charts/"
 phasedir = resultdir + "phasediagrams/"
 vsx_catalog_path = codedir + "vsx_catalog.bin"
 #### DO NOT TOUCH ####
+
+### CALIBRATION ###
+reference_dir = fitsdir
+reference_frame = 'WWCrA#30V_000184527_FLAT.fit'
+reference_header = basedir + 'new-image.fits'
+ra_deg = 271.4032917
+dec_deg = -43.8326111
+sitelat = '-22 57 10'
+sitelong = '-68 10 49'
+### CALIBRATION

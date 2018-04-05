@@ -22,7 +22,7 @@ def calibrate():
     return w
 
 def find_reference_frame_index():
-    the_dir = os.listdir(init.fitsdir)
+    the_dir = os.listdir(init.reference_dir)
     the_dir.sort()
     reference_frame_index = the_dir.index(init.reference_frame)
     return reference_frame_index
@@ -145,8 +145,9 @@ def get_vsx_in_field(star_descriptions, max_separation=0.01):
     result = []
     for index, entry in enumerate(d2d):
         if entry.value < max_separation:
+            print('Close enough for {}'.format(idx[index]))
             if idx[index] == 137:
-                print(vsx_dict)
+                print(vsx_dict, index, vsx_index)
             vsx_index = idx[index]
             vsx_coords = SkyCoord(vsx_dict['ra_deg_np'][index], vsx_dict['dec_deg_np'][vsx_index], unit='deg')
             star_coords = star_catalog[idx[index]]

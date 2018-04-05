@@ -158,6 +158,8 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         write_photometry()
 
     reference_frame_index = do_calibration.find_reference_frame_index()
+    print("Reference frame index", reference_frame_index)
+
     if do_match:
         write_match(do_calibration.find_reference_photometry(reference_frame_index))
 
@@ -181,7 +183,6 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
 
     if do_calibrate:
         wcs = do_calibration.calibrate()
-        print("Reference frame index", reference_frame_index)
         do_world_pos(wcs, init.star_list, 0)  # pass 0 for reference_frame_index because we only write one position
         df = do_calibration.find_target_star(init.ra_deg, init.dec_deg, 50)
         df.to_csv(init.basedir + 'distances_from_target_star.csv')

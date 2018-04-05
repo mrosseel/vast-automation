@@ -152,7 +152,7 @@ def test_code(reference_frame, xpos, ypos, arcsecond_width, arssecond_heigth):
     # hdu.writeto('test.fits')
 
 #w, jd = calculate_wcs('WWCrA#30V_000185980_FLAT.fit', 695, 671, 47*60, 47*60)
-w, jd = calculate_wcs_from_file(init.reference_header, init.reference_frame, init.xpos, init.ypos)
+w, jd = calculate_wcs_from_file(init.reference_header, init.reference_dir+init.reference_frame, init.xpos, init.ypos)
 print(w, jd)
 testing(w)
 pd.set_option('precision', 10)
