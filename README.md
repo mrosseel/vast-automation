@@ -35,6 +35,7 @@ Once you're in this VM, all python commands can be run.
 ## Jupyter lab usage
 
 The docker image also exposes a Jupyter lab instance on port 8888
+Password is 'muni'
 
 ## Other
 

@@ -9,8 +9,10 @@ USER root
 RUN apt-get update && apt-get install -yq gstreamer1.0 wcslib-dev libcfitsio3-dev expat gtk2.0 gcc python3-pip libfftw3-dev less nano
 RUN wget https://sourceforge.net/projects/c-munipack/files/C-Munipack%202.1%20Stable/2.1.24/cmunipack-2.1.24.tar.gz/download -O cmunipack.tar.gz
 RUN tar xvfz cmunipack.tar.gz
-RUN cd cmunipack-2.1.24 && chmod +x ./configure && ./configure && make && make install && ldconfig
+WORKDIR /home/jovyan/cmunipack-2.1.24
+RUN chmod +x ./configure && ./configure && make && make install && ldconfig
 USER $NB_USER
+WORKDIR /home/jovyan
 RUN pip install --upgrade pip
 RUN pip install numpy
 RUN pip install astropy pyreadline pyfftw tqdm photutils gatspy astroquery
@@ -19,6 +21,11 @@ RUN pip install astropy pyreadline pyfftw tqdm photutils gatspy astroquery
 RUN conda update -y scikit-learn matplotlib
 #RUN git clone https://github.com/mrosseel/upsilon.git
 RUN git clone https://github.com/dwkim78/upsilon.git
+RUN mkdir .jupyter
+COPY jupyter_notebook_config.py .jupyter/jupyter_notebook_config.py
+COPY start.sh start.sh
 USER root
-RUN cd upsilon && python3 setup.py install
+WORKDIR /home/jovyan/upsilon
+RUN python3 setup.py install
+WORKDIR /home/jovyan/
 USER $NB_USER

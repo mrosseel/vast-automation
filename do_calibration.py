@@ -145,6 +145,8 @@ def get_vsx_in_field(star_descriptions, max_separation=0.01):
     result = []
     for index, entry in enumerate(d2d):
         if entry.value < max_separation:
+            if idx[index] == 137:
+                print(vsx_dict)
             vsx_index = idx[index]
             vsx_coords = SkyCoord(vsx_dict['ra_deg_np'][index], vsx_dict['dec_deg_np'][vsx_index], unit='deg')
             star_coords = star_catalog[idx[index]]
@@ -157,6 +159,7 @@ def get_vsx_in_field(star_descriptions, max_separation=0.01):
             result_entry.aavso_id = vsx_dict['metadata'][vsx_index]['Name']
             result.append(result_entry)
     print("Found {} stars".format(len(result)))
+    print(result)
     return result
 
 
