@@ -42,6 +42,7 @@ The docker image also exposes a Jupyter lab instance on port 8888
 
 ## TODO
 
+- implement UCAC4 reference star matching because they have ID
 - increase max_stars from 10.000 to unlimited so we can select the best reference frame
 - new ensemble comparison star calculation?
 - aperture is now fixed at 2, do some experiments on 1 star to measure effect on error bars and results
@@ -50,3 +51,4 @@ The docker image also exposes a Jupyter lab instance on port 8888
 ## References
 
 * https://books.google.ae/books?id=g_K3-bQ8lTUC&pg=PA236&lpg=PA236&dq=munipack+aperture&source=bl&ots=P4BKKI25HG&sig=Lj9Kg6EZi2pwKZXK5Hk5_B4qcVg&hl=en&sa=X&ved=0ahUKEwj4qr6o4evZAhWILcAKHdtnAqYQ6AEIRDAE#v=onepage&q&f=false
+* https://www.aavso.org/how-report-new-variable-star-discoveries

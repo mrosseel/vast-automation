@@ -48,9 +48,10 @@ def predict_star(star, limit=-1):
         if(limit > 0):
             df = df[:limit]
             print("Restricting star", star, " to limit:", limit)
-        mag = df['V-C']
-        date = df['JD']
-        err = df['s1']
+        mag = df['V-C'].as_matrix()
+        date = df['JD'].as_matrix()
+        err = df['s1'].as_matrix()
+        date, mag, err = upsilon.utils.sigma_clipping(date, mag, err, threshold=3, iteration=1)
         e_features = upsilon.ExtractFeatures(date, mag, err)
         e_features.run()
         features = e_features.get_features()

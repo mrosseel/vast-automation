@@ -67,7 +67,7 @@ def plot_lightcurve(tuple, comparison_stars):
     plt.gca().invert_yaxis()
     #g.map(plt.errorbar, 'Count', 'V-C', yerr='s1', fmt='o')
     #plt.ticklabel_format(style='plain', axis='x')
-    g.savefig(init.chartsdir+str(star).zfill(5) )
+    g.savefig(init.chartsdir+str(star).zfill(5)+'_plot' )
     plt.close(g.fig)
 #    except:
 #        print("error", tuple)
@@ -109,7 +109,7 @@ def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
     phased_err = np.append(dy_np, dy_np)
     plt.gca().invert_yaxis()
     plt.errorbar(phased_t_final,phased_lc_final,yerr=phased_err,linestyle='none',marker='o', ecolor='gray', elinewidth=1)
-    fig.savefig(init.phasedir+'phase'+str(star).zfill(5)+suffix)
+    fig.savefig(init.phasedir+str(star).zfill(5)+'_phase'+suffix)
     plt.close(fig)
 
 def get_hms_dms(coord):
