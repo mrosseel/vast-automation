@@ -88,6 +88,8 @@ def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
     dy_np = curve['s1'].as_matrix()
     if period is None:
         period_max = np.max(t_np)-np.min(t_np)
+        if period_max <= 0.01:
+             return
         ls = LombScargleFast(optimizer_kwds={'quiet': True, 'period_range': (0.01,period_max)}, silence_warnings=True)\
             .fit(t_np,y_np)
         period = ls.best_period

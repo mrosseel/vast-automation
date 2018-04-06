@@ -76,25 +76,26 @@ wwcra_certain_candidates = [6314,
 
 #### SETTINGS for DO_MUNIWIN.PY ####
 
-# basedir = codedir + 'inputfiles/WWCrA_allflat/'
-# basedir = codedir + 'inputfiles/WWCrA2015/'
-basedir = codedir + 'inputfiles/WWCrA_bigger/'
-star_list = selection
-nr_threads = multiprocessing.cpu_count() * 2
+basedir = codedir + 'inputfiles/RTGru/'
+#basedir = codedir + 'inputfiles/WWCrA_allflat/'
+#basedir =  codedir + 'inputfiles/WWCrA2015/'
+#basedir =  codedir + 'inputfiles/WWCrA_bigger/'
+star_list = all
+nr_threads = multiprocessing.cpu_count() 
 
-do_convert_fits = False
-do_photometry = False
-do_match = False
-do_munifind = False
-do_lightcurve = False
-do_lightcurve_resume = False
-do_pos = False
-do_pos_resume = False
-do_calibrate = True
-do_ml = True
-do_charting = True
-do_phase_diagram = True
-do_reporting = False
+do_convert_fits=False
+do_photometry=False
+do_match=False
+do_munifind=False
+do_lightcurve=False
+do_lightcurve_resume=False
+do_pos=False
+do_pos_resume=False
+do_calibrate=False
+do_ml=False
+do_charting=True
+do_phase_diagram=True
+do_reporting=False
 
 #### DO NOT TOUCH ####
 # standard directories
@@ -112,8 +113,8 @@ vsx_catalog_path = codedir + "vsx_catalog.bin"
 #### DO NOT TOUCH ####
 
 ### CALIBRATION ###
-reference_dir = fitsdir
-reference_frame = 'WWCrA#30V_000184527_FLAT.fit'
+reference_dir = convfitsdir
+reference_frame = 'kout000546.fts'
 reference_header = basedir + 'new-image.fits'
 ra_deg = 271.4032917
 dec_deg = -43.8326111
