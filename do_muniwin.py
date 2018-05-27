@@ -1,6 +1,7 @@
 import init
 import do_calibration
 import do_charts
+import do_field_charts
 import reading
 from reading import trash_and_recreate_dir
 from reading import reduce_star_list
@@ -149,7 +150,7 @@ def world_pos(star, wcs, reference_frame_index):
 
 def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightcurve, do_lightcurve_resume, do_pos,
                 do_pos_resume,
-                do_calibrate, do_ml, do_charting, do_phase_diagram, do_reporting):
+                do_calibrate, do_ml, do_charting, do_phase_diagram, do_field_charting, do_reporting):
 
     if do_convert_fits:
         write_convert_fits()
@@ -158,7 +159,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         write_photometry()
 
     reference_frame_index = do_calibration.find_reference_frame_index()
-    print("Reference frame index", reference_frame_index)
+    print("Reference frame: {}, index: {}".format(init.reference_frame, reference_frame_index, ))
 
     if do_match:
         write_match(do_calibration.find_reference_photometry(reference_frame_index))
@@ -192,14 +193,6 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         import do_upsilon  # do it here because it takes some time at startup
         do_upsilon.run(init.star_list)
 
-    # parse comparison star from munifind.txt
-    comparison_star = reading.read_comparison_star()
-    print('comparison star', comparison_star)
-    comp_star_description = do_calibration.get_star_descriptions([comparison_star])
-    print('comparison star description', comp_star_description)
-    comparison_stars = do_calibration.add_apass_to_star_descriptions(comp_star_description)
-    print("Using comparison star", comparison_stars)
-
     chart_premade = False
     chart_upsilon = False
     chart_vsx = False
@@ -218,7 +211,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         elif(chart_custom):
             star_descriptions = do_calibration.get_star_descriptions(init.star_list)
 
-        if not chart_vsx: # chart_vsx already has the vsx mappingss
+        if not chart_vsx: # chart_vsx already has the vsx mappings
             star_descriptions = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions)
 
         if not chart_upsilon:
@@ -228,6 +221,13 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
             pickle.dump(star_descriptions, fp)
 
     if do_charting or do_phase_diagram:
+        # parse comparison star from munifind.txt
+        comparison_star = reading.read_comparison_star()
+        print('comparison star', comparison_star)
+        comp_star_description = do_calibration.get_star_descriptions([comparison_star])
+        print('comparison star description', comp_star_description)
+        comparison_stars = do_calibration.add_ucac4_to_star_descriptions(comp_star_description)
+        print("Using comparison star", comparison_stars)
         do_charts.run(star_descriptions, comparison_stars, do_charting, do_phase_diagram)
 
     #import code
@@ -235,6 +235,9 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     if do_reporting:
         for star in star_descriptions:
             do_aavso_report.report(star, comp_star_description)
+
+    if do_field_charting:
+        do_field_charts.run_standard_field_charts()
 
     # logger = mp.log_to_stderr()
     # logger.setLevel(mp.SUBDEBUG)
@@ -255,8 +258,9 @@ print("Calculating", len(init.star_list), "stars from base dir:", init.basedir, 
 "\nupsilon:\t", init.do_ml,
 "\ncharting:\t", init.do_charting,
 "\nphasediagram:\t", init.do_phase_diagram,
+"\nfield charts:\t", init.do_field_charts,
 "\nreporting:\t", init.do_reporting)
 input("Press Enter to continue...")
 run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_munifind, init.do_lightcurve,
 init.do_lightcurve_resume, init.do_pos, init.do_pos_resume, init.do_calibrate,
-init.do_ml, init.do_charting, init.do_phase_diagram, init.do_reporting)
+init.do_ml, init.do_charting, init.do_phase_diagram, init.do_field_charts, init.do_reporting)
