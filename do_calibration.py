@@ -2,6 +2,7 @@ import os
 import init
 import reading
 from star_description import StarDescription
+from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
 from astropy.coordinates import match_coordinates_sky
@@ -13,6 +14,12 @@ import numpy as np
 import vsx_pickle
 import copy
 
+def get_wcs(wcs_file):
+    hdulist = fits.open(wcs_file)
+    data = hdulist[0].data.astype(float)
+    header = hdulist[0].header
+    wcs = WCS(header)
+    return wcs
 
 def calibrate():
     w = WCS(init.reference_header)
@@ -25,6 +32,7 @@ def find_reference_frame_index():
     the_dir = os.listdir(init.reference_dir)
     the_dir.sort()
     reference_frame_index = the_dir.index(init.reference_frame)
+    assert the_dir[reference_frame_index] == init.reference_frame
     return reference_frame_index
 
 
@@ -95,7 +103,7 @@ def get_star_descriptions(starlist=None):
     # returns {'name': [ra.deg, dec.deg ]}
     positions = reading.read_world_positions(init.worldposdir)
     result = []
-    print('list to get descriptions', starlist)
+    print('Reading star descriptions for:', starlist if not None else 'all stars')
     for key in positions:
         star_id = reading.filename_to_star(str(key))
         if starlist is None or star_id in starlist:
@@ -158,6 +166,11 @@ def get_vsx_in_field(star_descriptions, max_separation=0.01):
             result.append(result_entry)
     print("Found {} stars".format(len(result)))
     return result
+
+# count the number of vsx in the field
+def count_vsx_in_field():
+    #bla
+    print('bla')
 
 
 # Takes in a list of known variables and maps them to the munipack-generated star numbers
@@ -231,15 +244,6 @@ def add_apass_to_star_descriptions(star_descriptions, radius=0.01, row_limit=2):
             print("More/less results received from APASS than expected: {}".format(apass.shape[0] if not apass is None and not apass.shape is None else 0))
             print(apass)
             continue
-        if not apass.shape[0] == 1:
-            # while testing, the first result was the closest, but let's not take any chances
-            distances = apass.apply(lambda x: star.coords.separation(
-                SkyCoord(x['RAJ2000'],
-                         x['DEJ2000'], unit='deg')).hour, axis=1)
-            minimum = distances.idxmin()
-            star.vmag = apass['Vmag'][minimum]
-            star.e_vmag = apass['e_Vmag'][minimum]
-            mindist = distances[minimum]
         else:
             star.vmag = apass['Vmag'][0]
             star.e_vmag = apass['e_Vmag'][0]
@@ -247,46 +251,67 @@ def add_apass_to_star_descriptions(star_descriptions, radius=0.01, row_limit=2):
         print("Star {} has vmag={}, error={:.5f}, dist={}".format(star.local_id, star.vmag, star.e_vmag, mindist))
     return star_descriptions
 
+def add_ucac4_to_star_descriptions(star_descriptions, radius=0.01):
+    print("apass input", len(star_descriptions))
+    radius_angle = Angle(radius, unit=u.deg)
+    for star in star_descriptions:
+        vizier_results = get_ucac4_field(star.coords, radius=radius_angle, row_limit=1)
+        if vizier_results is None:
+            print("More/less results received from APASS than expected: {}".format(vizier_results.shape[0] if not vizier_results is None and not vizier_results.shape is None else 0))
+            print(vizier_results)
+            continue
+        else:
+            print('vizier results', vizier_results, vizier_results['Vmag'][0])
+            star.vmag = vizier_results['Vmag'][0]
+            star.e_vmag = vizier_results['e_Vmag'][0]
+            mindist = star.coords.separation(SkyCoord(vizier_results['RAJ2000'], vizier_results['DEJ2000'], unit='deg'))
+        print(vizier_results.describe())
+        print(vizier_results.info())
+        print(star.e_vmag)
+        print("Star {} has vmag={}, error={}, dist={}".format(star.local_id, star.vmag, star.e_vmag, mindist))
+    return star_descriptions
+
+def get_apass_row_to_star_descriptions(row):
+    return StarDescription(coords=SkyCoord(row['RAJ2000'], row['DEJ2000'], unit='deg'),
+                           vmag=row['Vmag'], e_vmag=row['e_Vmag'])
+
+def get_ucac4_row_to_star_descriptions(row):
+    ucac4 =  get_apass_row_to_star_descriptions(row)
+    ucac4.aavso_id = row['UCAC4']
+    return ucac4
+
 def get_apass_star_descriptions(center_coord, radius, row_limit=2):
-    field = get_apass_field(center_coord, radius, row_limit)
+    return get_vizier_star_descriptions(get_apass_field, get_apass_row_to_star_descriptions,center_coord,
+                                        radius, row_limit)
+
+def get_ucac4_star_descriptions(center_coord, radius, row_limit=2):
+    return get_vizier_star_descriptions(get_ucac4_field, get_ucac4_row_to_star_descriptions,center_coord,
+                                        radius, row_limit)
+
+def get_vizier_star_descriptions(field_method, to_star_descr_method, center_coord, radius, row_limit=2):
+    field = field_method(center_coord, radius, row_limit)
     result = []
     for index, row in field.iterrows():
-        result.append(StarDescription(coords=SkyCoord(row['RAJ2000'], row['DEJ2000'], unit='deg'), vmag=row['Vmag']))
+        result.append(to_star_descr_method(row))
     return result
 
+
 def get_apass_field(center_coord, radius, row_limit=2):
-    """
-    Return all APASS stars from VizieR within the
-    given radius of the central point specified by center_coord.
-    Convert the format to the C.Kotnik private sequence file
-    format in a pandas dataframe.
+    return get_vizier_field(center_coord, radius, 'II/336', row_limit)
 
-    Parameters
-    ----------
-    center_coord:  astropy.coordinates.SkyCoord specifying the field center
-    radius:        radius of field in astropy.coordinates.Angle
+def get_ucac4_field(center_coord, radius, row_limit=2):
+    return get_vizier_field(center_coord, radius, 'I/322A', row_limit)
 
-    Returns
-    -------
-    apass_stars:   pandas.DataFrame containing the stars found converted
-                   to a private sequence file format with columns:
-                   Rec ID      AUID    RA      DEC     RA(deg) DEC(deg)        Label
-                   U   B       V       Rc      Ic      B-V
-                   U err       B err   V err   Rc err  Ic err  Comments
-    """
-
+def get_vizier_field(center_coord, radius, catalog, row_limit=2):
     # Select all columns
     v = Vizier(columns=['all'])
 
-    # Limit the number of rows returned to 5000 which should be more than enough
+    # Limit the number of rows returned to row_limit
     v.ROW_LIMIT = row_limit
 
     result = v.query_region(center_coord,
                             radius=radius,
-                            catalog=['II/336'])
-    apasstab = result[0].to_pandas() if len(result) > 0 else None
-    #print(apasstab['recno'].count(), " apass objects returned from Vizier")
-    #print(apasstab)
-    # apasstab.to_csv('foobar.csv')
-    return apasstab
+                            catalog=[catalog])
+    df = result[0].to_pandas() if len(result) > 0 else None
+    return df
 
