@@ -127,7 +127,7 @@ def read_lightcurves(star_pos, star_descriptions, comparison_stars, do_charts, d
     star_description = star_descriptions[star_pos]
     try:
         df = reading.read_lightcurve(star_description.local_id,filter=True)
-        if len(df) == 0:
+        if df is None or len(df) == 0:
             print("No lightcurve found for star", star_description.local_id)
             return
         # adding vmag of comparison star to all diff mags
