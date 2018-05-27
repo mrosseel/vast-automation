@@ -39,6 +39,12 @@ class StarDescription:
         return "local_id: {0}, aavso_id: {1}, coords: {2}, vmag: {3}".format(
             self.local_id, self.aavso_id, self.coords, self.vmag, self._match, self._upsilon)
 
+class CatalogMatch():
+    def __init__(self, name_of_catalog=None, catalog_id=None, name=None, coords=None):
+        self.name_of_catalog = name_of_catalog
+        self.catalog_id = catalog_id
+        self.name = name
+        self.coords = coords
 
 # extract matching strings from star_descr
 def get_match_string(star_description):
