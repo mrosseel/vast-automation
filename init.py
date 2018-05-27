@@ -76,26 +76,28 @@ wwcra_certain_candidates = [6314,
 
 #### SETTINGS for DO_MUNIWIN.PY ####
 
-basedir = codedir + 'inputfiles/RTGru/'
+#basedir = codedir + 'inputfiles/RTGru/'
 #basedir = codedir + 'inputfiles/WWCrA_allflat/'
 #basedir =  codedir + 'inputfiles/WWCrA2015/'
-#basedir =  codedir + 'inputfiles/WWCrA_bigger/'
+basedir =  codedir + 'inputfiles/WWCrA_bigger/'
 star_list = all
 nr_threads = multiprocessing.cpu_count() 
 
-do_convert_fits=False
-do_photometry=False
-do_match=False
-do_munifind=False
-do_lightcurve=False
-do_lightcurve_resume=False
-do_pos=False
-do_pos_resume=False
-do_calibrate=False
-do_ml=False
-do_charting=True
-do_phase_diagram=True
-do_reporting=False
+do_convert_fits=0
+do_photometry=0
+do_match=0
+do_munifind=0
+do_lightcurve=0
+do_lightcurve_resume=0
+do_pos=0
+do_pos_resume=0
+do_calibrate=0
+do_ml=0
+do_charting=0
+do_phase_diagram=1
+do_field_charts=1
+do_reporting=1
+
 
 #### DO NOT TOUCH ####
 # standard directories
@@ -110,11 +112,12 @@ worldposdir = resultdir + "world_positions/"
 chartsdir = resultdir + "charts/"
 phasedir = resultdir + "phasediagrams/"
 vsx_catalog_path = codedir + "vsx_catalog.bin"
+aavso_reports = resultdir + "aavso_reports/"
 #### DO NOT TOUCH ####
 
 ### CALIBRATION ###
-reference_dir = convfitsdir
-reference_frame = 'kout000546.fts'
+reference_dir = fitsdir
+reference_frame = 'WWCrA#30V_000184527_FLAT.fit'
 reference_header = basedir + 'new-image.fits'
 ra_deg = 271.4032917
 dec_deg = -43.8326111
