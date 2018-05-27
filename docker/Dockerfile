@@ -6,7 +6,7 @@ MAINTAINER Mike Rosseel version: 0.1
 ENV CMUNIPACK_VERSION 2.1.24
 
 USER root
-RUN apt-get update && apt-get install -yq gstreamer1.0 wcslib-dev libcfitsio3-dev expat gtk2.0 gcc python3-pip libfftw3-dev less nano
+RUN apt-get update && apt-get install -yq gstreamer1.0 wcslib-dev libcfitsio3-dev expat gtk2.0 gcc openssl python3-pip libfftw3-dev less nano
 RUN wget https://sourceforge.net/projects/c-munipack/files/C-Munipack%202.1%20Stable/2.1.24/cmunipack-2.1.24.tar.gz/download -O cmunipack.tar.gz
 RUN tar xvfz cmunipack.tar.gz
 WORKDIR /home/jovyan/cmunipack-2.1.24

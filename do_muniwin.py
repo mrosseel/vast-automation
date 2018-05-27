@@ -220,21 +220,24 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         with open(init.basedir + 'star_descriptions_to_chart.bin', 'wb') as fp:
             pickle.dump(star_descriptions, fp)
 
+    # parse comparison star from munifind.txt
+    comparison_star = reading.read_comparison_star()
+    print('comparison star', comparison_star)
+
+    comp_star_description = do_calibration.get_star_descriptions([comparison_star])
+    print('comparison star description', comp_star_description)
+    comparison_stars = do_calibration.add_ucac4_to_star_descriptions(comp_star_description)
+    print("Using comparison star", comparison_stars)
+
     if do_charting or do_phase_diagram:
-        # parse comparison star from munifind.txt
-        comparison_star = reading.read_comparison_star()
-        print('comparison star', comparison_star)
-        comp_star_description = do_calibration.get_star_descriptions([comparison_star])
-        print('comparison star description', comp_star_description)
-        comparison_stars = do_calibration.add_ucac4_to_star_descriptions(comp_star_description)
-        print("Using comparison star", comparison_stars)
         do_charts.run(star_descriptions, comparison_stars, do_charting, do_phase_diagram)
 
     #import code
     #code.InteractiveConsole(locals=dict(globals(), **locals())).interact()
     if do_reporting:
+        trash_and_recreate_dir(init.aavso_reports)
         for star in star_descriptions:
-            do_aavso_report.report(star, comp_star_description)
+            do_aavso_report.report(init.aavso_reports, star, comp_star_description)
 
     if do_field_charting:
         do_field_charts.run_standard_field_charts()
