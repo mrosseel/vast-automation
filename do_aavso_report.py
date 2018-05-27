@@ -39,7 +39,7 @@ def report(star_description, comparison_star):
     title = str(star_description.local_id if star_description.aavso_id is None else star_description.aavso_id)
     earth_location = EarthLocation(lat=init.sitelat, lon=init.sitelong, height=390*u.m) # TODO WRONG !!!!!!!!!!!!
 
-    with open(init.resultdir + title+'_extended.txt', 'w') as fp:
+    with open(init.aavso_reports + title+'_extended.txt', 'w') as fp:
         writer = aavso.ExtendedFormatWriter(fp, 'RMH', software='munipack-automation', obstype='CCD')
         for index, row in curve.iterrows():
             #print(row, type(row))

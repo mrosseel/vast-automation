@@ -28,14 +28,16 @@ Once you're in this VM, all python commands can be run.
 
 * init.py : directory settings, processing settings
 * do_muniwin.py : start all
-* do_charts.py : only do charts
+* do_charts.py : plots of lightcurve and phase diagrams
+* do_field_charts.py : plot the reference frame + circles around stars of interest
 * do_upsilon.py : only do machine learning detection
+* do_aavso_report: write files in the AAVSO Extended Format
 * do_profile.py : do performance profiling on the app (not sure if working)
 
 ## Jupyter lab usage
 
-The docker image also exposes a Jupyter lab instance on port 8888
-Password is 'muni'
+The docker image also exposes a Jupyter lab instance on port 8888.
+_Password is 'muni'_
 
 ## Other
 
@@ -43,8 +45,6 @@ Password is 'muni'
 
 ## TODO
 
-- implement UCAC4 reference star matching because they have ID
-- increase max_stars from 10.000 to unlimited so we can select the best reference frame
 - new ensemble comparison star calculation?
 - aperture is now fixed at 2, do some experiments on 1 star to measure effect on error bars and results
 - check error column for any stars having error bars > 1%
