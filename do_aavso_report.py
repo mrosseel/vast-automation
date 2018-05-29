@@ -33,18 +33,24 @@ def report(target_dir, star_description, comparison_star):
     #         row.append(observation_data.get('chart', 'na'))
     #         row.append(observation_data.get('notes', 'na'))
     curve = reading.read_lightcurve(star_description.local_id, filter=True, preprocess=False)
-    star_match, separation = get_match_string(star_description)
-    print(comparison_star)
-    comparison_star_vmag = comparison_star[0].vmag
+    star_match_ucac4, separation = get_match_string(star_description, "UCAC4")
+    star_match_vsx, separation = get_match_string(star_description, "VSX", strict=False)
+    comp_ucac4 = get_match_string(comparison_star, "UCAC4", strict=True)
+    var_display_name = star_match_ucac4 if star_match_vsx == None else star_match_vsx
+    check_display_name = comparison_star.aavso_id if not comparison_star.aavso_id is None else comp_ucac4[0]
+
+    print(" Star match:{}, comparison_star:{}".format(var_display_name, comparison_star))
+    comparison_star_vmag = comparison_star.vmag
     title = str(star_description.local_id if star_description.aavso_id is None else star_description.aavso_id)
-    earth_location = EarthLocation(lat=init.sitelat, lon=init.sitelong, height=390*u.m) # TODO WRONG !!!!!!!!!!!!
+    earth_location = EarthLocation(lat=init.sitelat, lon=init.sitelong, height=init.sitealt*u.m)
+    print("Starting aavso report with star:{}".format(star_description))
 
     with open(target_dir + title+'_extended.txt', 'w') as fp:
         writer = aavso.ExtendedFormatWriter(fp, 'RMH', software='munipack-automation', obstype='CCD')
         for index, row in curve.iterrows():
             #print(row, type(row))
             writer.writerow({
-                'name': star_match if not star_match == '' else 'Unknown',
+                'name': var_display_name,
                 'date': row['JD'],
                 'magnitude': row['V-C'] + comparison_star_vmag,
                 'magnitude_error': row['s1'],
@@ -53,7 +59,7 @@ def report(target_dir, star_description, comparison_star):
                 'magnitude_type': 'STD',
                 'comparison_name': 'ENSEMBLE',
                 'comparison_magnitude': 'na',
-                'check_name': comparison_star[0].aavso_id if not comparison_star[0].aavso_id is None else '???',
+                'check_name': check_display_name,
                 'check_magnitude': comparison_star_vmag,
                 'airmass': calculate_airmass(star_description.coords, earth_location, row['JD']),
                 'group': 'na',

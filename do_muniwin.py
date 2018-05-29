@@ -182,6 +182,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     if do_pos: do_write_pos(init.star_list, check_stars_list, do_pos_resume,
                             do_calibration.find_reference_matched(reference_frame_index))
 
+    # is this still needed?? maybe for automatic calibration with astrometry.net
     if do_calibrate:
         wcs = do_calibration.calibrate()
         do_world_pos(wcs, init.star_list, 0)  # pass 0 for reference_frame_index because we only write one position
@@ -227,17 +228,20 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     comp_star_description = do_calibration.get_star_descriptions([comparison_star])
     print('comparison star description', comp_star_description)
     comparison_stars = do_calibration.add_ucac4_to_star_descriptions(comp_star_description)
+    star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
     print("Using comparison star", comparison_stars)
 
     if do_charting or do_phase_diagram:
-        do_charts.run(star_descriptions, comparison_stars, do_charting, do_phase_diagram)
+        print("starting charting / phase diagrams")
+        do_charts.run(star_descriptions_ucac4, comparison_stars, do_charting, do_phase_diagram)
 
     #import code
     #code.InteractiveConsole(locals=dict(globals(), **locals())).interact()
     if do_reporting:
+        print("AAVSO Reporting with: {} stars".format(len(star_descriptions_ucac4)))
         trash_and_recreate_dir(init.aavso_reports)
-        for star in star_descriptions:
-            do_aavso_report.report(init.aavso_reports, star, comp_star_description)
+        for star in star_descriptions_ucac4:
+            do_aavso_report.report(init.aavso_reports, star, comp_star_description[0])
 
     if do_field_charting:
         do_field_charts.run_standard_field_charts()

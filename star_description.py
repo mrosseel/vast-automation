@@ -6,7 +6,7 @@ class StarDescription:
         self.coords = coords
         self.vmag = vmag
         self.e_vmag = e_vmag
-        self._match = match
+        self._match = match if match != None else []
         self._upsilon = upsilon
         self.xpos = xpos
         self.ypos = ypos
@@ -25,11 +25,10 @@ class StarDescription:
     def match(self):
         return self._match
 
+    # val is a CatalogMatch object
     @match.setter
     def match(self, val):
-        catalog, separation, catalog_dict = val
-        if self._match is None: self._match = []
-        self._match.append({'catalog': catalog, 'separation': separation, 'catalog_dict': catalog_dict})
+        self._match.append(val)
 
     def __repr__(self):
         return "StarDescription({0},{1},{2},{3},{4},{5})".format(
@@ -40,20 +39,28 @@ class StarDescription:
             self.local_id, self.aavso_id, self.coords, self.vmag, self._match, self._upsilon)
 
 class CatalogMatch():
-    def __init__(self, name_of_catalog=None, catalog_id=None, name=None, coords=None):
+    def __init__(self, name_of_catalog=None, catalog_id=None, name=None, coords=None, separation=-1):
         self.name_of_catalog = name_of_catalog
         self.catalog_id = catalog_id
         self.name = name
         self.coords = coords
+        self.separation = separation
 
 # extract matching strings from star_descr
-def get_match_string(star_description):
+def get_match_string(star_description, catalog, strict=True):
+    name = None
+    separation = None
+
     if not star_description.match == None:
-        name = star_description.match[0]['catalog_dict']['name']
-        separation = star_description.match[0]['separation']
-    else:
-        name = ''
-        separation = ''
+        catalog_match_list = [x for x in star_description.match if x.name_of_catalog == catalog]
+        if len(catalog_match_list) != 1:
+            if strict:
+                raise AssertionError("Searching for {} in {}, received {} matches, expected 1"
+                                     .format(catalog, star_description, len(catalog_match_list)))
+        else:
+            name = catalog_match_list[0].catalog_id
+            separation = catalog_match_list[0].separation
+
     return name, separation
 
 # extract upsilon strings from star_descr

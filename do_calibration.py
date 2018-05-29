@@ -2,6 +2,7 @@ import os
 import init
 import reading
 from star_description import StarDescription
+from star_description import CatalogMatch
 from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
@@ -12,7 +13,6 @@ from astroquery.vizier import Vizier
 import pandas as pd
 import numpy as np
 import vsx_pickle
-import copy
 
 def get_wcs(wcs_file):
     hdulist = fits.open(wcs_file)
@@ -135,10 +135,15 @@ def add_vsx_names_to_star_descriptions(star_descriptions, threshold_prob_candida
     for index, entry in enumerate(d2d):
         if entry.value < max_separation:
             vsx_index = idx[index]
-            result[index].match = ('VSX', entry.value,
-                                   {'name': vsx_dict['metadata'][vsx_index]['Name'],
-                                    'coords': SkyCoord(vsx_dict['ra_deg_np'][index], vsx_dict['dec_deg_np'][vsx_index],
-                                                       unit='deg')})
+            vsx_name = vsx_dict['metadata'][vsx_index]['Name']
+            result[index].match.append(
+                CatalogMatch(name_of_catalog='VSX',
+                             catalog_id=vsx_name,
+                             name=vsx_name,
+                             separation=entry.value,
+                             coords=SkyCoord(vsx_dict['ra_deg_np'][index], vsx_dict['dec_deg_np'][vsx_index],
+                                                 unit='deg')))
+
             result[index].aavso_id = vsx_dict['metadata'][vsx_index]['Name']
             found = found + 1
     return result
@@ -160,9 +165,8 @@ def get_vsx_in_field(star_descriptions, max_separation=0.01):
             result_entry.local_id = star_local_id
             result_entry.coords = star_coords
             result_entry.aavso_id = vsx_dict['metadata'][index]['Name']
-            result_entry.match = ('VSX', entry.value,
-                                  {'name': result_entry.aavso_id,
-                                   'coords': vsx_coords})
+            result_entry.match = CatalogMatch(name_of_catalog='VSX', separation=entry.value,
+                                              name=result_entry.aavso_id, coords=vsx_coords)
             result.append(result_entry)
     print("Found {} stars".format(len(result)))
     return result
@@ -252,22 +256,27 @@ def add_apass_to_star_descriptions(star_descriptions, radius=0.01, row_limit=2):
     return star_descriptions
 
 def add_ucac4_to_star_descriptions(star_descriptions, radius=0.01):
-    print("apass input", len(star_descriptions))
+    print("Retrieving ucac4 for {} stars".format(len(star_descriptions)))
     radius_angle = Angle(radius, unit=u.deg)
     for star in star_descriptions:
         vizier_results = get_ucac4_field(star.coords, radius=radius_angle, row_limit=1)
         if vizier_results is None:
-            print("More/less results received from APASS than expected: {}".format(vizier_results.shape[0] if not vizier_results is None and not vizier_results.shape is None else 0))
-            print(vizier_results)
+            print("More/less results received from UCAC4 than expected: {}".format(vizier_results.shape[0] if not vizier_results is None and not vizier_results.shape is None else 0))
+            #print(vizier_results)
             continue
         else:
-            print('vizier results', vizier_results, vizier_results['Vmag'][0])
+            print('vizier results', vizier_results['Vmag'][0])
             star.vmag = vizier_results['Vmag'][0]
             star.e_vmag = vizier_results['e_Vmag'][0]
-            mindist = star.coords.separation(SkyCoord(vizier_results['RAJ2000'], vizier_results['DEJ2000'], unit='deg'))
-        print(vizier_results.describe())
-        print(vizier_results.info())
-        print(star.e_vmag)
+            catalog_id = vizier_results['UCAC4'][0].decode("utf-8")
+            coord_catalog = SkyCoord(vizier_results['RAJ2000'], vizier_results['DEJ2000'], unit='deg')
+            mindist = star.coords.separation(coord_catalog)
+            star.match.append(CatalogMatch(name_of_catalog="UCAC4", catalog_id=catalog_id,
+                                           name=catalog_id, coords=coord_catalog, separation=mindist))
+        # print(vizier_results.describe())
+        # print(vizier_results.info())
+        # import code
+        # code.InteractiveConsole(locals=dict(globals(), **locals())).interact()
         print("Star {} has vmag={}, error={}, dist={}".format(star.local_id, star.vmag, star.e_vmag, mindist))
     return star_descriptions
 

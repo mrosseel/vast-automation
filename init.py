@@ -78,8 +78,8 @@ wwcra_certain_candidates = [6314,
 
 #basedir = codedir + 'inputfiles/RTGru/'
 #basedir = codedir + 'inputfiles/WWCrA_allflat/'
-#basedir =  codedir + 'inputfiles/WWCrA2015/'
-basedir =  codedir + 'inputfiles/WWCrA_bigger/'
+basedir =  codedir + 'inputfiles/WWCrA2015/'
+#basedir =  codedir + 'inputfiles/WWCrA_bigger/'
 star_list = all
 nr_threads = multiprocessing.cpu_count() 
 
@@ -94,8 +94,8 @@ do_pos_resume=0
 do_calibrate=0
 do_ml=0
 do_charting=0
-do_phase_diagram=1
-do_field_charts=1
+do_phase_diagram=0
+do_field_charts=0
 do_reporting=1
 
 
@@ -123,4 +123,5 @@ ra_deg = 271.4032917
 dec_deg = -43.8326111
 sitelat = '-22 57 10'
 sitelong = '-68 10 49'
+sitealt= 350 # TODO WRONG !!!!
 ### CALIBRATION
