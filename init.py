@@ -77,11 +77,11 @@ wwcra_certain_candidates = [6314,
 #### SETTINGS for DO_MUNIWIN.PY ####
 
 #basedir = codedir + 'inputfiles/RTGru/'
-#basedir = codedir + 'inputfiles/WWCrA_allflat/'
-basedir =  codedir + 'inputfiles/WWCrA2015/'
+basedir = codedir + 'inputfiles/WWCrA_allflat/'
+#basedir =  codedir + 'inputfiles/WWCrA2015/'
 #basedir =  codedir + 'inputfiles/WWCrA_bigger/'
-star_list = all
-nr_threads = multiprocessing.cpu_count() 
+star_list = wwcra_certain_candidates
+nr_threads = multiprocessing.cpu_count()
 
 do_convert_fits=0
 do_photometry=0
@@ -94,9 +94,9 @@ do_pos_resume=0
 do_calibrate=0
 do_ml=0
 do_charting=0
-do_phase_diagram=0
+do_phase_diagram=1
 do_field_charts=0
-do_reporting=1
+do_reporting=0
 
 
 #### DO NOT TOUCH ####

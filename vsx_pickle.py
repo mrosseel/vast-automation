@@ -16,13 +16,14 @@ def convert(path):
         metadata.append({'id': index, 'OID': row['OID'], 'Name': row['Name'], 'Type': row['Type'], 'l_Period': row['l_Period'], 'Period': row['Period'], 'u_Period': row['u_Period']})
     vsx_dict = { 'ra_deg_np': ra_deg_np, 'dec_deg_np': dec_deg_np, 'metadata': metadata}
 
+    # From Python 3.6 onwards, the standard dict type maintains insertion order by default. => no OrderedDict necessary
     with open(init.vsx_catalog_path, 'wb') as fp:
         pickle.dump(vsx_dict, fp)
 
 # returns:   { 'ra_deg_np': ra_deg_np, 'dec_deg_np': dec_deg_np, 'metadata': ({'id': index, 'OID': row['OID'], 'Name': row['Name'], 'Type': row['Type'], 'l_Period': row['l_Period'], 'Period': row['Period'], 'u_Period': row['u_Period']})}
 def read(path):
     with open(path, 'rb') as fp:
-        read_dict = pickle.load(fp)
+        read_dict = pickle.load(fp, encoding='latin1')
     return read_dict
 
 if __name__ == '__main__':

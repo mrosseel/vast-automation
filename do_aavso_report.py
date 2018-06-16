@@ -10,6 +10,7 @@ from astropy.coordinates import SkyCoord, EarthLocation, AltAz
 import warnings
 warnings.filterwarnings('ignore',module='astropy.coordinates.baseframe')
 import init
+import tqdm
 
 def calculate_airmass(coord, location, jd):
     time = Time(jd, format='jd')
@@ -47,7 +48,7 @@ def report(target_dir, star_description, comparison_star):
 
     with open(target_dir + title+'_extended.txt', 'w') as fp:
         writer = aavso.ExtendedFormatWriter(fp, 'RMH', software='munipack-automation', obstype='CCD')
-        for index, row in curve.iterrows():
+        for index, row in tqdm.tqdm(curve.iterrows(), total=len(curve), unit="observations"):
             #print(row, type(row))
             writer.writerow({
                 'name': var_display_name,

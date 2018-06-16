@@ -123,7 +123,7 @@ def get_VSX(the_file):
 
 
 # returns {'star_id': [label, probability, flag, period, SkyCoord, match_name, match_skycoord, match_type, separation_deg]}
-def add_vsx_names_to_star_descriptions(star_descriptions, threshold_prob_candidates=0.5, max_separation=0.01):
+def add_vsx_names_to_star_descriptions(star_descriptions, max_separation=0.01):
     print("Adding VSX names to star descriptions")
     result = star_descriptions  # no deep copy for now
     # copy.deepcopy(star_descriptions)
@@ -132,44 +132,45 @@ def add_vsx_names_to_star_descriptions(star_descriptions, threshold_prob_candida
     idx, d2d, d3d = match_coordinates_sky(star_catalog, vsx_catalog)
     print(len(idx))
     found = 0
-    for index, entry in enumerate(d2d):
+    for index_star_catalog, entry in enumerate(d2d):
         if entry.value < max_separation:
-            vsx_index = idx[index]
-            vsx_name = vsx_dict['metadata'][vsx_index]['Name']
-            result[index].match.append(
-                CatalogMatch(name_of_catalog='VSX',
-                             catalog_id=vsx_name,
-                             name=vsx_name,
-                             separation=entry.value,
-                             coords=SkyCoord(vsx_dict['ra_deg_np'][index], vsx_dict['dec_deg_np'][vsx_index],
-                                                 unit='deg')))
-
-            result[index].aavso_id = vsx_dict['metadata'][vsx_index]['Name']
+            index_vsx = idx[index_star_catalog]
+            _add_catalog_match_to_entry(result[index_star_catalog], vsx_dict,
+                index_vsx, entry.value)
+            print(result[index_star_catalog].match)
             found = found + 1
     return result
 
-
 # returns StarDescription array
 def get_vsx_in_field(star_descriptions, max_separation=0.01):
-    print("Adding VSX names to star descriptions")
+    print("Get VSX in field star descriptions")
     vsx_catalog, vsx_dict = create_vsx_astropy_catalog()
     star_catalog = create_star_descriptions_catalog(star_descriptions)
     idx, d2d, d3d = match_coordinates_sky(vsx_catalog, star_catalog)
     result = []
-    for index, entry in enumerate(d2d):
+    for index_vsx, entry in enumerate(d2d):
         if entry.value < max_separation:
-            star_local_id = idx[index]
+            star_local_id = idx[index_vsx]+1
+            print("get_vsx_in_field:", star_local_id)
             star_coords = star_catalog[star_local_id]
-            vsx_coords = SkyCoord(vsx_dict['ra_deg_np'][index], vsx_dict['dec_deg_np'][index], unit='deg')
             result_entry = StarDescription()
             result_entry.local_id = star_local_id
             result_entry.coords = star_coords
-            result_entry.aavso_id = vsx_dict['metadata'][index]['Name']
-            result_entry.match = CatalogMatch(name_of_catalog='VSX', separation=entry.value,
-                                              name=result_entry.aavso_id, coords=vsx_coords)
+            match = _add_catalog_match_to_entry(result_entry, vsx_dict, index_vsx, entry.value)
             result.append(result_entry)
     print("Found {} stars".format(len(result)))
     return result
+
+def _add_catalog_match_to_entry(entry, vsx_dict, index_vsx, separation):
+    assert entry.match != None
+    vsx_name = vsx_dict['metadata'][index_vsx]['Name']
+    entry.aavso_id = vsx_name
+    match = CatalogMatch(name_of_catalog='VSX', catalog_id=vsx_name,
+        name=vsx_name, separation=separation,
+        coords=SkyCoord(vsx_dict['ra_deg_np'][index_vsx], vsx_dict['dec_deg_np'][index_vsx],
+        unit='deg'))
+    entry.match.append(match)
+    return match
 
 # count the number of vsx in the field
 def count_vsx_in_field():
@@ -252,7 +253,7 @@ def add_apass_to_star_descriptions(star_descriptions, radius=0.01, row_limit=2):
             star.vmag = apass['Vmag'][0]
             star.e_vmag = apass['e_Vmag'][0]
             mindist = star.coords.separation(SkyCoord(apass['RAJ2000'], apass['DEJ2000'], unit='deg'))
-        print("Star {} has vmag={}, error={:.5f}, dist={}".format(star.local_id, star.vmag, star.e_vmag, mindist))
+        print("APASS: Star {} has vmag={}, error={:.5f}, dist={}".format(star.local_id, star.vmag, star.e_vmag, mindist))
     return star_descriptions
 
 def add_ucac4_to_star_descriptions(star_descriptions, radius=0.01):
@@ -323,4 +324,3 @@ def get_vizier_field(center_coord, radius, catalog, row_limit=2):
                             catalog=[catalog])
     df = result[0].to_pandas() if len(result) > 0 else None
     return df
-

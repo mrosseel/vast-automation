@@ -39,9 +39,11 @@ Once you're in this VM, all python commands can be run.
 The docker image also exposes a Jupyter lab instance on port 8888.
 _Password is 'muni'_
 
-## Other
+## Importing VSX star catalog
 
 * AAVSO VSX catalog can be downloaded here: http://cdsarc.u-strasbg.fr/viz-bin/Cat?cat=B%2Fvsx%2Fversions%2F2018-02-26&target=brief&
+* run 'python vsx_pickle.py vsx.dat' where vsx.dat is the unzipped versin of the downloaded vsx catalog
+* check that 'vsx_catalog.bin' has been written succesfully
 
 ## TODO
 

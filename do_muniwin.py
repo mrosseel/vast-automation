@@ -196,8 +196,8 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
 
     chart_premade = False
     chart_upsilon = False
-    chart_vsx = False
-    chart_custom = True
+    chart_vsx = True
+    chart_custom = False
     star_descriptions = []
 
     if chart_premade:
@@ -212,7 +212,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         elif(chart_custom):
             star_descriptions = do_calibration.get_star_descriptions(init.star_list)
 
-        if not chart_vsx: # chart_vsx already has the vsx mappings
+        if not chart_vsx: # vsx names are always added, but chart_vsx already has the vsx mappings
             star_descriptions = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions)
 
         if not chart_upsilon:
@@ -223,13 +223,14 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
 
     # parse comparison star from munifind.txt
     comparison_star = reading.read_comparison_star()
-    print('comparison star', comparison_star)
+    print('Read comparison star from munifind.txt: ', comparison_star)
 
     comp_star_description = do_calibration.get_star_descriptions([comparison_star])
-    print('comparison star description', comp_star_description)
+    print('Get comparison star description: ', comp_star_description)
     comparison_stars = do_calibration.add_ucac4_to_star_descriptions(comp_star_description)
+    print("Got comparison star description + ucac4 id: ", comparison_stars)
+    # add ucac4 to star_descriptions
     star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
-    print("Using comparison star", comparison_stars)
 
     if do_charting or do_phase_diagram:
         print("starting charting / phase diagrams")
