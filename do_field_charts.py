@@ -5,6 +5,8 @@ from photutils import aperture_photometry, CircularAperture
 import numpy as np
 import init
 import do_calibration
+from reading import trash_and_recreate_dir
+
 
 PADDING = 200
 
@@ -66,24 +68,24 @@ def save(fig, path):
     fig.savefig(path)
     plt.close(fig)
 
-def run_standard_field_charts():
-    fits_file=init.reference_dir+init.reference_frame
-    wcs_file = init.basedir+"new-image.fits"
-    wcs = do_calibration.get_wcs(wcs_file)
+def run_standard_field_charts(vsx_star_descr):
+    trash_and_recreate_dir(init.fieldchartsdirs)
+    reference_fits_frame=init.reference_dir+init.reference_frame
+    wcs = do_calibration.get_wcs(init.reference_header)
     candidates = do_calibration.get_candidates(0.5)
     hand_candidates_descr = do_calibration.get_star_descriptions(init.wwcra_certain_candidates)
-    detections_descr = do_calibration.get_star_descriptions(init.star_list)
-    vsx_star_descr = do_calibration.get_vsx_in_field(detections_descr, 0.01)
+    all_stars_descr = do_calibration.get_star_descriptions()
 
-    # big_green = set_custom_label(comparison_star_descr, 'comp')
+    # big_green = set_custom_label(comparison_  star_descr, 'comp')
     # small_red = set_custom_label(apass_star_descr, [o.vmag for o in apass_star_descr])
     # big_green = set_custom_label(vsx_star_descr, [o.match['catalog_dict']['name'] for o in vsx_star_descr])
     # small_red = set_custom_label(hand_candidates_descr, [o.local_id for o in hand_candidates_descr])
     #big_green = set_aavso_id_label(vsx_star_descr)
     #small_red = set_local_id_label(hand_candidates_descr)
 
-    detections_labeled = set_custom_label(detections_descr, '')
+    all_stars_labeled = set_custom_label(all_stars_descr, '')
     vsx_labeled = set_aavso_id_label(vsx_star_descr)
+    #vsx_labeled = set_custom_label(vsx_star_descr, [o.local_id for o in vsx_star_descr])
     hand_candidates_labeled = set_local_id_label(hand_candidates_descr)
 
     # default fields
@@ -92,21 +94,21 @@ def run_standard_field_charts():
     # field chart with all detections
     print("Plotting field chart with all detected stars...")
     big_green = empty
-    small_red = detections_labeled
-    fig = plot_it(big_green, small_red, fits_file, wcs, "All detected stars", PADDING)
-    save(fig, init.resultdir+'all_detections_for_{}_stars'.format(len(small_red)))
+    small_red = all_stars_labeled
+    fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "All detected stars", PADDING)
+    save(fig, init.fieldchartsdirs + 'all_detections_for_{}_stars'.format(len(small_red)))
 
     # field chart with all vsx stars
     print("Plotting field chart with all VSX variable stars...")
     big_green = vsx_labeled
     small_red = empty
-    fig = plot_it(big_green, small_red, fits_file, wcs, "All VSX variable stars", PADDING)
-    save(fig, init.resultdir+'all_vsx_stars_{}'.format(len(big_green)))
+    fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "All VSX variable stars", PADDING)
+    save(fig, init.fieldchartsdirs + 'all_vsx_stars_{}'.format(len(big_green)))
 
     # field chart with all vsx stars
     print("Plotting field chart with all VSX variable stars + hand picked vars...")
     big_green = vsx_labeled
     small_red = hand_candidates_labeled
-    fig = plot_it(big_green, small_red, fits_file, wcs, "VSX variable stars + detected variables", PADDING)
-    save(fig, init.resultdir+'all_vsx_stars_{}_hand_picked_{}'.format(len(big_green), len(small_red)))
+    fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "VSX variable stars + detected variables", PADDING)
+    save(fig, init.fieldchartsdirs + 'all_vsx_stars_{}_hand_picked_{}'.format(len(big_green), len(small_red)))
 

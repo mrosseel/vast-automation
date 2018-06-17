@@ -199,6 +199,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     chart_vsx = True
     chart_custom = False
     star_descriptions = []
+    vsx_star_descriptions = do_calibration.get_vsx_in_field(do_calibration.get_star_descriptions(), 0.01)
 
     if chart_premade:
         with open(init.basedir + 'star_descriptions_to_chart.bin', 'rb') as fp:
@@ -208,7 +209,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
             # now we generate a list of StarDescriptions, with which all further processing will be done
             star_descriptions = do_calibration.get_candidates(0.1)
         elif(chart_vsx):
-            star_descriptions = do_calibration.get_vsx_in_field(do_calibration.get_star_descriptions(), 0.01)
+            star_descriptions = vsx_star_descriptions
         elif(chart_custom):
             star_descriptions = do_calibration.get_star_descriptions(init.star_list)
 
@@ -240,12 +241,12 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     #code.InteractiveConsole(locals=dict(globals(), **locals())).interact()
     if do_reporting:
         print("AAVSO Reporting with: {} stars".format(len(star_descriptions_ucac4)))
-        trash_and_recreate_dir(init.aavso_reports)
+        trash_and_recreate_dir(init.aavsoreportsdir)
         for star in star_descriptions_ucac4:
-            do_aavso_report.report(init.aavso_reports, star, comp_star_description[0])
+            do_aavso_report.report(init.aavsoreportsdir, star, comp_star_description[0])
 
     if do_field_charting:
-        do_field_charts.run_standard_field_charts()
+        do_field_charts.run_standard_field_charts(vsx_star_descriptions)
 
     # logger = mp.log_to_stderr()
     # logger.setLevel(mp.SUBDEBUG)

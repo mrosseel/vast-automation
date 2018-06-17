@@ -151,14 +151,13 @@ def get_vsx_in_field(star_descriptions, max_separation=0.01):
     for index_vsx, entry in enumerate(d2d):
         if entry.value < max_separation:
             star_local_id = idx[index_vsx]+1
-            print("get_vsx_in_field:", star_local_id)
             star_coords = star_catalog[star_local_id]
             result_entry = StarDescription()
             result_entry.local_id = star_local_id
             result_entry.coords = star_coords
             match = _add_catalog_match_to_entry(result_entry, vsx_dict, index_vsx, entry.value)
             result.append(result_entry)
-    print("Found {} stars".format(len(result)))
+    print("Found {} VSX stars in field: {}".format(len(result), [star.local_id for star in result]))
     return result
 
 def _add_catalog_match_to_entry(entry, vsx_dict, index_vsx, separation):
@@ -215,7 +214,7 @@ def create_detections_astropy_catalog(detections):
 
 def create_vsx_astropy_catalog():
     print("Creating vsx star catalog...")
-    vsx_dict = vsx_pickle.read(init.vsx_catalog_path)
+    vsx_dict = vsx_pickle.read(init.vsxcatalogdir)
     return create_generic_astropy_catalog(vsx_dict['ra_deg_np'], vsx_dict['dec_deg_np']), vsx_dict
 
 
@@ -266,7 +265,7 @@ def add_ucac4_to_star_descriptions(star_descriptions, radius=0.01):
             #print(vizier_results)
             continue
         else:
-            print('vizier results', vizier_results['Vmag'][0])
+            #print('vizier results', vizier_results['Vmag'][0])
             star.vmag = vizier_results['Vmag'][0]
             star.e_vmag = vizier_results['e_Vmag'][0]
             catalog_id = vizier_results['UCAC4'][0].decode("utf-8")
@@ -274,11 +273,11 @@ def add_ucac4_to_star_descriptions(star_descriptions, radius=0.01):
             mindist = star.coords.separation(coord_catalog)
             star.match.append(CatalogMatch(name_of_catalog="UCAC4", catalog_id=catalog_id,
                                            name=catalog_id, coords=coord_catalog, separation=mindist))
-        # print(vizier_results.describe())
-        # print(vizier_results.info())
-        # import code
-        # code.InteractiveConsole(locals=dict(globals(), **locals())).interact()
-        print("Star {} has vmag={}, error={}, dist={}".format(star.local_id, star.vmag, star.e_vmag, mindist))
+            # print(vizier_results.describe())
+            # print(vizier_results.info())
+            # import code
+            # code.InteractiveConsole(locals=dict(globals(), **locals())).interact()
+            print("Star {} has vmag={}, error={}, dist={}".format(star.local_id, star.vmag, star.e_vmag, mindist))
     return star_descriptions
 
 def get_apass_row_to_star_descriptions(row):

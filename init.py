@@ -1,8 +1,6 @@
 #### DO NOT TOUCH ####
 import multiprocessing
 
-codedir = './'
-
 aperture = 2
 all = range(1, 10000)
 thou = range(1, 1000)
@@ -11,7 +9,6 @@ selection2 = (1, 2, 3, 73, 138, 143, 264, 2675, 1045, 847, 1193)
 custom_muniwin = range(5776, 10000)
 # custom_charts = range(1,5776)
 custom_charts = range(1, 2164)
-all_star_list = range(1, 138)
 wwcra_candidates = [6314,
                     6291,
                     5978,
@@ -72,10 +69,9 @@ wwcra_certain_candidates = [6314,
                             205,
                             141]
 
-#### DO NOT TOUCH ####
-
 #### SETTINGS for DO_MUNIWIN.PY ####
 
+codedir = './'
 #basedir = codedir + 'inputfiles/RTGru/'
 basedir = codedir + 'inputfiles/WWCrA_allflat/'
 #basedir =  codedir + 'inputfiles/WWCrA2015/'
@@ -93,8 +89,8 @@ do_pos=0
 do_pos_resume=0
 do_calibrate=0
 do_ml=0
-do_charting=0
-do_phase_diagram=1
+do_charting=1
+do_phase_diagram=0
 do_field_charts=0
 do_reporting=0
 
@@ -111,8 +107,9 @@ posdir = resultdir + "positions/"
 worldposdir = resultdir + "world_positions/"
 chartsdir = resultdir + "charts/"
 phasedir = resultdir + "phasediagrams/"
-vsx_catalog_path = codedir + "vsx_catalog.bin"
-aavso_reports = resultdir + "aavso_reports/"
+vsxcatalogdir = codedir + "vsx_catalog.bin"
+aavsoreportsdir = resultdir + "aavso_reports/"
+fieldchartsdirs = resultdir + "field_charts/"
 #### DO NOT TOUCH ####
 
 ### CALIBRATION ###
