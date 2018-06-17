@@ -1,7 +1,9 @@
-import pandas as pd
 import os
+import pandas as pd
+
 import init
 
+# putting write times of lightcurve files in a CSV t check there are no delays/deadlocks
 the_dir = os.listdir(init.lightcurvedir)
 rows_list = []
 for entry in the_dir:
