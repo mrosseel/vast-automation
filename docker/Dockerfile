@@ -22,8 +22,9 @@ RUN conda update -y scikit-learn matplotlib
 #RUN git clone https://github.com/mrosseel/upsilon.git
 RUN git clone https://github.com/dwkim78/upsilon.git
 RUN mkdir .jupyter
-COPY jupyter_notebook_config.py .jupyter/jupyter_notebook_config.py
+COPY jupyter_notebook_config.json .jupyter/jupyter_notebook_config.json
 USER root
+RUN chmod 777 .jupyter/jupyter_notebook_config.json
 WORKDIR /home/jovyan/upsilon
 RUN python3 setup.py install
 WORKDIR /home/jovyan/

@@ -13,7 +13,6 @@ import numpy as np
 from astropy.coordinates import SkyCoord
 from gatspy.periodic import LombScargleFast
 import init
-from star_description import get_match_string
 from star_description import get_upsilon_string
 from reading import trash_and_recreate_dir
 
@@ -29,7 +28,7 @@ def plot_lightcurve(tuple, comparison_stars):
     star_description = tuple[0]
     curve = tuple[1]
     star = star_description.local_id
-    star_match, separation = get_match_string(star_description, "VSX")
+    star_match, separation = star_description.get_match_string("VSX")
     match_string = "({})".format(star_match) if not star_match == '' else ''
     star_name = '' if star_match == '' else " ({} - dist:{:.4f})".format(star_match, separation)
     upsilon_text = get_upsilon_string(star_description)
@@ -76,7 +75,7 @@ def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
     star_description = tuple[0]
     curve = tuple[1]
     star = star_description.local_id
-    star_match, separation = get_match_string(star_description, "VSX")
+    star_match, separation = star_description.get_match_string("VSX")
     match_string = " ({})".format(star_match) if not star_match == '' else ''
     upsilon_text = get_upsilon_string(star_description)
     #print("Calculating phase diagram for", star)

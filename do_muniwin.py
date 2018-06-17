@@ -71,10 +71,10 @@ def write_match(base_photometry_file):
         'munimatch -s sp_fields=1 ' + base_photometry_file + ' ' + init.photometrydir + 'phot??????.pht -o ' + init.matchedphotometrydir + 'match??????.pht')
 
 
-def write_munifind():
+def write_munifind(aperture=init.aperture):
     print("write munifind")
     os.system('munifind -a ' + str(
-        init.aperture) + ' ' + init.basedir + 'munifind.txt ' + init.matchedphotometrydir + 'match*')
+        aperture) + ' ' + init.basedir + 'munifind.txt ' + init.matchedphotometrydir + 'match*')
 
 
 def write_munifind_check_stars(check_star):

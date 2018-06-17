@@ -34,9 +34,9 @@ def report(target_dir, star_description, comparison_star):
     #         row.append(observation_data.get('chart', 'na'))
     #         row.append(observation_data.get('notes', 'na'))
     curve = reading.read_lightcurve(star_description.local_id, filter=True, preprocess=False)
-    star_match_ucac4, separation = get_match_string(star_description, "UCAC4")
-    star_match_vsx, separation = get_match_string(star_description, "VSX", strict=False)
-    comp_ucac4 = get_match_string(comparison_star, "UCAC4", strict=True)
+    star_match_ucac4, separation = star_description.get_match_string("UCAC4")
+    star_match_vsx, separation = star_description.get_match_string("VSX", strict=False)
+    comp_ucac4 = comparison_star.get_match_string("UCAC4", strict=True)
     var_display_name = star_match_ucac4 if star_match_vsx == None else star_match_vsx
     check_display_name = comparison_star.aavso_id if not comparison_star.aavso_id is None else comp_ucac4[0]
 

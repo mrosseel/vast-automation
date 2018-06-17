@@ -73,8 +73,8 @@ wwcra_certain_candidates = [6314,
 
 codedir = './'
 #basedir = codedir + 'inputfiles/RTGru/'
-basedir = codedir + 'inputfiles/WWCrA_allflat/'
-#basedir =  codedir + 'inputfiles/WWCrA2015/'
+#basedir = codedir + 'inputfiles/WWCrA_allflat/'
+basedir =  codedir + 'inputfiles/WWCrA2015/'
 #basedir =  codedir + 'inputfiles/WWCrA_bigger/'
 star_list = wwcra_certain_candidates
 nr_threads = multiprocessing.cpu_count()

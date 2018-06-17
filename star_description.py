@@ -30,6 +30,23 @@ class StarDescription:
     def match(self, val):
         self._match.append(val)
 
+    # extract matching strings from star_descr
+    def get_match_string(self, strict=True):
+        name = None
+        separation = None
+
+        if not self.match == None:
+            catalog_match_list = [x for x in self.match if x.name_of_catalog == catalog]
+            if len(catalog_match_list) != 1:
+                if strict:
+                    raise AssertionError("Searching for {} in {}, received {} matches, expected 1"
+                                         .format(catalog, self, len(catalog_match_list)))
+            else:
+                name = catalog_match_list[0].catalog_id
+                separation = catalog_match_list[0].separation
+
+        return name, separation
+
     def __repr__(self):
         return "StarDescription({0},{1},{2},{3},{4},{5})".format(
             self.local_id, self.aavso_id, self.coords, self.vmag, self._match, self._upsilon)
@@ -46,24 +63,9 @@ class CatalogMatch():
         self.coords = coords
         self.separation = separation
 
-# extract matching strings from star_descr
-def get_match_string(star_description, catalog, strict=True):
-    name = None
-    separation = None
-
-    if not star_description.match == None:
-        catalog_match_list = [x for x in star_description.match if x.name_of_catalog == catalog]
-        if len(catalog_match_list) != 1:
-            if strict:
-                raise AssertionError("Searching for {} in {}, received {} matches, expected 1"
-                                     .format(catalog, star_description, len(catalog_match_list)))
-        else:
-            name = catalog_match_list[0].catalog_id
-            separation = catalog_match_list[0].separation
-
-    return name, separation
 
 # extract upsilon strings from star_descr
+# should be migrated to an upsilon catalog_match. Problem is format is quite different, could use extra_dict
 def get_upsilon_string(star_description):
     upsilon = star_description.upsilon
     if not upsilon == None:
