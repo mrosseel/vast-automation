@@ -31,7 +31,7 @@ class StarDescription:
         self._match.append(val)
 
     # extract matching strings from star_descr
-    def get_match_string(self, strict=True):
+    def get_match_string(self, catalog, strict=True):
         name = None
         separation = None
 
