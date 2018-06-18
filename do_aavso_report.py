@@ -1,8 +1,5 @@
 import aavso
 import reading
-from star_description import get_match_string
-import numpy as np
-import matplotlib.pyplot as plt
 from astropy import units as u
 from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz

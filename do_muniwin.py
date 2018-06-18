@@ -76,6 +76,11 @@ def write_munifind(aperture=init.aperture):
     os.system('munifind -a ' + str(
         aperture) + ' ' + init.basedir + 'munifind.txt ' + init.matchedphotometrydir + 'match*')
 
+def write_munifind_single(match_file, aperture=init.aperture):
+    print("write munifind")
+    os.system('munifind -a ' + str(
+        aperture) + ' ' + init.basedir + 'munifind.txt ' + init.matchedphotometrydir + match_file)
+
 
 def write_munifind_check_stars(check_star):
     print("write munifind check stars using check star:", check_star)
@@ -255,21 +260,22 @@ def interact():
     import code
     code.InteractiveConsole(locals=dict(globals(), **locals())).interact()
 
-print("Calculating", len(init.star_list), "stars from base dir:", init.basedir, "\nconvert_fits:\t", init.do_convert_fits,
-"\nphotometry:\t", init.do_photometry,
-"\nmatch:\t\t", init.do_match,
-"\nmunifind:\t", init.do_munifind,
-"\nlightcurve:\t", init.do_lightcurve,
-"\nlightcurve_res:\t", init.do_lightcurve_resume,
-"\npos:\t\t", init.do_pos,
-"\npos_resume:\t", init.do_pos_resume,
-"\ncalibrate:\t", init.do_calibrate,
-"\nupsilon:\t", init.do_ml,
-"\ncharting:\t", init.do_charting,
-"\nphasediagram:\t", init.do_phase_diagram,
-"\nfield charts:\t", init.do_field_charts,
-"\nreporting:\t", init.do_reporting)
-input("Press Enter to continue...")
-run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_munifind, init.do_lightcurve,
-init.do_lightcurve_resume, init.do_pos, init.do_pos_resume, init.do_calibrate,
-init.do_ml, init.do_charting, init.do_phase_diagram, init.do_field_charts, init.do_reporting)
+if __name__ == '__main__':
+    print("Calculating", len(init.star_list), "stars from base dir:", init.basedir, "\nconvert_fits:\t", init.do_convert_fits,
+    "\nphotometry:\t", init.do_photometry,
+    "\nmatch:\t\t", init.do_match,
+    "\nmunifind:\t", init.do_munifind,
+    "\nlightcurve:\t", init.do_lightcurve,
+    "\nlightcurve_res:\t", init.do_lightcurve_resume,
+    "\npos:\t\t", init.do_pos,
+    "\npos_resume:\t", init.do_pos_resume,
+    "\ncalibrate:\t", init.do_calibrate,
+    "\nupsilon:\t", init.do_ml,
+    "\ncharting:\t", init.do_charting,
+    "\nphasediagram:\t", init.do_phase_diagram,
+    "\nfield charts:\t", init.do_field_charts,
+    "\nreporting:\t", init.do_reporting)
+    input("Press Enter to continue...")
+    run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_munifind, init.do_lightcurve,
+    init.do_lightcurve_resume, init.do_pos, init.do_pos_resume, init.do_calibrate,
+    init.do_ml, init.do_charting, init.do_phase_diagram, init.do_field_charts, init.do_reporting)
