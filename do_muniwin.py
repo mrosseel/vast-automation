@@ -70,39 +70,33 @@ def write_match(base_photometry_file):
     os.system(
         'munimatch -s sp_fields=1 ' + base_photometry_file + ' ' + init.photometrydir + 'phot??????.pht -o ' + init.matchedphotometrydir + 'match??????.pht')
 
-
-def write_munifind(aperture=init.aperture):
-    print("write munifind")
-    os.system('munifind -a ' + str(
-        aperture) + ' ' + init.basedir + 'munifind.txt ' + init.matchedphotometrydir + 'match*')
-
-def write_munifind_single(match_file, aperture=init.aperture):
+def write_munifind(aperture, match_file='match*'):
     print("write munifind")
     os.system('munifind -a ' + str(
         aperture) + ' ' + init.basedir + 'munifind.txt ' + init.matchedphotometrydir + match_file)
 
 
-def write_munifind_check_stars(check_star):
+def write_munifind_check_stars(check_star, aperture):
     print("write munifind check stars using check star:", check_star)
-    os.system('munifind -a ' + str(init.aperture) + ' ' + ' -c ' + str(
+    os.system('munifind -a ' + str(aperture) + ' ' + ' -c ' + str(
         check_star) + ' ' + init.basedir + 'munifind.txt ' + init.matchedphotometrydir + 'match*')
 
 
-def write_lightcurve(star, check_stars_list):
+def write_lightcurve(star, check_stars_list, aperture):
     check_stars = join_check_stars(check_stars_list, star)
-    os.system("munilist -a " + str(init.aperture) + " -q --object " + str(star) + " -v " + str(
+    os.system("munilist -a " + str(aperture) + " -q --object " + str(star) + " -v " + str(
         star) + " -c " + check_stars + " " + init.lightcurvedir + 'curve_' + str(star).zfill(
         5) + ".txt " + init.matchedphotometrydir + 'match*.pht >/dev/null')
-    # print("--verbose -a ", str(init.aperture), " -q --object ", str(star), " -v ", str(star), " -c ", check_stars, (init.lightcurve_dir + 'curve_' + str(star).zfill(5) + ".txt "), (init.basedir+'match*.pht  >/dev/null'))
+    # print("--verbose -a ", str(aperture), " -q --object ", str(star), " -v ", str(star), " -c ", check_stars, (init.lightcurve_dir + 'curve_' + str(star).zfill(5) + ".txt "), (init.basedir+'match*.pht  >/dev/null'))
     # !munilist --verbose -a {str(aperture)} -q --object {str(star)} -v {str(star)} -c {str(8)} {lightcurve_dir + str(star) + ".txt"} {init.basedir+'match*.pht'}
 
 
 # TODO add check stars to this command?
-def write_pos(star, check_stars_list, matched_reference_frame):
+def write_pos(star, check_stars_list, matched_reference_frame, aperture):
     # start = time.time()
     # check_stars = join_check_stars(check_stars_list, star)
-    # os.system("munilist -a " + str(init.aperture)+ " -q --obj-plot --object "+ str(star)+ " " + get_pos_filename(star) + " " + init.matchedphotometrydir+'match*.pht >/dev/null')
-    call("munilist -a " + str(init.aperture) + " -q --obj-plot --object " + str(star) + " " + reading.get_pos_filename(
+    # os.system("munilist -a " + str(aperture)+ " -q --obj-plot --object "+ str(star)+ " " + get_pos_filename(star) + " " + init.matchedphotometrydir+'match*.pht >/dev/null')
+    call("munilist -a " + str(aperture) + " -q --obj-plot --object " + str(star) + " " + reading.get_pos_filename(
         star) + " " + matched_reference_frame + ' >/dev/null', shell=True)
     # end = time.time()
 

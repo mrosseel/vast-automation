@@ -1,7 +1,8 @@
 #### DO NOT TOUCH ####
 import multiprocessing
+import numpy as np
 
-aperture = 2
+aperture_range = np.arange(0.2, 10, 0.2)
 all = range(1, 10000)
 thou = range(1, 1000)
 selection = [58, 137, 138, 886]
@@ -73,8 +74,8 @@ wwcra_certain_candidates = [6314,
 
 codedir = './'
 #basedir = codedir + 'inputfiles/RTGru/'
-basedir = codedir + 'inputfiles/WWCrA_allflat/'
-#basedir =  codedir + 'inputfiles/WWCrA2015/'
+#basedir = codedir + 'inputfiles/WWCrA_allflat/'
+basedir =  codedir + 'inputfiles/WWCrA2015/'
 #basedir =  codedir + 'inputfiles/WWCrA_bigger/'
 star_list = wwcra_certain_candidates
 nr_threads = multiprocessing.cpu_count()

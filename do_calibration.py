@@ -10,9 +10,12 @@ from astropy.coordinates import match_coordinates_sky
 from astropy import units as u
 from astropy.coordinates import Angle
 from astroquery.vizier import Vizier
-import pandas as pd
-import numpy as np
 import vsx_pickle
+import do_calibration
+import numpy as np
+import pandas as pd
+from do_muniwin import write_munifind
+from do_muniwin import getBestComparisonStars
 
 def get_wcs(wcs_file):
     hdulist = fits.open(wcs_file)
@@ -47,6 +50,22 @@ def find_reference_matched(reference_frame_index):
     the_dir = os.listdir(init.matchedphotometrydir)
     the_dir.sort()
     return init.matchedphotometrydir + the_dir[reference_frame_index]
+
+# match_file = 'match000???.pht'
+def find_optimal_aperture(match_file, aperture_range = init.aperture_range):
+    results = []
+    for aperture in aperture_range:
+        print('aperture:', aperture)
+        write_munifind(aperture, match_file)
+        result = getBestComparisonStars(10000)
+        results.append(result)
+    diff_result_array = []
+    for df in results:
+        sum_stdev = df['STDEV'].mean()
+        diff_result_array = np.append(diff_result_array, sum_stdev)
+    optimal_aperture = aperture_range[pd.Series(diff_result_array).idxmin()]
+    print('Optimal aperture:', optimal_aperture)
+    return optimal_aperture
 
 
 def find_target_star(target_ra_deg, target_dec_deg, nr_results):
