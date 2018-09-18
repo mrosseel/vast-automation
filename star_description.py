@@ -39,7 +39,7 @@ class StarDescription:
             catalog_match_list = [x for x in self.match if x.name_of_catalog == catalog]
             if len(catalog_match_list) != 1:
                 if strict:
-                    raise AssertionError("Searching for {} in {}, received {} matches, expected 1"
+                    raise AssertionError("star_description.py: Searching for {} in {}, received {} matches, expected 1"
                                          .format(catalog, self, len(catalog_match_list)))
             else:
                 name = catalog_match_list[0].catalog_id

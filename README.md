@@ -10,8 +10,7 @@ Once you're in this VM, all python commands can be run.
 * docker build . -t miker/jupyter
 * cd ..
 * command: `./startJupyter.sh`
-* the startjupyter command returns a *docker_id*, copy it.
-* command: `docker exec -it docker_id bash`
+* you are automatically logged into a root shell of the docker container
 
 ## Command line usage
 

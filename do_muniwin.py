@@ -12,8 +12,10 @@ import tqdm
 import os, sys
 from functools import partial
 from subprocess import call
+import subprocess
 import pickle
 import do_aavso_report
+import re
 
 
 # Munifind fields: INDEX MEAN_MAG STDEV GOODPOINTS
@@ -27,13 +29,14 @@ def read_munifind(filename):
 
 
 # gets the stars with a maximum of measurements and lowest stdev
-def getBestComparisonStars(nrOfStars):
-    df = read_munifind(init.basedir + 'munifind.txt')
+def getBestComparisonStars(nrOfStars, filename=init.basedir + 'munifind.txt'):
+    print('reading filename', filename)
+    df = read_munifind(filename)
     maxPoints = df['GOODPOINTS'].max()
     df = df[df['GOODPOINTS'] > maxPoints * 0.99]
     df_lowest_stdev = df.sort_values('STDEV')
     comparison_stars = df_lowest_stdev.head(nrOfStars)
-    print("Comparison stars: ", comparison_stars)
+    #print("Comparison stars:\n", comparison_stars.describe())
     return comparison_stars
 
 
@@ -51,12 +54,10 @@ def join_check_stars(check_stars, exclude_star):
     check_stars_string = ','.join(map(str, check_stars))
     return check_stars_string
 
-
 def write_convert_fits():
     print("convert fits files to fts")
     trash_and_recreate_dir(init.convfitsdir)
     os.system('konve ' + init.fitsdir + '*.fit -o ' + init.convfitsdir + 'kout??????.fts')
-
 
 def write_photometry():
     print("write photometry")
@@ -64,23 +65,23 @@ def write_photometry():
     os.system('muniphot ' + init.convfitsdir + '*.fts -p muniphot.conf -o ' + init.photometrydir + 'phot??????.pht')
 
 
-def write_match(base_photometry_file):
-    print("write match with base file:", base_photometry_file)
-    trash_and_recreate_dir(init.matchedphotometrydir)
-    os.system(
-        'munimatch -s sp_fields=1 ' + base_photometry_file + ' ' + init.photometrydir + 'phot??????.pht -o ' + init.matchedphotometrydir + 'match??????.pht')
+def write_match(to_match_photomotry_file, base_photometry_file):
+    m = re.search(r'(\d+)', to_match_photomotry_file)
+    numbers = m.group(0)
+    # see munimatch.c for arguments of config file
+    os.system('munimatch -p ' + init.codedir + 'match.conf ' + base_photometry_file + ' ' + init.photometrydir + to_match_photomotry_file + ' -o ' + init.matchedphotometrydir + 'match'+numbers+'.pht')
 
-def write_munifind(aperture, match_file='match*'):
-    print("write munifind")
-    os.system('munifind -a ' + str(
-        aperture) + ' ' + init.basedir + 'munifind.txt ' + init.matchedphotometrydir + match_file)
-
+def write_munifind(aperture, match_file='match*', quiet=False, canonical=False):
+    quiet_switch = '-q ' if quiet else ''
+    quiet_null = ' > /dev/null' if quiet else ''
+    munifind_file = init.basedir + 'munifind.txt' if canonical else init.basedir + 'munifind_' + str(aperture) + '.txt'
+    print("writing munifind for aperture", aperture, "file:", munifind_file, "quiet:", quiet)
+    os.system('munifind ' + quiet_switch + '-a ' + str(aperture) + ' ' + munifind_file + ' ' + init.matchedphotometrydir + match_file + quiet_null)
+    return munifind_file
 
 def write_munifind_check_stars(check_star, aperture):
     print("write munifind check stars using check star:", check_star)
-    os.system('munifind -a ' + str(aperture) + ' ' + ' -c ' + str(
-        check_star) + ' ' + init.basedir + 'munifind.txt ' + init.matchedphotometrydir + 'match*')
-
+    os.system('munifind -a ' + str(aperture) + ' ' + ' -c ' + str(check_star) + ' ' + init.basedir + 'munifind.txt ' + init.matchedphotometrydir + 'match*')
 
 def write_lightcurve(star, check_stars_list, aperture):
     check_stars = join_check_stars(check_stars_list, star)
@@ -101,25 +102,25 @@ def write_pos(star, check_stars_list, matched_reference_frame, aperture):
     # end = time.time()
 
 
-def do_write_pos(star_list, check_stars_list, is_resume, matched_reference_frame):
+def do_write_pos(star_list, check_stars_list, aperture, is_resume, matched_reference_frame):
     if not is_resume:
         trash_and_recreate_dir(init.posdir)
     else:
         star_list = reduce_star_list(star_list, init.posdir)
     pool = mp.Pool(init.nr_threads, maxtasksperchild=100)
-    func = partial(write_pos, check_stars_list=check_stars_list, matched_reference_frame=matched_reference_frame)
+    func = partial(write_pos, check_stars_list=check_stars_list, matched_reference_frame=matched_reference_frame, aperture=aperture)
     print("Writing star positions for", len(star_list), "stars into", init.posdir)
     for _ in tqdm.tqdm(pool.imap_unordered(func, star_list, 10), total=len(star_list)):
         pass
 
 
-def do_write_curve(star_list, check_stars_list, is_resume):
+def do_write_curve(star_list, check_stars_list, aperture, is_resume):
     if not is_resume:
         trash_and_recreate_dir(init.lightcurvedir)
     else:
         star_list = reduce_star_list(star_list, init.lightcurvedir)
     pool = mp.Pool(init.nr_threads, maxtasksperchild=100)
-    func = partial(write_lightcurve, check_stars_list=check_stars_list)
+    func = partial(write_lightcurve, check_stars_list=check_stars_list, aperture=aperture)
     print("Writing star lightcurves for", len(star_list), "stars into", init.lightcurvedir)
     for _ in tqdm.tqdm(pool.imap_unordered(func, star_list, 10), total=len(star_list)):
         pass
@@ -128,7 +129,7 @@ def do_write_curve(star_list, check_stars_list, is_resume):
 def do_world_pos(wcs, star_list, reference_frame_index):
     trash_and_recreate_dir(init.worldposdir)
     print("index", reference_frame_index)
-    pool = mp.Pool(1)
+    pool = mp.Pool(init.nr_threads, maxtasksperchild=100)
     func = partial(world_pos, wcs=wcs, reference_frame_index=reference_frame_index)
     print("Writing world positions for", len(star_list), "stars into", init.posdir)
     for _ in tqdm.tqdm(pool.imap_unordered(func, star_list), total=len(star_list)):
@@ -161,10 +162,19 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     print("Reference frame: {}, index: {}".format(init.reference_frame, reference_frame_index, ))
 
     if do_match:
-        write_match(do_calibration.find_reference_photometry(reference_frame_index))
+        pool = mp.Pool(init.nr_threads, maxtasksperchild=100)
+        ref_frame = do_calibration.find_reference_photometry(reference_frame_index)
+        file_list = reading.get_files_in_dir(init.photometrydir)
+        file_list.sort()
+        func = partial(write_match, base_photometry_file=ref_frame)
+        print("Writing matches for", len(file_list), "stars with reference frame", ref_frame)
+        trash_and_recreate_dir(init.matchedphotometrydir)
+        for _ in tqdm.tqdm(pool.imap_unordered(func, file_list, 10), total=len(file_list)):
+            pass
 
     if do_munifind:
-        write_munifind()
+        aperture = do_calibration.find_optimal_aperture('match????00.pht')
+        write_munifind(aperture, quiet=True, canonical=True)
         # we used to do something clever here, but the results are exactly the same as doing the normal thing.
         # a bit too exactly even, but for now we just disable it.
         check_stars_list = do_best_comparison_stars(12)
@@ -172,13 +182,15 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
             pickle.dump(check_stars_list, fp)
         # print("check_stars_list: ", check_stars_list)
         # write_munifind_check_stars(check_stars_list[0])
+        print("Done writing munifind")
     else:
         with open(init.basedir + 'check_stars_list.bin', 'rb') as fp:
             check_stars_list = pickle.load(fp)
+        with open(init.basedir + 'best_aperture.txt', 'r') as fp:
+            aperture = round(float(next(fp)),1)
+    if do_lightcurve: do_write_curve(init.star_list, check_stars_list, aperture, do_lightcurve_resume)
 
-    if do_lightcurve: do_write_curve(init.star_list, check_stars_list, do_lightcurve_resume)
-
-    if do_pos: do_write_pos(init.star_list, check_stars_list, do_pos_resume,
+    if do_pos: do_write_pos(init.star_list, check_stars_list, aperture, do_pos_resume,
                             do_calibration.find_reference_matched(reference_frame_index))
 
     # is this still needed?? maybe for automatic calibration with astrometry.net
@@ -269,7 +281,8 @@ if __name__ == '__main__':
     "\nphasediagram:\t", init.do_phase_diagram,
     "\nfield charts:\t", init.do_field_charts,
     "\nreporting:\t", init.do_reporting)
-    input("Press Enter to continue...")
+    print("Press Enter to continue...")
+    subprocess.call("read -t 10", shell=True, executable='/bin/bash')
     run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_munifind, init.do_lightcurve,
     init.do_lightcurve_resume, init.do_pos, init.do_pos_resume, init.do_calibrate,
     init.do_ml, init.do_charting, init.do_phase_diagram, init.do_field_charts, init.do_reporting)

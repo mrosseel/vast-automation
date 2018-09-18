@@ -1,5 +1,7 @@
 import init
 import os
+from os import listdir
+from os.path import isfile, join
 import shutil
 import pandas as pd
 import numpy as np
@@ -100,3 +102,6 @@ def read_comparison_star():
                 comparison_star = int(m.group(1))
                 break
     return comparison_star
+
+def get_files_in_dir(mypath):
+    return [f for f in listdir(mypath) if isfile(join(mypath, f))]

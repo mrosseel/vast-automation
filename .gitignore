@@ -1,4 +1,5 @@
 inputfiles
+current
 cmunipack*
 *.pyc
 .idea/**/*

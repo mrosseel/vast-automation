@@ -7,11 +7,10 @@ import pandas as pd
 from functools import partial
 
 def start_upsilon(star_list, star_limit):
-    #print("Starting upsilon with nr stars", len(star_list))
+    print("Starting upsilon with nr stars:", len(star_list), "and star limit:", star_limit)
     pool = Pool(init.nr_threads)
     func = partial(predict_star,limit=star_limit)
     result_list = []
-    #print("Predicting variability for ",len(star_list),"stars")
     for _ in tqdm.tqdm(pool.imap_unordered(func, star_list, chunksize=10), total=len(star_list)):
         result_list.append(_)
         pass
@@ -25,9 +24,7 @@ def save_results(result_list, output_file):
     column_names = ['star', 'label', 'probability', 'flag']
     columns_done = False
     for entry in result_list:
-        print(entry, len(entry))
         if len(entry) < 5:
-            print(entry, len(entry))
             continue
         features_dict = entry[4]
         entry = entry[:-1]
@@ -37,7 +34,7 @@ def save_results(result_list, output_file):
         final_list.append(entry)
         columns_done = True
     df=pd.DataFrame(final_list,columns=column_names)
-    print(df.head())
+    print("Upsilon results will be saved with size ", df.size)
     df.to_csv(output_file, index=False)
 
 # returns [ star, label, probability, flag ]
@@ -47,7 +44,6 @@ def predict_star(star, limit=-1):
         df = reading.read_lightcurve(star)
         if(limit > 0):
             df = df[:limit]
-            print("Restricting star", star, " to limit:", limit)
         mag = df['V-C'].as_matrix()
         date = df['JD'].as_matrix()
         err = df['s1'].as_matrix()

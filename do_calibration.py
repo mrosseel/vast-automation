@@ -53,18 +53,23 @@ def find_reference_matched(reference_frame_index):
 
 # match_file = 'match000???.pht'
 def find_optimal_aperture(match_file, aperture_range = init.aperture_range):
+    print('Finding optimal aperture for match file {}, range {}'.format(match_file, aperture_range))
     results = []
     for aperture in aperture_range:
         print('aperture:', aperture)
-        write_munifind(aperture, match_file)
-        result = getBestComparisonStars(10000)
-        results.append(result)
+        current_file = write_munifind(aperture, match_file, quiet=True)
+        try:
+            result = getBestComparisonStars(100, current_file)
+            results.append(result['STDEV'].mean())
+        except:
+            results.append(100)
     diff_result_array = []
-    for df in results:
-        sum_stdev = df['STDEV'].mean()
-        diff_result_array = np.append(diff_result_array, sum_stdev)
+    for mean in results:
+        diff_result_array = np.append(diff_result_array, mean)
     optimal_aperture = aperture_range[pd.Series(diff_result_array).idxmin()]
     print('Optimal aperture:', optimal_aperture)
+    np.savetxt(init.basedir + "aperture.csv", diff_result_array, delimiter=",")
+    np.savetxt(init.basedir + "best_aperture.txt", [optimal_aperture])
     return optimal_aperture
 
 
@@ -77,7 +82,6 @@ def find_target_star(target_ra_deg, target_dec_deg, nr_results):
     df = pd.DataFrame(list(distances_dict.items()), columns=['star_nr', 'deg_separation'])
     df.sort_values(by='deg_separation', inplace=True)
     return df[:nr_results]
-
 
 def find_target_stars(max_deg_separation):
     target = SkyCoord(target_ra_deg, target_dec_deg, unit='deg')
