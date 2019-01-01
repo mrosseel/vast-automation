@@ -1,4 +1,5 @@
 import os
+import glob
 import init
 import reading
 from star_description import StarDescription
@@ -31,13 +32,35 @@ def calibrate():
     # print(w)
     return w
 
-def find_reference_frame_index():
+def old_find_reference_frame_index():
     the_dir = os.listdir(init.reference_dir)
     the_dir.sort()
     reference_frame_index = the_dir.index(init.reference_frame)
     assert the_dir[reference_frame_index] == init.reference_frame
     return reference_frame_index
 
+def find_file_index(the_dir, the_file, the_filter='*'):
+    the_dir = glob.glob(the_dir+the_filter)
+    the_dir.sort()
+    indices = [i for i, elem in enumerate(the_dir) if the_file in elem]
+    return indices[0]
+
+# returns the converted_fits file with the highest compressed filesize, limited to 'limit'
+# if limit is higher than listdir length, no harm
+def select_reference_frame(limit):
+    import gzip
+    count=0
+    result = {}
+    for filename in os.listdir(init.convfitsdir):
+        if count < limit:
+            count=count+1
+            with open(init.convfitsdir+filename, 'rb') as f_in:
+                length = len(gzip.compress(f_in.read()))
+                result[filename] = length
+                print(length)
+
+    sorted_by_value = sorted(result.items(), key=lambda kv: kv[1], reverse=True)
+    return sorted_by_value[0][0]
 
 # returns 'path + phot????.pht', the photometry file matched with the reference frame
 def find_reference_photometry(reference_frame_index):
