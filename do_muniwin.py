@@ -2,6 +2,7 @@ import init
 import do_calibration
 import do_charts
 import do_field_charts
+import do_stats_charts
 import reading
 from reading import trash_and_recreate_dir
 from reading import reduce_star_list
@@ -64,8 +65,8 @@ def write_photometry():
     trash_and_recreate_dir(init.photometrydir)
     os.system('muniphot ' + init.convfitsdir + '*.fts -p muniphot.conf -o ' + init.photometrydir + 'phot??????.pht')
 
-
 def write_match(to_match_photomotry_file, base_photometry_file):
+    # find the number part of to_match_photomotry_file
     m = re.search(r'(\d+)', to_match_photomotry_file)
     numbers = m.group(0)
     # see munimatch.c for arguments of config file
@@ -91,6 +92,18 @@ def write_lightcurve(star, check_stars_list, aperture):
     # print("--verbose -a ", str(aperture), " -q --object ", str(star), " -v ", str(star), " -c ", check_stars, (init.lightcurve_dir + 'curve_' + str(star).zfill(5) + ".txt "), (init.basedir+'match*.pht  >/dev/null'))
     # !munilist --verbose -a {str(aperture)} -q --object {str(star)} -v {str(star)} -c {str(8)} {lightcurve_dir + str(star) + ".txt"} {init.basedir+'match*.pht'}
 
+def get_reference_frame(file_limit):
+    # Calculate or retrieve reference frame and its index
+    try:
+        reference_frame, reference_frame_index=reading.read_reference_frame()
+    except:
+        reference_frame = do_calibration.select_reference_frame(file_limit)
+        reference_frame_index = do_calibration.find_file_index(init.convfitsdir, reference_frame, '*.fts')
+        lines = [reference_frame, str(reference_frame_index)]
+        with open(init.basedir + 'reference_frame.txt', 'w') as f:
+            f.write('\n'.join(lines))
+    print("Reference frame: {}, index: {}".format(reference_frame, reference_frame_index))
+    return [reference_frame, reference_frame_index]
 
 # TODO add check stars to this command?
 def write_pos(star, check_stars_list, matched_reference_frame, aperture):
@@ -155,11 +168,10 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     if do_convert_fits:
         write_convert_fits()
 
+    _, reference_frame_index = get_reference_frame(100)
+
     if do_photometry:
         write_photometry()
-
-    reference_frame_index = do_calibration.find_reference_frame_index()
-    print("Reference frame: {}, index: {}".format(init.reference_frame, reference_frame_index, ))
 
     if do_match:
         pool = mp.Pool(init.nr_threads, maxtasksperchild=100)
@@ -173,7 +185,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
             pass
 
     if do_munifind:
-        aperture = do_calibration.find_optimal_aperture('match????00.pht')
+        aperture = do_calibration.find_optimal_aperture('match??????.pht')
         write_munifind(aperture, quiet=True, canonical=True)
         # we used to do something clever here, but the results are exactly the same as doing the normal thing.
         # a bit too exactly even, but for now we just disable it.
@@ -237,16 +249,21 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     comparison_star = reading.read_comparison_star()
     print('Read comparison star from munifind.txt: ', comparison_star)
 
-    comp_star_description = do_calibration.get_star_descriptions([comparison_star])
-    print('Get comparison star description: ', comp_star_description)
-    comparison_stars = do_calibration.add_ucac4_to_star_descriptions(comp_star_description)
-    print("Got comparison star description + ucac4 id: ", comparison_stars)
-    # add ucac4 to star_descriptions
-    star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
+    if 0:
+        comp_star_description = do_calibration.get_star_descriptions([comparison_star])
+        print('Get comparison star description: ', comp_star_description)
+        comparison_stars = do_calibration.add_ucac4_to_star_descriptions(comp_star_description)
+        print("Got comparison star description + ucac4 id: ", comparison_stars)
+        # add ucac4 to star_descriptions
+        star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
 
-    if do_charting or do_phase_diagram:
-        print("starting charting / phase diagrams")
-        do_charts.run(star_descriptions_ucac4, comparison_stars, do_charting, do_phase_diagram)
+        if do_charting or do_phase_diagram:
+            print("starting charting / phase diagrams")
+            do_charts.run(star_descriptions_ucac4, comparison_stars, do_charting, do_phase_diagram)
+
+    if do_field_charting:
+#        do_field_charts.run_standard_field_charts(vsx_star_descriptions)
+        do_stats_charts.plot_cumul_histo_detections()
 
     #import code
     #code.InteractiveConsole(locals=dict(globals(), **locals())).interact()
@@ -256,8 +273,6 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         for star in star_descriptions_ucac4:
             do_aavso_report.report(init.aavsoreportsdir, star, comp_star_description[0])
 
-    if do_field_charting:
-        do_field_charts.run_standard_field_charts(vsx_star_descriptions)
 
     # logger = mp.log_to_stderr()
     # logger.setLevel(mp.SUBDEBUG)
