@@ -50,9 +50,20 @@ def read_worldpos(star):
     with open(get_worldpos_filename(star)) as f: # No need to specify 'r': this is the default.
         return f.readlines()[0].split(' ')
 
+def read_reference_frame():
+    reference_file = open(init.basedir + 'reference_frame.txt', 'r')
+    reference_file_contents = reference_file.readlines()
+    reference_frame=reference_file_contents[0].rstrip()
+    reference_frame_index=int(reference_file_contents[1])
+    return reference_frame, reference_frame_index
+
+
 def trash_and_recreate_dir(dir):
     os.system('rm -fr "%s"' % dir)
     #shutil.rmtree(dir, ignore_errors=True)
+    create_dir(dir)
+
+def create_dir(dir):
     os.makedirs(dir, exist_ok=True)
 
 # helper function

@@ -3,7 +3,7 @@ import multiprocessing
 import numpy as np
 
 aperture_range = np.arange(0.2, 10, 0.2)
-all = range(1, 20000)
+all = range(1, 10000)
 thou = range(1, 1000)
 selection = [58, 137, 138, 886]
 selection2 = (1, 2, 3, 73, 138, 143, 264, 2675, 1045, 847, 1193)
@@ -74,7 +74,8 @@ wwcra_certain_candidates = [6314,
 
 codedir = './'
 #basedir = codedir + 'inputfiles/RTGru/'
-basedir = codedir + 'inputfiles/WWCrA_allflat/'
+# basedir = codedir + 'inputfiles/WWCrA_allflat/'
+basedir = codedir + 'inputfiles/testing/'
 #basedir =  codedir + 'inputfiles/WWCrA2015/'
 #basedir =  codedir + 'inputfiles/WWCrA_bigger/'
 star_list = all
@@ -90,10 +91,10 @@ do_pos=0
 do_pos_resume=0
 do_calibrate=0
 do_ml=0
-do_charting=1
-do_phase_diagram=1
+do_charting=0
+do_phase_diagram=0
 do_field_charts=1
-do_reporting=1
+do_reporting=0
 
 
 #### DO NOT TOUCH ####
@@ -114,8 +115,6 @@ fieldchartsdirs = resultdir + "field_charts/"
 #### DO NOT TOUCH ####
 
 ### CALIBRATION ###
-reference_dir = fitsdir
-reference_frame = 'WWCrA#30V_000184527_FLAT.fit'
 reference_header = basedir + 'new-image.fits'
 ra_deg = 271.4032917
 dec_deg = -43.8326111

@@ -5,6 +5,7 @@ from photutils import aperture_photometry, CircularAperture
 import numpy as np
 import init
 import do_calibration
+import reading
 from reading import trash_and_recreate_dir
 
 
@@ -70,7 +71,8 @@ def save(fig, path):
 
 def run_standard_field_charts(vsx_star_descr):
     trash_and_recreate_dir(init.fieldchartsdirs)
-    reference_fits_frame=init.reference_dir+init.reference_frame
+    reference_frame, reference_frame_index=reading.read_reference_frame()
+    reference_fits_frame=init.convfitsdir+reference_frame
     wcs = do_calibration.get_wcs(init.reference_header)
     candidates = do_calibration.get_candidates(0.5)
     hand_candidates_descr = do_calibration.get_star_descriptions(init.wwcra_certain_candidates)
