@@ -39,6 +39,19 @@ def old_find_reference_frame_index():
     assert the_dir[reference_frame_index] == init.reference_frame
     return reference_frame_index
 
+def get_reference_frame(file_limit):
+    # Calculate or retrieve reference frame and its index
+    try:
+        reference_frame, reference_frame_index=reading.read_reference_frame()
+    except:
+        reference_frame = do_calibration.select_reference_frame(file_limit)
+        reference_frame_index = do_calibration.find_file_index(init.convfitsdir, reference_frame, '*.fts')
+        lines = [reference_frame, str(reference_frame_index)]
+        with open(init.basedir + 'reference_frame.txt', 'w') as f:
+            f.write('\n'.join(lines))
+    print("Reference frame: {}, index: {}".format(reference_frame, reference_frame_index))
+    return [reference_frame, init.convfitsdir + reference_frame, reference_frame_index]
+
 def find_file_index(the_dir, the_file, the_filter='*'):
     the_dir = glob.glob(the_dir+the_filter)
     the_dir.sort()
@@ -149,7 +162,7 @@ def get_star_descriptions(starlist=None):
     # returns {'name': [ra.deg, dec.deg ]}
     positions = reading.read_world_positions(init.worldposdir)
     result = []
-    print('Reading star descriptions for:', starlist if not None else 'all stars')
+    print('Reading star descriptions for:', starlist or 'all stars')
     for key in positions:
         star_id = reading.filename_to_star(str(key))
         if starlist is None or star_id in starlist:

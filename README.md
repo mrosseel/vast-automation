@@ -47,9 +47,10 @@ _Password is 'muni'_
 ## TODO
 
 - new ensemble comparison star calculation?
-- aperture is now fixed at 2, do some experiments on 1 star to measure effect on error bars and results
 - check error column for any stars having error bars > 1%
 - stacking images to detect fainter stars+have better signal/noise ratio: https://github.com/fedhere/coaddfitim
+- write munifind_ intermediate files in a folder
+- detect less stars to do the aperture calculations (generate them in a seperate folder, subset of images)
 
 ## References
 

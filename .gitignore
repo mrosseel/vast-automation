@@ -5,3 +5,4 @@ cmunipack*
 .idea/**/*
 **/.ipynb_checkpoints/**/*
 transfer/
+secrets.py
