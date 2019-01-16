@@ -49,7 +49,6 @@ def do_best_comparison_stars(nrOfStars):
         check_stars.append(int(row['STAR']))
     return check_stars
 
-
 def join_check_stars(check_stars, exclude_star):
     check_stars = filter(lambda star: star != exclude_star, check_stars)
     check_stars_string = ','.join(map(str, check_stars))
@@ -192,7 +191,6 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     if do_pos: do_write_pos(init.star_list, check_stars_list, aperture, do_pos_resume,
                             do_calibration.find_reference_matched(reference_frame_index))
 
-    # is this still needed?? maybe for automatic calibration with astrometry.net
     if do_calibrate:
         wcs = do_calibration.calibrate()
         do_world_pos(wcs, init.star_list, 0)  # pass 0 for reference_frame_index because we only write one position

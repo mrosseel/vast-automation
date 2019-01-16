@@ -8,6 +8,7 @@ import os
 import init
 import reading
 
+# not used
 def calculate_wcs_manual(reference_frame, xpos, ypos, arcsec_width, arcsec_height):
     object_ra, object_dec, naxis1, naxis2, jd= getDataFromFitsHeader(reference_frame)
     c = SkyCoord(object_ra, object_dec, unit="deg")

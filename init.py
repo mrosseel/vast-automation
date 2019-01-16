@@ -91,8 +91,8 @@ do_pos=0
 do_pos_resume=0
 do_calibrate=1
 do_ml=0
-do_charting=0
-do_phase_diagram=0
+do_charting=1
+do_phase_diagram=1
 do_field_charts=1
 do_reporting=0
 
