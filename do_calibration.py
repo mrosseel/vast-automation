@@ -15,8 +15,6 @@ import vsx_pickle
 import do_calibration
 import numpy as np
 import pandas as pd
-from do_muniwin import write_munifind
-from do_muniwin import getBestComparisonStars
 
 def get_wcs(wcs_file):
     hdulist = fits.open(wcs_file)
@@ -39,6 +37,7 @@ def old_find_reference_frame_index():
     assert the_dir[reference_frame_index] == init.reference_frame
     return reference_frame_index
 
+# Either reads the previously chosen reference frame, or determines one if it's missing
 def get_reference_frame(file_limit):
     # Calculate or retrieve reference frame and its index
     try:
@@ -81,33 +80,10 @@ def find_reference_photometry(reference_frame_index):
     the_dir.sort()
     return init.photometrydir + the_dir[reference_frame_index]
 
-
 def find_reference_matched(reference_frame_index):
-    the_dir = os.listdir(init.matchedphotometrydir)
-    the_dir.sort()
-    return init.matchedphotometrydir + the_dir[reference_frame_index]
-
-# match_file = 'match000???.pht'
-def find_optimal_aperture(match_file, aperture_range = init.aperture_range):
-    print('Finding optimal aperture for match file {}, range {}'.format(match_file, aperture_range))
-    results = []
-    for aperture in aperture_range:
-        print('aperture:', aperture)
-        current_file = write_munifind(aperture, match_file, quiet=True)
-        try:
-            result = getBestComparisonStars(100, current_file)
-            results.append(result['STDEV'].mean())
-        except:
-            results.append(100)
-    diff_result_array = []
-    for mean in results:
-        diff_result_array = np.append(diff_result_array, mean)
-    optimal_aperture = aperture_range[pd.Series(diff_result_array).idxmin()]
-    print('Optimal aperture:', optimal_aperture)
-    np.savetxt(init.basedir + "aperture.csv", diff_result_array, delimiter=",")
-    np.savetxt(init.basedir + "best_aperture.txt", [optimal_aperture])
-    return optimal_aperture
-
+   the_dir = os.listdir(init.matchedphotometrydir)
+   the_dir.sort()
+   return init.matchedphotometrydir + the_dir[reference_frame_index]
 
 def find_target_star(target_ra_deg, target_dec_deg, nr_results):
     target = SkyCoord(target_ra_deg, target_dec_deg, unit='deg')
@@ -210,11 +186,11 @@ def get_vsx_in_field(star_descriptions, max_separation=0.01):
     for index_vsx, entry in enumerate(d2d):
         if entry.value < max_separation:
             star_local_id = idx[index_vsx]+1
-            star_coords = star_catalog[star_local_id]
+            star_coords = star_catalog[star_local_id-1]
             result_entry = StarDescription()
             result_entry.local_id = star_local_id
             result_entry.coords = star_coords
-            match = _add_catalog_match_to_entry(result_entry, vsx_dict, index_vsx, entry.value)
+            _add_catalog_match_to_entry(result_entry, vsx_dict, index_vsx, entry.value)
             result.append(result_entry)
     print("Found {} VSX stars in field: {}".format(len(result), [star.local_id for star in result]))
     return result

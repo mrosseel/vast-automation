@@ -3,6 +3,7 @@ import do_calibration
 import do_charts
 import do_field_charts
 import do_stats_charts
+import do_aperture
 import reading
 from reading import trash_and_recreate_dir
 from reading import reduce_star_list
@@ -31,7 +32,7 @@ def read_munifind(filename):
 
 # gets the stars with a maximum of measurements and lowest stdev
 def getBestComparisonStars(nrOfStars, filename=init.basedir + 'munifind.txt'):
-    print('reading filename', filename)
+    print('getBestComparisonStars: reading ', filename)
     df = read_munifind(filename)
     maxPoints = df['GOODPOINTS'].max()
     df = df[df['GOODPOINTS'] > maxPoints * 0.99]
@@ -74,7 +75,7 @@ def write_match(to_match_photomotry_file, base_photometry_file):
 def write_munifind(aperture, match_file='match*', quiet=False, canonical=False):
     quiet_switch = '-q ' if quiet else ''
     quiet_null = ' > /dev/null' if quiet else ''
-    munifind_file = init.basedir + 'munifind.txt' if canonical else init.basedir + 'munifind_' + str(aperture) + '.txt'
+    munifind_file = init.basedir + 'munifind.txt' if canonical else init.aperturedir + 'munifind_' + str(aperture) + '.txt'
     print("writing munifind for aperture", aperture, "file:", munifind_file, "quiet:", quiet)
     os.system('munifind ' + quiet_switch + '-a ' + str(aperture) + ' ' + munifind_file + ' ' + init.matchedphotometrydir + match_file + quiet_null)
     return munifind_file
@@ -86,8 +87,7 @@ def write_munifind_check_stars(check_star, aperture):
 def write_lightcurve(star, check_stars_list, aperture):
     check_stars = join_check_stars(check_stars_list, star)
     os.system("munilist -a " + str(aperture) + " -q --object " + str(star) + " -v " + str(
-        star) + " -c " + check_stars + " " + init.lightcurvedir + 'curve_' + str(star).zfill(
-        5) + ".txt " + init.matchedphotometrydir + 'match*.pht >/dev/null')
+        star) + " -c " + check_stars + " " + init.lightcurvedir + 'curve_' + str(star).zfill(5) + ".txt " + init.matchedphotometrydir + 'match*.pht >/dev/null')
     # print("--verbose -a ", str(aperture), " -q --object ", str(star), " -v ", str(star), " -c ", check_stars, (init.lightcurve_dir + 'curve_' + str(star).zfill(5) + ".txt "), (init.basedir+'match*.pht  >/dev/null'))
     # !munilist --verbose -a {str(aperture)} -q --object {str(star)} -v {str(star)} -c {str(8)} {lightcurve_dir + str(star) + ".txt"} {init.basedir+'match*.pht'}
 
@@ -149,7 +149,7 @@ def world_pos(star, wcs, reference_frame_index):
 
 def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightcurve, do_lightcurve_resume, do_pos,
                 do_pos_resume,
-                do_calibrate, do_ml, do_charting, do_phase_diagram, do_field_charting, do_reporting):
+                do_calibrate, do_ml, do_lightcurve_plot, do_phase_diagram, do_field_charting, do_reporting):
 
     if do_convert_fits:
         write_convert_fits()
@@ -171,7 +171,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
             pass
 
     if do_munifind:
-        aperture = do_calibration.find_optimal_aperture('match??????.pht')
+        aperture = do_aperture.find_optimal_aperture('match??????.pht')
         write_munifind(aperture, quiet=True, canonical=True)
         # we used to do something clever here, but the results are exactly the same as doing the normal thing.
         # a bit too exactly even, but for now we just disable it.
@@ -188,15 +188,18 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
             aperture = round(float(next(fp)),1)
     if do_lightcurve: do_write_curve(init.star_list, check_stars_list, aperture, do_lightcurve_resume)
 
-    if do_pos: do_write_pos(init.star_list, check_stars_list, aperture, do_pos_resume,
-                            do_calibration.find_reference_matched(reference_frame_index))
+    if do_pos:
+        reference_matched = do_calibration.find_reference_matched(reference_frame_index)
+        print("reference match is ", reference_matched)
+        do_write_pos(init.star_list, check_stars_list, aperture, do_pos_resume, reference_matched)
 
-    if do_calibrate:
-        wcs = do_calibration.calibrate()
-        do_world_pos(wcs, init.star_list, 0)  # pass 0 for reference_frame_index because we only write one position
-        df = do_calibration.find_target_star(init.ra_deg, init.dec_deg, 50)
-        df.to_csv(init.basedir + 'distances_from_target_star.csv')
-        print("calibrate df", df)
+    #if do_calibrate:
+    wcs = do_calibration.get_wcs(init.reference_header)
+        # rest of the if is finding the location of the target star, not really needed I guess
+        # do_world_pos(wcs, init.star_list, 0)  # pass 0 for reference_frame_index because we only write one position
+        # df = do_calibration.find_target_star(init.ra_deg, init.dec_deg, 50)
+        # df.to_csv(init.basedir + 'distances_from_target_star.csv')
+        # print("calibrate df", df)
 
     if do_ml:
         import do_upsilon  # do it here because it takes some time at startup
@@ -210,25 +213,35 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     vsx_star_descriptions = do_calibration.get_vsx_in_field(do_calibration.get_star_descriptions(), 0.01)
 
     if chart_premade:
+        print("Loading premade star_descriptions: star_descriptions_to_chart.bin")
         with open(init.basedir + 'star_descriptions_to_chart.bin', 'rb') as fp:
             star_descriptions = pickle.load(fp)
     else:
         if (chart_upsilon):
             # now we generate a list of StarDescriptions, with which all further processing will be done
+            print("Setting star_descriptions to upsilon candidates")
             star_descriptions = do_calibration.get_candidates(0.1)
         elif(chart_vsx):
+            print("Setting star_descriptions to vsx stars")
             star_descriptions = vsx_star_descriptions
         elif(chart_custom):
+            print("Setting star_descriptions to custom:", init.star_list)
             star_descriptions = do_calibration.get_star_descriptions(init.star_list)
 
         if not chart_vsx: # vsx names are always added, but chart_vsx already has the vsx mappings
+            print("Adding vsx names to star_descriptions")
             star_descriptions = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions)
 
         if not chart_upsilon:
+            print("Adding upsilon data to star_descriptions")
             star_descriptions = do_calibration.add_upsilon_data(star_descriptions)
 
         with open(init.basedir + 'star_descriptions_to_chart.bin', 'wb') as fp:
             pickle.dump(star_descriptions, fp)
+
+    print("Printing star_descriptions coordinates:")
+    for star in star_descriptions:
+        print(star.local_id, star.coords, star.match[0].coords, star.match)
 
     # parse comparison star from munifind.txt
     comparison_star = reading.read_comparison_star()
@@ -241,9 +254,9 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     # add ucac4 to star_descriptions
     star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
 
-    if do_charting or do_phase_diagram:
+    if do_lightcurve_plot or do_phase_diagram:
         print("starting charting / phase diagrams")
-        do_charts.run(star_descriptions_ucac4, comparison_stars, do_charting, do_phase_diagram)
+        do_charts.run(star_descriptions_ucac4, comparison_stars, do_lightcurve_plot, do_phase_diagram)
 
     if do_field_charting:
         do_field_charts.run_standard_field_charts(vsx_star_descriptions)
@@ -276,7 +289,7 @@ if __name__ == '__main__':
     "\npos_resume:\t", init.do_pos_resume,
     "\ncalibrate:\t", init.do_calibrate,
     "\nupsilon:\t", init.do_ml,
-    "\ncharting:\t", init.do_charting,
+    "\nlightcurve plot:\t", init.do_lightcurve_plot,
     "\nphasediagram:\t", init.do_phase_diagram,
     "\nfield charts:\t", init.do_field_charts,
     "\nreporting:\t", init.do_reporting)
@@ -284,4 +297,4 @@ if __name__ == '__main__':
     subprocess.call("read -t 10", shell=True, executable='/bin/bash')
     run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_munifind, init.do_lightcurve,
     init.do_lightcurve_resume, init.do_pos, init.do_pos_resume, init.do_calibrate,
-    init.do_ml, init.do_charting, init.do_phase_diagram, init.do_field_charts, init.do_reporting)
+    init.do_ml, init.do_lightcurve_plot, init.do_phase_diagram, init.do_field_charts, init.do_reporting)

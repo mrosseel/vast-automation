@@ -63,6 +63,9 @@ class CatalogMatch():
         self.coords = coords
         self.separation = separation
 
+    def __str__(self):
+        return f'Catalog:{self.name_of_catalog}, CatalogId:{self.catalog_id}, Name:{self.name}, Coords:{self.coords}, Separation:{self.separation}'
+
 
 # extract upsilon strings from star_descr
 # should be migrated to an upsilon catalog_match. Problem is format is quite different, could use extra_dict

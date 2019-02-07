@@ -46,6 +46,7 @@ _Password is 'muni'_
 
 ## TODO
 
+- check out https://public.lanl.gov/palmer/fastchi.html for period determination
 - new ensemble comparison star calculation?
 - check error column for any stars having error bars > 1%
 - stacking images to detect fainter stars+have better signal/noise ratio: https://github.com/fedhere/coaddfitim
