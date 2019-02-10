@@ -47,14 +47,14 @@ reference_header = basedir + reference_file
 fitsdir = basedir + "fits/"
 convfitsdir = basedir + "converted_fits/"
 photometrydir = basedir + "photometry/"
-# matchedphotometrydir = basedir + "matched_photometry/"
-matchedphotometrydir = memdir + "matched_photometry/"
+matchedphotometrydir = basedir + "matched_photometry/"
+#matchedphotometrydir = memdir + "matched_photometry/"
 aperturedir = basedir + "aperture/"
 vsxcatalogdir = codedir + "vsx_catalog.bin"
 
 # results
 resultdir = basedir + "results/"
-lightcurvedir = memdir + "lightcurves/"
+lightcurvedir = basedir + "lightcurves/"
 posdir = resultdir + "positions/"
 worldposdir = resultdir + "world_positions/"
 chartsdir = resultdir + "charts/"
