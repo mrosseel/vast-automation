@@ -7,17 +7,13 @@ import init
 
 #### Create charts showing statistics on the detected stars, variables, ...
 
-def plot_cumul_histo_detections():
+def plot_cumul_histo_detections(savefig=True):
     result = read_lightcurves()
     keys = result.keys()
     values = list(map(lambda x: x[0]/x[1]*100, result.values()))
     print(len(keys), len(values))
     print('converted values')
-    colors = list("rgbcmyk")
-    sigma = 15
-    num_bins = 50
-    mu = 100  # mean of distribution
-
+    num_bins = 10
     fig, ax = plt.subplots()
 
     # the histogram of the data
@@ -42,14 +38,20 @@ def plot_cumul_histo_detections():
     #plt.yticks(np.arange(0, 11000, step=1000))
     # Tweak spacing to prevent clipping of ylabel
     #fig.tight_layout()
-    plt.hist(bins=10, x=values, cumulative=1)
+    plt.hist(bins=num_bins, x=values, cumulative=1)
     plt.show()
-    save(fig, init.fieldchartsdirs + 'cumul_histo_detections.png')
+    if savefig:
+        save(fig, init.fieldchartsdirs + 'cumul_histo_detections.png')
 
     fig, ax = plt.subplots()
-    plt.bar(x=range(1, len(values)), height=values)
+    ax.set_xlabel('star number')
+    ax.set_ylabel('Star is in % of images')
+    ax.set_title(r'Barchart of on which % of images the star is seen')
+    ax.grid(True)
+    xaxis = range(0, len(values))
+    print(len(xaxis), len(values))
+    plt.bar(x=xaxis, height=sorted(values), width=1)
     plt.show()
-    fig.savefig('cumul_histo_detections.png')
     save(fig, init.fieldchartsdirs + 'barcharts.png')
 
 

@@ -19,7 +19,7 @@ do_match=0
 do_munifind=0
 do_lightcurve=0
 do_lightcurve_resume=0
-do_pos=1
+do_pos=0
 do_pos_resume=1
 do_ml=0
 do_lightcurve_plot=0
@@ -33,7 +33,7 @@ ra_deg = 271.4032917
 dec_deg = -43.8326111
 sitelat = '-22 57 10'
 sitelong = '-68 10 49'
-sitealt= 350 # TODO WRONG !!!! Is this used somewhere?
+sitealt= 350 # TODO WRONG !!!! Used in AAVSO reporting for atmospheric extinction
 ### CALIBRATION
 
 

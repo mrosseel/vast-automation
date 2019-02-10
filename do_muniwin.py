@@ -150,14 +150,13 @@ def world_pos(star, wcs, reference_frame_index):
 def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightcurve, do_lightcurve_resume, do_pos,
                 do_pos_resume,
                 do_ml, do_lightcurve_plot, do_phase_diagram, do_field_charting, do_reporting):
-
-    # get wcs model from the reference header. Where is this used?
-    wcs = do_calibration.get_wcs(init.reference_header)
-
     if do_convert_fits:
         write_convert_fits()
 
     _, _, reference_frame_index = do_calibration.get_reference_frame(100)
+
+    # get wcs model from the reference header. Used in writing world positions and field charts
+    wcs = do_calibration.get_wcs(init.reference_header)
 
     if do_photometry:
         write_photometry()
@@ -187,7 +186,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     else:
         with open(init.basedir + 'check_stars_list.bin', 'rb') as fp:
             check_stars_list = pickle.load(fp)
-        with open(init.basedir + 'best_aperture.txt', 'r') as fp:
+        with open(init.basedir + 'aperture_best.txt', 'r') as fp:
             aperture = round(float(next(fp)),1)
     if do_lightcurve: do_write_curve(init.star_list, check_stars_list, aperture, do_lightcurve_resume)
 
@@ -244,13 +243,13 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     print('Read comparison star from munifind.txt: ', comparison_star)
 
     comp_star_description = do_calibration.get_star_descriptions([comparison_star])
-    print('Get comparison star description: ', comp_star_description)
+    print('Got comparison star description: ', comp_star_description)
     comparison_star = do_calibration.add_ucac4_to_star_descriptions(comp_star_description)
     print("Got comparison star description + ucac4 id: ", comparison_star)
     if np.isnan(comparison_star[0].vmag):
         print("Comparison star has nan vmag, will screw up everything coming after")
         exit()
-    # add ucac4 to star_descriptions
+    # add ucac4 to star_descriptions (why???)
     star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
 
     if do_lightcurve_plot or do_phase_diagram:

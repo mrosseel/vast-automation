@@ -25,5 +25,5 @@ def find_optimal_aperture(match_file, aperture_range = init.aperture_range):
     optimal_aperture = aperture_range[pd.Series(diff_result_array).idxmin()]
     print('Optimal aperture:', optimal_aperture)
     np.savetxt(init.aperturedir + "aperture.csv", diff_result_array, delimiter=",")
-    np.savetxt(init.aperturedir + "best_aperture.txt", [optimal_aperture])
+    np.savetxt(init.aperturedir + "aperture_best.txt", [optimal_aperture])
     return optimal_aperture
