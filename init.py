@@ -10,7 +10,7 @@ thousand = range(1, 1000)
 #### SETTINGS for DO_MUNIWIN.PY ####
 
 datadir = 'inputfiles/testing/'
-star_list = all
+star_list = [52]
 nr_threads = multiprocessing.cpu_count()*2
 
 do_convert_fits=0
@@ -20,11 +20,11 @@ do_munifind=0
 do_lightcurve=0
 do_lightcurve_resume=0
 do_pos=0
-do_pos_resume=0
-do_calibrate=1
+do_pos_resume=1
+do_calibrate=0
 do_ml=0
 do_lightcurve_plot=0
-do_phase_diagram=0
+do_phase_diagram=1
 do_field_charts=1
 do_reporting=0
 
@@ -34,7 +34,7 @@ ra_deg = 271.4032917
 dec_deg = -43.8326111
 sitelat = '-22 57 10'
 sitelong = '-68 10 49'
-sitealt= 350 # TODO WRONG !!!!
+sitealt= 350 # TODO WRONG !!!! Is this used somewhere?
 ### CALIBRATION
 
 
@@ -42,18 +42,20 @@ sitealt= 350 # TODO WRONG !!!!
 # standard directories
 codedir = './'
 basedir = codedir + datadir
+memdir = '/media/vars/'
 reference_header = basedir + reference_file
 # input + processing
 fitsdir = basedir + "fits/"
 convfitsdir = basedir + "converted_fits/"
 photometrydir = basedir + "photometry/"
-matchedphotometrydir = basedir + "matched_photometry/"
+# matchedphotometrydir = basedir + "matched_photometry/"
+matchedphotometrydir = memdir + "matched_photometry/"
 aperturedir = basedir + "aperture/"
 vsxcatalogdir = codedir + "vsx_catalog.bin"
 
 # results
 resultdir = basedir + "results/"
-lightcurvedir = resultdir + "lightcurves/"
+lightcurvedir = memdir + "lightcurves/"
 posdir = resultdir + "positions/"
 worldposdir = resultdir + "world_positions/"
 chartsdir = resultdir + "charts/"

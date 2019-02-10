@@ -8,7 +8,6 @@ import numpy as np
 import errno
 import re
 
-
 def read_lightcurve(star,filter=True,preprocess=True, directory=init.lightcurvedir):
     try:
         #print("Reading lightcurve", star, init.lightcurve_dir + 'curve_' + str(star).zfill(5) + '.txt')
@@ -85,7 +84,6 @@ def reduce_star_list(star_list, the_path):
 
 # takes a filename and extracts the star number from it
 def filename_to_star(filename):
-    import re
     m = re.search('\d+',filename)
     return int(m.group(0).lstrip('0'))
 

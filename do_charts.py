@@ -29,10 +29,11 @@ def plot_lightcurve(tuple, comparison_stars):
     curve = tuple[1]
     star = star_description.local_id
     star_match, separation = star_description.get_match_string("VSX", strict=False)
-    match_string = "({})".format(star_match) if not star_match == None else ''
+    match_string = f"({star_match})" if not star_match == None else ''
     star_name = '' if star_match == None else " ({} - dist:{:.4f})".format(star_match, separation)
     upsilon_text = get_upsilon_string(star_description)
     coord = star_description.coords
+    #print(f'Plotting lightcurve with star_description:{star_description}, curve length:{len(curve)}, star:{star}, curve:{curve}')
     if(curve is None):
         print("Curve is None for star", star)
         return
@@ -40,6 +41,7 @@ def plot_lightcurve(tuple, comparison_stars):
     used_curve = curve
     used_curve_max = used_curve['V-C'].max()
     used_curve_min = used_curve['V-C'].min()
+    #print(f"used curve:{used_curve['V-C']}, used curve max:{used_curve_max}, used curve min:{used_curve_min}")
 
     #insert counting column
     used_curve.insert(0, 'Count', range(0, len(used_curve)))
@@ -58,7 +60,7 @@ def plot_lightcurve(tuple, comparison_stars):
     plot_min = min(plot_max-1, used_curve_min)
     #print('min', plot_min, 'max', plot_max, 'usedmin', used_curve_min, 'usedmax', used_curve_max)
     if np.isnan(plot_max) or np.isnan(plot_min):
-        print("star is nan:", star)
+        print(f"star is nan:{star}, plot_max:{plot_max}, plot_min:{plot_min}")
         return
     #print("Star:{},dim:{},bright:{}".format(star, plot_dim, plot_bright))
     plt.ylim(plot_min,plot_max)
@@ -76,7 +78,7 @@ def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
     curve = tuple[1]
     star = star_description.local_id
     star_match, separation = star_description.get_match_string("VSX", strict=False)
-    match_string = " ({})".format(star_match) if not star_match == None else ''
+    match_string = f" ({star_match})" if not star_match == None else ''
     upsilon_text = get_upsilon_string(star_description)
     #print("Calculating phase diagram for", star)
     if curve is None:

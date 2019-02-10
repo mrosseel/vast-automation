@@ -8,6 +8,7 @@ import reading
 from reading import trash_and_recreate_dir
 from reading import reduce_star_list
 import pandas as pd
+import numpy as np
 import multiprocessing as mp
 import logging
 import tqdm
@@ -249,14 +250,17 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
 
     comp_star_description = do_calibration.get_star_descriptions([comparison_star])
     print('Get comparison star description: ', comp_star_description)
-    comparison_stars = do_calibration.add_ucac4_to_star_descriptions(comp_star_description)
-    print("Got comparison star description + ucac4 id: ", comparison_stars)
+    comparison_star = do_calibration.add_ucac4_to_star_descriptions(comp_star_description)
+    print("Got comparison star description + ucac4 id: ", comparison_star)
+    if np.isnan(comparison_star[0].vmag):
+        print("Comparison star has nan vmag, will screw up everything coming after")
+        exit()
     # add ucac4 to star_descriptions
     star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
 
     if do_lightcurve_plot or do_phase_diagram:
         print("starting charting / phase diagrams")
-        do_charts.run(star_descriptions_ucac4, comparison_stars, do_lightcurve_plot, do_phase_diagram)
+        do_charts.run(star_descriptions_ucac4, comparison_star, do_lightcurve_plot, do_phase_diagram)
 
     if do_field_charting:
         do_field_charts.run_standard_field_charts(vsx_star_descriptions)

@@ -138,7 +138,7 @@ def get_star_descriptions(starlist=None):
     # returns {'name': [ra.deg, dec.deg ]}
     positions = reading.read_world_positions(init.worldposdir)
     result = []
-    print('Reading star descriptions for:', starlist or 'all stars')
+    print(f'Reading star descriptions for: {starlist or "all stars"} with size {len(init.star_list)}')
     for key in positions:
         star_id = reading.filename_to_star(str(key))
         if starlist is None or star_id in starlist:
@@ -291,7 +291,7 @@ def add_apass_to_star_descriptions(star_descriptions, radius=0.01, row_limit=2):
     return star_descriptions
 
 def add_ucac4_to_star_descriptions(star_descriptions, radius=0.01):
-    print("Retrieving ucac4 for {} stars".format(len(star_descriptions)))
+    print("Retrieving ucac4 for {} star(s)".format(len(star_descriptions)))
     radius_angle = Angle(radius, unit=u.deg)
     for star in star_descriptions:
         vizier_results = get_ucac4_field(star.coords, radius=radius_angle, row_limit=1)
@@ -300,9 +300,9 @@ def add_ucac4_to_star_descriptions(star_descriptions, radius=0.01):
             #print(vizier_results)
             continue
         else:
-            #print('vizier results', vizier_results['Vmag'][0])
-            star.vmag = vizier_results['Vmag'][0]
-            star.e_vmag = vizier_results['e_Vmag'][0]
+            #print('vizier results', vizier_results)
+            star.vmag = vizier_results['f.mag'][0]
+            star.e_vmag = vizier_results['e_a.mag'][0]
             catalog_id = vizier_results['UCAC4'][0].decode("utf-8")
             coord_catalog = SkyCoord(vizier_results['RAJ2000'], vizier_results['DEJ2000'], unit='deg')
             mindist = star.coords.separation(coord_catalog)
