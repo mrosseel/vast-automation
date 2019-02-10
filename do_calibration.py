@@ -13,6 +13,7 @@ from astropy.coordinates import Angle
 from astroquery.vizier import Vizier
 import vsx_pickle
 import do_calibration
+import do_reference_frame
 import numpy as np
 import pandas as pd
 
@@ -38,12 +39,12 @@ def old_find_reference_frame_index():
     return reference_frame_index
 
 # Either reads the previously chosen reference frame, or determines one if it's missing
-def get_reference_frame(file_limit):
+def get_reference_frame(file_limit, reference_method):
     # Calculate or retrieve reference frame and its index
     try:
         reference_frame, reference_frame_index=reading.read_reference_frame()
     except:
-        reference_frame = do_calibration.select_reference_frame(file_limit)
+        reference_frame = reference_method(file_limit)
         reference_frame_index = do_calibration.find_file_index(init.convfitsdir, reference_frame, '*.fts')
         lines = [reference_frame, str(reference_frame_index)]
         with open(init.basedir + 'reference_frame.txt', 'w') as f:
@@ -59,7 +60,7 @@ def find_file_index(the_dir, the_file, the_filter='*'):
 
 # returns the converted_fits file with the highest compressed filesize, limited to 'limit'
 # if limit is higher than listdir length, no harm
-def select_reference_frame(limit):
+def select_reference_frame_gzip(limit):
     import gzip
     count=0
     result = {}
@@ -73,6 +74,12 @@ def select_reference_frame(limit):
 
     sorted_by_value = sorted(result.items(), key=lambda kv: kv[1], reverse=True)
     return sorted_by_value[0][0]
+
+# returns the converted_fits file with the highest jpeg filesize, limited to 'limit'
+# if limit is higher than listdir length, no harm
+def select_reference_frame_jpeg(limit):
+    bestfile, bestsize, jpegfile = do_reference_frame.runit(init.convfitsdir, limit)
+    return bestfile.rsplit('/', 1)[1] # bestfile contains full path, split of the filename
 
 # returns 'path + phot????.pht', the photometry file matched with the reference frame
 def find_reference_photometry(reference_frame_index):

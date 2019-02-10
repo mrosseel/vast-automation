@@ -153,7 +153,8 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     if do_convert_fits:
         write_convert_fits()
 
-    _, _, reference_frame_index = do_calibration.get_reference_frame(100)
+    # either read the previous reference frame or calculate a new one
+    _, _, reference_frame_index = do_calibration.get_reference_frame(100, do_calibration.select_reference_frame_jpeg)
 
     # get wcs model from the reference header. Used in writing world positions and field charts
     wcs = do_calibration.get_wcs(init.reference_header)
