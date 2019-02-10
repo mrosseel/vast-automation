@@ -97,8 +97,7 @@ def write_pos(star, check_stars_list, matched_reference_frame, aperture):
     # start = time.time()
     # check_stars = join_check_stars(check_stars_list, star)
     # os.system("munilist -a " + str(aperture)+ " -q --obj-plot --object "+ str(star)+ " " + get_pos_filename(star) + " " + init.matchedphotometrydir+'match*.pht >/dev/null')
-    call("munilist -a " + str(aperture) + " -q --obj-plot --object " + str(star) + " " + reading.get_pos_filename(
-        star) + " " + matched_reference_frame + ' >/dev/null', shell=True)
+    call("munilist -a " + str(aperture) + " -q --obj-plot --object " + str(star) + " " + reading.get_pos_filename(star) + " " + matched_reference_frame + ' >/dev/null', shell=True)
     # end = time.time()
 
 
@@ -139,7 +138,7 @@ def do_world_pos(wcs, star_list, reference_frame_index):
 # TODO check that JD of first line is equal to JD of reference frame !
 def world_pos(star, wcs, reference_frame_index):
     f = open(reading.get_pos_filename(star))
-    pixel_coords = f.readlines()[2 + reference_frame_index].split()[1:3]
+    pixel_coords = f.readlines()[2].split()[1:3] # there is only one position line, that of the reference frame
     f.close()
     print("pixel coords read of star", star, pixel_coords)
     world_coords = wcs.all_pix2world(float(pixel_coords[0]), float(pixel_coords[1]), 0, ra_dec_order=True)
@@ -150,7 +149,10 @@ def world_pos(star, wcs, reference_frame_index):
 
 def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightcurve, do_lightcurve_resume, do_pos,
                 do_pos_resume,
-                do_calibrate, do_ml, do_lightcurve_plot, do_phase_diagram, do_field_charting, do_reporting):
+                do_ml, do_lightcurve_plot, do_phase_diagram, do_field_charting, do_reporting):
+
+    # get wcs model from the reference header. Where is this used?
+    wcs = do_calibration.get_wcs(init.reference_header)
 
     if do_convert_fits:
         write_convert_fits()
@@ -193,14 +195,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         reference_matched = do_calibration.find_reference_matched(reference_frame_index)
         print("reference match is ", reference_matched)
         do_write_pos(init.star_list, check_stars_list, aperture, do_pos_resume, reference_matched)
-
-    #if do_calibrate:
-    wcs = do_calibration.get_wcs(init.reference_header)
-        # rest of the if is finding the location of the target star, not really needed I guess
-        # do_world_pos(wcs, init.star_list, 0)  # pass 0 for reference_frame_index because we only write one position
-        # df = do_calibration.find_target_star(init.ra_deg, init.dec_deg, 50)
-        # df.to_csv(init.basedir + 'distances_from_target_star.csv')
-        # print("calibrate df", df)
+        do_world_pos(wcs, init.star_list, reference_frame_index)
 
     if do_ml:
         import do_upsilon  # do it here because it takes some time at startup
@@ -263,7 +258,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         do_charts.run(star_descriptions_ucac4, comparison_star, do_lightcurve_plot, do_phase_diagram)
 
     if do_field_charting:
-        do_field_charts.run_standard_field_charts(vsx_star_descriptions)
+        do_field_charts.run_standard_field_charts(vsx_star_descriptions, wcs)
         do_stats_charts.plot_cumul_histo_detections()
 
     #import code
@@ -291,7 +286,6 @@ if __name__ == '__main__':
     "\nlightcurve_res:\t", init.do_lightcurve_resume,
     "\npos:\t\t", init.do_pos,
     "\npos_resume:\t", init.do_pos_resume,
-    "\ncalibrate:\t", init.do_calibrate,
     "\nupsilon:\t", init.do_ml,
     "\nlightcurve plot:\t", init.do_lightcurve_plot,
     "\nphasediagram:\t", init.do_phase_diagram,
@@ -300,5 +294,5 @@ if __name__ == '__main__':
     print("Press Enter to continue...")
     subprocess.call("read -t 10", shell=True, executable='/bin/bash')
     run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_munifind, init.do_lightcurve,
-    init.do_lightcurve_resume, init.do_pos, init.do_pos_resume, init.do_calibrate,
+    init.do_lightcurve_resume, init.do_pos, init.do_pos_resume,
     init.do_ml, init.do_lightcurve_plot, init.do_phase_diagram, init.do_field_charts, init.do_reporting)

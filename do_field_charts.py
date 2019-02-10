@@ -69,12 +69,11 @@ def save(fig, path):
     fig.savefig(path)
     plt.close(fig)
 
-def run_standard_field_charts(vsx_star_descr):
+def run_standard_field_charts(vsx_star_descr, wcs):
     trash_and_recreate_dir(init.fieldchartsdirs)
     # reference_frame, reference_frame_index=reading.read_reference_frame()
     # reference_fits_frame=init.convfitsdir+reference_frame
     reference_fits_frame=init.reference_header
-    wcs = do_calibration.get_wcs(init.reference_header)
     candidates = do_calibration.get_candidates(0.5)
     hand_candidates_descr = do_calibration.get_star_descriptions(init.wwcra_certain_candidates)
     all_stars_descr = do_calibration.get_star_descriptions()

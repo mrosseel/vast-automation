@@ -44,8 +44,14 @@ def plot_cumul_histo_detections():
     #fig.tight_layout()
     plt.hist(bins=10, x=values, cumulative=1)
     plt.show()
-    fig.savefig('cumul_histo_detections.png')
     save(fig, init.fieldchartsdirs + 'cumul_histo_detections.png')
+
+    fig, ax = plt.subplots()
+    plt.bar(x=range(1, len(values)), height=values)
+    plt.show()
+    fig.savefig('cumul_histo_detections.png')
+    save(fig, init.fieldchartsdirs + 'barcharts.png')
+
 
 def read_lightcurves():
     files = glob.glob(init.lightcurvedir+'*.txt')
