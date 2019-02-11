@@ -32,7 +32,7 @@ def find_optimal_aperture(match_file, aperture_range = init.aperture_range):
 # match_file = 'match000???.pht'
 def calculate_aperture(aperture, match_file):
         print('Calculating aperture:', aperture)
-        current_file = write_munifind(aperture, match_file=True, quiet=True, percentage=0.5)
+        current_file = write_munifind(aperture, match_file=True, quiet=True, percentage=init.munifind_percentage)
         try:
             result = getBestComparisonStars(100, current_file)
             return [aperture, result['STDEV'].mean()]

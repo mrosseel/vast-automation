@@ -10,6 +10,7 @@ thousand = range(1, 1000)
 #### SETTINGS for DO_MUNIWIN.PY ####
 
 datadir = 'current/'
+munifind_percentage=0.5
 star_list = all #[52]
 nr_threads = multiprocessing.cpu_count()*2
 
