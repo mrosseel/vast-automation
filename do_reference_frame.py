@@ -66,7 +66,7 @@ def runit(fitsdir, limit):
     fitslist = glob.glob(fitsdir+'/*.fts')
     pool = mp.Pool(init.nr_threads, maxtasksperchild=100)
     func = partial(fits_to_size, vmin=_vmin, vmax=_vmax)
-    print("Calculating fits quality for", len(fitslist), "in", fitsdir)
+    print("Calculating fits quality for", len(fitslist), " images in", fitsdir)
     for resulttuple in tqdm.tqdm(pool.imap_unordered(func, fitslist, 10), total=len(fitslist)):
         result.append(resulttuple)
     bestfile = ''
