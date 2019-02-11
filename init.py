@@ -2,7 +2,7 @@ import numpy as np
 import multiprocessing
 
 #aperture_range = np.arange(0.2, 10, 0.2)
-aperture_range = np.arange(1, 10, 0.5)
+aperture_range = np.arange(9, 10, 0.5)
 
 all = range(1, 10000)
 thousand = range(1, 1000)

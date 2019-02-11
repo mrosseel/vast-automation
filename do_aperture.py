@@ -13,6 +13,7 @@ def find_optimal_aperture(match_file, aperture_range = init.aperture_range):
     trash_and_recreate_dir(init.aperturedir)
     print('Finding optimal aperture for match file {}, range {}'.format(match_file, aperture_range))
     results = []
+    # rewrite using https://docs.python.org/3/library/concurrent.futures.html
     pool = mp.Pool(init.nr_threads, maxtasksperchild=100)
     func = partial(calculate_aperture, match_file=match_file)
     for resulttuple in tqdm.tqdm(pool.imap_unordered(func, aperture_range, 1), total=len(aperture_range)):
@@ -29,7 +30,7 @@ def find_optimal_aperture(match_file, aperture_range = init.aperture_range):
 # match_file = 'match000???.pht'
 def calculate_aperture(aperture, match_file):
         print('Calculating aperture:', aperture)
-        current_file = write_munifind(aperture, match_file, quiet=True)
+        current_file = write_munifind(aperture, match_file=True, quiet=True)
         try:
             result = getBestComparisonStars(100, current_file)
             return [aperture, result['STDEV'].mean()]
