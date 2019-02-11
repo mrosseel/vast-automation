@@ -95,7 +95,7 @@ def write_munifind(aperture, match_file=False, match_pattern='match*', quiet=Fal
         sourcefiles = f'-i {init.aperturedir}/munifind_filelist.txt'
     else:
         sourcefiles = init.matchedphotometrydir + match_pattern
-    print(f"writing munifind for aperture {aperture}, file: {munifind_file}, quiet: {quiet}, nr_sourcefiles: {len(selected) if selected else 'all'}")
+    print(f"writing munifind for aperture {aperture}, file: {munifind_file}, quiet: {quiet}, nr_sourcefiles: {selected if selected else 'all'}")
     os.system('munifind ' + quiet_switch + '-a ' + str(aperture) + ' ' + munifind_file + ' ' +  sourcefiles + quiet_null)
     return munifind_file
 
