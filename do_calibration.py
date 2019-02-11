@@ -115,7 +115,7 @@ def find_target_stars(max_deg_separation):
 
 # returns StarDescription with filled in local_id, upsilon, coord
 def get_candidates(threshold_prob=0.5, check_flag=False):
-    df = pd.DataFrame.from_csv(init.basedir + 'upsilon_output.txt')
+    df = pd.read_csv(init.basedir + 'upsilon_output.txt', index_col=0)
     df.sort_values(by='probability', ascending=False)
     df = df[df['label'] != 'NonVar']
     df = df[df["probability"] > threshold_prob]
@@ -152,11 +152,12 @@ def get_star_descriptions(starlist=None):
             result.append(StarDescription(local_id=reading.filename_to_star(str(key)), coords=SkyCoord(positions[key][0], positions[key][1], unit='deg')))
     return result
 
+# TODO no longer used, remove
 # returns [index, skycoord, type]
 def get_VSX(the_file):
     raise NotImplementedError
     result = []
-    df = pd.DataFrame.from_csv(the_file)
+    df = pd.read_csv(the_file, index_col=0)
     # print(df.head())
     for index, row in df.iterrows():
         skycoord = SkyCoord(row['Coords'], unit=(u.hourangle, u.deg))

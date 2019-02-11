@@ -20,6 +20,7 @@ import pickle
 import do_aavso_report
 import re
 import glob
+import random
 
 
 # Munifind fields: INDEX MEAN_MAG STDEV GOODPOINTS
@@ -74,26 +75,27 @@ def write_match(to_match_photomotry_file, base_photometry_file):
     # see munimatch.c for arguments of config file
     os.system('munimatch -p ' + init.codedir + 'match.conf ' + base_photometry_file + ' ' + init.photometrydir + to_match_photomotry_file + ' -o ' + init.matchedphotometrydir + 'match'+numbers+'.pht')
 
-def write_munifind_dirfile(match_pattern):
+# percentage is between 0 and 1
+def write_munifind_dirfile(match_pattern, percentage=1):
     matched_files = glob.glob(init.matchedphotometrydir+match_pattern)
+    desired_length = int(len(matched_files) * percentage)
+    selected_files = random.sample(matched_files, desired_length)
     with open(init.aperturedir+'/munifind_filelist.txt', mode='wt', encoding='utf-8') as myfile:
-        for lines in matched_files:
+        for lines in selected_files:
             print(lines, file = myfile)
     myfile.close
-    print(f"Wrote munifind dirfile with {len(matched_files)} entries.")
+    return len(selected_files)
 
-def write_munifind(aperture, match_file=False, match_pattern='match*', quiet=False, canonical=False):
+def write_munifind(aperture, match_file=False, match_pattern='match*', quiet=False, canonical=False, percentage=1):
     quiet_switch = '-q ' if quiet else ''
     quiet_null = ' > /dev/null' if quiet else ''
     munifind_file = init.basedir + 'munifind.txt' if canonical else init.aperturedir + 'munifind_' + str(aperture) + '.txt'
-    print("writing munifind for aperture", aperture, "file:", munifind_file, "quiet:", quiet)
     if match_file:
-        print("Writing munifind using the dirfile option")
-        write_munifind_dirfile(match_pattern)
+        selected = write_munifind_dirfile(match_pattern, percentage)
         sourcefiles = f'-i {init.aperturedir}/munifind_filelist.txt'
     else:
-        print("Writing munifind using the pattern option")
         sourcefiles = init.matchedphotometrydir + match_pattern
+    print(f"writing munifind for aperture {aperture}, file: {munifind_file}, quiet: {quiet}, nr_sourcefiles: {len(selected) if selected else 'all'}")
     os.system('munifind ' + quiet_switch + '-a ' + str(aperture) + ' ' + munifind_file + ' ' +  sourcefiles + quiet_null)
     return munifind_file
 
@@ -191,7 +193,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
 
     if do_munifind:
         aperture = do_aperture.find_optimal_aperture('match??????.pht')
-        write_munifind(aperture, match_file=True, quiet=True, canonical=True)
+        write_munifind(aperture, match_file=False, quiet=True, canonical=True)
         # we used to do something clever here, but the results are exactly the same as doing the normal thing.
         # a bit too exactly even, but for now we just disable it.
         check_stars_list = do_best_comparison_stars(12)
@@ -203,7 +205,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     else:
         with open(init.basedir + 'check_stars_list.bin', 'rb') as fp:
             check_stars_list = pickle.load(fp)
-        with open(init.basedir + 'aperture_best.txt', 'r') as fp:
+        with open(init.aperturedir + 'aperture_best.txt', 'r') as fp:
             aperture = round(float(next(fp)),1)
     if do_lightcurve: do_write_curve(init.star_list, check_stars_list, aperture, do_lightcurve_resume)
 
@@ -274,7 +276,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         do_charts.run(star_descriptions_ucac4, comparison_star, do_lightcurve_plot, do_phase_diagram)
 
     if do_field_charting:
-        do_field_charts.run_standard_field_charts(vsx_star_descriptions, wcs)
+        #do_field_charts.run_standard_field_charts(vsx_star_descriptions, wcs)
         do_stats_charts.plot_cumul_histo_detections()
 
     #import code

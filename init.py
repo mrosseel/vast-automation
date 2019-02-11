@@ -16,7 +16,7 @@ nr_threads = multiprocessing.cpu_count()*2
 do_convert_fits=0
 do_photometry=0
 do_match=0
-do_munifind=1
+do_munifind=0
 do_lightcurve=0
 do_lightcurve_resume=0
 do_pos=0
@@ -54,7 +54,7 @@ vsxcatalogdir = codedir + "vsx_catalog.bin"
 
 # results
 resultdir = basedir + "results/"
-lightcurvedir = basedir + "lightcurves/"
+lightcurvedir = resultdir + "lightcurves/"
 posdir = resultdir + "positions/"
 worldposdir = resultdir + "world_positions/"
 chartsdir = resultdir + "charts/"

@@ -9,10 +9,10 @@ import init
 
 def plot_cumul_histo_detections(savefig=True):
     result = read_lightcurves()
+    #print(len(result))
     keys = result.keys()
     values = list(map(lambda x: x[0]/x[1]*100, result.values()))
-    print(len(keys), len(values))
-    print('converted values')
+    #print(len(keys), len(values))
     num_bins = 10
     fig, ax = plt.subplots()
 
@@ -57,6 +57,8 @@ def plot_cumul_histo_detections(savefig=True):
 
 def read_lightcurves():
     files = glob.glob(init.lightcurvedir+'*.txt')
+    print(init.lightcurvedir+'*.txt')
+    print("files:", files)
     result = {}
     for file in files:
         df = pd.read_csv(file, skiprows=[1], sep=' ')
