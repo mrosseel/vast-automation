@@ -79,7 +79,8 @@ def write_match(to_match_photomotry_file, base_photometry_file):
 def write_munifind_dirfile(match_pattern, percentage=1):
     matched_files = glob.glob(init.matchedphotometrydir+match_pattern)
     desired_length = int(len(matched_files) * percentage)
-    selected_files = random.sample(matched_files, desired_length)
+    np.random.seed(42) # for the same percentage, we always get the same selection
+    selected_files = np.random.choice(matched_files, size=desired_length, replace=False).tolist()
     with open(init.aperturedir+'/munifind_filelist.txt', mode='wt', encoding='utf-8') as myfile:
         for lines in selected_files:
             print(lines, file = myfile)
@@ -90,6 +91,7 @@ def write_munifind(aperture, match_file=False, match_pattern='match*', quiet=Fal
     quiet_switch = '-q ' if quiet else ''
     quiet_null = ' > /dev/null' if quiet else ''
     munifind_file = init.basedir + 'munifind.txt' if canonical else init.aperturedir + 'munifind_' + str(aperture) + '.txt'
+    selected = None
     if match_file:
         selected = write_munifind_dirfile(match_pattern, percentage)
         sourcefiles = f'-i {init.aperturedir}/munifind_filelist.txt'
@@ -193,7 +195,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
 
     if do_munifind:
         aperture = do_aperture.find_optimal_aperture('match??????.pht')
-        write_munifind(aperture, match_file=False, quiet=True, canonical=True)
+        write_munifind(aperture, match_file=False, quiet=True, canonical=True, percentage=max(1, init.munifind_percentage*2))
         # we used to do something clever here, but the results are exactly the same as doing the normal thing.
         # a bit too exactly even, but for now we just disable it.
         check_stars_list = do_best_comparison_stars(12)

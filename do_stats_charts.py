@@ -57,8 +57,6 @@ def plot_cumul_histo_detections(savefig=True):
 
 def read_lightcurves():
     files = glob.glob(init.lightcurvedir+'*.txt')
-    print(init.lightcurvedir+'*.txt')
-    print("files:", files)
     result = {}
     for file in files:
         df = pd.read_csv(file, skiprows=[1], sep=' ')
