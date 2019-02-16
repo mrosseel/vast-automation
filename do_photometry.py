@@ -120,17 +120,17 @@ def main(the_dir, match_files='match*.pht', percentage=0.1):
         fileContent = file.read()
         photheader, apertures, nrstars , _, _ = process_file(files[0], fileContent)
         apertures = convert_to_aperture_only(apertures)
-    logging.info(f"Apertures: {apertures}")
+    logging.info(f"Apertures: {apertures}, nr of files: {nrfiles}")
     collect = np.empty([len(apertures), nrstars, nrfiles, 2],dtype=float)
     fwhm = np.empty([nrfiles, 3], dtype=float)
     for fileidx, entry in enumerate(files):
         fileContent = None
         with open(entry, mode='rb') as file: # b is important -> binary
             fileContent = file.read()
-            print(fileidx, entry)
+            print(f"{fileidx}/{nrfiles}: {entry}")
             photheader, apertures, nrstars, stars, stardata = process_file(entry, fileContent)
             apertures = convert_to_aperture_only(apertures)
-            print("Date from header:",photheader.jd)
+            print("\tDate from header:",photheader.jd, "fwhm:", photheader.fwhm)
             fwhm[fileidx] = [photheader.fwhm_exp, photheader.fwhm_mean, photheader.fwhm_err]
             # logging.debug(f"the result is {result[0]}")
 
@@ -174,7 +174,7 @@ def main(the_dir, match_files='match*.pht', percentage=0.1):
     apertureidx = np.abs(apertures - median).argmin()
     print("FWHM median:", median, "aperture chosen is:", apertures[apertureidx])
     compstar_zb = np.argmin(stddevs[apertureidx], axis=0)
-    print("Compstar with minimum stdev in the chose aperture:", compstar_zb)
+    print("Compstar with minimum stdev in the chosen aperture:", compstar_zb)
     return stddevs, collect, apertures, fwhm, apertureidx, compstar_zb +1
 
 if __name__ == '__main__':

@@ -180,6 +180,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     # get wcs model from the reference header. Used in writing world positions and field charts
     wcs = do_calibration.get_wcs(init.reference_header)
     comparison_star =  -1
+    aperture = -1
 
     if do_photometry:
         write_photometry()
@@ -196,8 +197,9 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
             pass
 
     if do_munifind:
-        stddevs, collect, apertures, fwhm, apertureidx, compstar = dophoto.main(the_dir=init.matchedphotometrydir, percentage=0.015)
+        stddevs, collect, apertures, fwhm, apertureidx, compstar = dophoto.main(the_dir=init.matchedphotometrydir, percentage=0.01)
         comparison_star = compstar
+        aperture = apertures[apertureidx]
         check_stars_list = [compstar]
         with open(init.basedir + 'check_stars_list.bin', 'wb') as fp:
             pickle.dump(check_stars_list, fp)
