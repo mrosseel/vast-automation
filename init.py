@@ -12,7 +12,7 @@ thousand = range(1, 1000)
 datadir = 'current/'
 munifind_percentage=0.1
 star_list = all #[52]
-nr_threads = multiprocessing.cpu_count()*2
+nr_threads = multiprocessing.cpu_count()
 
 do_convert_fits=0
 do_photometry=0

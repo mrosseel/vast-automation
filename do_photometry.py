@@ -164,7 +164,7 @@ def main(the_dir, match_files='match*.pht', percentage=0.1):
             # print(apidx, staridx)
             stddevs[apidx, staridx] = collect[apidx][staridx].std()
     print(stddevs[0,0:20])
-    print(stddevs.shape)
+    print("Shape for stddevs:", stddevs.shape)
     print(np.argmin(stddevs[0]))
     # for idx in range(len(stddevs)):
     #     print(stddevs[idx].min(), stddevs[idx].max())

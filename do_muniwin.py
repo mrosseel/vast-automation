@@ -203,13 +203,14 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         check_stars_list = [compstar]
         with open(init.basedir + 'check_stars_list.bin', 'wb') as fp:
             pickle.dump(check_stars_list, fp)
+        np.savetxt(init.basedir + "aperture_best.txt", [aperture])
         # print("check_stars_list: ", check_stars_list)
         # write_munifind_check_stars(check_stars_list[0])
         print("Done writing munifind")
     else:
         with open(init.basedir + 'check_stars_list.bin', 'rb') as fp:
             check_stars_list = pickle.load(fp)
-        with open(init.aperturedir + 'aperture_best.txt', 'r') as fp: ### TODO this is not yet saved with the new method
+        with open(init.basedir + 'aperture_best.txt', 'r') as fp:
             aperture = round(float(next(fp)),1)
     if do_lightcurve: do_write_curve(init.star_list, check_stars_list, aperture, do_lightcurve_resume)
 
