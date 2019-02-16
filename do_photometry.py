@@ -130,7 +130,7 @@ def main(the_dir, match_files='match*.pht', percentage=0.1):
             print(f"{fileidx}/{nrfiles}: {entry}")
             photheader, apertures, nrstars, stars, stardata = process_file(entry, fileContent)
             apertures = convert_to_aperture_only(apertures)
-            print("\tDate from header:",photheader.jd, "fwhm:", photheader.fwhm)
+            print("\tDate from header:",photheader.jd, "fwhm:", photheader.fwhm_mean)
             fwhm[fileidx] = [photheader.fwhm_exp, photheader.fwhm_mean, photheader.fwhm_err]
             # logging.debug(f"the result is {result[0]}")
 
