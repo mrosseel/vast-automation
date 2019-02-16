@@ -100,42 +100,82 @@ def process_file(the_file, fileContent):
     return (photheader, apertures, nrstars, stars, stardata)
 
 # percentage is between 0 and 1
-def select_files(match_pattern, percentage=1):
-    matched_files = glob.glob(init.matchedphotometrydir+match_pattern)
+def select_files(the_dir, match_pattern, percentage=1):
+    matched_files = glob.glob(the_dir+match_pattern)
     desired_length = int(len(matched_files) * percentage)
     np.random.seed(42) # for the same percentage, we always get the same selection
     selected_files = np.random.choice(matched_files, size=desired_length, replace=False).tolist()
     return selected_files
 
-def main():
-    files = select_files('match*.pht', 0.05)
+def convert_to_aperture_only(apertures):
+    return apertures[1::2]
+
+def main(the_dir, match_files='match*.pht', percentage=0.1):
+    files = select_files(the_dir, match_files, percentage)
     nrfiles = len(files)
     logging.debug(files)
     # pre process
     apertures = []
     with open(files[0], mode='rb') as file: # b is important -> binary
         fileContent = file.read()
-        apertures = process_file(files[0], fileContent)[1][1::2]
+        photheader, apertures, nrstars , _, _ = process_file(files[0], fileContent)
+        apertures = convert_to_aperture_only(apertures)
     logging.info(f"Apertures: {apertures}")
-
+    collect = np.empty([len(apertures), nrstars, nrfiles, 2],dtype=float)
+    fwhm = np.empty([nrfiles, 3], dtype=float)
     for fileidx, entry in enumerate(files):
         fileContent = None
         with open(entry, mode='rb') as file: # b is important -> binary
             fileContent = file.read()
+            print(fileidx, entry)
             photheader, apertures, nrstars, stars, stardata = process_file(entry, fileContent)
+            apertures = convert_to_aperture_only(apertures)
+            print("Date from header:",photheader.jd)
+            fwhm[fileidx] = [photheader.fwhm_exp, photheader.fwhm_mean, photheader.fwhm_err]
             # logging.debug(f"the result is {result[0]}")
-            collect = np.empty([len(apertures), nrstars, nrfiles],dtype=float)
+
             for staridx, starentry in enumerate(stars):
                 for apidx, aperturedata in enumerate(stardata[staridx]):
-                    collect[apidx][starentry.ref_id-1][fileidx] = aperturedata.mag
-                # if index == 0:
-                #     print(index, entry, stardata[index])
-            #     collect[entry.id-1][0] = entry.id
-            #     collect[entry.id-1][1] = entry.ref_id
-            #     collect[entry.id-1][2] = entry.fwhm
-    print(collect[0][0])
+                    if aperturedata.mag == 0:
+                        print(aperturedata)
+                    collect[apidx][starentry.ref_id-1][fileidx] = [aperturedata.mag, aperturedata.err]
+                    # collect[apidx][starentry.ref_id-1][fileidx][1] = aperturedata.err
+                    if collect[apidx][starentry.ref_id-1][fileidx][0] == 0:
+                        print("nul")
+                    # if apidx == 0 and staridx == 0:
+                    #     print(f"collect[0][0] added for file {fileidx} the following entry:{collect[apidx][starentry.ref_id-1][fileidx]}")
+                    #     print(f"collect[0][0][0]:{collect[apidx][starentry.ref_id-1][0]}")
+                    #     print(f"collect[0][0][1]:{collect[apidx][starentry.ref_id-1][1]}")
+                    #     print(f"collect[0][0][2]:{collect[apidx][starentry.ref_id-1][2]}")
+                    #     print(f"collect[0][0][3]:{collect[apidx][starentry.ref_id-1][3]}")
+                    #     print(f"collect[0][0][4]:{collect[apidx][starentry.ref_id-1][4]}")
+                    #     print(f"collect[0][0][5]:{collect[apidx][starentry.ref_id-1][5]}")
+                    #     print(f"collect[0][0][6]:{collect[apidx][starentry.ref_id-1][6]}")
+                    #     print(f"collect[0][0][7]:{collect[apidx][starentry.ref_id-1][7]}")
+                    #     print(f"collect[0][0][8]:{collect[apidx][starentry.ref_id-1][8]}")
 
+    print("Nr of stars for aperture 2:", len(collect[2]))
+    print("Mb used:", collect.nbytes/1024/1024)
+    print("Entry for First aperture, first star:", collect[0][0])
+    print("Shape for collect:", collect.shape)
+    stddevs = np.empty([len(apertures), nrstars])
+    for apidx in range(len(collect)):
+        for staridx in range(len(collect[apidx])):
+            # print(apidx, staridx)
+            stddevs[apidx, staridx] = collect[apidx][staridx].std()
+    print(stddevs[0,0:20])
+    print(stddevs.shape)
+    print(np.argmin(stddevs[0]))
+    # for idx in range(len(stddevs)):
+    #     print(stddevs[idx].min(), stddevs[idx].max())
+    #     print(idx, stddevs[idx].sum())
+    median = np.median(np.add(np.take(fwhm, 1, axis=1), np.take(fwhm, 2, axis=1)))
 
+    apertureidx = np.abs(apertures - median).argmin()
+    print("FWHM median:", median, "aperture chosen is:", apertures[apertureidx])
+    compstar_zb = np.argmin(stddevs[apertureidx], axis=0)
+    print("Compstar with minimum stdev in the chose aperture:", compstar_zb)
+    return stddevs, collect, apertures, fwhm, apertureidx, compstar_zb +1
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
