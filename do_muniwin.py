@@ -4,6 +4,7 @@ import do_charts
 import do_field_charts
 import do_stats_charts
 import do_aperture
+import do_photometry
 import reading
 from reading import trash_and_recreate_dir
 from reading import reduce_star_list
@@ -178,6 +179,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
 
     # get wcs model from the reference header. Used in writing world positions and field charts
     wcs = do_calibration.get_wcs(init.reference_header)
+    comparison_star =  -1
 
     if do_photometry:
         write_photometry()
@@ -194,11 +196,9 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
             pass
 
     if do_munifind:
-        aperture = do_aperture.find_optimal_aperture('match??????.pht')
-        write_munifind(aperture, match_file=False, quiet=True, canonical=True, percentage=max(1, init.munifind_percentage*2))
-        # we used to do something clever here, but the results are exactly the same as doing the normal thing.
-        # a bit too exactly even, but for now we just disable it.
-        check_stars_list = do_best_comparison_stars(12)
+        stddevs, collect, apertures, fwhm, apertureidx, compstar = do_photometry.main(the_dir=init.matchedphotometrydir, percentage=0.015)
+        comparison_star = compstar
+        check_stars_list = [compstar]
         with open(init.basedir + 'check_stars_list.bin', 'wb') as fp:
             pickle.dump(check_stars_list, fp)
         # print("check_stars_list: ", check_stars_list)
@@ -207,7 +207,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     else:
         with open(init.basedir + 'check_stars_list.bin', 'rb') as fp:
             check_stars_list = pickle.load(fp)
-        with open(init.aperturedir + 'aperture_best.txt', 'r') as fp:
+        with open(init.aperturedir + 'aperture_best.txt', 'r') as fp: ### TODO this is not yet saved with the new method
             aperture = round(float(next(fp)),1)
     if do_lightcurve: do_write_curve(init.star_list, check_stars_list, aperture, do_lightcurve_resume)
 
@@ -258,10 +258,6 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     print("Printing star_descriptions coordinates:")
     for star in star_descriptions:
         print(star.local_id, star.coords, star.match[0].coords, star.match)
-
-    # parse comparison star from munifind.txt
-    comparison_star = reading.read_comparison_star()
-    print('Read comparison star from munifind.txt: ', comparison_star)
 
     comp_star_description = do_calibration.get_star_descriptions([comparison_star])
     print('Got comparison star description: ', comp_star_description)
