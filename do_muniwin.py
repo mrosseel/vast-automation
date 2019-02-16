@@ -4,7 +4,7 @@ import do_charts
 import do_field_charts
 import do_stats_charts
 import do_aperture
-import do_photometry
+import do_photometry as dophoto
 import reading
 from reading import trash_and_recreate_dir
 from reading import reduce_star_list
@@ -196,7 +196,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
             pass
 
     if do_munifind:
-        stddevs, collect, apertures, fwhm, apertureidx, compstar = do_photometry.main(the_dir=init.matchedphotometrydir, percentage=0.015)
+        stddevs, collect, apertures, fwhm, apertureidx, compstar = dophoto.main(the_dir=init.matchedphotometrydir, percentage=0.015)
         comparison_star = compstar
         check_stars_list = [compstar]
         with open(init.basedir + 'check_stars_list.bin', 'wb') as fp:
