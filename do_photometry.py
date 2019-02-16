@@ -169,10 +169,11 @@ def main(the_dir, match_files='match*.pht', percentage=0.1):
     # for idx in range(len(stddevs)):
     #     print(stddevs[idx].min(), stddevs[idx].max())
     #     print(idx, stddevs[idx].sum())
-    median = np.median(np.add(np.take(fwhm, 1, axis=1), np.take(fwhm, 2, axis=1)))
+    median_erroradded = np.median(np.add(np.take(fwhm, 1, axis=1), np.take(fwhm, 2, axis=1)))
+    median_multiply = np.median(np.take(fwhm, 1, axis=1))*1.75
 
-    apertureidx = np.abs(apertures - median).argmin()
-    print("FWHM median:", median, "aperture chosen is:", apertures[apertureidx])
+    apertureidx = np.abs(apertures - median_multiply).argmin()
+    print("FWHM median:", median_multiply, "aperture chosen is:", apertures[apertureidx])
     compstar_zb = np.argmin(stddevs[apertureidx], axis=0)
     print("Compstar with minimum stdev in the chosen aperture:", compstar_zb)
     return stddevs, collect, apertures, fwhm, apertureidx, compstar_zb +1
