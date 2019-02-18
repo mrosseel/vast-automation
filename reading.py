@@ -39,7 +39,7 @@ def read_pos(star, jd):
         row = df3.iloc[0]
         return [row['JD'], row['X'],row['Y'], row['MAG']]
         #return (df3['X'].iloc[0], df3['Y'].iloc[0])
-        return df
+        # return df
     except IndexError:
         print("ERROR: IndexError")
         #print("df:",len(df),"df2:", len(df2),"df3:", len(df3))
@@ -73,18 +73,18 @@ def get_worldpos_filename(star):
     return init.worldposdir + "worldpos_" + str(star).zfill(5) + ".txt"
 
 # takes a star_list and a dir, and returns a reduced star list - all stars which already have a file in that dir are removed
-def reduce_star_list(star_list, the_path):
+def reduce_star_list(star_list_1, the_path):
     the_dir = os.listdir(the_path)
     the_dir.sort()
     found = []
     for filename in the_dir:
         found.append(filename_to_star(filename))
     print("Found", len(found), "stars already processed in", the_path)
-    return [item for item in star_list if item not in found]
+    return [item for item in star_list_1 if item not in found]
 
 # takes a filename and extracts the star number from it
 def filename_to_star(filename):
-    m = re.search('\d+',filename)
+    m = re.search(r'\d+',filename)
     return int(m.group(0).lstrip('0'))
 
 # read the world positions and return them in a dictionary

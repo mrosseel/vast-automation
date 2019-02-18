@@ -5,9 +5,11 @@ import do_field_charts
 import do_stats_charts
 import do_aperture
 import do_photometry as dophoto
+import do_lightcurve as dolight
 import reading
 from reading import trash_and_recreate_dir
 from reading import reduce_star_list
+from do_lightcurve import join_check_stars_string
 import pandas as pd
 import numpy as np
 import multiprocessing as mp
@@ -49,15 +51,10 @@ def getBestComparisonStars(nrOfStars, filename=init.basedir + 'munifind.txt'):
 def do_best_comparison_stars(nrOfStars):
     bestcomps = getBestComparisonStars(nrOfStars)
     check_stars = []
-    for index, row in bestcomps.iterrows():
+    for _, row in bestcomps.iterrows():
         # print(row, '\n')
         check_stars.append(int(row['STAR']))
     return check_stars
-
-def join_check_stars(check_stars, exclude_star):
-    check_stars = filter(lambda star: star != exclude_star, check_stars)
-    check_stars_string = ','.join(map(str, check_stars))
-    return check_stars_string
 
 def write_convert_fits():
     print("convert fits files to fts")
@@ -106,10 +103,10 @@ def write_munifind_check_stars(check_star, aperture):
     print("write munifind check stars using check star:", check_star)
     os.system('munifind -a ' + str(aperture) + ' ' + ' -c ' + str(check_star) + ' ' + init.basedir + 'munifind.txt ' + init.matchedphotometrydir + 'match*')
 
-def write_lightcurve(star, check_stars_list, aperture):
-    check_stars = join_check_stars(check_stars_list, star)
-    os.system("munilist -a " + str(aperture) + " -q --object " + str(star) + " -v " + str(
-        star) + " -c " + check_stars + " " + init.lightcurvedir + 'curve_' + str(star).zfill(5) + ".txt " + init.matchedphotometrydir + 'match*.pht >/dev/null')
+def write_lightcurve(star, check_stars_list_1, aperture):
+    check_stars = join_check_stars_string(check_stars_list_1, star)
+    print(check_stars)
+    os.system("munilist --verbose -a " + str(aperture) + " -q --object " + str(star) + " -v " + str(star) + " -c " + check_stars + " " + init.lightcurvedir + 'curve_' + str(star).zfill(5) + ".txt " + init.matchedphotometrydir + 'match*.pht >/dev/null')
     # print("--verbose -a ", str(aperture), " -q --object ", str(star), " -v ", str(star), " -c ", check_stars, (init.lightcurve_dir + 'curve_' + str(star).zfill(5) + ".txt "), (init.basedir+'match*.pht  >/dev/null'))
     # !munilist --verbose -a {str(aperture)} -q --object {str(star)} -v {str(star)} -c {str(8)} {lightcurve_dir + str(star) + ".txt"} {init.basedir+'match*.pht'}
 
@@ -133,14 +130,14 @@ def do_write_pos(star_list, check_stars_list, aperture, is_resume, matched_refer
     for _ in tqdm.tqdm(pool.imap_unordered(func, star_list, 10), total=len(star_list)):
         pass
 
-
-def do_write_curve(star_list, check_stars_list, aperture, is_resume):
+def do_write_curve(star_list, check_stars_1, aperture, is_resume):
     if not is_resume:
         trash_and_recreate_dir(init.lightcurvedir)
     else:
         star_list = reduce_star_list(star_list, init.lightcurvedir)
+    #check_stars_0 = np.array(check_stars_list_1) - 1
     pool = mp.Pool(init.nr_threads, maxtasksperchild=100)
-    func = partial(write_lightcurve, check_stars_list=check_stars_list, aperture=aperture)
+    func = partial(write_lightcurve, check_stars_list_1=check_stars_1, aperture=aperture)
     print("Writing star lightcurves for", len(star_list), "stars into", init.lightcurvedir)
     for _ in tqdm.tqdm(pool.imap_unordered(func, star_list, 10), total=len(star_list)):
         pass
@@ -179,8 +176,10 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
 
     # get wcs model from the reference header. Used in writing world positions and field charts
     wcs = do_calibration.get_wcs(init.reference_header)
-    comparison_star =  -1
-    aperture = -1
+    comparison_stars_1=-1
+    apertures=None
+    aperture=None
+    apertureidx=None
 
     if do_photometry:
         write_photometry()
@@ -197,27 +196,28 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
             pass
 
     if do_munifind:
-        stddevs, collect, apertures, fwhm, apertureidx, compstar = dophoto.main(the_dir=init.matchedphotometrydir, percentage=0.01)
-        comparison_star = compstar
+        stddevs, all_photometry, apertures, apertureidx, _, jd, compstar = dophoto.main(the_dir=init.matchedphotometrydir, percentage=init.aperture_find_percentage)
+        comparison_stars_1 = compstar
         aperture = apertures[apertureidx]
-        check_stars_list = [compstar]
         with open(init.basedir + 'check_stars_list.bin', 'wb') as fp:
-            pickle.dump(check_stars_list, fp)
+            pickle.dump(comparison_stars_1, fp)
         np.savetxt(init.basedir + "aperture_best.txt", [aperture])
         # print("check_stars_list: ", check_stars_list)
         # write_munifind_check_stars(check_stars_list[0])
         print("Done writing munifind")
     else:
         with open(init.basedir + 'check_stars_list.bin', 'rb') as fp:
-            check_stars_list = pickle.load(fp)
+            comparison_stars_1 = pickle.load(fp)
         with open(init.basedir + 'aperture_best.txt', 'r') as fp:
             aperture = round(float(next(fp)),1)
-    if do_lightcurve: do_write_curve(init.star_list, check_stars_list, aperture, do_lightcurve_resume)
+    #if do_lightcurve: do_write_curve(init.star_list, comparison_stars_1, 3.82, do_lightcurve_resume)
+    if do_lightcurve: dolight.main(init.star_list, comparison_stars_1, aperture, apertureidx, do_lightcurve_resume)
+    # exit()
 
     if do_pos:
         reference_matched = do_calibration.find_reference_matched(reference_frame_index)
         print("reference match is ", reference_matched)
-        do_write_pos(init.star_list, check_stars_list, aperture, do_pos_resume, reference_matched)
+        do_write_pos(init.star_list, comparison_stars_1, aperture, do_pos_resume, reference_matched)
         do_world_pos(wcs, init.star_list, reference_frame_index)
 
     if do_ml:
@@ -262,11 +262,11 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     for star in star_descriptions:
         print(star.local_id, star.coords, star.match[0].coords, star.match)
 
-    comp_star_description = do_calibration.get_star_descriptions([comparison_star])
+    comp_star_description = do_calibration.get_star_descriptions(comparison_stars_1[:1])
     print('Got comparison star description: ', comp_star_description)
-    comparison_star = do_calibration.add_ucac4_to_star_descriptions(comp_star_description)
-    print("Got comparison star description + ucac4 id: ", comparison_star)
-    if np.isnan(comparison_star[0].vmag):
+    comparison_stars_1 = do_calibration.add_ucac4_to_star_descriptions(comp_star_description)
+    print("Got comparison star description + ucac4 id: ", comparison_stars_1)
+    if np.isnan(comparison_stars_1[0].vmag):
         print("Comparison star has nan vmag, will screw up everything coming after")
         exit()
     # add ucac4 to star_descriptions (why???)
@@ -274,7 +274,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
 
     if do_lightcurve_plot or do_phase_diagram:
         print("starting charting / phase diagrams")
-        do_charts.run(star_descriptions_ucac4, comparison_star, do_lightcurve_plot, do_phase_diagram)
+        do_charts.run(star_descriptions_ucac4, comparison_stars_1, do_lightcurve_plot, do_phase_diagram)
 
     if do_field_charting:
         #do_field_charts.run_standard_field_charts(vsx_star_descriptions, wcs)

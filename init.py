@@ -10,7 +10,8 @@ thousand = range(1, 1000)
 #### SETTINGS for DO_MUNIWIN.PY ####
 
 datadir = 'current/'
-munifind_percentage=0.1
+aperture_find_percentage=0.01
+free_memory_GB=10
 star_list = all #[52]
 nr_threads = multiprocessing.cpu_count()
 
@@ -18,14 +19,14 @@ do_convert_fits=0
 do_photometry=0
 do_match=0
 do_munifind=1
-do_lightcurve=0
+do_lightcurve=1
 do_lightcurve_resume=0
 do_pos=0
-do_pos_resume=1
+do_pos_resume=0
 do_ml=0
 do_lightcurve_plot=0
 do_phase_diagram=0
-do_field_charts=1
+do_field_charts=0
 do_reporting=0
 
 ### CALIBRATION ###
