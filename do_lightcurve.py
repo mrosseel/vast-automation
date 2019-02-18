@@ -47,9 +47,7 @@ def main(star_list_1, check_stars_1, aperture, apertureidx, is_resume):
     pool = ThreadPool(1)
     func = partial(read_and_write_star_data, check_stars_1=check_stars_1, aperture=aperture, apertureidx=apertureidx, matched_files=matched_files)
     #print("Writing star lightcurves for", len(star_list_1), "stars into", init.lightcurvedir)
-    for _ in tqdm.tqdm(pool.imap_unordered(func, star_ranges), total=math.ceil(len(star_list_1)/chunk_size), desc='Chunks'):
-        pass
-
+    pool.imap_unordered(func, star_ranges)
 
 #   the func is now passed a range of stars to process. We now need to iterate through all the pht files
 #   and extract info about ONLY those stars, then write them to file. Maybe dense numpy lists with the range as index?
@@ -84,6 +82,8 @@ def read_star_data(star_range_1, matched_files, apertureidx):
             jd[fileidx] = jd_
             fwhm[fileidx] = fwhm_
             # print("Collect shape", collect.shape)
+            print(f"starrangezero len: {len(star_range_0)}, collect[] len: {len(collect[apertureidx])}")
+
             collected = collect[apertureidx][star_range_0]
             # print("Collected is:", collected, collected.shape)
             star_result[fileidx] = collected
