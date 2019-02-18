@@ -126,7 +126,7 @@ def write_lightcurve(star_1: int, check_stars_1: Vector, aperture: float, apertu
     all_stars_1 = [star_1]
     all_stars_1 = all_stars_1 + check_stars
     all_stars_0 = np.array(all_stars_1) - 1
-    print("write lightcurve all_stars_0", all_stars_0)
+    #print("write lightcurve all_stars_0", all_stars_0)
     # print("check stars:", check_stars, "allstars:", all_stars_1)
     # print("photometry:", photometry)
     lines = []
