@@ -26,11 +26,12 @@ STAR_DATA_MB=1.5274047851562502e-05 # the size of the data of one star
 star_result = None
 
 # star_list is ignored for the moment or always if it's fast enough
-def main(star_list_1, check_stars_1, aperture, apertureidx, is_resume):
+def main(star_list_1_orig, check_stars_1, aperture, apertureidx, is_resume):
     if not is_resume:
         trash_and_recreate_dir(init.lightcurvedir)
+        star_list_1 = star_list_1_orig
     else:
-        star_list_1 = reduce_star_list(star_list_1, init.lightcurvedir)
+        star_list_1 = reduce_star_list(star_list_1_orig, init.lightcurvedir)
 
     global preamble
     preamble = init_preamble(aperture, check_stars_1)
@@ -73,28 +74,50 @@ def read_star_data(star_range_1, matched_files, apertureidx):
     fwhm = np.empty([nrfiles, 3], dtype=float)
     jd = np.empty([nrfiles], dtype=float)
 
-    # gather all the data
-    for fileidx, file_entry in tqdm.tqdm(enumerate(matched_files), total=len(matched_files), desc='Read pht'):
-        fileContent = None
-        # open the file for reading
-        with open(file_entry, mode='rb') as file: # b is important -> binary
-            fileContent = file.read()
-            jd_, fwhm_, collect = read_and_collect_pht(file_entry, fileContent, apertureidx)
-            jd[fileidx] = jd_
-            fwhm[fileidx] = fwhm_
-            # print("Collect shape", collect.shape)
-            print(f"starrangezero len: {len(star_range_0)}, collect[] len: {len(collect[apertureidx])}")
+    pool = mp.Pool(init.nr_threads*2, maxtasksperchild=None)
+    func = partial(read_pht, star_range_0=star_range_0, apertureidx=apertureidx, jd=jd, fwhm=fwhm, star_result=star_result)
+    for fileidx, file_entry in enumerate(tqdm.tqdm(pool.imap_unordered(func, enumerate(matched_files)), total=len(matched_files), desc='Read pht')):
+        pass
 
-            collected = collect[apertureidx][star_range_0]
-            # print("Collected is:", collected, collected.shape)
-            star_result[fileidx] = collected
-            # print("star result is:", star_result.shape)
-            # print("star[fil]:", star_result[fileidx])
-            # print("star[fil][0]:", star_result[fileidx][0])
-            # print("star[fil][0][0]:", star_result[fileidx][0][0])
+    # gather all the data
+    # for fileidx, file_entry in tqdm.tqdm(enumerate(matched_files), total=len(matched_files), desc='Read pht'):
+    #     fileContent = None
+    #     # open the file for reading
+    #     with open(file_entry, mode='rb') as file: # b is important -> binary
+    #         fileContent = file.read()
+    #         jd_, fwhm_, collect = read_and_collect_pht(file_entry, fileContent, apertureidx)
+    #         jd[fileidx] = jd_
+    #         fwhm[fileidx] = fwhm_
+    #         # print("Collect shape", collect.shape)
+    #         print(f"starrangezero len: {len(star_range_0)}, collect[] len: {len(collect[apertureidx])}")
+
+    #         collected = collect[apertureidx][star_range_0]
+    #         # print("Collected is:", collected, collected.shape)
+    #         star_result[fileidx] = collected
+    #         # print("star result is:", star_result.shape)
+    #         # print("star[fil]:", star_result[fileidx])
+    #         # print("star[fil][0]:", star_result[fileidx][0])
+    #         # print("star[fil][0][0]:", star_result[fileidx][0][0])
     #print("star[0][0][0]:", star_result[0][0])
     #print("read star data nbytes:", star_result.nbytes, jd.nbytes, fwhm.nbytes)
     return jd, fwhm, star_result
+
+def read_pht(matched_files_tuple, star_range_0, apertureidx, jd, fwhm, star_result):
+    fileContent = None
+    fileidx = matched_files_tuple[0]
+    file_entry = matched_files_tuple[1]
+    # open the file for reading
+    with open(file_entry, mode='rb') as file: # b is important -> binary
+        fileContent = file.read()
+        jd_, fwhm_, collect = read_and_collect_pht(file_entry, fileContent, apertureidx)
+        jd[fileidx] = jd_
+        fwhm[fileidx] = fwhm_
+        # print("Collect shape", collect.shape)
+        print(f"starrangezero len: {len(star_range_0)}, collect[] len: {len(collect[apertureidx])}")
+
+        collected = collect[apertureidx][star_range_0]
+        # print("Collected is:", collected, collected.shape)
+        star_result[fileidx] = collected
 
 def read_and_collect_pht(file_entry, fileContent, apertureidx):
     # print(f"Read and collect pht: {file_entry}")
@@ -162,6 +185,38 @@ def init_preamble(aperture, check_stars_list):
         count = count + 1
     preamble = preamble + f"\nAperture: {aperture}, Filter: V, Check stars: {check_stars_list}"
     return preamble
+
+def calculate_synthetic_c():
+    print("TODO")
+    # /* Comparison star */
+	# if (lc->comp.count==1) {
+	# 	if (comp[0].valid) {
+	# 		cmag = comp[0].mag;
+	# 		cerr = comp[0].err;
+	# 		comp_ok = 1;
+	# 	} else {
+	# 		cerr = cmag = 0.0;
+	# 		comp_ok = 0;
+	# 	}
+	# } else {
+	# 	cmag = cerr = 0.0;
+	# 	n = 0;
+	# 	for (i=0; i<lc->comp.count; i++) {
+	# 		if (comp[i].valid) {
+	# 			cmag += pow(10.0, -0.4*comp[i].mag);
+	# 			cerr += comp[i].err;
+	# 			n++;
+	# 		}
+	# 	}
+	# 	if (n==lc->comp.count) {
+	# 		cmag = -2.5*log10(cmag/n);
+	# 		cerr = (cerr/n)/sqrt((double)n);
+	# 		comp_ok = 1;
+	# 	} else {
+	# 		cerr = cmag = 0.0;
+	# 		comp_ok = 0;
+	# 	}
+	# }
 
 def join_check_stars_string(check_stars, exclude_star):
     check_stars = filter(lambda star: star != exclude_star, check_stars)
