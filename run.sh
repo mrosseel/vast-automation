@@ -1,2 +1,2 @@
 #!/bin/bash
-python -u do_muniwin.py |& tee muni.log
+python -u ./src/do_muniwin.py |& tee muni.log
