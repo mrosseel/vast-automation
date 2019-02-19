@@ -5,7 +5,7 @@
 import init
 from reading import trash_and_recreate_dir
 from reading import reduce_star_list
-import tqdm
+from tqdm import tqdm
 from functools import partial
 from subprocess import call
 import multiprocessing as mp
@@ -62,7 +62,7 @@ def read_and_write_star_data(star_range_1, check_stars_1, aperture, apertureidx,
     func = partial(write_lightcurve, check_stars_1=check_stars_1, aperture=aperture, apertureidx=apertureidx, jd=jd, fwhm=fwhm)
 
     #print("Writing star lightcurves for", len(star_list_1), "stars into", init.lightcurvedir)
-    for _ in tqdm.tqdm(pool.imap_unordered(func, star_range_1), total=len(star_range_1), desc='Writing lightcurve'):
+    for _ in tqdm(pool.imap_unordered(func, star_range_1), total=len(star_range_1), desc='Writing lightcurve'):
         pass
 
 def read_star_data(star_range_1, matched_files, apertureidx):
@@ -74,35 +74,19 @@ def read_star_data(star_range_1, matched_files, apertureidx):
     fwhm = np.empty([nrfiles, 3], dtype=float)
     jd = np.empty([nrfiles], dtype=float)
 
+    pbar = tqdm(total=len(matched_files))
     pool = mp.Pool(init.nr_threads*2, maxtasksperchild=None)
-    func = partial(read_pht, star_range_0=star_range_0, apertureidx=apertureidx, jd=jd, fwhm=fwhm, star_result=star_result)
-    for fileidx, file_entry in enumerate(tqdm.tqdm(pool.imap_unordered(func, enumerate(matched_files)), total=len(matched_files), desc='Read pht')):
-        pass
+    func = partial(read_pht, star_range_0=star_range_0, apertureidx=apertureidx)
 
-    # gather all the data
-    # for fileidx, file_entry in tqdm.tqdm(enumerate(matched_files), total=len(matched_files), desc='Read pht'):
-    #     fileContent = None
-    #     # open the file for reading
-    #     with open(file_entry, mode='rb') as file: # b is important -> binary
-    #         fileContent = file.read()
-    #         jd_, fwhm_, collect = read_and_collect_pht(file_entry, fileContent, apertureidx)
-    #         jd[fileidx] = jd_
-    #         fwhm[fileidx] = fwhm_
-    #         # print("Collect shape", collect.shape)
-    #         print(f"starrangezero len: {len(star_range_0)}, collect[] len: {len(collect[apertureidx])}")
-
-    #         collected = collect[apertureidx][star_range_0]
-    #         # print("Collected is:", collected, collected.shape)
-    #         star_result[fileidx] = collected
-    #         # print("star result is:", star_result.shape)
-    #         # print("star[fil]:", star_result[fileidx])
-    #         # print("star[fil][0]:", star_result[fileidx][0])
-    #         # print("star[fil][0][0]:", star_result[fileidx][0][0])
-    #print("star[0][0][0]:", star_result[0][0])
-    #print("read star data nbytes:", star_result.nbytes, jd.nbytes, fwhm.nbytes)
+    # for fileidx in enumerate(tqdm.tqdm(pool.imap_unordered(func, enumerate(matched_files)), total=len(matched_files), desc='Read pht')):
+    for fileidx, jd_, fwhm_, collected in pool.imap_unordered(func, enumerate(matched_files)):
+        jd[fileidx] = jd_
+        fwhm[fileidx] = fwhm_
+        star_result[fileidx] = collected
+        pbar.update(1)
     return jd, fwhm, star_result
 
-def read_pht(matched_files_tuple, star_range_0, apertureidx, jd, fwhm, star_result):
+def read_pht(matched_files_tuple, star_range_0, apertureidx):
     fileContent = None
     fileidx = matched_files_tuple[0]
     file_entry = matched_files_tuple[1]
@@ -110,14 +94,12 @@ def read_pht(matched_files_tuple, star_range_0, apertureidx, jd, fwhm, star_resu
     with open(file_entry, mode='rb') as file: # b is important -> binary
         fileContent = file.read()
         jd_, fwhm_, collect = read_and_collect_pht(file_entry, fileContent, apertureidx)
-        jd[fileidx] = jd_
-        fwhm[fileidx] = fwhm_
         # print("Collect shape", collect.shape)
         print(f"starrangezero len: {len(star_range_0)}, collect[] len: {len(collect[apertureidx])}")
-
         collected = collect[apertureidx][star_range_0]
         # print("Collected is:", collected, collected.shape)
-        star_result[fileidx] = collected
+        # star_result[fileidx] = collected
+        return fileidx, jd_, fwhm_, collected
 
 def read_and_collect_pht(file_entry, fileContent, apertureidx):
     # print(f"Read and collect pht: {file_entry}")
@@ -146,13 +128,10 @@ def read_and_collect_pht(file_entry, fileContent, apertureidx):
 
 def write_lightcurve(star_1: int, check_stars_1: Vector, aperture: float, apertureidx: int, jd: float, fwhm: float):
     #print(f"Write lightcurve for star:", star_1)
-    check_stars = join_check_stars(check_stars_1, star_1)
-    all_stars_1 = [star_1]
-    all_stars_1 = all_stars_1 + check_stars
-    all_stars_0 = np.array(all_stars_1) - 1
-    #print("write lightcurve all_stars_0", all_stars_0)
-    # print("check stars:", check_stars, "allstars:", all_stars_1)
-    # print("photometry:", photometry)
+    check_stars_1 = join_check_stars(check_stars_1, star_1)
+    check_stars_0 = np.array(check_stars_1) - 1
+    star_0 = star_1 - 1
+
     lines = []
     lines.append(preamble)
     #print("nr of files:", nrfiles)
@@ -162,13 +141,16 @@ def write_lightcurve(star_1: int, check_stars_1: Vector, aperture: float, apertu
         line = ""
         date = f"{jd[fileidx]:.7f}"
         line = line + date
-        V = min(MAX_MAG, star_result[fileidx][all_stars_0[0]][0])
-        Verr = min(MAX_ERR, star_result[fileidx][all_stars_0[0]][1])
-        C = min(MAX_MAG, star_result[fileidx][all_stars_0[1]][0])
-        Cerr = min(MAX_ERR, star_result[fileidx][all_stars_0[1]][1])
-        line = line + f" {(V-C):.5f} {math.sqrt(Verr**2 + Cerr**2):.5f}"
-        for allstaridx, _ in enumerate(all_stars_1):
-            line = line + f" {min(MAX_MAG, star_result[fileidx][allstaridx][0]):.5f} {min(MAX_ERR, star_result[fileidx][allstaridx][1]):.5f}"
+        linedata = []
+        V = star_result[fileidx][star_0][0]
+        Verr = min(MAX_ERR, star_result[fileidx][star_0][1])
+        C, Cerr = calculate_synthetic_c(star_result[fileidx], check_stars_0)
+        Cerr = min(MAX_ERR, Cerr)
+        linedata += [V-C, math.sqrt(Verr**2 + Cerr**2), V, Verr, C, Cerr]
+        for checkstar_0 in check_stars_0:
+            linedata += [star_result[fileidx][checkstar_0][0], star_result[fileidx][checkstar_0][1]]
+        for idx in range(0, len(linedata), 2):
+            line += f" {min(MAX_MAG, linedata[idx]):.5f} {min(MAX_ERR, linedata[idx+1]):.5f}"
         lines.append(line)
 
     with open(init.lightcurvedir + 'curve_' + str(star_1).zfill(5) + ".txt", 'wt') as f:
@@ -176,9 +158,9 @@ def write_lightcurve(star_1: int, check_stars_1: Vector, aperture: float, apertu
 
 # the static first part of the file
 def init_preamble(aperture, check_stars_list):
-    preamble = "JD V-C s1 V s2"
+    preamble = "JD V-C s1 V s2 C s3"
     checkstarcount = 1
-    count = 3
+    count = 4
     for _ in check_stars_list:
         preamble = preamble + f" C{checkstarcount} s{count}"
         checkstarcount = checkstarcount + 1
@@ -186,37 +168,62 @@ def init_preamble(aperture, check_stars_list):
     preamble = preamble + f"\nAperture: {aperture}, Filter: V, Check stars: {check_stars_list}"
     return preamble
 
-def calculate_synthetic_c():
-    print("TODO")
-    # /* Comparison star */
-	# if (lc->comp.count==1) {
-	# 	if (comp[0].valid) {
-	# 		cmag = comp[0].mag;
-	# 		cerr = comp[0].err;
-	# 		comp_ok = 1;
-	# 	} else {
-	# 		cerr = cmag = 0.0;
-	# 		comp_ok = 0;
-	# 	}
-	# } else {
-	# 	cmag = cerr = 0.0;
-	# 	n = 0;
-	# 	for (i=0; i<lc->comp.count; i++) {
-	# 		if (comp[i].valid) {
-	# 			cmag += pow(10.0, -0.4*comp[i].mag);
-	# 			cerr += comp[i].err;
-	# 			n++;
-	# 		}
-	# 	}
-	# 	if (n==lc->comp.count) {
-	# 		cmag = -2.5*log10(cmag/n);
-	# 		cerr = (cerr/n)/sqrt((double)n);
-	# 		comp_ok = 1;
-	# 	} else {
-	# 		cerr = cmag = 0.0;
-	# 		comp_ok = 0;
-	# 	}
-	# }
+# /* Comparison star */
+# if (lc->comp.count==1) {
+# 	if (comp[0].valid) {
+# 		cmag = comp[0].mag;
+# 		cerr = comp[0].err;
+# 		comp_ok = 1;
+# 	} else {
+# 		cerr = cmag = 0.0;
+# 		comp_ok = 0;
+# 	}
+# } else {
+# 	cmag = cerr = 0.0;
+# 	n = 0;
+# 	for (i=0; i<lc->comp.count; i++) {
+# 		if (comp[i].valid) {
+# 			cmag += pow(10.0, -0.4*comp[i].mag);
+# 			cerr += comp[i].err;
+# 			n++;
+# 		}
+# 	}
+# 	if (n==lc->comp.count) {
+# 		cmag = -2.5*log10(cmag/n);
+# 		cerr = (cerr/n)/sqrt((double)n);
+# 		comp_ok = 1;
+# 	} else {
+# 		cerr = cmag = 0.0;
+# 		comp_ok = 0;
+# 	}
+# }
+def calculate_synthetic_c(star_result_file, check_stars_0):
+    if len(check_stars_0) == 1:
+        cmag = star_result_file[check_stars_0[0]][0]
+        cerr = star_result_file[check_stars_0[0]][1]
+        if is_valid(cmag, cerr):
+            return cmag, cerr
+        else:
+            return 0,0
+
+    cmag, cerr, valid = 0, 0, 0
+    nrstars = len(check_stars_0)
+    for entry in check_stars_0:
+        mag = star_result_file[entry][0]
+        err = star_result_file[entry][1]
+        if is_valid(mag, err):
+            cmag += math.pow(10, -0.4*mag)
+            cerr += err
+            valid += 1
+    if valid == nrstars:
+        cmag = -2.5*math.log10(cmag/nrstars)
+        cerr = (cerr/nrstars)/math.sqrt(nrstars)
+    else:
+        cmag, cerr = 0, 0
+    return cmag, cerr
+
+def is_valid(mag, err):
+    return mag < MAX_MAG and err < MAX_ERR
 
 def join_check_stars_string(check_stars, exclude_star):
     check_stars = filter(lambda star: star != exclude_star, check_stars)
