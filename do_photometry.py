@@ -41,7 +41,11 @@ def read_pht_file(the_file, fileContent, only_apertureidx=-1):
     apertureformat1 = "<i"
     ap1length = struct.calcsize(apertureformat1)
     start = wcslength
-    napertures = struct.unpack(apertureformat1, fileContent[start:start+ap1length])[0]
+    try:
+        napertures = struct.unpack(apertureformat1, fileContent[start:start+ap1length])[0]
+    except:
+        print("error reading", the_file)
+        print("'",fileContent[start:start+ap1length],"'")
     logging.debug(f"napertures: {napertures}")
     apertureformat2 = "<" + napertures * "id"
     ap2length = struct.calcsize(apertureformat2)
