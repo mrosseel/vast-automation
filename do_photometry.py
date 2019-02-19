@@ -180,6 +180,6 @@ def main(the_dir, match_files='match*.pht', percentage=0.1):
     print("Compstars_0 with minimum stdev in the chosen aperture:", compstars_0)
     return stddevs, collect, apertures, apertureidx, fwhm, jd, (compstars_0+1).tolist()
 
-# if __name__ == '__main__':
-#     logging.getLogger().setLevel(logging.INFO)
-#     main()
+if __name__ == '__main__':
+    logging.getLogger().setLevel(logging.DEBUG)
+    read_pht_file(sys.argv[1], open(sys.argv[1],'rb').read())
