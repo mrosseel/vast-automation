@@ -97,7 +97,7 @@ def read_pht(matched_files_tuple, star_range_0, apertureidx):
         fileContent = file.read()
         jd_, fwhm_, collect = read_and_collect_pht(file_entry, fileContent, apertureidx)
         # print("Collect shape", collect.shape)
-        print(f"starrangezero len: {len(star_range_0)}, collect[] len: {len(collect[apertureidx])}")
+        print(f"fileidx: {fileidx}, star_range_0 len: {len(star_range_0)}, collect[apixd] len: {len(collect[apertureidx])}, {star_range_0}")
         collected = collect[apertureidx][star_range_0]
         # print("Collected is:", collected, collected.shape)
         # star_result[fileidx] = collected
