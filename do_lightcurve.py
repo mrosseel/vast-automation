@@ -40,9 +40,12 @@ def main(star_list_1_orig, check_stars_1, aperture, apertureidx, is_resume):
     matched_files = glob.glob(init.matchedphotometrydir+"*.pht") # todo extract dir, pattern
 
     # calculate possible batch size
-    chunk_size = min((init.free_memory_GB / (len(star_list_1)*len(matched_files)*STAR_DATA_MB/1024))*len(star_list_1), len(star_list_1))
+    chunk_one = (init.free_memory_GB / (len(star_list_1)*len(matched_files)*STAR_DATA_MB/1024))*len(star_list_1)
+    chunk_two = len(star_list_1)
+    chunk_size = min(chunk_one, chunk_two)
     print("Chunk size is", chunk_size)
     star_ranges = chunks(star_list_1, chunk_size)
+    print("Star ranges is", star_ranges)
 
     # pool = mp.Pool(init.nr_threads, maxtasksperchild=None)
     pool = ThreadPool(1)
@@ -78,7 +81,6 @@ def read_star_data(star_range_1, matched_files, apertureidx):
     pool = mp.Pool(init.nr_threads*2, maxtasksperchild=None)
     func = partial(read_pht, star_range_0=star_range_0, apertureidx=apertureidx)
 
-    # for fileidx in enumerate(tqdm.tqdm(pool.imap_unordered(func, enumerate(matched_files)), total=len(matched_files), desc='Read pht')):
     for fileidx, jd_, fwhm_, collected in pool.imap_unordered(func, enumerate(matched_files)):
         jd[fileidx] = jd_
         fwhm[fileidx] = fwhm_
