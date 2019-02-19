@@ -30,6 +30,7 @@ StarData = namedtuple('StarData', 'mag, err, code')
 
 def read_pht_file(the_file, fileContent, only_apertureidx=-1):
     logging.debug(f"The file:{the_file}")
+    # add check for magic string?
     MAGIC_STRING = "C-Munipack photometry file\r\n" # length is 28
     ############################### HEADER ###############################################
 

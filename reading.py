@@ -107,7 +107,7 @@ def read_comparison_star():
         for i, line in enumerate(fp):
             if i == 1:
                 print(line)# 26th line
-                m = re.search('Reference star:\s*(\d+),', line)
+                m = re.search(r'Reference star:\s*(\d+),', line)
                 comparison_star = int(m.group(1))
                 break
     return comparison_star

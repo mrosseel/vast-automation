@@ -45,7 +45,7 @@ def report(target_dir, star_description, comparison_star):
 
     with open(target_dir + title+'_extended.txt', 'w') as fp:
         writer = aavso.ExtendedFormatWriter(fp, 'RMH', software='munipack-automation', obstype='CCD')
-        for index, row in tqdm.tqdm(curve.iterrows(), total=len(curve), unit="observations"):
+        for _, row in tqdm.tqdm(curve.iterrows(), total=len(curve), unit="observations"):
             #print(row, type(row))
             writer.writerow({
                 'name': var_display_name,

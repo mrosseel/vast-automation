@@ -44,9 +44,9 @@ def predict_star(star, limit=-1):
         df = reading.read_lightcurve(star)
         if(limit > 0):
             df = df[:limit]
-        mag = df['V-C'].as_matrix()
-        date = df['JD'].as_matrix()
-        err = df['s1'].as_matrix()
+        mag = df['V-C'].to_numpy()
+        date = df['JD'].to_numpy()
+        err = df['s1'].to_numpy()
         date, mag, err = upsilon.utils.sigma_clipping(date, mag, err, threshold=3, iteration=1)
         e_features = upsilon.ExtractFeatures(date, mag, err)
         e_features.run()

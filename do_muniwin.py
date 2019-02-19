@@ -277,7 +277,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         do_charts.run(star_descriptions_ucac4, comparison_stars_1, do_lightcurve_plot, do_phase_diagram)
 
     if do_field_charting:
-        #do_field_charts.run_standard_field_charts(vsx_star_descriptions, wcs)
+        do_field_charts.run_standard_field_charts(vsx_star_descriptions, wcs)
         do_stats_charts.plot_cumul_histo_detections()
 
     #import code
@@ -312,6 +312,7 @@ if __name__ == '__main__':
     "\nreporting:\t", init.do_reporting)
     print("Press Enter to continue...")
     subprocess.call("read -t 10", shell=True, executable='/bin/bash')
+    logging.getLogger().setLevel(logging.INFO)
     run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_munifind, init.do_lightcurve,
     init.do_lightcurve_resume, init.do_pos, init.do_pos_resume,
     init.do_ml, init.do_lightcurve_plot, init.do_phase_diagram, init.do_field_charts, init.do_reporting)
