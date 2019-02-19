@@ -140,21 +140,24 @@ def write_lightcurve(star_1: int, check_stars_1: Vector, aperture: float, apertu
     #print("nr of files:", nrfiles)
     # for every file
     sorted_jd = np.argsort(jd) # argsort the julian date so lines are inserted in the correct order
-    for fileidx in sorted_jd:
-        line = ""
-        date = f"{jd[fileidx]:.7f}"
-        line = line + date
-        linedata = []
-        V = star_result[fileidx][star_0][0]
-        Verr = min(MAX_ERR, star_result[fileidx][star_0][1])
-        C, Cerr = calculate_synthetic_c(star_result[fileidx], check_stars_0)
-        Cerr = min(MAX_ERR, Cerr)
-        linedata += [V-C, math.sqrt(Verr**2 + Cerr**2), V, Verr, C, Cerr]
-        for checkstar_0 in check_stars_0:
-            linedata += [star_result[fileidx][checkstar_0][0], star_result[fileidx][checkstar_0][1]]
-        for idx in range(0, len(linedata), 2):
-            line += f" {min(MAX_MAG, linedata[idx]):.5f} {min(MAX_ERR, linedata[idx+1]):.5f}"
-        lines.append(line)
+    try:
+        for fileidx in sorted_jd:
+            line = ""
+            date = f"{jd[fileidx]:.7f}"
+            line = line + date
+            linedata = []
+            V = star_result[fileidx][star_0][0]
+            Verr = min(MAX_ERR, star_result[fileidx][star_0][1])
+            C, Cerr = calculate_synthetic_c(star_result[fileidx], check_stars_0)
+            Cerr = min(MAX_ERR, Cerr)
+            linedata += [V-C, math.sqrt(Verr**2 + Cerr**2), V, Verr, C, Cerr]
+            for checkstar_0 in check_stars_0:
+                linedata += [star_result[fileidx][checkstar_0][0], star_result[fileidx][checkstar_0][1]]
+            for idx in range(0, len(linedata), 2):
+                line += f" {min(MAX_MAG, linedata[idx]):.5f} {min(MAX_ERR, linedata[idx+1]):.5f}"
+            lines.append(line)
+    except:
+        print(star_1, V, Verr)
 
     with open(init.lightcurvedir + 'curve_' + str(star_1).zfill(5) + ".txt", 'wt') as f:
         f.write('\n'.join(lines)+'\n')
