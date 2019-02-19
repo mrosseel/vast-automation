@@ -7,28 +7,39 @@ import sys
 import numpy as np
 import logging
 
+headerformat = "<28sxxxx4id70sdd70sH5Bxddddddddddddiiii3d70sdd70sdddddddd"
+headerlength = struct.calcsize(headerformat)
+unpack_headerformat = struct.Struct(headerformat).unpack
+wcsformat= "<i"
+wcssize = struct.calcsize(wcsformat)
+unpack_wcsformat = struct.Struct(wcsformat).unpack
+starformat = "<2i5d"
+starsize = struct.calcsize(starformat)
+unpack_star =struct.Struct(starformat).unpack
+dataformat = "<iii"
+dataformatsize = struct.calcsize(dataformat)
+unpack_data =struct.Struct(dataformat).unpack
+INT_MAX = 2147483647
+PhotHeader = namedtuple('PhotHeader', 'magic, revision, headerlen, width, height, jd, filter, exptime, ccdtemp, origin, year, mon, mday, hour, min, sec, \
+                range0, range1, gain, rnoise, fwhm_exp, fwhm_mean, fwhm_err, threshold, sharpness0, sharpness1, roundness0, roundness1, matched, match_rstars, \
+                match_istars, match_mstars, match_clip, offset0, offset1, objectdesig, objectra, objectdec, locationdesignation, \
+                locationlon, locationlat, trafoxx, trafoxy, trafox0, trafoyx, trafoyy, trafoy0 \
+                ')
+Star = namedtuple('Star', 'id, ref_id, x, y, skymed, skysig, fwhm')
+StarData = namedtuple('StarData', 'mag, err, code')
 
 def read_pht_file(the_file, fileContent, only_apertureidx=-1):
     logging.debug(f"The file:{the_file}")
     MAGIC_STRING = "C-Munipack photometry file\r\n" # length is 28
-    logging.debug(f'size of file {len(fileContent)}')
     ############################### HEADER ###############################################
-    PhotHeader = namedtuple('PhotHeader', 'magic, revision, headerlen, width, height, jd, filter, exptime, ccdtemp, origin, year, mon, mday, hour, min, sec, \
-                    range0, range1, gain, rnoise, fwhm_exp, fwhm_mean, fwhm_err, threshold, sharpness0, sharpness1, roundness0, roundness1, matched, match_rstars, \
-                    match_istars, match_mstars, match_clip, offset0, offset1, objectdesig, objectra, objectdec, locationdesignation, \
-                    locationlon, locationlat, trafoxx, trafoxy, trafox0, trafoyx, trafoyy, trafoy0 \
-                    ')
-    headerformat = "<"+str(len(MAGIC_STRING))+"sxxxx4id70sdd70sH5Bxddddddddddddiiii3d70sdd70sdddddddd"
-    headerlength = struct.calcsize(headerformat)
+
     logging.debug(f"header length is {headerlength}")
-    unp = struct.unpack(headerformat, fileContent[:headerlength])
+    unp = unpack_headerformat(fileContent[:headerlength])
     photheader = PhotHeader._make(unp)
     for name, entry in photheader._asdict().items():
         logging.debug(f"{name}: {entry}")
     ############################### WCS ###############################################
-    wcsformat= "<i"
-    wcssize = struct.calcsize(wcsformat)
-    wcsdatalength = struct.unpack("<i", fileContent[headerlength:headerlength+wcssize])[0]
+    wcsdatalength = unpack_wcsformat(fileContent[headerlength:headerlength+wcssize])[0]
     wcslength = headerlength + wcssize + wcsdatalength
     logging.debug(f"wcs data length: {wcsdatalength}")
     ############################### APERTURES ###############################################
@@ -61,22 +72,15 @@ def read_pht_file(the_file, fileContent, only_apertureidx=-1):
     logging.debug(f"Number of stars: {nrstars}")
     start = start+4
     # read stars
-    starformat = "<2i5d"
-    starsize = struct.calcsize(starformat)
     stars = []
-    Star = namedtuple('Star', 'id, ref_id, x, y, skymed, skysig, fwhm')
     for _ in range(nrstars):
-        stars.append(Star._make(struct.unpack(starformat, fileContent[start:start+starsize])))
+        stars.append(Star._make(unpack_star(fileContent[start:start+starsize])))
         start = start + starsize
     logging.debug(f"Read {len(stars)} stars, first 10: {stars[0:10]}")
 
     ############################## Data
-    dataformat = "<iii"
-    dataformatsize = struct.calcsize(dataformat)
     starsleft = (len(fileContent) - start)/(dataformatsize*napertures)
     logging.debug(f"starting at {start} so we can read {starsleft}")
-    StarData = namedtuple('StarData', 'mag, err, code')
-    INT_MAX = 2147483647
     stardata = []
     for _ in range(int(starsleft)):
         result = []
@@ -84,7 +88,7 @@ def read_pht_file(the_file, fileContent, only_apertureidx=-1):
             if only_apertureidx != -1 and apidx != only_apertureidx:
                 result.append(None)
             else:
-                mag, err, code = struct.unpack(dataformat, fileContent[start:start+dataformatsize])
+                mag, err, code = unpack_data(fileContent[start:start+dataformatsize])
                 if mag != INT_MAX:
                     mag = mag / 0x1000000
                 else:
