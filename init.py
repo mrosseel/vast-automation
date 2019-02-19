@@ -26,7 +26,7 @@ do_pos_resume=0
 do_ml=0
 do_lightcurve_plot=0
 do_phase_diagram=0
-do_field_charts=0
+do_field_charts=1
 do_reporting=0
 
 ### CALIBRATION ###

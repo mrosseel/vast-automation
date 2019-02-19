@@ -95,22 +95,22 @@ def read_pht(matched_files_tuple, star_range_0, apertureidx):
     # open the file for reading
     with open(file_entry, mode='rb') as file: # b is important -> binary
         fileContent = file.read()
-        jd_, fwhm_, collect = read_and_collect_pht(file_entry, fileContent, apertureidx)
+        jd_, fwhm_, collect = read_and_collect_pht(file_entry, fileContent, apertureidx, len(star_range_0))
         # print("Collect shape", collect.shape)
-        print(f"fileidx: {fileidx}, star_range_0 len: {len(star_range_0)}, collect[apixd] len: {len(collect[apertureidx])}, {star_range_0}")
+        #print(f"fileidx: {fileidx}, star_range_0 len: {len(star_range_0)}, collect[apixd] len: {len(collect[apertureidx])}, {star_range_0}")
         collected = collect[apertureidx][star_range_0]
         # print("Collected is:", collected, collected.shape)
         # star_result[fileidx] = collected
         return fileidx, jd_, fwhm_, collected
 
-def read_and_collect_pht(file_entry, fileContent, apertureidx):
+def read_and_collect_pht(file_entry, fileContent, apertureidx, star_range_length):
     # print(f"Read and collect pht: {file_entry}")
     # Star = namedtuple('Star', 'id, ref_id, x, y, skymed, skysig, fwhm')
     # StarData = namedtuple('StarData', 'mag, err, code')
     photheader, _, nrstars, stars, stardata = read_pht_file(file_entry, fileContent, only_apertureidx=apertureidx)
     # nr of apertures = len(stardata[0]
     nrapertures = len(stardata[0])
-    collect = np.empty([nrapertures, nrstars, 2],dtype=float)
+    collect = np.empty([nrapertures, star_range_length, 2],dtype=float) # we don't use nrstars because this could be e.g. 1000, but with stars which have id's > 1000
 
     # print("\tDate from header:",photheader.jd, "fwhm:", photheader.fwhm_mean)
     fwhm = [photheader.fwhm_exp, photheader.fwhm_mean, photheader.fwhm_err]
