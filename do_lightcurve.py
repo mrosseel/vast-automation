@@ -86,6 +86,7 @@ def read_star_data(star_range_1, matched_files, apertureidx):
         fwhm[fileidx] = fwhm_
         star_result[fileidx] = collected
         pbar.update(1)
+    pbar.close()
     return jd, fwhm, star_result
 
 def read_pht(matched_files_tuple, star_range_0, apertureidx):
