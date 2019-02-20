@@ -205,8 +205,8 @@ def main(the_dir, match_files='match*.pht', percentage=0.1):
     compstars_0 = np.argpartition(stddevs[apertureidx], range(3))[:3]
 
     #compstar_0 = np.argmin(stddevs[apertureidx], axis=0)
-    logging.info("Compstars_0 with minimum stdev in the chosen aperture:"+ compstars_0)
-    logging.info("Compstars stddev:" + stddevs[apertureidx][compstars_0] )
+    logging.info(f"Compstars_0 with minimum stdev in the chosen aperture: {compstars_0}")
+    logging.info(f"Compstars stddev: {stddevs[apertureidx][compstars_0]}")
     return stddevs, collect, apertures, apertureidx, fwhm, jd, (compstars_0+1).tolist()
 
 if __name__ == '__main__':
