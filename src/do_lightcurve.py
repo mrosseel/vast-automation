@@ -43,9 +43,8 @@ def main(star_list_1_orig, check_stars_1, aperture, apertureidx, is_resume):
     chunk_one = (init.free_memory_GB / (len(star_list_1)*len(matched_files)*STAR_DATA_MB/1024))*len(star_list_1)
     chunk_two = len(star_list_1)
     chunk_size = min(chunk_one, chunk_two)
-    print("Chunk size is", chunk_size)
     star_ranges = chunks(star_list_1, chunk_size)
-    print("Star ranges is", star_ranges)
+    print(f"Reading {chunk_size}/{len(star_list_1)} stars per batch.")
 
     # pool = mp.Pool(init.nr_threads, maxtasksperchild=None)
     pool = ThreadPool(1)
@@ -135,8 +134,8 @@ def write_lightcurve(star_1: int, check_stars_1: Vector, aperture: float, apertu
         line = f"{jd[fileidx]:.7f}" # start the line with the julian date
         V = star_result[fileidx][star_0][0]
         Verr = min(MAX_ERR, star_result[fileidx][star_0][1])
-        if V < 1 or V > 99:
-            print(f"Strange V for fileidx {fileidx}, V:{V}, Verr: {Verr}, Star_1: {star_1}")
+        # if V < 1 or V > 99:
+        #     print(f"Strange V for fileidx {fileidx}, V:{V}, Verr: {Verr}, Star_1: {star_1}")
         C, Cerr = calculate_synthetic_c(star_result[fileidx], check_stars_0)
         Cerr = min(MAX_ERR, Cerr)
         linedata = [(V-C, math.sqrt(Verr**2 + Cerr**2)), (V, Verr), (C, Cerr)] + [(star_result[fileidx][checkstar_0][0], star_result[fileidx][checkstar_0][1]) for checkstar_0 in check_stars_0]

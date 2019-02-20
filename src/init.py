@@ -10,7 +10,7 @@ thousand = range(1, 1000)
 #### SETTINGS for DO_MUNIWIN.PY ####
 
 datadir = 'current/'
-aperture_find_percentage=0.01
+aperture_find_percentage=0.05
 free_memory_GB=10
 star_list = all #[52]
 nr_threads = multiprocessing.cpu_count()
@@ -18,7 +18,7 @@ nr_threads = multiprocessing.cpu_count()
 do_convert_fits=0
 do_photometry=0
 do_match=0
-do_munifind=1
+do_aperture_search=0
 do_lightcurve=1
 do_lightcurve_resume=0
 do_pos=0
@@ -43,14 +43,12 @@ sitealt= 350 # TODO WRONG !!!! Used in AAVSO reporting for atmospheric extinctio
 # standard directories
 codedir = './'
 basedir = codedir + datadir
-memdir = '/media/vars/'
 reference_header = basedir + reference_file
 # input + processing
 fitsdir = basedir + "fits/"
 convfitsdir = basedir + "converted_fits/"
 photometrydir = basedir + "photometry/"
 matchedphotometrydir = basedir + "matched_photometry/"
-#matchedphotometrydir = memdir + "matched_photometry/"
 aperturedir = basedir + "aperture/"
 vsxcatalogdir = codedir + "vsx_catalog.bin"
 

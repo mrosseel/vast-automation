@@ -165,7 +165,7 @@ def world_pos(star, wcs, reference_frame_index):
     f2.write(str(world_coords[0]) + " " + str(world_coords[1]))
     f2.close()
 
-def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightcurve, do_lightcurve_resume, do_pos,
+def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do_lightcurve, do_lightcurve_resume, do_pos,
                 do_pos_resume,
                 do_ml, do_lightcurve_plot, do_phase_diagram, do_field_charting, do_reporting):
     if do_convert_fits:
@@ -195,25 +195,26 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         for _ in tqdm.tqdm(pool.imap_unordered(func, file_list, 10), total=len(file_list)):
             pass
 
-    logging.debug("Before do munifind")
-    if do_munifind:
-        stddevs, all_photometry, apertures, apertureidx, _, jd, compstar = dophoto.main(the_dir=init.matchedphotometrydir, percentage=init.aperture_find_percentage)
+    if do_aperture_search:
+        stddevs, _, apertures, apertureidx, _, _, compstar = dophoto.main(the_dir=init.matchedphotometrydir, percentage=init.aperture_find_percentage)
         comparison_stars_1 = compstar
         aperture = apertures[apertureidx]
-        with open(init.basedir + 'check_stars_list.bin', 'wb') as fp:
-            pickle.dump(comparison_stars_1, fp)
-        np.savetxt(init.basedir + "aperture_best.txt", [aperture])
-        # print("check_stars_list: ", check_stars_list)
-        # write_munifind_check_stars(check_stars_list[0])
-        print("Done writing munifind")
+        # with open(init.basedir + 'check_stars_list.bin', 'wb') as fp:
+        #     pickle.dump(comparison_stars_1, fp)
+        np.savetxt(init.basedir + "comparison_stars_1.txt", comparison_stars_1, fmt='%d', delimiter=';')
+        np.savetxt(init.basedir + "apertures.txt", apertures, fmt='%.2f', delimiter=';')
+        np.savetxt(init.basedir + "apertureidx_best.txt", [apertureidx], fmt='%d')
+        logging.debug("Done writing aperture search results")
     else:
-        with open(init.basedir + 'check_stars_list.bin', 'rb') as fp:
-            comparison_stars_1 = pickle.load(fp)
-        with open(init.basedir + 'aperture_best.txt', 'r') as fp:
-            aperture = round(float(next(fp)),1)
+        comparison_stars_1 = np.loadtxt(init.basedir + "comparison_stars_1.txt", dtype=int, delimiter=';')
+        apertures = np.loadtxt(init.basedir + 'apertures.txt', dtype=float, delimiter=';')
+        apertureidx = np.loadtxt(init.basedir + 'apertureidx_best.txt', dtype=int)
+        aperture = apertures[apertureidx]
+        logging.info(f"comparison stars: {comparison_stars_1}")
+        logging.info(f"aperture: {aperture}, apertures:{apertures}")
+
     #if do_lightcurve: do_write_curve(init.star_list, comparison_stars_1, 3.82, do_lightcurve_resume)
     if do_lightcurve: dolight.main(init.star_list, comparison_stars_1, aperture, int(apertureidx), do_lightcurve_resume)
-    # exit()
 
     logging.debug("Before do pos")
     if do_pos:
@@ -305,7 +306,7 @@ if __name__ == '__main__':
     print("Calculating", len(init.star_list), "stars from base dir:", init.basedir, "\nconvert_fits:\t", init.do_convert_fits,
     "\nphotometry:\t", init.do_photometry,
     "\nmatch:\t\t", init.do_match,
-    "\nmunifind:\t", init.do_munifind,
+    "\naperture search:\t", init.do_aperture_search,
     "\nlightcurve:\t", init.do_lightcurve,
     "\nlightcurve_res:\t", init.do_lightcurve_resume,
     "\npos:\t\t", init.do_pos,
@@ -318,6 +319,6 @@ if __name__ == '__main__':
     print("Press Enter to continue...")
     subprocess.call("read -t 10", shell=True, executable='/bin/bash')
     logging.getLogger().setLevel(logging.INFO)
-    run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_munifind, init.do_lightcurve,
-    init.do_lightcurve_resume, init.do_pos, init.do_pos_resume,
-    init.do_ml, init.do_lightcurve_plot, init.do_phase_diagram, init.do_field_charts, init.do_reporting)
+    run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_aperture_search, init.do_lightcurve,
+                init.do_lightcurve_resume, init.do_pos, init.do_pos_resume,
+                init.do_ml, init.do_lightcurve_plot, init.do_phase_diagram, init.do_field_charts, init.do_reporting)
