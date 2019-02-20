@@ -135,6 +135,8 @@ def write_lightcurve(star_1: int, check_stars_1: Vector, aperture: float, apertu
         line = f"{jd[fileidx]:.7f}" # start the line with the julian date
         V = star_result[fileidx][star_0][0]
         Verr = min(MAX_ERR, star_result[fileidx][star_0][1])
+        if V < 1 or V > 99:
+            print(f"Strange V for fileidx {fileidx}, V:{V}, Verr: {Verr}, Star_1: {star_1}")
         C, Cerr = calculate_synthetic_c(star_result[fileidx], check_stars_0)
         Cerr = min(MAX_ERR, Cerr)
         linedata = [(V-C, math.sqrt(Verr**2 + Cerr**2)), (V, Verr), (C, Cerr)] + [(star_result[fileidx][checkstar_0][0], star_result[fileidx][checkstar_0][1]) for checkstar_0 in check_stars_0]
