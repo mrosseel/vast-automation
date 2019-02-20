@@ -131,7 +131,7 @@ def get_candidates(threshold_prob=0.5, check_flag=False):
 
 # returns StarDescription with filled in local_id, upsilon, coord
 def add_upsilon_data(star_descriptions):
-    df = pd.DataFrame.from_csv(init.basedir + 'upsilon_output.txt')
+    df = pd.DataFrame.read_csv(init.basedir + 'upsilon_output.txt')
     for star in star_descriptions:
         try:
             row = df.iloc[df.index.get_loc(star.local_id)]
