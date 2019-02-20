@@ -27,8 +27,12 @@ PhotHeader = namedtuple('PhotHeader', 'magic, revision, headerlen, width, height
                 ')
 Star = namedtuple('Star', 'id, ref_id, x, y, skymed, skysig, fwhm')
 StarData = namedtuple('StarData', 'mag, err, code')
+np_dtype = np.dtype([('id', np.int), ('ref_id', np.int), ('x', np.float), ('y', np.float), ('skymed', np.float),
+                     ('skysig', np.float), ('fwhm', np.float)])
 
-def read_pht_file(the_file, fileContent, only_apertureidx=-1):
+# if only_apertureidx is provided, the returned stardata is a flat arrray, otherwise it's 2d (stars, apertures)
+def read_pht_file(the_file, fileContent, only_apertureidx: int =-1, read_stars=True):
+    assert type(only_apertureidx) == int
     logging.debug(f"The file:{the_file}")
     # add check for magic string?
     MAGIC_STRING = "C-Munipack photometry file\r\n" # length is 28
@@ -53,11 +57,11 @@ def read_pht_file(the_file, fileContent, only_apertureidx=-1):
     apertureformat1 = "<i"
     ap1length = struct.calcsize(apertureformat1)
     start = wcslength
-    try:
-        napertures = struct.unpack(apertureformat1, fileContent[start:start+ap1length])[0]
-    except:
-        print("error reading", the_file)
-        print("'",fileContent[start:start+ap1length],"'")
+    # try:
+    napertures = struct.unpack(apertureformat1, fileContent[start:start+ap1length])[0]
+    # except:
+    #     print("error reading", the_file)
+    #     print("'",fileContent[start:start+ap1length],"'")
     logging.debug(f"napertures: {napertures}")
     apertureformat2 = "<" + napertures * "id"
     ap2length = struct.calcsize(apertureformat2)
@@ -73,39 +77,58 @@ def read_pht_file(the_file, fileContent, only_apertureidx=-1):
     logging.debug(f"Number of stars: {nrstars}")
     start = start+4
     # read stars
+
+    # starformat = "<2i5d"
+    # starsize = struct.calcsize(starformat)
+    # unpack_star =struct.Struct(starformat).unpack
+    # Star = namedtuple('Star', 'id, ref_id, x, y, skymed, skysig, fwhm')
     stars = []
-    for _ in range(nrstars):
-        stars.append(Star._make(unpack_star(fileContent[start:start+starsize])))
-        start = start + starsize
-    logging.debug(f"Read {len(stars)} stars, first 10: {stars[0:10]}")
+    if read_stars:
+        #stararray = np.ndarray(shape=(nrstars), dtype=np_dtype, buffer=fileContent, offset=start)
+        # print(stararray)
+        for _ in range(nrstars):
+            stars.append(Star._make(unpack_star(fileContent[start:start+starsize])))
+            start = start + starsize
+        logging.debug(f"Read {len(stars)} stars, first 10: {stars[0:10]}")
+    else:
+        start += starsize*nrstars
 
     ############################## Data
     starsleft = (len(fileContent) - start)/(dataformatsize*napertures)
     logging.debug(f"starting at {start} so we can read {starsleft}")
     stardata = []
+    if only_apertureidx != -1:
+        start+=only_apertureidx*dataformatsize
+
     for _ in range(int(starsleft)):
         result = []
-        for apidx in range(napertures):
-            if only_apertureidx != -1 and apidx != only_apertureidx:
-                result.append(None)
-            else:
+        if only_apertureidx != -1:
+            mag, err, code = unpack_data(fileContent[start:start+dataformatsize])
+            result = StarData._make((getConvertedStarData(mag, err, code)))
+            start+=napertures*dataformatsize
+        else:
+            # logging.debug(f"raw bytes: {fileContent[start:start+dataformatsize]}")
+            for apidx in range(napertures):
                 mag, err, code = unpack_data(fileContent[start:start+dataformatsize])
-                if mag != INT_MAX:
-                    mag = mag / 0x1000000
-                else:
-                    mag = sys.float_info.max
-                if err != INT_MAX:
-                    err = err / 0x1000000
-                if code != 0 and mag != sys.float_info.max:
-                    logging.debug(f"Error code: {code} {mag}") # see cmpack_common.h, enum CmpackError
-                result.append(StarData._make((mag, err, code)))
-            start = start+dataformatsize
+                result.append(StarData._make((getConvertedStarData(mag, err, code))))
+                start = start+dataformatsize
         stardata.append(result)
 
     logging.debug(f"Read {len(stardata)} data for stars, first star: {stardata[0]}")
     logging.debug(len(stardata[0]))
     logging.debug(f"size in memory is: {(sys.getsizeof(stardata)+sys.getsizeof(stars))/1024}")
     return (photheader, apertures, nrstars, stars, stardata)
+
+def getConvertedStarData(mag, err, code):
+    if mag != INT_MAX:
+        mag = mag / 0x1000000
+    else:
+        mag = sys.float_info.max
+    if err != INT_MAX:
+        err = err / 0x1000000
+    if code != 0 and mag != sys.float_info.max:
+        logging.debug(f"Error code: {code} {mag}") # see cmpack_common.h, enum CmpackError
+    return mag, err, code
 
 # percentage is between 0 and 1
 def select_files(the_dir, match_pattern, percentage=1):
@@ -179,10 +202,11 @@ def main(the_dir, match_files='match*.pht', percentage=0.1):
     apertureidx = np.abs(apertures - median_multiply).argmin()
     print("FWHM median:", median_multiply, "aperture chosen is:", apertures[apertureidx])
 
-    compstars_0 = np.argpartition(stddevs[apertureidx], 3)[:3]
+    compstars_0 = np.argpartition(stddevs[apertureidx], range(3))[:3]
 
     #compstar_0 = np.argmin(stddevs[apertureidx], axis=0)
-    print("Compstars_0 with minimum stdev in the chosen aperture:", compstars_0)
+    logging.info("Compstars_0 with minimum stdev in the chosen aperture:", compstars_0)
+    logging.info("Compstars stddev:", stddevs[apertureidx][compstars_0] )
     return stddevs, collect, apertures, apertureidx, fwhm, jd, (compstars_0+1).tolist()
 
 if __name__ == '__main__':

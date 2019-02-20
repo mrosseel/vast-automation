@@ -99,19 +99,17 @@ def read_pht(matched_files_tuple, star_range_0, apertureidx):
         jd_, fwhm_, collect = read_and_collect_pht(file_entry, fileContent, apertureidx, len(star_range_0))
         # print("Collect shape", collect.shape)
         #print(f"fileidx: {fileidx}, star_range_0 len: {len(star_range_0)}, collect[apixd] len: {len(collect[apertureidx])}, {star_range_0}")
-        collected = collect[apertureidx][star_range_0]
+        collected = collect[star_range_0]
         # print("Collected is:", collected, collected.shape)
         # star_result[fileidx] = collected
         return fileidx, jd_, fwhm_, collected
 
-def read_and_collect_pht(file_entry, fileContent, apertureidx, star_range_length):
+def read_and_collect_pht(file_entry, fileContent, apertureidx:int, star_range_length):
     # print(f"Read and collect pht: {file_entry}")
     # Star = namedtuple('Star', 'id, ref_id, x, y, skymed, skysig, fwhm')
     # StarData = namedtuple('StarData', 'mag, err, code')
     photheader, _, _, stars, stardata = read_pht_file(file_entry, fileContent, only_apertureidx=apertureidx)
-    # nr of apertures = len(stardata[0]
-    nrapertures = len(stardata[0])
-    collect = np.empty([nrapertures, star_range_length, 2],dtype=float) # we don't use nrstars because this could be e.g. 1000, but with stars which have id's > 1000
+    collect = np.empty([star_range_length, 2],dtype=float) # we don't use nrstars because this could be e.g. 1000, but with stars which have id's > 1000
 
     # print("\tDate from header:",photheader.jd, "fwhm:", photheader.fwhm_mean)
     fwhm = [photheader.fwhm_exp, photheader.fwhm_mean, photheader.fwhm_err]
@@ -119,14 +117,8 @@ def read_and_collect_pht(file_entry, fileContent, apertureidx, star_range_length
     # logging.debug(f"the result is {result[0]}")
 
     # for every star
-    for staridx, starentry in enumerate(stars):
-        # for every aperture
-        for apidx, aperturedata in enumerate(stardata[staridx]):
-            if apidx != apertureidx:
-                continue
-            if aperturedata.mag == 0:
-                print(aperturedata)
-            collect[apidx][starentry.ref_id-1] = [aperturedata.mag, aperturedata.err]
+    for staridx, starentry in enumerate(stardata):
+        collect[stars[staridx].ref_id-1] = [starentry.mag, starentry.err]
     return jd, fwhm, collect
 
 def write_lightcurve(star_1: int, check_stars_1: Vector, aperture: float, apertureidx: int, jd: float, fwhm: float):
@@ -135,28 +127,24 @@ def write_lightcurve(star_1: int, check_stars_1: Vector, aperture: float, apertu
     check_stars_0 = np.array(check_stars_1) - 1
     star_0 = star_1 - 1
 
-    lines = []
-    lines.append(preamble)
+    lines = [preamble]
     #print("nr of files:", nrfiles)
     # for every file
     sorted_jd = np.argsort(jd) # argsort the julian date so lines are inserted in the correct order
     for fileidx in sorted_jd:
-        line = ""
-        date = f"{jd[fileidx]:.7f}"
-        line = line + date
-        linedata = []
+        line = f"{jd[fileidx]:.7f}" # start the line with the julian date
         V = star_result[fileidx][star_0][0]
         Verr = min(MAX_ERR, star_result[fileidx][star_0][1])
         C, Cerr = calculate_synthetic_c(star_result[fileidx], check_stars_0)
         Cerr = min(MAX_ERR, Cerr)
-        linedata += [V-C, math.sqrt(Verr**2 + Cerr**2), V, Verr, C, Cerr]
-        for checkstar_0 in check_stars_0:
-            linedata += [star_result[fileidx][checkstar_0][0], star_result[fileidx][checkstar_0][1]]
-        for idx in range(0, len(linedata), 2):
-            line += f" {min(MAX_MAG, linedata[idx]):.5f} {min(MAX_ERR, linedata[idx+1]):.5f}"
+        linedata = [(V-C, math.sqrt(Verr**2 + Cerr**2)), (V, Verr), (C, Cerr)] + [(star_result[fileidx][checkstar_0][0], star_result[fileidx][checkstar_0][1]) for checkstar_0 in check_stars_0]
+        # print(linedata)
+        for tuple in linedata:
+            line += f" {min(MAX_MAG, tuple[0]):.5f} {min(MAX_ERR, tuple[1]):.5f}"
         lines.append(line)
 
     with open(init.lightcurvedir + 'curve_' + str(star_1).zfill(5) + ".txt", 'wt') as f:
+        # for l in lines: f.write('%s\n' % l)
         f.write('\n'.join(lines)+'\n')
 
 # the static first part of the file
