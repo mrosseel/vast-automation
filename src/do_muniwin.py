@@ -195,6 +195,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         for _ in tqdm.tqdm(pool.imap_unordered(func, file_list, 10), total=len(file_list)):
             pass
 
+    logging.debug("Before do munifind")
     if do_munifind:
         stddevs, all_photometry, apertures, apertureidx, _, jd, compstar = dophoto.main(the_dir=init.matchedphotometrydir, percentage=init.aperture_find_percentage)
         comparison_stars_1 = compstar
@@ -211,15 +212,17 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
         with open(init.basedir + 'aperture_best.txt', 'r') as fp:
             aperture = round(float(next(fp)),1)
     #if do_lightcurve: do_write_curve(init.star_list, comparison_stars_1, 3.82, do_lightcurve_resume)
-    if do_lightcurve: dolight.main(init.star_list, comparison_stars_1, aperture, apertureidx, do_lightcurve_resume)
+    if do_lightcurve: dolight.main(init.star_list, comparison_stars_1, aperture, int(apertureidx), do_lightcurve_resume)
     # exit()
 
+    logging.debug("Before do pos")
     if do_pos:
         reference_matched = do_calibration.find_reference_matched(reference_frame_index)
         print("reference match is ", reference_matched)
         do_write_pos(init.star_list, comparison_stars_1, aperture, do_pos_resume, reference_matched)
         do_world_pos(wcs, init.star_list, reference_frame_index)
 
+    logging.debug("Before do ml")
     if do_ml:
         import do_upsilon  # do it here because it takes some time at startup
         do_upsilon.run(init.star_list)
@@ -229,7 +232,9 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_munifind, do_lightc
     chart_vsx = True
     chart_custom = False
     star_descriptions = []
+    logging.debug("Getting vsx in field")
     vsx_star_descriptions = do_calibration.get_vsx_in_field(do_calibration.get_star_descriptions(), 0.01)
+    logging.debug("Done getting vsx in field")
 
     if chart_premade:
         print("Loading premade star_descriptions: star_descriptions_to_chart.bin")
