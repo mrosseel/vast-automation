@@ -6,16 +6,16 @@ import logging
 import time
 from tqdm import tqdm
 
-def process_one_pht(the_file, apertureidx: int, star0=None):
+def process_one_pht(the_file, apertureidx:int, star0=None):
     logging.debug("in process")
     start = time.perf_counter()
     photheader, apertures, nrstars, stars, stardata = dop.read_pht_file('', open(the_file, 'rb').read(),
-                                                                        only_apertureidx=apertureidx, read_stars=True)
+                                                                        only_apertureidx=apertureidx, read_stars=False)
     end = time.perf_counter()
     result = stardata
 
     if star0:
-        logging.info(f"stardata for star {star0}: {stardata[star0]}")
+        logging.info(f"stardata for star {star0}: {stardata[int(star0)]}")
     else:
         for idx, entry in enumerate(stardata):
             # if entry.mag > 99:
@@ -24,7 +24,7 @@ def process_one_pht(the_file, apertureidx: int, star0=None):
                 print(f"found small thing: {the_file} at star0 index:{idx}")
     return end-start
 
-def do_all(apertureidx, directory):
+def do_all(apertureidx, directory, star0=None):
     phtdir = directory + "*.pht"
     logging.debug(f"init dir is {init.matchedphotometrydir}")
     print(phtdir)
@@ -33,7 +33,7 @@ def do_all(apertureidx, directory):
     #print(files)
     total_count = 0
     for entry in tqdm(files, total=len(files)):
-        total_count += process_one_pht(entry, apertureidx)
+        total_count += process_one_pht(entry, apertureidx, star0)
     print(total_count)
 
 def do_one(apertureidx, directory, the_file, star0):
@@ -49,6 +49,8 @@ if __name__ == '__main__':
     parser.add_argument('--file')
     parser.add_argument('--star0')
     args = parser.parse_args()
+    if args.star0 and not args.file:
+        do_all(int(args.apertureidx), args.directory, args.star0)
     if args.file and args.star0:
         do_one(int(args.apertureidx), args.directory, args.file, int(args.star0))
     else:

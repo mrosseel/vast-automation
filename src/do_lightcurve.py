@@ -133,12 +133,14 @@ def write_lightcurve(star_1: int, check_stars_1: Vector, aperture: float, apertu
     for fileidx in sorted_jd:
         line = f"{jd[fileidx]:.7f}" # start the line with the julian date
         V = star_result[fileidx][star_0][0]
+        if not is_valid(V.mag, V.err): continue
         Verr = min(MAX_ERR, star_result[fileidx][star_0][1])
         # if V < 1 or V > 99:
         #     print(f"Strange V for fileidx {fileidx}, V:{V}, Verr: {Verr}, Star_1: {star_1}")
         C, Cerr = calculate_synthetic_c(star_result[fileidx], check_stars_0)
         Cerr = min(MAX_ERR, Cerr)
-        linedata = [(V-C, math.sqrt(Verr**2 + Cerr**2)), (V, Verr), (C, Cerr)] + [(star_result[fileidx][checkstar_0][0], star_result[fileidx][checkstar_0][1]) for checkstar_0 in check_stars_0]
+        linedata = [(V-C, math.sqrt(Verr**2 + Cerr**2)), (V, Verr), (C, Cerr)] \
+            + [(star_result[fileidx][checkstar_0][0], star_result[fileidx][checkstar_0][1]) for checkstar_0 in check_stars_0]
         # print(linedata)
         for tuple in linedata:
             line += f" {min(MAX_MAG, tuple[0]):.5f} {min(MAX_ERR, tuple[1]):.5f}"
@@ -215,7 +217,7 @@ def calculate_synthetic_c(star_result_file, check_stars_0):
     return cmag, cerr
 
 def is_valid(mag, err):
-    return mag < MAX_MAG and err < MAX_ERR
+    return not np.isnan(mag) and not np.isnan(err) and mag < MAX_MAG and err < MAX_ERR
 
 def join_check_stars_string(check_stars, exclude_star):
     check_stars = filter(lambda star: star != exclude_star, check_stars)
