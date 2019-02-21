@@ -2,10 +2,10 @@ import os
 import struct
 from collections import namedtuple
 import glob
-import init
 import sys
 import numpy as np
 import logging
+import scipy
 
 headerformat = "<28sxxxx4id70sdd70sH5Bxddddddddddddiiii3d70sdd70sdddddddd"
 headerlength = struct.calcsize(headerformat)
@@ -123,11 +123,13 @@ def getConvertedStarData(mag, err, code):
     if mag != INT_MAX:
         mag = mag / 0x1000000
     else:
-        mag = sys.float_info.max
+        mag = np.nan
     if err != INT_MAX:
         err = err / 0x1000000
-    if code != 0 and mag != sys.float_info.max:
-        logging.debug(f"Error code: {code} {mag}") # see cmpack_common.h, enum CmpackError
+    else:
+        err = np.nan
+    if code != 0:
+        logging.debug(f"Error code: {code} mag:{mag}, err:{err}") # see cmpack_common.h, enum CmpackError
     return mag, err, code
 
 # percentage is between 0 and 1
@@ -181,15 +183,27 @@ def main(the_dir, match_files='match*.pht', percentage=0.1):
                     if collect[apidx][starentry.ref_id-1][fileidx][0] == 0:
                         print("nul")
 
-    print("Nr of stars for aperture 2:", len(collect[2]))
+    print("Nr of stars for apertureidx 2:", len(collect[2]))
     print("Mb used:", collect.nbytes/1024/1024)
     print("Entry for First aperture, first star:", collect[0][0])
     print("Shape for collect:", collect.shape)
+    print(scipy.stats.mstats.describe(np.ma.masked_invalid(collect[2]), axis=0))
     stddevs = np.empty([len(apertures), nrstars])
+    counts = np.empty([len(apertures), nrstars])
+    import warnings
+    warnings.simplefilter('error', UserWarning)
     for apidx in range(len(collect)):
         for staridx in range(len(collect[apidx])):
             # print(apidx, staridx)
-            stddevs[apidx, staridx] = collect[apidx][staridx].std()
+            masked_collect = np.ma.masked_invalid(collect[apidx][staridx])
+            std = masked_collect.std()
+            count= masked_collect.count()
+            # print("count", count)
+            # print("std:", std, type(std), std is np.ma.masked)
+            stddevs[apidx, staridx] = std if not std is np.ma.masked else sys.float_info.max
+            counts[apidx, staridx] = count
+
+    print("after stddevs")
     print(stddevs[0,0:20])
     print("Shape for stddevs:", stddevs.shape)
     print(np.argmin(stddevs[0]))
@@ -207,6 +221,7 @@ def main(the_dir, match_files='match*.pht', percentage=0.1):
     #compstar_0 = np.argmin(stddevs[apertureidx], axis=0)
     logging.info(f"Compstars_0 with minimum stdev in the chosen aperture: {compstars_0}")
     logging.info(f"Compstars stddev: {stddevs[apertureidx][compstars_0]}")
+    logging.info(f"Compstars counts: {counts[apertureidx][compstars_0]}")
     return stddevs, collect, apertures, apertureidx, fwhm, jd, (compstars_0+1).tolist()
 
 if __name__ == '__main__':
