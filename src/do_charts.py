@@ -46,7 +46,7 @@ def plot_lightcurve(tuple, comparison_stars):
     #insert counting column
     used_curve.insert(0, 'Count', range(0, len(used_curve)))
     g = sns.lmplot('Count', 'V-C',
-               data=used_curve, size=20, aspect=5,scatter_kws={"s": 15},
+               data=used_curve, height=20, aspect=5,scatter_kws={"s": 15},
                fit_reg=False)
 
     plt.title("Star {0}{1}, position: {2}{3}".format(star, star_name, get_hms_dms(coord), upsilon_text), pad=TITLE_PAD)
@@ -84,9 +84,9 @@ def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
     if curve is None:
         print("Curve of star {} is None".format(star))
         return
-    t_np = curve['JD'].as_matrix()
-    y_np = curve['V-C'].as_matrix()
-    dy_np = curve['s1'].as_matrix()
+    t_np = curve['JD'].values()
+    y_np = curve['V-C'].values()
+    dy_np = curve['s1'].values()
     if period is None:
         period_max = np.max(t_np)-np.min(t_np)
         if period_max <= 0.01:
