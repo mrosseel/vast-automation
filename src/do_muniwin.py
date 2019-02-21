@@ -169,6 +169,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
                 do_pos_resume,
                 do_ml, do_lightcurve_plot, do_phase_diagram, do_field_charting, do_reporting):
     if do_convert_fits:
+        logging.info("Converting fits...")
         write_convert_fits()
 
     # either read the previous reference frame or calculate a new one
@@ -182,9 +183,11 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
     apertureidx=None
 
     if do_photometry:
+        logging.info("Writing photometry...")
         write_photometry()
 
     if do_match:
+        logging.info("Performing matching...")
         pool = mp.Pool(init.nr_threads, maxtasksperchild=100)
         ref_frame = do_calibration.find_reference_photometry(reference_frame_index)
         file_list = reading.get_files_in_dir(init.photometrydir)
@@ -196,6 +199,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
             pass
 
     if do_aperture_search:
+        logging.info("Searching best aperture...")
         stddevs, _, apertures, apertureidx, _, _, compstar = dophoto.main(the_dir=init.matchedphotometrydir, percentage=init.aperture_find_percentage)
         comparison_stars_1 = compstar
         aperture = apertures[apertureidx]
@@ -206,6 +210,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
         np.savetxt(init.basedir + "apertureidx_best.txt", [apertureidx], fmt='%d')
         logging.debug("Done writing aperture search results")
     else:
+        logging.info("Loading best aperture...")
         comparison_stars_1 = np.loadtxt(init.basedir + "comparison_stars_1.txt", dtype=int, delimiter=';')
         apertures = np.loadtxt(init.basedir + 'apertures.txt', dtype=float, delimiter=';')
         apertureidx = np.loadtxt(init.basedir + 'apertureidx_best.txt', dtype=int)
@@ -214,10 +219,12 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
         logging.info(f"aperture: {aperture}, apertures:{apertures}")
 
     #if do_lightcurve: do_write_curve(init.star_list, comparison_stars_1, 3.82, do_lightcurve_resume)
-    if do_lightcurve: dolight.main(init.star_list, comparison_stars_1, aperture, int(apertureidx), do_lightcurve_resume)
+    if do_lightcurve:
+        logging.info("Writing lightcurves...")
+        dolight.main(init.star_list, comparison_stars_1, aperture, int(apertureidx), do_lightcurve_resume)
 
-    logging.debug("Before do pos")
     if do_pos:
+        logging.info("Writing positions of all stars on the reference image...")
         reference_matched = do_calibration.find_reference_matched(reference_frame_index)
         print("reference match is ", reference_matched)
         do_write_pos(init.star_list, comparison_stars_1, aperture, do_pos_resume, reference_matched)
@@ -225,6 +232,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
 
     logging.debug("Before do ml")
     if do_ml:
+        logging.debug("Doing ML detection of variable stars...")
         import do_upsilon  # do it here because it takes some time at startup
         do_upsilon.run(init.star_list)
 
@@ -233,63 +241,66 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
     chart_vsx = True
     chart_custom = False
     star_descriptions = []
-    logging.debug("Getting vsx in field")
+    logging.info("Getting vsx in field")
     vsx_star_descriptions = do_calibration.get_vsx_in_field(do_calibration.get_star_descriptions(), 0.01)
-    logging.debug("Done getting vsx in field")
 
     if chart_premade:
-        print("Loading premade star_descriptions: star_descriptions_to_chart.bin")
+        logging.info("Loading premade star_descriptions: star_descriptions_to_chart.bin")
         with open(init.basedir + 'star_descriptions_to_chart.bin', 'rb') as fp:
             star_descriptions = pickle.load(fp)
     else:
         if (chart_upsilon):
             # now we generate a list of StarDescriptions, with which all further processing will be done
-            print("Setting star_descriptions to upsilon candidates")
+            logging.info("Setting star_descriptions to upsilon candidates")
             star_descriptions = do_calibration.get_candidates(0.1)
         elif(chart_vsx):
-            print("Setting star_descriptions to vsx stars")
+            logging.info("Setting star_descriptions to vsx stars")
             star_descriptions = vsx_star_descriptions
         elif(chart_custom):
-            print("Setting star_descriptions to custom:", init.star_list)
+            logging.info(f"Setting star_descriptions to custom: {init.star_list}")
             star_descriptions = do_calibration.get_star_descriptions(init.star_list)
 
         if not chart_vsx: # vsx names are always added, but chart_vsx already has the vsx mappings
-            print("Adding vsx names to star_descriptions")
+            logging.info("Adding vsx names to star_descriptions")
             star_descriptions = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions)
 
         if not chart_upsilon:
-            print("Adding upsilon data to star_descriptions")
+            logging.info("Adding upsilon data to star_descriptions")
             star_descriptions = do_calibration.add_upsilon_data(star_descriptions)
 
+        logging.info("Writing star_descriptions_to_chart.bin...")
         with open(init.basedir + 'star_descriptions_to_chart.bin', 'wb') as fp:
             pickle.dump(star_descriptions, fp)
 
-    print("Printing star_descriptions coordinates:")
+    logging.info("Printing star_descriptions coordinates:")
     for star in star_descriptions:
         print(star.local_id, star.coords, star.match[0].coords, star.match)
 
+    logging.info(f'Getting star description of comparison star: {comparison_stars_1[:1]}')
     comp_star_description = do_calibration.get_star_descriptions(comparison_stars_1[:1])
-    print('Got comparison star description: ', comp_star_description)
+    logging.info(f'Adding ucac4 info to comparison stars: {comp_star_description}')
     comparison_stars_1 = do_calibration.add_ucac4_to_star_descriptions(comp_star_description)
-    print("Got comparison star description + ucac4 id: ", comparison_stars_1)
+
     if np.isnan(comparison_stars_1[0].vmag):
         print("Comparison star has nan vmag, will screw up everything coming after")
         exit()
     # add ucac4 to star_descriptions (why???)
+    logging.info(f"Adding ucac4 to all stars of interest: {star_descriptions}")
     star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
 
     if do_lightcurve_plot or do_phase_diagram:
-        print("starting charting / phase diagrams")
+        logging.info("starting charting / phase diagrams...")
         do_charts.run(star_descriptions_ucac4, comparison_stars_1, do_lightcurve_plot, do_phase_diagram)
 
     if do_field_charting:
+        logging.info("Starting field chart plotting...")
         do_field_charts.run_standard_field_charts(vsx_star_descriptions, wcs)
         do_stats_charts.plot_cumul_histo_detections()
 
     #import code
     #code.InteractiveConsole(locals=dict(globals(), **locals())).interact()
     if do_reporting:
-        print("AAVSO Reporting with: {} stars".format(len(star_descriptions_ucac4)))
+        logging.info(f"AAVSO Reporting with: {len(star_descriptions_ucac4)} stars")
         trash_and_recreate_dir(init.aavsoreportsdir)
         for star in star_descriptions_ucac4:
             do_aavso_report.report(init.aavsoreportsdir, star, comp_star_description[0])

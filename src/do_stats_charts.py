@@ -9,12 +9,14 @@ import init
 
 def plot_cumul_histo_detections(savefig=True):
     result = read_lightcurves()
+    fig_size = (36, 32)
+    dpi=100
     #print(len(result))
     keys = result.keys()
     values = list(map(lambda x: x[0]/x[1]*100, result.values()))
     #print(len(keys), len(values))
     num_bins = 10
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=fig_size, dpi=dpi, facecolor='w', edgecolor='k')
 
     # the histogram of the data
     n, bins, patches = ax.hist(values, num_bins, density=1)
@@ -23,7 +25,7 @@ def plot_cumul_histo_detections(savefig=True):
     #y = ((1 / (np.sqrt(2 * np.pi) * sigma)) *
     #     np.exp(-0.5 * (1 / sigma * (bins - mu))**2))
     #ax.plot(bins, range(1,50), '--')
-    ax.set_xlabel('% of star detections, on which star was found')
+    ax.set_xlabel('% of stary detections, on which star was found')
     ax.set_ylabel('Nr of stars')
     ax.set_title(r'Cumulative histogram of star detections')
     ax.grid(True)
@@ -43,7 +45,7 @@ def plot_cumul_histo_detections(savefig=True):
     if savefig:
         save(fig, init.fieldchartsdirs + 'cumul_histo_detections.png')
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=fig_size, dpi=dpi, facecolor='w', edgecolor='k')
     ax.set_xlabel('star number')
     ax.set_ylabel('Star is in % of images')
     ax.set_title(r'Barchart of on which % of images the star is seen')
