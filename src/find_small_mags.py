@@ -1,4 +1,4 @@
-import do_photometry as dop
+import do_aperture as dop
 import init
 import glob
 import argparse

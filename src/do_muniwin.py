@@ -4,12 +4,12 @@ import do_charts
 import do_field_charts
 import do_stats_charts
 import do_aperture
-import do_photometry as dophoto
 import do_lightcurve as dolight
+from do_lightcurve import join_check_stars_string
+import read_photometry
 import reading
 from reading import trash_and_recreate_dir
 from reading import reduce_star_list
-from do_lightcurve import join_check_stars_string
 import pandas as pd
 import numpy as np
 import multiprocessing as mp
@@ -186,6 +186,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
         logging.info("Writing photometry...")
         write_photometry()
 
+
     if do_match:
         logging.info("Performing matching...")
         pool = mp.Pool(init.nr_threads, maxtasksperchild=100)
@@ -200,7 +201,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
 
     if do_aperture_search:
         logging.info("Searching best aperture...")
-        stddevs, _, apertures, apertureidx, _, _, compstar = dophoto.main(the_dir=init.matchedphotometrydir, percentage=init.aperture_find_percentage)
+        stddevs, _, apertures, apertureidx, _, _, compstar = do_aperture.main(the_dir=init.matchedphotometrydir, percentage=init.aperture_find_percentage)
         comparison_stars_1 = compstar
         aperture = apertures[apertureidx]
         # with open(init.basedir + 'check_stars_list.bin', 'wb') as fp:
@@ -218,10 +219,9 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
         logging.info(f"comparison stars: {comparison_stars_1}")
         logging.info(f"aperture: {aperture}, apertures:{apertures}")
 
-    #if do_lightcurve: do_write_curve(init.star_list, comparison_stars_1, 3.82, do_lightcurve_resume)
-    if do_lightcurve:
-        logging.info("Writing lightcurves...")
-        dolight.main(init.star_list, comparison_stars_1, aperture, int(apertureidx), do_lightcurve_resume)
+    #def read_pht(matched_files_tuple, star_range_0, apertureidx):
+
+    jd, fwhm, star_result = read_photometry.read_photometry(init.star_list, apertureidx)
 
     if do_pos:
         logging.info("Writing positions of all stars on the reference image...")
@@ -279,18 +279,23 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
     logging.info(f'Getting star description of comparison star: {comparison_stars_1[:1]}')
     comp_star_description = do_calibration.get_star_descriptions(comparison_stars_1[:1])
     logging.info(f'Adding ucac4 info to comparison stars: {comp_star_description}')
-    comparison_stars_1 = do_calibration.add_ucac4_to_star_descriptions(comp_star_description)
+    comparison_stars_1_desc = do_calibration.add_ucac4_to_star_descriptions(comp_star_description)
 
-    if np.isnan(comparison_stars_1[0].vmag):
+    if np.isnan(comparison_stars_1_desc[0].vmag):
         print("Comparison star has nan vmag, will screw up everything coming after")
         exit()
     # add ucac4 to star_descriptions (why???)
     logging.info(f"Adding ucac4 to all stars of interest: {star_descriptions}")
     star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
 
+    if do_lightcurve:
+        logging.info(f"Writing lightcurves... {[x.local_id for x in star_descriptions_ucac4]}")
+        dolight.write_lightcurves([x.local_id for x in star_descriptions_ucac4],
+                                  comparison_stars_1, aperture, int(apertureidx), jd, fwhm, star_result)
+
     if do_lightcurve_plot or do_phase_diagram:
         logging.info("starting charting / phase diagrams...")
-        do_charts.run(star_descriptions_ucac4, comparison_stars_1, do_lightcurve_plot, do_phase_diagram)
+        do_charts.run(star_descriptions_ucac4, comparison_stars_1_desc, do_lightcurve_plot, do_phase_diagram)
 
     if do_field_charting:
         logging.info("Starting field chart plotting...")

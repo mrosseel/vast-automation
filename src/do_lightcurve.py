@@ -7,122 +7,34 @@ from reading import trash_and_recreate_dir
 from reading import reduce_star_list
 from tqdm import tqdm
 from functools import partial
-from subprocess import call
 import multiprocessing as mp
 from multiprocessing.pool import ThreadPool
-from do_photometry import read_pht_file
+from read_pht import read_pht_file
 import glob
 import numpy as np
 import math
-import sys
+import logging
 from typing import List
 
-photometry=None
 preamble=None
+star_result = None
 Vector = List[float]
 MAX_MAG = 99.99999
 MAX_ERR = 9.99999
 STAR_DATA_MB=1.5274047851562502e-05 # the size of the data of one star
-star_result = None
 
-# star_list is ignored for the moment or always if it's fast enough
-def main(star_list_1_orig, check_stars_1, aperture, apertureidx, is_resume):
-    if not is_resume:
-        trash_and_recreate_dir(init.lightcurvedir)
-        star_list_1 = star_list_1_orig
-    else:
-        star_list_1 = reduce_star_list(star_list_1_orig, init.lightcurvedir)
+def write_lightcurves(star_list_1, check_stars_1, aperture, apertureidx, jd, fwhm, star_result_):
+    trash_and_recreate_dir(init.lightcurvedir)
 
     global preamble
     preamble = init_preamble(aperture, check_stars_1)
-    #print("Preamble is", preamble)
-    # chop up the stars into parts of CHUNK_SIZE each
-    matched_files = glob.glob(init.matchedphotometrydir+"*.pht") # todo extract dir, pattern
-
-    # calculate possible batch size
-    chunk_one = (init.free_memory_GB / (len(star_list_1)*len(matched_files)*STAR_DATA_MB/1024))*len(star_list_1)
-    chunk_two = len(star_list_1)
-    chunk_size = min(chunk_one, chunk_two)
-    star_ranges = chunks(star_list_1, chunk_size)
-    print(f"Reading {chunk_size}/{len(star_list_1)} stars per batch.")
-
-    # pool = mp.Pool(init.nr_threads, maxtasksperchild=None)
-    pool = ThreadPool(1)
-    func = partial(read_and_write_star_data, check_stars_1=check_stars_1, aperture=aperture, apertureidx=apertureidx, matched_files=matched_files)
-    #print("Writing star lightcurves for", len(star_list_1), "stars into", init.lightcurvedir)
-    for _ in pool.imap_unordered(func, star_ranges):
-        pass
-
-#   the func is now passed a range of stars to process. We now need to iterate through all the pht files
-#   and extract info about ONLY those stars, then write them to file. Maybe dense numpy lists with the range as index?
-def read_and_write_star_data(star_range_1, check_stars_1, aperture, apertureidx, matched_files):
-    #print(f"Read and write star data with range {star_range_1}")
-    jd, fwhm, star_result_ = read_star_data(star_range_1, matched_files, apertureidx)
     global star_result
     star_result = star_result_
     pool = mp.Pool(init.nr_threads*2, maxtasksperchild=None)
     func = partial(write_lightcurve, check_stars_1=check_stars_1, aperture=aperture, apertureidx=apertureidx, jd=jd, fwhm=fwhm)
-
-    #print("Writing star lightcurves for", len(star_list_1), "stars into", init.lightcurvedir)
-    for _ in tqdm(pool.imap_unordered(func, star_range_1), total=len(star_range_1), desc='Writing lightcurve'):
+    logging.debug("Writing star lightcurves for", len(star_list_1), "stars into", init.lightcurvedir)
+    for _ in tqdm(pool.imap_unordered(func, star_list_1), total=len(star_list_1), desc='Writing lightcurve'):
         pass
-
-def read_star_data(star_range_1, matched_files, apertureidx):
-    #print(f"Read star data with range {star_range_1}")
-    nrfiles = len(matched_files)
-    nrstars = len(star_range_1)
-    star_range_0 = np.array(star_range_1) - 1
-    star_result_ = np.empty([nrfiles, nrstars, 2],dtype=float)
-    fwhm = np.empty([nrfiles, 3], dtype=float)
-    jd = np.empty([nrfiles], dtype=float)
-
-    pbar = tqdm(total=len(matched_files))
-    pool = mp.Pool(init.nr_threads*2, maxtasksperchild=None)
-    func = partial(read_pht, star_range_0=star_range_0, apertureidx=apertureidx)
-
-    for fileidx, jd_, fwhm_, collected in pool.imap_unordered(func, enumerate(matched_files)):
-        jd[fileidx] = jd_
-        fwhm[fileidx] = fwhm_
-        star_result_[fileidx] = collected
-        pbar.update(1)
-    pbar.close()
-    return jd, fwhm, star_result_
-
-def read_pht(matched_files_tuple, star_range_0, apertureidx):
-    fileContent = None
-    fileidx = matched_files_tuple[0]
-    file_entry = matched_files_tuple[1]
-    # open the file for reading
-    with open(file_entry, mode='rb') as file: # b is important -> binary
-        fileContent = file.read()
-        jd_, fwhm_, collect = read_and_collect_pht(file_entry, fileContent, apertureidx, len(star_range_0))
-        # print("Collect shape", collect.shape)
-        # print(f"fileidx: {fileidx}, star_range_0 len: {len(star_range_0)}, collect[apixd] len: {len(collect[apertureidx])}, {star_range_0}")
-        # print("collect apertureidx", apertureidx, collect[apertureidx][0:14])
-        collected = collect[star_range_0]
-        # print("collected:", collected[13])
-        # print("Collected is:", collected, collected.shape)
-        # star_result[fileidx] = collected
-        return fileidx, jd_, fwhm_, collected
-
-def read_and_collect_pht(file_entry, fileContent, apertureidx:int, star_range_length):
-    # print(f"Read and collect pht: {file_entry}")
-    # Star = namedtuple('Star', 'id, ref_id, x, y, skymed, skysig, fwhm')
-    # StarData = namedtuple('StarData', 'mag, err, code')
-    photheader, _, _, stars, stardata = read_pht_file(file_entry, fileContent, only_apertureidx=apertureidx)
-    collect = np.empty([star_range_length, 2],dtype=float) # we don't use nrstars because this could be e.g. 1000, but with stars which have id's > 1000
-
-    # print("\tDate from header:",photheader.jd, "fwhm:", photheader.fwhm_mean)
-    fwhm = [photheader.fwhm_exp, photheader.fwhm_mean, photheader.fwhm_err]
-    jd = photheader.jd
-    # logging.debug(f"the result is {result[0]}")
-
-    # for every star
-    for staridx, starentry in enumerate(stardata):
-        # if stars[staridx].ref_id-1 == 13:
-        #   print("readandcollectpht:", [starentry.mag, starentry.err], stars[staridx].ref_id-1)
-        collect[stars[staridx].ref_id-1] = [starentry.mag, starentry.err]
-    return jd, fwhm, collect
 
 def write_lightcurve(star_1: int, check_stars_1: Vector, aperture: float, apertureidx: int, jd: float, fwhm: float):
     #print(f"Write lightcurve for star:", star_1)
