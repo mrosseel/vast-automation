@@ -13,7 +13,7 @@ def plot_cumul_histo_detections(savefig=True):
     dpi=100
     #print(len(result))
     keys = result.keys()
-    values = list(map(lambda x: x[0]/x[1]*100, result.values()))
+    values = list(map(lambda x: x[0]/x[1]*100, result.to_numpy()))
     #print(len(keys), len(values))
     num_bins = 10
     fig, ax = plt.subplots(figsize=fig_size, dpi=dpi, facecolor='w', edgecolor='k')

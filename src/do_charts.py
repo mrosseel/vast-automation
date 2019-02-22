@@ -73,6 +73,7 @@ def plot_lightcurve(tuple, comparison_stars):
 #    except:
 #        print("error", tuple)
 
+
 def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
     star_description = tuple[0]
     curve = tuple[1]
@@ -84,9 +85,9 @@ def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
     if curve is None:
         print("Curve of star {} is None".format(star))
         return
-    t_np = curve['JD'].values()
-    y_np = curve['V-C'].values()
-    dy_np = curve['s1'].values()
+    t_np = curve['JD'].to_numpy()
+    y_np = curve['V-C'].to_numpy()
+    dy_np = curve['s1'].to_numpy()
     if period is None:
         period_max = np.max(t_np)-np.min(t_np)
         if period_max <= 0.01:
@@ -132,6 +133,8 @@ def read_lightcurves(star_pos, star_descriptions, comparison_stars, do_charts, d
             print("No lightcurve found for star", star_description.local_id)
             return
         # adding vmag of comparison star to all diff mags
+        # TODO: this is wrong, should be composition of all comparison stars. To do error propagation use quadrature
+        # rule: http://ipl.physics.harvard.edu/wp-uploads/2013/03/PS3_Error_Propagation_sp13.pdf
         df['V-C'] = df['V-C'] + comparison_stars[0].vmag
         tuple = star_description, df
         if do_charts:
