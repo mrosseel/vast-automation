@@ -22,7 +22,7 @@ RUN pip install --upgrade pip && \
 RUN conda update -y scikit-learn matplotlib && \
 #RUN git clone https://github.com/mrosseel/upsilon.git
     git clone https://github.com/dwkim78/upsilon.git  && \
-    mkdir -p .jupyter && \
+    mkdir -p .jupyter
 COPY jupyter_notebook_config.json .jupyter/jupyter_notebook_config.json
 USER root
 RUN chmod 777 .jupyter/jupyter_notebook_config.json
