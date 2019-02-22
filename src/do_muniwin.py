@@ -158,9 +158,9 @@ def world_pos(star, wcs, reference_frame_index):
     f = open(reading.get_pos_filename(star))
     pixel_coords = f.readlines()[2].split()[1:3] # there is only one position line, that of the reference frame
     f.close()
-    print("pixel coords read of star", star, pixel_coords)
+    logging.debug(f"pixel coords read of star {star}, {pixel_coords}")
     world_coords = wcs.all_pix2world(float(pixel_coords[0]), float(pixel_coords[1]), 0, ra_dec_order=True)
-    print("world coords for star", star, world_coords)
+    logging.debug(f"world coords for star {star}, {world_coords}")
     f2 = open(reading.get_worldpos_filename(star), 'w')
     f2.write(str(world_coords[0]) + " " + str(world_coords[1]))
     f2.close()
