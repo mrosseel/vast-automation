@@ -330,6 +330,7 @@ if __name__ == '__main__':
     print("Press Enter to continue...")
     subprocess.call("read -t 10", shell=True, executable='/bin/bash')
     logging.getLogger().setLevel(logging.INFO)
+    logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
     run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_aperture_search, init.do_lightcurve,
                 init.do_lightcurve_resume, init.do_pos, init.do_pos_resume,
                 init.do_ml, init.do_lightcurve_plot, init.do_phase_diagram, init.do_field_charts, init.do_reporting)

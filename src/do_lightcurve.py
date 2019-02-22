@@ -60,7 +60,6 @@ def read_and_write_star_data(star_range_1, check_stars_1, aperture, apertureidx,
     jd, fwhm, star_result_ = read_star_data(star_range_1, matched_files, apertureidx)
     global star_result
     star_result = star_result_
-    print("star result 14 is ", star_result[86, 13])
     pool = mp.Pool(init.nr_threads*2, maxtasksperchild=None)
     func = partial(write_lightcurve, check_stars_1=check_stars_1, aperture=aperture, apertureidx=apertureidx, jd=jd, fwhm=fwhm)
 
@@ -85,7 +84,6 @@ def read_star_data(star_range_1, matched_files, apertureidx):
         jd[fileidx] = jd_
         fwhm[fileidx] = fwhm_
         star_result_[fileidx] = collected
-        print("readstardata:", collected[13], "fileidx", fileidx)
         pbar.update(1)
     pbar.close()
     return jd, fwhm, star_result_
@@ -99,10 +97,10 @@ def read_pht(matched_files_tuple, star_range_0, apertureidx):
         fileContent = file.read()
         jd_, fwhm_, collect = read_and_collect_pht(file_entry, fileContent, apertureidx, len(star_range_0))
         # print("Collect shape", collect.shape)
-        print(f"fileidx: {fileidx}, star_range_0 len: {len(star_range_0)}, collect[apixd] len: {len(collect[apertureidx])}, {star_range_0}")
-        print("collect apertureidx", apertureidx, collect[apertureidx][0:14])
+        # print(f"fileidx: {fileidx}, star_range_0 len: {len(star_range_0)}, collect[apixd] len: {len(collect[apertureidx])}, {star_range_0}")
+        # print("collect apertureidx", apertureidx, collect[apertureidx][0:14])
         collected = collect[star_range_0]
-        print("collected:", collected[13])
+        # print("collected:", collected[13])
         # print("Collected is:", collected, collected.shape)
         # star_result[fileidx] = collected
         return fileidx, jd_, fwhm_, collected
@@ -121,10 +119,9 @@ def read_and_collect_pht(file_entry, fileContent, apertureidx:int, star_range_le
 
     # for every star
     for staridx, starentry in enumerate(stardata):
-        if stars[staridx].ref_id-1 == 13:
-            print("readandcollectpht:", [starentry.mag, starentry.err], stars[staridx].ref_id-1)
-        # collect[stars[staridx].ref_id-1] = [starentry.mag, starentry.err]
-        collect[staridx] = [starentry.mag, starentry.err]
+        # if stars[staridx].ref_id-1 == 13:
+        #   print("readandcollectpht:", [starentry.mag, starentry.err], stars[staridx].ref_id-1)
+        collect[stars[staridx].ref_id-1] = [starentry.mag, starentry.err]
     return jd, fwhm, collect
 
 def write_lightcurve(star_1: int, check_stars_1: Vector, aperture: float, apertureidx: int, jd: float, fwhm: float):
@@ -147,8 +144,8 @@ def write_lightcurve(star_1: int, check_stars_1: Vector, aperture: float, apertu
         C, Cerr = calculate_synthetic_c(star_result[fileidx], check_stars_0)
         if C == 0 and Cerr == 0: continue # abort if one of the comparison stars is not available
         Cerr = min(MAX_ERR, Cerr)
-        if star_1 == 14:
-            print(f"fileidx {fileidx}, V:{V}, V2:{star_result[fileidx][star_0][0]} Verr: {Verr}, Star_1: {star_1}, C: {C}, Cerr: {Cerr}")
+        # if star_1 == 14:
+        #     print(f"fileidx {fileidx}, V:{V}, V2:{star_result[fileidx][star_0][0]} Verr: {Verr}, Star_1: {star_1}, C: {C}, Cerr: {Cerr}")
 
         linedata = [(V-C, math.sqrt(Verr**2 + Cerr**2)), (V, Verr), (C, Cerr)] \
             + [(star_result[fileidx][checkstar_0][0], star_result[fileidx][checkstar_0][1]) for checkstar_0 in check_stars_0]

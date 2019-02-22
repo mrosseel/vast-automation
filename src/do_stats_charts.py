@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import glob
 import init
+from functools import partial
+import multiprocessing as mp
+
 
 #### Create charts showing statistics on the detected stars, variables, ...
 
@@ -60,16 +63,23 @@ def plot_cumul_histo_detections(savefig=True):
 def read_lightcurves():
     files = glob.glob(init.lightcurvedir+'*.txt')
     result = {}
-    for file in files:
-        df = pd.read_csv(file, skiprows=[1], sep=' ')
-        length = len(df.index)
-        df = df[df['V-C'] < 99]
-        filterlength = len(df.index)
-        #print (filterlength/length)
-        result[file] = [filterlength, length]
-    #df.head()
-    #print(result)
+    pool = mp.Pool(init.nr_threads*2, maxtasksperchild=None)
+    # func = partial(write_lightcurve, check_stars_1=check_stars_1, aperture=aperture, apertureidx=apertureidx, jd=jd, fwhm=fwhm)
+
+    for file, partial_result in tqdm(pool.imap_unordered(read_lightcurve, files), total=len(files), desc='Reading all lightcurves'):
+        result[file] = partial_result
+
     return result
+
+def read_lightcurve(file):
+    df = pd.read_csv(file, skiprows=[1], sep=' ')
+    length = len(df.index)
+    df = df[df['V-C'] < 99]
+    filterlength = len(df.index)
+    #print (filterlength/length)
+    return file, [filterlength, length]
+
+
 
 def save(fig, path):
     fig.savefig(path)
