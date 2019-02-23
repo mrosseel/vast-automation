@@ -7,7 +7,7 @@ Once you're in this VM, all python commands can be run.
 
 * have a working docker installation: https://www.docker.com/community-edition
 * cd docker
-* docker build . -t miker/jupyter
+* docker build . -t mrosseel/munipack-automation
 * cd ..
 * command: `./startJupyter.sh`
 * you are automatically logged into a root shell of the docker container
