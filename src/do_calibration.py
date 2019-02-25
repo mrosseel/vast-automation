@@ -394,5 +394,10 @@ def get_vizier_field(center_coord, radius, catalog, row_limit=2):
     result = v.query_region(center_coord,
                             radius=radius,
                             catalog=[catalog])
-    df = result[0].to_pandas() if len(result) > 0 else None
+    print(result)
+    try:
+        df = result[0].to_pandas() if len(result) > 0 else None
+    except:
+        logging.error("Error processing vizier results in do_calibration")
+        return None
     return df

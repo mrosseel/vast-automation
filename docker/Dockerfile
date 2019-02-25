@@ -28,5 +28,5 @@ USER root
 RUN chmod 777 .jupyter/jupyter_notebook_config.json
 WORKDIR /home/jovyan/upsilon
 RUN python3 setup.py install
-WORKDIR /home/jovyan/
+WORKDIR /home/jovyan/work
 USER $NB_USER

@@ -67,6 +67,12 @@ def main(the_dir, match_files='match*.pht', percentage=0.1):
     import warnings
     warnings.simplefilter('error', UserWarning)
     logging.info("Calculating stddevs...")
+    # pool = mp.Pool(init.nr_threads*2, maxtasksperchild=None)
+    # func = partial(write_lightcurve, check_stars_1=check_stars_1, aperture=aperture, apertureidx=apertureidx, jd=jd, fwhm=fwhm)
+    # logging.debug("Writing star lightcurves for", len(star_list_1), "stars into", init.lightcurvedir)
+    # for _ in tqdm(pool.imap_unordered(func, star_list_1), total=len(star_list_1), desc='Writing lightcurve'):
+    #     pass
+
     for apidx in tqdm(range(len(collect)), desc="Calculating stddevs"):
         for staridx in range(len(collect[apidx])):
             # print(apidx, staridx)
@@ -89,8 +95,13 @@ def main(the_dir, match_files='match*.pht', percentage=0.1):
 
     apertureidx = np.abs(apertures - median_multiply).argmin()
     logging.info(f"FWHM median: {median_multiply} aperture chosen is: {apertures[apertureidx]}")
-
-    compstars_0 = np.argpartition(stddevs[apertureidx], range(3))[:3]
+    # winners = np.argwhere(np.amax(counts[apertureidx])).flatten()
+    winners = np.argwhere(counts[apertureidx][counts[apertureidx] > np.max(counts[apertureidx])*0.9]).flatten()
+    # winners = counts[apertureidx][counts[apertureidx] > np.max(counts[apertureidx])*0.9]
+    logging.info(f"Winners: {winners}")
+    winnerslice = stddevs[apertureidx][winners]
+    nrtopstars = min(3, len(winnerslice))
+    compstars_0 = np.argpartition(winnerslice, range(nrtopstars))[:nrtopstars]
 
     #compstar_0 = np.argmin(stddevs[apertureidx], axis=0)
     logging.info(f"Compstars_0 with minimum stdev in the chosen aperture: {compstars_0}")

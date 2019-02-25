@@ -131,10 +131,10 @@ def do_write_pos(star_list, check_stars_list, aperture, is_resume, matched_refer
         pass
 
 def do_write_curve(star_list, check_stars_1, aperture, is_resume):
-    if not is_resume:
-        trash_and_recreate_dir(init.lightcurvedir)
-    else:
-        star_list = reduce_star_list(star_list, init.lightcurvedir)
+    # if not is_resume:
+    #     trash_and_recreate_dir(init.lightcurvedir)
+    # else:
+    #     star_list = reduce_star_list(star_list, init.lightcurvedir)
     #check_stars_0 = np.array(check_stars_list_1) - 1
     pool = mp.Pool(init.nr_threads, maxtasksperchild=100)
     func = partial(write_lightcurve, check_stars_list_1=check_stars_1, aperture=aperture)
@@ -281,6 +281,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
     logging.info(f'Adding ucac4 info to comparison stars: {comp_star_description}')
     comparison_stars_1_desc = do_calibration.add_ucac4_to_star_descriptions(comp_star_description)
 
+    logging.debug(f"Comparison stars: {comparison_stars_1_desc[0]}")
     if np.isnan(comparison_stars_1_desc[0].vmag):
         print("Comparison star has nan vmag, will screw up everything coming after")
         exit()
@@ -290,8 +291,10 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
 
     if do_lightcurve:
         logging.info(f"Writing lightcurves... {[x.local_id for x in star_descriptions_ucac4]}")
-        dolight.write_lightcurves([x.local_id for x in star_descriptions_ucac4],
+        chosen_stars = [x.local_id for x in star_descriptions_ucac4]
+        dolight.write_lightcurves(chosen_stars,
                                   comparison_stars_1, aperture, int(apertureidx), jd, fwhm, star_result)
+        do_write_curve(chosen_stars, comparison_stars_1, aperture, False)
 
     if do_lightcurve_plot or do_phase_diagram:
         logging.info("starting charting / phase diagrams...")
