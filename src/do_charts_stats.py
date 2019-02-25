@@ -13,11 +13,12 @@ import multiprocessing as mp
 
 def plot_cumul_histo_detections(savefig=True):
     result = read_lightcurves()
+    matplotlib.rcParams.update({'font.size': 38})
     fig_size = (36, 32)
     dpi=100
     #print(len(result))
     keys = result.keys()
-    values = list(map(lambda x: x[0]/x[1]*100, result.to_numpy()))
+    values = list(map(lambda x: x[0]/x[1]*100, result.values()))
     #print(len(keys), len(values))
     num_bins = 10
     fig, ax = plt.subplots(figsize=fig_size, dpi=dpi, facecolor='w', edgecolor='k')
@@ -60,6 +61,21 @@ def plot_cumul_histo_detections(savefig=True):
     plt.show()
     save(fig, init.fieldchartsdirs + 'barcharts.png')
 
+def plot_fwhm(fwhm):
+    fig_size = (36, 32)
+    dpi=100
+    matplotlib.rcParams.update({'font.size': 38})
+
+    fig, ax = plt.subplots(figsize=fig_size, dpi=dpi, facecolor='w', edgecolor='k')
+    ax.set_xlabel('Image number')
+    ax.set_ylabel('FWHM')
+    ax.set_title(r'Progress over time of the FWHM per image')
+    ax.grid(True)
+    xaxis = range(0, len(fwhm))
+    plt.bar(x=xaxis, height=np.take(fwhm, 1, axis=1), width=1)
+    plt.show()
+    save(fig, init.fieldchartsdirs + 'fwhm.png')
+
 
 def read_lightcurves():
     files = glob.glob(init.lightcurvedir+'*.txt')
@@ -80,8 +96,11 @@ def read_lightcurve(file):
     #print (filterlength/length)
     return file, [filterlength, length]
 
-
-
 def save(fig, path):
     fig.savefig(path)
     plt.close(fig)
+
+
+def main(fwhm):
+    plot_cumul_histo_detections()
+    plot_fwhm(fwhm)

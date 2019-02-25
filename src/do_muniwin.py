@@ -1,8 +1,8 @@
 import init
 import do_calibration
 import do_charts
-import do_field_charts
-import do_stats_charts
+import do_charts_field
+import do_charts_stats
 import do_aperture
 import do_lightcurve as dolight
 from do_lightcurve import join_check_stars_string
@@ -273,8 +273,8 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
             pickle.dump(star_descriptions, fp)
 
     logging.info("Printing star_descriptions coordinates:")
-    for star in star_descriptions:
-        print(star.local_id, star.coords, star.match[0].coords, star.match)
+    # for star in star_descriptions:
+    #     print(star.local_id, star.coords, star.match[0].coords, star.match)
 
     logging.info(f'Getting star description of comparison star: {comparison_stars_1[:1]}')
     comp_star_description = do_calibration.get_star_descriptions(comparison_stars_1[:1])
@@ -302,8 +302,8 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
 
     if do_field_charting:
         logging.info("Starting field chart plotting...")
-        do_field_charts.run_standard_field_charts(vsx_star_descriptions, wcs)
-        do_stats_charts.plot_cumul_histo_detections()
+        do_charts_field.run_standard_field_charts(vsx_star_descriptions, wcs)
+        do_charts_stats.main(fwhm)
 
     #import code
     #code.InteractiveConsole(locals=dict(globals(), **locals())).interact()

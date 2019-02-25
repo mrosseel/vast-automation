@@ -44,7 +44,7 @@ np_dtype = np.dtype([('id', np.int), ('ref_id', np.int), ('x', np.float), ('y', 
 MAGIC_STRING = "C-Munipack photometry file\r\n" # length is 28
 
 # if only_apertureidx is provided, the returned stardata is a flat arrray, otherwise it's 2d (stars, apertures)
-def read_pht_file(the_file, fileContent, only_apertureidx: int =-1, read_stars=True):
+def read_pht_file(the_file, fileContent, only_apertureidx: int =-1, read_stars=True, check=True):
     assert type(only_apertureidx) == int
     logging.debug(f"The file:{the_file}")
     ############################### HEADER ###############################################
@@ -52,6 +52,8 @@ def read_pht_file(the_file, fileContent, only_apertureidx: int =-1, read_stars=T
     logging.debug(f"header length is {headerlength}")
     unp = unpack_headerformat(fileContent[:headerlength])
     photheader = PhotHeader._make(unp)
+    if check:
+        assert bytes(MAGIC_STRING, encoding='utf-8') == photheader.magic
     for name, entry in photheader._asdict().items():
         logging.debug(f"{name}: {entry}")
     ############################### WCS ###############################################
