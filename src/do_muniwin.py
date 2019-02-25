@@ -61,17 +61,19 @@ def write_convert_fits():
     trash_and_recreate_dir(init.convfitsdir)
     os.system('konve ' + init.fitsdir + '*.fit -o ' + init.convfitsdir + 'kout??????.fts')
 
-def write_photometry():
+def write_photometry(use_config=True):
     print("write photometry")
     trash_and_recreate_dir(init.photometrydir)
-    os.system('muniphot ' + init.convfitsdir + '*.fts -p muniphot.conf -o ' + init.photometrydir + 'phot??????.pht')
+    config_file = f'-p muniphot.conf' if use_config else ''
+    os.system(f"muniphot {init.convfitsdir + '*.fts'} {config_file} -o {init.photometrydir + 'phot??????.pht'}")
 
-def write_match(to_match_photomotry_file, base_photometry_file):
+def write_match(to_match_photomotry_file, base_photometry_file, use_config=True):
     # find the number part of to_match_photomotry_file
     m = re.search(r'(\d+)', to_match_photomotry_file)
     numbers = m.group(0)
     # see munimatch.c for arguments of config file
-    os.system('munimatch -p ' + init.codedir + 'match.conf ' + base_photometry_file + ' ' + init.photometrydir + to_match_photomotry_file + ' -o ' + init.matchedphotometrydir + 'match'+numbers+'.pht')
+    config_file = f'-p {init.codedir + "match.conf"}' if use_config else ''
+    os.system(f'munimatch {config_file} {base_photometry_file} {init.photometrydir + to_match_photomotry_file} -o {init.matchedphotometrydir + "match"+numbers+".pht"}')
 
 # percentage is between 0 and 1
 def write_munifind_dirfile(match_pattern, percentage=1):
@@ -184,7 +186,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
 
     if do_photometry:
         logging.info("Writing photometry...")
-        write_photometry()
+        write_photometry(use_config=False)
 
 
     if do_match:
@@ -193,7 +195,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
         ref_frame = do_calibration.find_reference_photometry(reference_frame_index)
         file_list = reading.get_files_in_dir(init.photometrydir)
         file_list.sort()
-        func = partial(write_match, base_photometry_file=ref_frame)
+        func = partial(write_match, base_photometry_file=ref_frame, use_config=False) # Not using config file for testing
         print("Writing matches for", len(file_list), "stars with reference frame", ref_frame)
         trash_and_recreate_dir(init.matchedphotometrydir)
         for _ in tqdm.tqdm(pool.imap_unordered(func, file_list, 10), total=len(file_list)):

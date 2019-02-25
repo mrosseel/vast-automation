@@ -126,7 +126,7 @@ def calculate_synthetic_c(star_result_file, check_stars_0):
         mag = star_result_file[entry][0]
         err = star_result_file[entry][1]
         if is_valid(mag, err):
-            cmag += math.pow(10, -0.4*mag)
+            cmag += np.power(10, -0.4*mag)
             cerr += err
             valid += 1
     if valid == nrstars:

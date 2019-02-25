@@ -4,6 +4,7 @@ from tqdm import tqdm
 import numpy as np
 import logging
 import scipy
+import init
 from read_pht import read_pht_file
 
 # Select files conforming to the match_pattern using percentage which is between 0 and 1
@@ -20,6 +21,7 @@ def convert_to_aperture_only(apertures):
 def main(the_dir, match_files='match*.pht', percentage=0.1):
     files = select_files(the_dir, match_files, percentage)
     nrfiles = len(files)
+    detectablestars = len(init.star_list) # this is the maximum of star id's, regardless of how many are detected on an image
     logging.debug(files)
     # pre process
     apertures = []
@@ -29,7 +31,7 @@ def main(the_dir, match_files='match*.pht', percentage=0.1):
         apertures = convert_to_aperture_only(apertures)
     file.close()
     logging.info(f"Apertures: {apertures}, nr of files: {nrfiles}")
-    collect = np.empty([len(apertures), nrstars, nrfiles, 2],dtype=float)
+    collect = np.empty([len(apertures), detectablestars, nrfiles, 2],dtype=float)
     fwhm = np.empty([nrfiles, 3], dtype=float)
     jd = np.empty([nrfiles], dtype=float)
     # for all files
@@ -62,8 +64,8 @@ def main(the_dir, match_files='match*.pht', percentage=0.1):
     print("Entry for First aperture, first star:", collect[0][0])
     print("Shape for collect:", collect.shape)
     print(scipy.stats.mstats.describe(np.ma.masked_invalid(collect[2]), axis=0))
-    stddevs = np.empty([len(apertures), nrstars])
-    counts = np.empty([len(apertures), nrstars])
+    stddevs = np.empty([len(apertures), detectablestars])
+    counts = np.empty([len(apertures), detectablestars])
     import warnings
     warnings.simplefilter('error', UserWarning)
     logging.info("Calculating stddevs...")
