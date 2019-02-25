@@ -19,7 +19,7 @@ RUN pip install --upgrade pip && \
     pip install numpy && \
     pip install astropy pyreadline pyfftw tqdm photutils gatspy astroquery
 # needs at least scikit 0.18.1
-RUN conda update -y scikit-learn matplotlib && \
+RUN conda update -y scikit-learn matplotlib pandas && \
 #RUN git clone https://github.com/mrosseel/upsilon.git
     git clone https://github.com/dwkim78/upsilon.git  && \
     mkdir -p .jupyter
