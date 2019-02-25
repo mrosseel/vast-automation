@@ -19,8 +19,6 @@ STAR_DATA_MB = 1.5274047851562502e-05 # the size of the data of one star
 
 # Returns: jd[nrfiles], fwhm[nrfiles], star_result[nrfiles, nrstars, 2]
 def read_photometry(star_list_1, apertureidx):
-    trash_and_recreate_dir(init.lightcurvedir)
-
     # chop up the stars into parts of CHUNK_SIZE each
     matched_files = glob.glob(init.matchedphotometrydir+"*.pht") # todo extract dir, pattern
 

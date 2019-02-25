@@ -6,7 +6,7 @@ import logging
 import scipy
 from read_pht import read_pht_file
 
-# percentage is between 0 and 1
+# Select files conforming to the match_pattern using percentage which is between 0 and 1
 def select_files(the_dir, match_pattern, percentage=1):
     matched_files = glob.glob(the_dir+match_pattern)
     desired_length = max(1, int(len(matched_files) * percentage))
@@ -77,7 +77,8 @@ def main(the_dir, match_files='match*.pht', percentage=0.1):
         for staridx in range(len(collect[apidx])):
             # print(apidx, staridx)
             masked_collect = np.ma.masked_invalid(collect[apidx][staridx])
-            std = masked_collect.std()
+            # print("Shape of the thing we calculate stddev on:", collect[apidx][staridx].shape, collect[apidx][staridx])
+            std = masked_collect.std(axis=0)[0] # take the stddev of the magnitude
             count= masked_collect.count()
             # print("count", count)
             # print("std:", std, type(std), std is np.ma.masked)
