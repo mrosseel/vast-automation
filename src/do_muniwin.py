@@ -122,7 +122,7 @@ def write_pos(star, check_stars_list, matched_reference_frame, aperture):
     # end = time.time()
 
 
-def do_write_pos(star_list, check_stars_list, aperture, is_resume, matched_reference_frame):
+def do_write_pos(star_list, check_stars_list, aperture, matched_reference_frame, is_resume):
     if not is_resume:
         trash_and_recreate_dir(init.posdir)
     else:
@@ -229,7 +229,7 @@ def run_do_rest(do_conf, do_convert_fits, do_photometry, do_match, do_aperture_s
         logging.info("Writing positions of all stars on the reference image...")
         reference_matched = do_calibration.find_reference_matched(reference_frame_index)
         print("reference match is ", reference_matched)
-        do_write_pos(init.star_list, comparison_stars_1, aperture, reference_matched, pos_resume=False)
+        do_write_pos(init.star_list, comparison_stars_1, aperture, reference_matched, is_resume=False)
         do_world_pos(wcs, init.star_list, reference_frame_index)
 
     logging.debug("Before do ml")
