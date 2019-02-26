@@ -57,12 +57,12 @@ def do_best_comparison_stars(nrOfStars):
     return check_stars
 
 def write_convert_fits():
-    print("convert fits files to fts")
+    logging.info("Convert fits files to fts")
     trash_and_recreate_dir(init.convfitsdir)
     os.system('konve ' + init.fitsdir + '*.fit -o ' + init.convfitsdir + 'kout??????.fts')
 
 def write_photometry(use_config=True):
-    print("write photometry")
+    logging.info("Writing photometry, use_config is {use_config}")
     trash_and_recreate_dir(init.photometrydir)
     config_file = f'-p muniphot.conf' if use_config else ''
     os.system(f"muniphot {init.convfitsdir + '*.fts'} {config_file} -o {init.photometrydir + 'phot??????.pht'}")

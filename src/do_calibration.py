@@ -2,6 +2,7 @@ import os
 import glob
 import init
 import reading
+import logging
 from star_description import StarDescription
 from star_description import CatalogMatch
 from astropy.io import fits
