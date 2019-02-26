@@ -1,6 +1,8 @@
 # https://github.com/deprecated/fits2image
 import sys
 import numpy as np
+import logging
+
 try:
     from astropy.io import fits
 except ImportError:
@@ -58,12 +60,13 @@ def fitsdata_to_jpeg(data, fitsfilename):
     return imagename
 
 # limit is not used at the moment
-def runit(fitsdir, limit):
+def runit(fitsdir):
     # between 0 and 65535
     _vmin=50
     _vmax=5000
     result = []
     fitslist = glob.glob(fitsdir+'/*.fts')
+    logging.info(f"Processing {len(fitslist)} files...")
     pool = mp.Pool(init.nr_threads, maxtasksperchild=100)
     func = partial(fits_to_size, vmin=_vmin, vmax=_vmax)
     print("Calculating fits quality for", len(fitslist), " images in", fitsdir)
@@ -80,4 +83,5 @@ def runit(fitsdir, limit):
     return (bestfile, bestsize, jpegfile)
 
 if __name__ == '__main__':
+    logging.info("Starting reference frame searching...")
     runit(init.convfitsdir)

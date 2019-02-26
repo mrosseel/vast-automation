@@ -53,6 +53,7 @@ def get_reference_frame(file_limit, reference_method):
         with open(init.basedir + 'reference_frame.txt', 'w') as f:
             f.write('\n'.join(lines))
     print("Reference frame: {}, index: {}".format(reference_frame, reference_frame_index))
+    assert reference_frame_index == do_calibration.find_file_index(init.convfitsdir, reference_frame, '*.fts')
     return [reference_frame, init.convfitsdir + reference_frame, reference_frame_index]
 
 def find_file_index(the_dir, the_file, the_filter='*'):

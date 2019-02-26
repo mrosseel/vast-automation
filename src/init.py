@@ -1,8 +1,4 @@
-import numpy as np
-import multiprocessing
-
-#aperture_range = np.arange(0.2, 10, 0.2)
-aperture_range = np.arange(9, 10, 0.5)
+from multiprocessing import cpu_count
 
 all = range(1, 10001)
 thousand = range(1, 1000)
@@ -13,19 +9,20 @@ datadir = 'current/'
 aperture_find_percentage=0.05
 free_memory_GB=10
 star_list = all #[52]
-nr_threads = multiprocessing.cpu_count()
+nr_threads = cpu_count()
 
+do_conf=0
 do_convert_fits=0
-do_photometry=0
+do_photometry=1
 do_match=0
 do_aperture_search=0
-do_lightcurve=1
+do_lightcurve=0
 do_lightcurve_resume=0
 do_pos=0
 do_pos_resume=0
 do_ml=0
-do_lightcurve_plot=1
-do_phase_diagram=1
+do_lightcurve_plot=0
+do_phase_diagram=0
 do_field_charts=0
 do_reporting=0
 
@@ -35,7 +32,7 @@ ra_deg = 271.4032917
 dec_deg = -43.8326111
 sitelat = '-22 57 10'
 sitelong = '-68 10 49'
-sitealt= 350 # TODO WRONG !!!! Used in AAVSO reporting for atmospheric extinction
+sitealt= 2500
 ### CALIBRATION
 
 

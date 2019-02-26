@@ -66,7 +66,7 @@ def write_lightcurve(star_1: int, check_stars_1: Vector, aperture: float, apertu
             line += f" {min(MAX_MAG, tuple[0]):.5f} {min(MAX_ERR, tuple[1]):.5f}"
         lines.append(line)
 
-    with open(init.lightcurvedir + 'curvenew_' + str(star_1).zfill(5) + ".txt", 'wt') as f:
+    with open(init.lightcurvedir + 'curve_' + str(star_1).zfill(5) + ".txt", 'wt') as f:
         # for l in lines: f.write('%s\n' % l)
         f.write('\n'.join(lines)+'\n')
 

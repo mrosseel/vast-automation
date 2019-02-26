@@ -61,11 +61,12 @@ def write_convert_fits():
     trash_and_recreate_dir(init.convfitsdir)
     os.system('konve ' + init.fitsdir + '*.fit -o ' + init.convfitsdir + 'kout??????.fts')
 
-def write_photometry(use_config=True):
-    logging.info("Writing photometry, use_config is {use_config}")
+def write_photometry(use_config=True, custom_wildcard=None):
+    logging.info(f"Writing photometry, use_config is {use_config}")
     trash_and_recreate_dir(init.photometrydir)
     config_file = f'-p muniphot.conf' if use_config else ''
-    os.system(f"muniphot {init.convfitsdir + '*.fts'} {config_file} -o {init.photometrydir + 'phot??????.pht'}")
+    files = init.convfitsdir + '*.fts' if custom_wildcard is None else custom_wildcard
+    os.system(f"muniphot {files} {config_file} -o {init.photometrydir + 'phot??????.pht'}")
 
 def write_match(to_match_photomotry_file, base_photometry_file, use_config=True):
     # find the number part of to_match_photomotry_file
@@ -167,8 +168,7 @@ def world_pos(star, wcs, reference_frame_index):
     f2.write(str(world_coords[0]) + " " + str(world_coords[1]))
     f2.close()
 
-def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do_lightcurve, do_lightcurve_resume, do_pos,
-                do_pos_resume,
+def run_do_rest(do_conf, do_convert_fits, do_photometry, do_match, do_aperture_search, do_lightcurve, do_pos,
                 do_ml, do_lightcurve_plot, do_phase_diagram, do_field_charting, do_reporting):
     if do_convert_fits:
         logging.info("Converting fits...")
@@ -186,8 +186,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
 
     if do_photometry:
         logging.info("Writing photometry...")
-        write_photometry(use_config=False)
-
+        write_photometry(use_config=do_conf, custom_wildcard=init.convfitsdir+"kout00001?.fts")
 
     if do_match:
         logging.info("Performing matching...")
@@ -195,7 +194,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
         ref_frame = do_calibration.find_reference_photometry(reference_frame_index)
         file_list = reading.get_files_in_dir(init.photometrydir)
         file_list.sort()
-        func = partial(write_match, base_photometry_file=ref_frame, use_config=False) # Not using config file for testing
+        func = partial(write_match, base_photometry_file=ref_frame, use_config=do_conf) # Not using config file for testing
         print("Writing matches for", len(file_list), "stars with reference frame", ref_frame)
         trash_and_recreate_dir(init.matchedphotometrydir)
         for _ in tqdm.tqdm(pool.imap_unordered(func, file_list, 10), total=len(file_list)):
@@ -223,13 +222,14 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
 
     #def read_pht(matched_files_tuple, star_range_0, apertureidx):
 
+    logging.info("Loading photometry...")
     jd, fwhm, star_result = read_photometry.read_photometry(init.star_list, apertureidx)
 
     if do_pos:
         logging.info("Writing positions of all stars on the reference image...")
         reference_matched = do_calibration.find_reference_matched(reference_frame_index)
         print("reference match is ", reference_matched)
-        do_write_pos(init.star_list, comparison_stars_1, aperture, do_pos_resume, reference_matched)
+        do_write_pos(init.star_list, comparison_stars_1, aperture, reference_matched, pos_resume=False)
         do_world_pos(wcs, init.star_list, reference_frame_index)
 
     logging.debug("Before do ml")
@@ -266,9 +266,9 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
             logging.info("Adding vsx names to star_descriptions")
             star_descriptions = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions)
 
-        if not chart_upsilon:
-            logging.info("Adding upsilon data to star_descriptions")
-            star_descriptions = do_calibration.add_upsilon_data(star_descriptions)
+        # if not chart_upsilon:
+        #     logging.info("Adding upsilon data to star_descriptions")
+        #     star_descriptions = do_calibration.add_upsilon_data(star_descriptions)
 
         logging.info("Writing star_descriptions_to_chart.bin...")
         with open(init.basedir + 'star_descriptions_to_chart.bin', 'wb') as fp:
@@ -296,7 +296,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
         chosen_stars = [x.local_id for x in star_descriptions_ucac4]
         dolight.write_lightcurves(chosen_stars,
                                   comparison_stars_1, aperture, int(apertureidx), jd, fwhm, star_result)
-        do_write_curve(chosen_stars, comparison_stars_1, aperture, False)
+        # do_write_curve(chosen_stars, comparison_stars_1, aperture, False)
 
     if do_lightcurve_plot or do_phase_diagram:
         logging.info("starting charting / phase diagrams...")
@@ -325,13 +325,12 @@ def interact():
 
 if __name__ == '__main__':
     print("Calculating", len(init.star_list), "stars from base dir:", init.basedir, "\nconvert_fits:\t", init.do_convert_fits,
+    "\nUseConf:\t", init.do_conf,
     "\nphotometry:\t", init.do_photometry,
     "\nmatch:\t\t", init.do_match,
     "\naperture search:\t", init.do_aperture_search,
     "\nlightcurve:\t", init.do_lightcurve,
-    "\nlightcurve_res:\t", init.do_lightcurve_resume,
     "\npos:\t\t", init.do_pos,
-    "\npos_resume:\t", init.do_pos_resume,
     "\nupsilon:\t", init.do_ml,
     "\nlightcurve plot:\t", init.do_lightcurve_plot,
     "\nphasediagram:\t", init.do_phase_diagram,
@@ -341,6 +340,6 @@ if __name__ == '__main__':
     subprocess.call("read -t 10", shell=True, executable='/bin/bash')
     logging.getLogger().setLevel(logging.INFO)
     logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
-    run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_aperture_search, init.do_lightcurve,
-                init.do_lightcurve_resume, init.do_pos, init.do_pos_resume,
-                init.do_ml, init.do_lightcurve_plot, init.do_phase_diagram, init.do_field_charts, init.do_reporting)
+    run_do_rest(init.do_conf, init.do_convert_fits, init.do_photometry, init.do_match, init.do_aperture_search, init.do_lightcurve,
+                init.do_pos, init.do_ml, init.do_lightcurve_plot, init.do_phase_diagram,
+                ßinit.do_field_charts, init.do_reporting)
