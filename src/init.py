@@ -14,16 +14,17 @@ nr_threads = cpu_count()
 do_conf=0
 do_convert_fits=0
 do_photometry=1
-do_match=0
-do_aperture_search=0
-do_lightcurve=0
+photometry_wildcard=None  # init.convfitsdir+"kout0000??.fts"
+do_match=1
+do_aperture_search=1
+do_lightcurve=1
 do_lightcurve_resume=0
-do_pos=0
+do_pos=1
 do_pos_resume=0
 do_ml=0
-do_lightcurve_plot=0
-do_phase_diagram=0
-do_field_charts=0
+do_lightcurve_plot=1
+do_phase_diagram=1
+do_field_charts=1
 do_reporting=0
 
 ### CALIBRATION ###

@@ -186,7 +186,7 @@ def run_do_rest(do_conf, do_convert_fits, do_photometry, do_match, do_aperture_s
 
     if do_photometry:
         logging.info("Writing photometry...")
-        write_photometry(use_config=do_conf, custom_wildcard=init.convfitsdir+"kout00001?.fts")
+        write_photometry(use_config=do_conf, custom_wildcard=init.photometry_wildcard)
 
     if do_match:
         logging.info("Performing matching...")
@@ -342,4 +342,4 @@ if __name__ == '__main__':
     logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
     run_do_rest(init.do_conf, init.do_convert_fits, init.do_photometry, init.do_match, init.do_aperture_search, init.do_lightcurve,
                 init.do_pos, init.do_ml, init.do_lightcurve_plot, init.do_phase_diagram,
-                ßinit.do_field_charts, init.do_reporting)
+                init.do_field_charts, init.do_reporting)
