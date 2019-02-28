@@ -30,7 +30,7 @@ def plot_cumul_histo_detections(savefig=True):
     #y = ((1 / (np.sqrt(2 * np.pi) * sigma)) *
     #     np.exp(-0.5 * (1 / sigma * (bins - mu))**2))
     #ax.plot(bins, range(1,50), '--')
-    ax.set_xlabel('% of stary detections, on which star was found')
+    ax.set_xlabel('% of star detections, on which star was found')
     ax.set_ylabel('Nr of stars')
     ax.set_title(r'Cumulative histogram of star detections')
     ax.grid(True)

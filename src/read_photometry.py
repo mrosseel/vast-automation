@@ -26,9 +26,9 @@ def read_photometry(star_list_1, apertureidx: int, matched_files=None):
     nrfiles = len(matched_files)
     nrstars = len(star_list_1)
     star_range_0 = np.array(star_list_1) - 1
-    star_result_ = np.empty([nrfiles, nrstars, 2],dtype=float)
-    fwhm = np.empty([nrfiles, 3], dtype=float)
-    jd = np.empty([nrfiles], dtype=float)
+    star_result_ = np.full([nrfiles, nrstars, 2],np.inf, dtype=float)
+    fwhm = np.full([nrfiles, 3], np.inf, dtype=float)
+    jd = np.full([nrfiles], np.inf, dtype=float)
 
     pbar = tqdm(total=len(matched_files))
     pool = mp.Pool(init.nr_threads*2, maxtasksperchild=None)
@@ -49,7 +49,7 @@ def read_pht(matched_files_tuple, star_range_0, apertureidx: int):
     with open(file_entry, mode='rb') as file: # b is important -> binary
         fileContent = file.read()
         photheader, _, _, stars, stardata = read_pht_file(file_entry, fileContent, only_apertureidx=int(apertureidx))
-        collect = np.empty([len(init.star_list), 2],dtype=float) # we don't use nrstars because this could be e.g. 1000, but with stars which have id's > 1000
+        collect = np.full([len(init.star_list), 2],np.inf, dtype=float) # we don't use nrstars because this could be e.g. 1000, but with stars which have id's > 1000
 
         fwhm = [photheader.fwhm_exp, photheader.fwhm_mean, photheader.fwhm_err]
         jd = photheader.jd

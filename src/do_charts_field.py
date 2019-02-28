@@ -74,16 +74,20 @@ def run_standard_field_charts(vsx_star_descr, wcs):
     # reference_frame, reference_frame_index=reading.read_reference_frame()
     # reference_fits_frame=init.convfitsdir+reference_frame
     reference_fits_frame=init.reference_header
-    candidates = do_calibration.get_candidates(0.5)
+    SHOW_UPSILON = False
+
+    # if SHOW_UPSILON:
+    #     candidates = do_calibration.get_candidates(0.5)
     hand_candidates_descr = do_calibration.get_star_descriptions(init.wwcra_certain_candidates)
     all_stars_descr = do_calibration.get_star_descriptions()
 
-    # big_green = set_custom_label(comparison_  star_descr, 'comp')
-    # small_red = set_custom_label(apass_star_descr, [o.vmag for o in apass_star_descr])
-    # big_green = set_custom_label(vsx_star_descr, [o.match['catalog_dict']['name'] for o in vsx_star_descr])
-    # small_red = set_custom_label(hand_candidates_descr, [o.local_id for o in hand_candidates_descr])
-    #big_green = set_aavso_id_label(vsx_star_descr)
-    #small_red = set_local_id_label(hand_candidates_descr)
+    # if SHOW_UPSILON:
+    #     big_green = set_custom_label(comparison_  star_descr, 'comp')
+    #     small_red = set_custom_label(apass_star_descr, [o.vmag for o in apass_star_descr])
+    #     big_green = set_custom_label(vsx_star_descr, [o.match['catalog_dict']['name'] for o in vsx_star_descr])
+    #     small_red = set_custom_label(hand_candidates_descr, [o.local_id for o in hand_candidates_descr])
+    #     big_green = set_aavso_id_label(vsx_star_descr)
+    #     small_red = set_local_id_label(hand_candidates_descr)
 
     all_stars_labeled = set_custom_label(all_stars_descr, '')
     vsx_labeled = set_aavso_id_label(vsx_star_descr)

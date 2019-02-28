@@ -202,8 +202,7 @@ def run_do_rest(do_conf, do_convert_fits, do_photometry, do_match, do_aperture_s
 
     if do_aperture_search:
         logging.info("Searching best aperture...")
-        stddevs, _, apertures, apertureidx, _, _, compstar = do_aperture.main(the_dir=init.matchedphotometrydir, percentage=init.aperture_find_percentage)
-        comparison_stars_1 = compstar
+        stddevs, _, apertures, apertureidx, _, _, comparison_stars_1 = do_aperture.main(the_dir=init.matchedphotometrydir, percentage=init.aperture_find_percentage)
         aperture = apertures[apertureidx]
         # with open(init.basedir + 'check_stars_list.bin', 'wb') as fp:
         #     pickle.dump(comparison_stars_1, fp)
