@@ -114,3 +114,10 @@ def read_comparison_star():
 
 def get_files_in_dir(mypath):
     return [f for f in listdir(mypath) if isfile(join(mypath, f))]
+
+def aperture_and_compstars():
+    comparison_stars_1 = np.loadtxt(init.basedir + "comparison_stars_1.txt", dtype=int, delimiter=';')
+    apertures = np.loadtxt(init.basedir + 'apertures.txt', dtype=float, delimiter=';')
+    apertureidx = np.loadtxt(init.basedir + 'apertureidx_best.txt', dtype=int)
+    aperture = apertures[apertureidx]
+    return comparison_stars_1, apertures, apertureidx, aperture
