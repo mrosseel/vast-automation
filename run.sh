@@ -1,2 +1,3 @@
 #!/bin/bash
-python -u ./src/do_muniwin.py |& tee muni.log
+timestamp=$(date +'%m-%d-%Y-%H_%M')
+python -u ./src/do_muniwin.py |& tee munilog-$timestamp.log
