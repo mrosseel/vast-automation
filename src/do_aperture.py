@@ -5,15 +5,9 @@ import numpy as np
 import logging
 import scipy.stats
 import init
+from reading import file_selector
 from read_pht import read_pht_file
 
-# Select files conforming to the match_pattern using percentage which is between 0 and 1
-def file_selector(the_dir, match_pattern, percentage=1):
-    matched_files = glob.glob(the_dir+match_pattern)
-    desired_length = max(1, int(len(matched_files) * percentage))
-    np.random.seed(42) # for the same percentage, we always get the same selection
-    selected_files = np.random.choice(matched_files, size=desired_length, replace=False).tolist()
-    return selected_files
 
 def convert_to_aperture_only(apertures):
     return apertures[1::2]

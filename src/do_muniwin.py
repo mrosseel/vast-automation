@@ -23,7 +23,7 @@ import pickle
 import do_aavso_report
 import re
 import glob
-import random
+
 
 
 # Munifind fields: INDEX MEAN_MAG STDEV GOODPOINTS
@@ -61,29 +61,28 @@ def write_convert_fits():
     trash_and_recreate_dir(init.convfitsdir)
     os.system('konve ' + init.fitsdir + '*.fit -o ' + init.convfitsdir + 'kout??????.fts')
 
-def write_photometry(use_config=True, custom_config=None, custom_wildcard=None, custom_outputfile=None,
-                     custom_outputdir=None):
-    logging.info(f"Writing photometry, use_config is {use_config}")
+def write_photometry(config_file=init.basedir+'muniphot.conf', files=init.convfitsdir + '*.fts', outputfile='phot??????.pht',
+                         outputdir=init.photometrydir):
+    logging.info(f"Writing photometry, config_file:{config_file}, outputdir: {outputdir}, outputfile: {outputfile}...")
     trash_and_recreate_dir(init.photometrydir)
-    config_file = ''
-    if use_config:
-        if custom_config is None:
-            config_file = f'-p muniphot.conf'
-        else:
-            config_file = f'-p {custom_config}'
-    config_file = f'-p muniphot.conf' if use_config else ''
-    files = init.convfitsdir + '*.fts' if custom_wildcard is None else custom_wildcard
-    outputdir = init.photometrydir if custom_outputdir is None else custom_wildcard
-    outputfile = 'phot??????.pht' if custom_outputfile is None else custom_outputfile
-    os.system(f"muniphot {files} {config_file} -o {outputdir + outputfile}")
+    config_file_param = f'-p {config_file}' if config_file is not '' else ''
+    command = f"muniphot {files} {config_file_param} -o {outputdir + outputfile}"
+    logging.debug(f'Photometry command is: {command}')
+    subprocess.call(command, shell=True)
 
-def write_match(to_match_photomotry_file, base_photometry_file, use_config=True):
+def write_match(to_match_photomotry_file, base_photometry_file, to_match_is_full_path=False,
+                config_file=init.basedir+'match.conf', inputdir=init.photometrydir, outputdir=init.matchedphotometrydir):
     # find the number part of to_match_photomotry_file
-    m = re.search(r'(\d+)', to_match_photomotry_file)
-    numbers = m.group(0)
+    m = re.search(r'(\d+)(.pht)', to_match_photomotry_file)
+
+    numbers = m.group(0)[:-4]
+    print("numbers is",numbers, to_match_photomotry_file, m)
     # see munimatch.c for arguments of config file
-    config_file = f'-p {init.codedir + "match.conf"}' if use_config else ''
-    os.system(f'munimatch {config_file} {base_photometry_file} {init.photometrydir + to_match_photomotry_file} -o {init.matchedphotometrydir + "match"+numbers+".pht"}')
+    config_file = f'-p {config_file}' if config_file is not '' else ''
+    photometry_file_full_path = init.photometrydir + to_match_photomotry_file if to_match_is_full_path is False else to_match_photomotry_file
+    command = f'munimatch {config_file} {base_photometry_file} {photometry_file_full_path} -o {outputdir + "match" + numbers + ".pht"}'
+    print("Munimatch command:", command)
+    subprocess.call(command, shell=True)
 
 # percentage is between 0 and 1
 def write_munifind_dirfile(match_pattern, percentage=1):
@@ -177,7 +176,7 @@ def world_pos(star, wcs, reference_frame_index):
     f2.write(str(world_coords[0]) + " " + str(world_coords[1]))
     f2.close()
 
-def run_do_rest(do_conf_phot, do_conf_match, do_convert_fits, do_photometry, do_match, do_aperture_search, do_lightcurve, do_pos,
+def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do_lightcurve, do_pos,
                 do_ml, do_lightcurve_plot, do_phase_diagram, do_field_charting, do_reporting):
     if do_convert_fits:
         logging.info("Converting fits...")
@@ -194,8 +193,8 @@ def run_do_rest(do_conf_phot, do_conf_match, do_convert_fits, do_photometry, do_
     apertureidx=None
 
     if do_photometry:
-        logging.info("Writing photometry...")
-        write_photometry(use_config=do_conf_phot, custom_wildcard=init.photometry_wildcard)
+        logging.info("Writing photometry with config file {init.conf_phot}...")
+        write_photometry(config_file=init.conf_phot)
 
     if do_match:
         logging.info("Performing matching...")
@@ -203,7 +202,7 @@ def run_do_rest(do_conf_phot, do_conf_match, do_convert_fits, do_photometry, do_
         ref_frame = do_calibration.find_reference_photometry(reference_frame_index)
         file_list = reading.get_files_in_dir(init.photometrydir)
         file_list.sort()
-        func = partial(write_match, base_photometry_file=ref_frame, use_config=do_conf_match) # Not using config file for testing
+        func = partial(write_match, base_photometry_file=ref_frame)
         print("Writing matches for", len(file_list), "stars with reference frame", ref_frame)
         trash_and_recreate_dir(init.matchedphotometrydir)
         for _ in tqdm.tqdm(pool.imap_unordered(func, file_list, 10), total=len(file_list)):
@@ -226,7 +225,7 @@ def run_do_rest(do_conf_phot, do_conf_match, do_convert_fits, do_photometry, do_
         logging.info(f"aperture: {aperture}, apertures:{apertures}")
 
     logging.info("Loading photometry...")
-    jd, fwhm, star_result = read_photometry.read_photometry(init.star_list, apertureidx)
+    jd, fwhm, nrstars, star_result = read_photometry.read_photometry(init.star_list, apertureidx)
 
     # Calculate the quality
     # star_select: jd[nrfiles], fwhm[nrfiles], star_result[nrfiles, nrstars, 2]
@@ -333,8 +332,6 @@ def interact():
 
 if __name__ == '__main__':
     print("Calculating", len(init.star_list), "stars from base dir:", init.basedir, "\nconvert_fits:\t", init.do_convert_fits,
-    "\nUseConf phot:\t", init.do_conf_phot,
-    "\nUseConf match:\t", init.do_conf_match,
     "\nphotometry:\t", init.do_photometry,
     "\nmatch:\t\t", init.do_match,
     "\naperture search:\t", init.do_aperture_search,
@@ -349,6 +346,6 @@ if __name__ == '__main__':
     subprocess.call("read -t 10", shell=True, executable='/bin/bash')
     logging.getLogger().setLevel(logging.INFO)
     logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
-    run_do_rest(init.do_conf_phot, init.do_conf_match, init.do_convert_fits, init.do_photometry, init.do_match, init.do_aperture_search, init.do_lightcurve,
+    run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_aperture_search, init.do_lightcurve,
                 init.do_pos, init.do_ml, init.do_lightcurve_plot, init.do_phase_diagram,
                 init.do_field_charts, init.do_reporting)

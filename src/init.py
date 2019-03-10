@@ -11,16 +11,13 @@ free_memory_GB=10
 star_list = all #[52]
 nr_threads = cpu_count()
 
-do_conf_phot=1
-do_conf_match=0
 do_convert_fits=0
 do_photometry=0
-photometry_wildcard=None  # init.convfitsdir+"kout0000??.fts"
-do_match=1
-do_aperture_search=1
+do_match=0
+do_aperture_search=0
 do_lightcurve=1
 do_lightcurve_resume=0
-do_pos=1
+do_pos=0
 do_pos_resume=0
 do_ml=0
 do_lightcurve_plot=1
@@ -50,6 +47,9 @@ photometrydir = basedir + "photometry/"
 matchedphotometrydir = basedir + "matched_photometry/"
 aperturedir = basedir + "aperture/"
 vsxcatalogdir = codedir + "vsx_catalog.bin"
+testdir = basedir + 'test/'
+conf_phot=basedir+'muniphot.conf'
+conf_match=basedir+'match.conf'
 
 # results
 resultdir = basedir + "results/"

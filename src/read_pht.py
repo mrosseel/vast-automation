@@ -122,6 +122,7 @@ def read_pht_file(the_file, fileContent, only_apertureidx: int =-1, read_stars=T
 
 # take magnitude and error, and convert them to NAN if it's nonsense
 def getConvertedStarData(mag, err, code):
+    #print(f"Converting: {mag}, {err}, {code}")
     if mag != INT_MAX:
         mag = mag / 0x1000000
     else:
@@ -132,4 +133,5 @@ def getConvertedStarData(mag, err, code):
         err = np.nan
     if code != 0:
         logging.debug(f"Error code: {code} mag:{mag}, err:{err}") # see cmpack_common.h, enum CmpackError
+    #print(f"Converted: {mag}, {err}, {code}")
     return mag, err, code

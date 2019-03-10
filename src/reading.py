@@ -2,11 +2,12 @@ import init
 import os
 from os import listdir
 from os.path import isfile, join
-import shutil
 import pandas as pd
 import numpy as np
 import errno
 import re
+import glob
+import logging
 
 def read_lightcurve(star,filter=True,preprocess=True, directory=init.lightcurvedir):
     try:
@@ -121,3 +122,12 @@ def aperture_and_compstars():
     apertureidx = np.loadtxt(init.basedir + 'apertureidx_best.txt', dtype=int)
     aperture = apertures[apertureidx]
     return comparison_stars_1, apertures, apertureidx, aperture
+
+# Select files conforming to the match_pattern using percentage which is between 0 and 1
+def file_selector(the_dir, match_pattern, percentage=1):
+    matched_files = glob.glob(the_dir+match_pattern)
+    desired_length = max(1, int(len(matched_files) * float(percentage)))
+    logging.debug(f"Reading.file_selector: {the_dir+match_pattern}, total:{len(matched_files)}, desired:{desired_length}")
+    np.random.seed(42) # for the same percentage, we always get the same selection
+    selected_files = np.random.choice(matched_files, size=desired_length, replace=False).tolist()
+    return selected_files
