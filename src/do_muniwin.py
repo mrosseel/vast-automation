@@ -61,12 +61,23 @@ def write_convert_fits():
     trash_and_recreate_dir(init.convfitsdir)
     os.system('konve ' + init.fitsdir + '*.fit -o ' + init.convfitsdir + 'kout??????.fts')
 
-def write_photometry(config_file=init.basedir+'muniphot.conf', files=init.convfitsdir + '*.fts', outputfile='phot??????.pht',
+def write_photometry(config_file=init.basedir+'muniphot.conf', files=None, outputfile_prefix='phot',
                          outputdir=init.photometrydir):
-    logging.info(f"Writing photometry, config_file:{config_file}, outputdir: {outputdir}, outputfile: {outputfile}...")
     trash_and_recreate_dir(init.photometrydir)
+    if files is None:
+        files = glob.glob(init.convfitsdir+"*.fts")
+    logging.info(f"Writing photometry, config_file:{config_file}, outputdir: {outputdir}, outputfile_prefix: {outputfile_prefix}...")
     config_file_param = f'-p {config_file}' if config_file is not '' else ''
-    command = f"muniphot {files} {config_file_param} -o {outputdir + outputfile}"
+    pool = mp.Pool(init.nr_threads*2, maxtasksperchild=100)
+    func = partial(command_caller, config_file_param=config_file_param, outputdir=outputdir, outputfile_prefix=outputfile_prefix)
+    print("Writing star lightcurves for", len(files), "stars into", init.lightcurvedir)
+    for _ in tqdm.tqdm(pool.imap_unordered(func, files, 50), total=len(files)):
+        pass
+
+def command_caller(fits, config_file_param, outputdir, outputfile_prefix):
+    if isinstance(fits, list):
+        fits = ' '.join(fits)
+    command = f"muniphot {fits} {config_file_param} -o {outputdir+outputfile_prefix}{int(''.join(filter(str.isdigit, fits))):06d}.pht"
     logging.debug(f'Photometry command is: {command}')
     subprocess.call(command, shell=True)
 
@@ -141,7 +152,7 @@ def do_write_pos(star_list, check_stars_list, aperture, matched_reference_frame,
     for _ in tqdm.tqdm(pool.imap_unordered(func, star_list, 10), total=len(star_list)):
         pass
 
-def do_write_curve(star_list, check_stars_1, aperture, is_resume):
+def do_write_curve_old(star_list, check_stars_1, aperture, is_resume):
     # if not is_resume:
     #     trash_and_recreate_dir(init.lightcurvedir)
     # else:
@@ -149,6 +160,15 @@ def do_write_curve(star_list, check_stars_1, aperture, is_resume):
     #check_stars_0 = np.array(check_stars_list_1) - 1
     pool = mp.Pool(init.nr_threads, maxtasksperchild=100)
     func = partial(write_lightcurve, check_stars_list_1=check_stars_1, aperture=aperture)
+    print("Writing star lightcurves for", len(star_list), "stars into", init.lightcurvedir)
+    for _ in tqdm.tqdm(pool.imap_unordered(func, star_list, 10), total=len(star_list)):
+        pass
+
+# experimental multithreading of new lightcurve writing method, not yet tested/used
+def do_write_curve(star_list, check_stars_1, aperture, apertureidx, jd, fwhm, star_result_):
+    pool = mp.Pool(init.nr_threads, maxtasksperchild=100)
+    func = partial(dolight.write_lightcurves, check_stars_list_1=check_stars_1, aperture=aperture,
+                   apertureidx=apertureidx, jd=jd, fwhm=fwhm, star_result_=star_result_)
     print("Writing star lightcurves for", len(star_list), "stars into", init.lightcurvedir)
     for _ in tqdm.tqdm(pool.imap_unordered(func, star_list, 10), total=len(star_list)):
         pass
@@ -303,6 +323,9 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
         chosen_stars = [x.local_id for x in star_descriptions_ucac4]
         dolight.write_lightcurves(chosen_stars,
                                   comparison_stars_1, aperture, int(apertureidx), jd, fwhm, star_result)
+        # do_write_curve(chosen_stars,
+        #                           comparison_stars_1, aperture, int(apertureidx), jd, fwhm, star_result)
+        #
         # do_write_curve(chosen_stars, comparison_stars_1, aperture, False)
 
     if do_lightcurve_plot or do_phase_diagram:
