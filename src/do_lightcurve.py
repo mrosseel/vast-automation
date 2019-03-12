@@ -129,12 +129,12 @@ def calculate_synthetic_c(star_result_file, check_stars_0):
             cmag += np.power(10, -0.4*mag)
             cerr += err
             valid += 1
-    # if valid == nrstars:
-    cmag = -2.5*math.log10(cmag/valid)
-    cerr = (cerr/valid)/math.sqrt(valid)
-    # else:
-        # cmag, cerr = 0, 0
-        # print("losing line")
+    if valid > 0:
+        cmag = -2.5*math.log10(cmag/valid)
+        cerr = (cerr/valid)/math.sqrt(valid)
+    else:
+        cmag, cerr = 0, 0
+        print("losing line")
     return cmag, cerr
 
 def is_valid(mag, err):
