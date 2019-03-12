@@ -110,7 +110,7 @@ def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
     phased_t_final = np.append(phased_t2, phased_t)
     phased_lc_final = np.append(phased_lc, phased_lc)
     #phased_lc_final = phased_lc_final + comparison_stars[0].vmag
-    phased_err = np.append(dy_np, dy_np)
+    phased_err = np.clip(np.append(dy_np, dy_np), -0.5, 0.5) # error values are clipped to +0.5 and -0.5
     plt.gca().invert_yaxis()
     plt.errorbar(phased_t_final,phased_lc_final,yerr=phased_err,linestyle='none',marker='o', ecolor='gray', elinewidth=1)
     fig.savefig(init.phasedir+str(star).zfill(5)+'_phase'+suffix)
