@@ -5,10 +5,13 @@ import numpy as np
 import logging
 import scipy.stats
 import init
+import do_compstars
+import do_calibration
 from reading import file_selector
 from read_pht import read_pht_file
 
 
+# apertures list has first the index and then the actual aperture. Select only the actual apertures.
 def convert_to_aperture_only(apertures):
     return apertures[1::2]
 
@@ -57,7 +60,7 @@ def gather_data(match_file_list):
     print("Shape for collect:", collect.shape)
     return jd, fwhm, collect, apertures
 
-def process(jd, fwhm, collect, apertures):
+def process(collect, apertures):
     detectablestars = len(init.star_list) # this is the maximum of star id's, regardless of how many are detected on an image
     nrapertures = len(apertures)
     # print(scipy.stats.mstats.describe(np.ma.masked_invalid(collect[2]), axis=0))
@@ -89,13 +92,8 @@ def process(jd, fwhm, collect, apertures):
     # for idx in range(len(stddevs)):
     #     print(stddevs[idx].min(), stddevs[idx].max())
     #     print(idx, stddevs[idx].sum())
+    return stddevs, counts
 
-    return jd, fwhm, collect, stddevs, counts
-
-def select_aperture_and_compstars(jd, fwhm, collect, apertures, stddevs, counts):
-    apertureidx = select_aperture(fwhm, apertures)
-    compstars_1 = select_compstars(apertureidx, stddevs, counts)
-    return stddevs, collect, apertures, apertureidx, fwhm, jd, compstars_1
 
 def select_aperture(fwhm, apertures):
     # taking the median fwhm
@@ -107,36 +105,10 @@ def select_aperture(fwhm, apertures):
     logging.info(f"FWHM median: {median_fwhm}, multiplied: {median_multiply}, aperture chosen is: {apertures[apertureidx]}")
     return apertureidx
 
-def select_compstars(apertureidx, stddevs, counts):
-    selectedcounts = counts[apertureidx]
-    # winners = np.argwhere(np.amax(selectedcounts)).flatten()
-    logging.info(f"Before selection on counts: {len(selectedcounts)}")
-    logging.info(f"counts threshold {np.max(selectedcounts)*0.9}")
-    count_mask = selectedcounts < np.max(selectedcounts)*0.9
-    logging.info(f"Count mask: {count_mask}")
-    logging.info(f"After selection on counts: {np.sum(count_mask)}")
-    #    logging.info(f"Counts: {sorted(selectedcounts)}")
-
-    masked_std = np.ma.masked_array(stddevs[apertureidx], count_mask)
-    logging.info(f"Masked std: {masked_std}")
-    logging.info(f"masked std len: {masked_std.count()}")
-
-    nrtopstars = min(10, len(masked_std))
-    compstars_0 = masked_std.argsort(fill_value=99999)[:nrtopstars]
-    logging.info(f"compstars: {compstars_0}, len: {len(compstars_0)}")
-
-    #compstar_0 = np.argmin(stddevs[apertureidx], axis=0)
-    logging.info(f"Compstars_0 with minimum stdev in the chosen aperture: {compstars_0}")
-    logging.info(f"Compstars stddev: {stddevs[apertureidx][compstars_0]}")
-    logging.info(f"Compstars counts: {selectedcounts[compstars_0]}")
-    # for star in compstars_0:
-    #     logging.info(f"Error for compstar_0:{star} is \t {errors[star].median()}")
-    return (compstars_0+1).tolist()
-
 def main(the_dir, match_files='match*.pht', percentage=0.1):
     jd, fwhm, collect, apertures = gather_data(file_selector(init.matchedphotometrydir, 'match*.pht', init.aperture_find_percentage))
-    jd, fwhm, collect, stddevs, counts = process(jd, fwhm, collect, apertures)
-    return select_aperture_and_compstars(jd, fwhm, collect, apertures, stddevs, counts)
+    stddevs, counts = process(collect, apertures)
+    return stddevs, collect, apertures, select_aperture(fwhm, apertures), fwhm, jd, counts
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)

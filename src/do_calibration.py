@@ -96,6 +96,7 @@ def find_reference_matched(reference_frame_index):
    the_dir.sort()
    return init.matchedphotometrydir + the_dir[reference_frame_index]
 
+# not used atm
 def find_target_star(target_ra_deg, target_dec_deg, nr_results):
     target = SkyCoord(target_ra_deg, target_dec_deg, unit='deg')
     result_dict = reading.read_world_positions(init.worldposdir)
@@ -105,17 +106,6 @@ def find_target_star(target_ra_deg, target_dec_deg, nr_results):
     df = pd.DataFrame(list(distances_dict.items()), columns=['star_nr', 'deg_separation'])
     df.sort_values(by='deg_separation', inplace=True)
     return df[:nr_results]
-
-def find_target_stars(max_deg_separation):
-    target = SkyCoord(target_ra_deg, target_dec_deg, unit='deg')
-    result_dict = reading.read_world_positions(init.worldposdir)
-    distances_dict = {}
-    for key in result_dict:
-        distances_dict[key] = target.separation(SkyCoord(result_dict[key][0], result_dict[key][1], unit='deg')).degree
-    df = pd.DataFrame(list(distances_dict.items()), columns=['filename', 'deg_separation'])
-    df.sort_values(by='deg_separation', inplace=True)
-    return df[:nr_results]
-
 
 # returns StarDescription with filled in local_id, upsilon, coord
 def get_candidates(threshold_prob=0.5, check_flag=False):
@@ -145,29 +135,20 @@ def add_upsilon_data(star_descriptions):
     return star_descriptions
 
 # returns list of star descriptions
-def get_star_descriptions(starlist=None):
+def get_star_descriptions(star_id_list=None):
     # returns {'name': [ra.deg, dec.deg ]}
     positions = reading.read_world_positions(init.worldposdir)
     result = []
-    print(f'Reading star descriptions for: {starlist or "all stars"} with size {len(init.star_list)}')
+    plist = "all stars"
+    if star_id_list is not None:
+        plist = star_id_list
+
+    print(f'Reading star descriptions for: {plist} with size {len(init.star_list)}')
     for key in positions:
         star_id = reading.filename_to_star(str(key))
-        if starlist is None or star_id in starlist:
+        if star_id_list is None or star_id in star_id_list:
             result.append(StarDescription(local_id=reading.filename_to_star(str(key)), coords=SkyCoord(positions[key][0], positions[key][1], unit='deg')))
     return result
-
-# TODO no longer used, remove
-# returns [index, skycoord, type]
-def get_VSX(the_file):
-    raise NotImplementedError
-    result = []
-    df = pd.read_csv(the_file, index_col=0)
-    # print(df.head())
-    for index, row in df.iterrows():
-        skycoord = SkyCoord(row['Coords'], unit=(u.hourangle, u.deg))
-        result.append(StarDescription(match={'index': index, 'type': row['Type']}, coord=skycoord))
-    return result
-
 
 # returns {'star_id': [label, probability, flag, period, SkyCoord, match_name, match_skycoord, match_type, separation_deg]}
 def add_vsx_names_to_star_descriptions(star_descriptions, max_separation=0.01):
@@ -176,7 +157,7 @@ def add_vsx_names_to_star_descriptions(star_descriptions, max_separation=0.01):
     # copy.deepcopy(star_descriptions)
     vsx_catalog, vsx_dict = create_vsx_astropy_catalog()
     star_catalog = create_star_descriptions_catalog(star_descriptions)
-    idx, d2d, d3d = match_coordinates_sky(star_catalog, vsx_catalog)
+    idx, d2d, d3d = match_coordinates_sky(star_catalog, vsx_catalog) # vsx catalog is bigger in this case than star_catalog
     print(len(idx))
     found = 0
     for index_star_catalog, entry in enumerate(d2d):
@@ -187,6 +168,14 @@ def add_vsx_names_to_star_descriptions(star_descriptions, max_separation=0.01):
             print(result[index_star_catalog].match)
             found = found + 1
     return result
+
+# star_catalog = create_star_descriptions_catalog(star_descriptions)
+def get_starid_1_for_radec(ra_deg, dec_deg, all_star_catalog, max_separation=0.01):
+    star_catalog = create_generic_astropy_catalog(ra_deg, dec_deg)
+    idx, d2d, d3d = match_coordinates_sky(star_catalog, all_star_catalog)
+    logging.debug(f"len(idx):{len(idx)}, min(idx): {np.min(idx)}, max(idx): {np.max(idx)}, min(d2d): {np.min(d2d)}, "
+                  f"max(d2d): {np.max(d2d)}, star_id: {idx[0]+1}, index in all_star_catalog: {all_star_catalog[idx[0]]}")
+    return idx[0]+1
 
 # returns StarDescription array
 def get_vsx_in_field(star_descriptions, max_separation=0.01):
@@ -217,12 +206,6 @@ def _add_catalog_match_to_entry(entry, vsx_dict, index_vsx, separation):
         unit='deg'))
     entry.match.append(match)
     return match
-
-# count the number of vsx in the field
-def count_vsx_in_field():
-    #bla
-    print('bla')
-
 
 # Takes in a list of known variables and maps them to the munipack-generated star numbers
 # usage:
@@ -298,8 +281,12 @@ def add_apass_to_star_descriptions(star_descriptions, radius=0.01, row_limit=2):
         else:
             star.vmag = apass['Vmag'][0]
             star.e_vmag = apass['e_Vmag'][0]
+            catalog_id = 'TODO' # apass['recno'][0].decode("utf-8")
+            coord_catalog = SkyCoord(apass['RAJ2000'], apass['DEJ2000'], unit='deg')
             mindist = star.coords.separation(SkyCoord(apass['RAJ2000'], apass['DEJ2000'], unit='deg'))
-        print("APASS: Star {} has vmag={}, error={:.5f}, dist={}".format(star.local_id, star.vmag, star.e_vmag, mindist))
+            star.match.append(CatalogMatch(name_of_catalog="APASS", catalog_id=catalog_id,
+                                           name=catalog_id, coords=coord_catalog, separation=mindist))
+            print("APASS: Star {} has vmag={}, error={:.5f}, dist={}".format(star.local_id, star.vmag, star.e_vmag, mindist))
     return star_descriptions
 
 def add_ucac4_to_star_descriptions(star_descriptions, radius=0.01):
@@ -308,30 +295,10 @@ def add_ucac4_to_star_descriptions(star_descriptions, radius=0.01):
 
     pool = Pool(init.nr_threads*2)
     func = partial(add_ucac4_to_star, radius_angle=radius_angle)
-    for _ in pool.imap_unordered(func, star_descriptions):
-        pass
-
-    for star in star_descriptions:
-        vizier_results = get_ucac4_field(star.coords, radius=radius_angle, row_limit=1)
-        if vizier_results is None:
-            print("More/less results received from UCAC4 than expected: {}".format(vizier_results.shape[0] if not vizier_results is None and not vizier_results.shape is None else 0))
-            #print(vizier_results)
-            continue
-        else:
-            #print('vizier results', vizier_results)
-            star.vmag = vizier_results['f.mag'][0]
-            star.e_vmag = vizier_results['e_a.mag'][0]
-            catalog_id = vizier_results['UCAC4'][0].decode("utf-8")
-            coord_catalog = SkyCoord(vizier_results['RAJ2000'], vizier_results['DEJ2000'], unit='deg')
-            mindist = star.coords.separation(coord_catalog)
-            star.match.append(CatalogMatch(name_of_catalog="UCAC4", catalog_id=catalog_id,
-                                           name=catalog_id, coords=coord_catalog, separation=mindist))
-            # print(vizier_results.describe())
-            # print(vizier_results.info())
-            # import code
-            # code.InteractiveConsole(locals=dict(globals(), **locals())).interact()
-            print("Star {} has vmag={}, error={}, dist={}".format(star.local_id, star.vmag, star.e_vmag, mindist))
-    return star_descriptions
+    result = []
+    for entry in pool.imap(func, star_descriptions):
+        result.append(entry)
+    return result
 
 def add_ucac4_to_star(star, radius_angle):
     vizier_results = get_ucac4_field(star.coords, radius=radius_angle, row_limit=1)
@@ -340,20 +307,25 @@ def add_ucac4_to_star(star, radius_angle):
         #print(vizier_results)
     else:
         #print('vizier results', vizier_results)
-        star.vmag = vizier_results['f.mag'][0]
-        star.e_vmag = vizier_results['e_a.mag'][0]
-        catalog_id = vizier_results['UCAC4'][0].decode("utf-8")
+        logging.debug(f"Adding vmag: {vizier_results['Vmag'].iloc(0)[0]}")
         coord_catalog = SkyCoord(vizier_results['RAJ2000'], vizier_results['DEJ2000'], unit='deg')
-        mindist = star.coords.separation(coord_catalog)
-        star.match.append(CatalogMatch(name_of_catalog="UCAC4", catalog_id=catalog_id,
-                                       name=catalog_id, coords=coord_catalog, separation=mindist))
+        add_info_to_star_description(star, vizier_results['Vmag'].iloc(0)[0], vizier_results['e_Vmag'][0],
+                                     vizier_results['UCAC4'][0].decode("utf-8"), "UCAC4", coord_catalog)
         # print(vizier_results.describe())
         # print(vizier_results.info())
         # import code
         # code.InteractiveConsole(locals=dict(globals(), **locals())).interact()
-        print("Star {} has vmag={}, error={}, dist={}".format(star.local_id, star.vmag, star.e_vmag, mindist))
+    return star
 
-
+# take a star_description and add some info to it: vmag, error vmag, catalog information
+def add_info_to_star_description(star, vmag, e_vmag, catalog_id, catalog_name, coord_catalog):
+    star.vmag = vmag
+    star.e_vmag = e_vmag
+    mindist = star.coords.separation(coord_catalog)
+    star.match.append(CatalogMatch(name_of_catalog=catalog_name, catalog_id=catalog_id,
+                                   name=catalog_id, coords=coord_catalog, separation=mindist))
+    print("Star {} has vmag={}, error={}, dist={}".format(star.local_id, star.vmag, star.e_vmag, mindist))
+    return star
 
 def get_apass_row_to_star_descriptions(row):
     return StarDescription(coords=SkyCoord(row['RAJ2000'], row['DEJ2000'], unit='deg'),
@@ -386,8 +358,15 @@ def get_apass_field(center_coord, radius, row_limit=2):
 def get_ucac4_field(center_coord, radius, row_limit=2):
     return get_vizier_field(center_coord, radius, 'I/322A', row_limit)
 
+# object_name = 'UCAC4 231-154752'
+def get_ucac4_id_as_dataframe(object_name):
+    result = Vizier.query_object(object_name, catalog=['I/322A'])
+    df = result[0].to_pandas()
+    df2 = df.loc[df['UCAC4'] == object_name.split()[1].encode('UTF-8')]
+    return df2
+
 def get_vizier_field(center_coord, radius, catalog, row_limit=2):
-    # Select all columns
+    # Select all columns (this is a generic function so has to be all)
     v = Vizier(columns=['all'])
 
     # Limit the number of rows returned to row_limit
@@ -403,3 +382,10 @@ def get_vizier_field(center_coord, radius, catalog, row_limit=2):
         logging.error("Error processing vizier results in do_calibration")
         return None
     return df
+
+
+if __name__ == '__main__':
+    star_descriptions = do_calibration.get_star_descriptions(init.star_list)
+    star_catalog = create_star_descriptions_catalog(star_descriptions)
+    result = get_starid_1_for_radec(star_catalog, [271.234735], [-43.845816])
+    print(result)

@@ -4,6 +4,7 @@ import do_charts
 import do_charts_field
 import do_charts_stats
 import do_aperture
+import do_compstars
 import do_lightcurve as dolight
 from do_lightcurve import join_check_stars_string
 import read_photometry
@@ -230,17 +231,22 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
 
     if do_aperture_search:
         logging.info("Searching best aperture...")
-        stddevs, _, apertures, apertureidx, _, _, comparison_stars_1 = do_aperture.main(the_dir=init.matchedphotometrydir, percentage=init.aperture_find_percentage)
+        # getting aperture
+        stddevs, _, apertures, apertureidx, _, _, counts = do_aperture.main(the_dir=init.matchedphotometrydir, percentage=init.aperture_find_percentage)
         aperture = apertures[apertureidx]
-        # with open(init.basedir + 'check_stars_list.bin', 'wb') as fp:
-        #     pickle.dump(comparison_stars_1, fp)
+        # getting compstars
+        comparison_stars_1, comparison_stars_1_desc = do_compstars.select_compstars(stddevs, apertureidx, counts)
+        logging.info(f"Comparison stars_1: {comparison_stars_1}")
+        # saving all calculated data
         np.savetxt(init.basedir + "comparison_stars_1.txt", comparison_stars_1, fmt='%d', delimiter=';')
         np.savetxt(init.basedir + "apertures.txt", apertures, fmt='%.2f', delimiter=';')
         np.savetxt(init.basedir + "apertureidx_best.txt", [apertureidx], fmt='%d')
+        with open(init.basedir + 'comparison_stars_1_desc.bin', 'wb') as compfile:
+            pickle.dump(comparison_stars_1_desc, compfile)
         logging.debug("Done writing aperture search results")
     else:
         logging.info("Loading best aperture and compstars...")
-        comparison_stars_1, apertures, apertureidx, aperture = reading.aperture_and_compstars()
+        comparison_stars_1, comparison_stars_1_desc, apertures, apertureidx, aperture = reading.read_aperture_and_compstars()
         logging.info(f"comparison stars: {comparison_stars_1}")
         logging.info(f"aperture: {aperture}, apertures:{apertures}")
 
@@ -301,22 +307,9 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
         with open(init.basedir + 'star_descriptions_to_chart.bin', 'wb') as fp:
             pickle.dump(star_descriptions, fp)
 
-    logging.info("Printing star_descriptions coordinates:")
-    # for star in star_descriptions:
-    #     print(star.local_id, star.coords, star.match[0].coords, star.match)
-
-    logging.info(f'Getting star description of comparison star: {comparison_stars_1[:1]}')
-    comp_star_description = do_calibration.get_star_descriptions(comparison_stars_1[:1])
-    logging.info(f'Adding ucac4 info to comparison stars: {comp_star_description}')
-    comparison_stars_1_desc = do_calibration.add_ucac4_to_star_descriptions(comp_star_description)
-
-    logging.debug(f"Comparison stars: {comparison_stars_1_desc[0]}")
-    if np.isnan(comparison_stars_1_desc[0].vmag):
-        print("Comparison star has nan vmag, will screw up everything coming after")
-        exit()
     # add ucac4 to star_descriptions (why???)
-    logging.info(f"Adding ucac4 to all stars of interest: {star_descriptions}")
-    star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
+    # logging.info(f"Adding ucac4 to all stars of interest: {star_descriptions}")
+    star_descriptions_ucac4 = star_descriptions
 
     if do_lightcurve:
         logging.info(f"Writing lightcurves... {[x.local_id for x in star_descriptions_ucac4]}")
@@ -330,6 +323,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
 
     if do_lightcurve_plot or do_phase_diagram:
         logging.info("starting charting / phase diagrams...")
+        print("comparison stars decs:", comparison_stars_1_desc)
         do_charts.run(star_descriptions_ucac4, comparison_stars_1_desc, do_lightcurve_plot, do_phase_diagram)
 
     if do_field_charting:

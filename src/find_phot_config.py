@@ -135,7 +135,7 @@ def analyse(resultdirs=None, apertureidx=None):
     if resultdirs is None:
         resultdirs = sorted([f for f in glob.glob(init.testdir+"*" + os.path.sep) if not "conf" in f])
     if apertureidx is None:
-        _, _, apertureidx, _ = reading.aperture_and_compstars()
+        _, _, apertureidx, _ = reading.read_aperture_and_compstars()
     print("apertureidx: ", apertureidx)
     df = pd.DataFrame(columns=['resultdir', 'nrstars', 'starsdetectedpct', 'realpercentage'])
     for resultdir in resultdirs:
@@ -158,7 +158,7 @@ def analyse_match(resultdirs=None, apertureidx=None):
         resultdirs = sorted([f for f in glob.glob(init.testdir+"match*" + os.path.sep) if not "matching" in f])
         print(resultdirs)
     if apertureidx is None:
-        _, _, apertureidx, _ = reading.aperture_and_compstars()
+        _, _, apertureidx, _ = reading.read_aperture_and_compstars()
     print("apertureidx: ", apertureidx)
     df = pd.DataFrame(columns=['resultdir', 'nrstars', 'starsdetectedpct', 'realpercentage'])
     for resultdir in resultdirs:

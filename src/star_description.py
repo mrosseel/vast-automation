@@ -35,7 +35,7 @@ class StarDescription:
         name = None
         separation = None
 
-        if not self.match == None:
+        if self.match is not None:
             catalog_match_list = [x for x in self.match if x.name_of_catalog == catalog]
             if len(catalog_match_list) != 1:
                 if strict:
@@ -62,6 +62,9 @@ class CatalogMatch():
         self.name = name
         self.coords = coords
         self.separation = separation
+
+    def __repr__(self):
+        return f'Catalog:{self.name_of_catalog}, CatalogId:{self.catalog_id}, Name:{self.name}, Coords:{self.coords}, Separation:{self.separation}'
 
     def __str__(self):
         return f'Catalog:{self.name_of_catalog}, CatalogId:{self.catalog_id}, Name:{self.name}, Coords:{self.coords}, Separation:{self.separation}'

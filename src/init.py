@@ -8,21 +8,34 @@ thousand = range(1, 1000)
 datadir = 'current/'
 aperture_find_percentage=0.05
 free_memory_GB=10
-star_list = all #[52]
+star_list = all
 nr_threads = cpu_count()
 
+# Comparison stars to use:
+comparison_stars = ['UCAC4 231-154752', 'UCAC4 232-147677']
+
+# conversion of the fits files. Should only be run once.
 do_convert_fits=0
+# perform photometry on converted fits files. Should only be run once.
 do_photometry=0
+# perform matching of photometry files. Should only be run once.
 do_match=0
-do_aperture_search=0
-do_lightcurve=1
-do_lightcurve_resume=0
+# search for ideal aperture for these matched photometry files. Results are saved when run, so can be set to 0 as long
+# as photometry/matching doesn't change
+do_aperture_search=1
+# write lightcurves to disk
+do_lightcurve=0
+# write RA/DEC positions of each star to disk
 do_pos=0
-do_pos_resume=0
+# perform machine learning to find new variables
 do_ml=0
+# write lightcurve plots
 do_lightcurve_plot=1
+# write phase diagrams
 do_phase_diagram=1
+# write various other charts
 do_field_charts=1
+# perform aavso reporting
 do_reporting=0
 
 ### CALIBRATION ###

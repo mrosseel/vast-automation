@@ -8,6 +8,7 @@ import errno
 import re
 import glob
 import logging
+import pickle
 
 def read_lightcurve(star,filter=True,preprocess=True, directory=init.lightcurvedir):
     try:
@@ -103,25 +104,17 @@ def read_world_positions(the_path):
                 raise # Propagate other kinds of IOError.
     return results
 
-def read_comparison_star():
-    with open(init.basedir + 'munifind.txt', 'r') as fp:
-        for i, line in enumerate(fp):
-            if i == 1:
-                print(line)# 26th line
-                m = re.search(r'Reference star:\s*(\d+),', line)
-                comparison_star = int(m.group(1))
-                break
-    return comparison_star
-
 def get_files_in_dir(mypath):
     return [f for f in listdir(mypath) if isfile(join(mypath, f))]
 
-def aperture_and_compstars():
+def read_aperture_and_compstars():
     comparison_stars_1 = np.loadtxt(init.basedir + "comparison_stars_1.txt", dtype=int, delimiter=';')
     apertures = np.loadtxt(init.basedir + 'apertures.txt', dtype=float, delimiter=';')
     apertureidx = np.loadtxt(init.basedir + 'apertureidx_best.txt', dtype=int)
     aperture = apertures[apertureidx]
-    return comparison_stars_1, apertures, apertureidx, aperture
+    with open(init.basedir + 'comparison_stars_1_desc.bin', 'rb') as compfile:
+        comparison_stars_1_desc = pickle.load(compfile)
+    return comparison_stars_1, comparison_stars_1_desc, apertures, apertureidx, aperture
 
 # Select files conforming to the match_pattern using percentage which is between 0 and 1
 def file_selector(the_dir, match_pattern, percentage=1):
