@@ -307,9 +307,9 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
         with open(init.basedir + 'star_descriptions_to_chart.bin', 'wb') as fp:
             pickle.dump(star_descriptions, fp)
 
-    # add ucac4 to star_descriptions (why???)
+    # add ucac4 to star_descriptions for AAVSO reporting (specifically for unknown stars)
     # logging.info(f"Adding ucac4 to all stars of interest: {star_descriptions}")
-    star_descriptions_ucac4 = star_descriptions
+    star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
 
     if do_lightcurve:
         logging.info(f"Writing lightcurves... {[x.local_id for x in star_descriptions_ucac4]}")
@@ -337,7 +337,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
         logging.info(f"AAVSO Reporting with: {len(star_descriptions_ucac4)} stars")
         trash_and_recreate_dir(init.aavsoreportsdir)
         for star in star_descriptions_ucac4:
-            do_aavso_report.report(init.aavsoreportsdir, star, comp_star_description[0])
+            do_aavso_report.report(init.aavsoreportsdir, star, comparison_stars_1_desc[0])
 
 
     # logger = mp.log_to_stderr()
