@@ -233,12 +233,16 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
         logging.info("Searching best aperture...")
         # getting aperture
         stddevs = None
+        counts = None
         # stddevs, _, apertures, apertureidx, _, _, counts = do_aperture.main(the_dir=init.matchedphotometrydir, percentage=init.aperture_find_percentage)
-        apertureidx = np.abs(apertures - init.aperture).argmin()
-        apertures = do_aperture.get_apertures()
+        apertures = [x for x in do_aperture.get_apertures()]
+        print(apertures)
+        apertureidx = np.abs(np.array(apertures) - init.aperture).argmin()
+        print(apertures)
         aperture = apertures[apertureidx]
         # getting compstars
         comparison_stars_1, comparison_stars_1_desc = do_compstars.select_compstars(stddevs, apertureidx, counts)
+        print(apertures)
         logging.info(f"Comparison stars_1: {comparison_stars_1}")
         # saving all calculated data
         np.savetxt(init.basedir + "comparison_stars_1.txt", comparison_stars_1, fmt='%d', delimiter=';')
