@@ -197,7 +197,7 @@ def world_pos(star, wcs, reference_frame_index):
     f2.write(str(world_coords[0]) + " " + str(world_coords[1]))
     f2.close()
 
-def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do_lightcurve, do_pos,
+def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_aperture_search, do_lightcurve, do_pos,
                 do_ml, do_lightcurve_plot, do_phase_diagram, do_field_charting, do_reporting):
     if do_convert_fits:
         logging.info("Converting fits...")
@@ -229,6 +229,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
         for _ in tqdm.tqdm(pool.imap_unordered(func, file_list, 10), total=len(file_list)):
             pass
 
+
     if do_aperture_search:
         logging.info("Searching best aperture...")
         # getting aperture
@@ -236,26 +237,41 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
         counts = None
         # stddevs, _, apertures, apertureidx, _, _, counts = do_aperture.main(the_dir=init.matchedphotometrydir, percentage=init.aperture_find_percentage)
         apertures = [x for x in do_aperture.get_apertures()]
-        print(apertures)
         apertureidx = np.abs(np.array(apertures) - init.aperture).argmin()
-        print(apertures)
         aperture = apertures[apertureidx]
-        # getting compstars
-        comparison_stars_1, comparison_stars_1_desc = do_compstars.select_compstars(stddevs, apertureidx, counts)
-        print(apertures)
-        logging.info(f"Comparison stars_1: {comparison_stars_1}")
         # saving all calculated data
-        np.savetxt(init.basedir + "comparison_stars_1.txt", comparison_stars_1, fmt='%d', delimiter=';')
         np.savetxt(init.basedir + "apertures.txt", apertures, fmt='%.2f', delimiter=';')
         np.savetxt(init.basedir + "apertureidx_best.txt", [apertureidx], fmt='%d')
-        with open(init.basedir + 'comparison_stars_1_desc.bin', 'wb') as compfile:
-            pickle.dump(comparison_stars_1_desc, compfile)
         logging.debug("Done writing aperture search results")
     else:
-        logging.info("Loading best aperture and compstars...")
-        comparison_stars_1, comparison_stars_1_desc, apertures, apertureidx, aperture = reading.read_aperture_and_compstars()
-        logging.info(f"comparison stars: {comparison_stars_1}")
+        logging.info("Loading best aperture...")
+        apertures, apertureidx, aperture = reading.read_aperture()
         logging.info(f"aperture: {aperture}, apertures:{apertures}")
+
+    if do_pos:
+        logging.info("Writing positions of all stars on the reference image...")
+        reference_matched = do_calibration.find_reference_matched(reference_frame_index)
+        print("reference match is ", reference_matched)
+        do_write_pos(init.star_list, comparison_stars_1, aperture, reference_matched, is_resume=False)
+        do_world_pos(wcs, init.star_list, reference_frame_index)
+
+    if do_compstars_flag:
+        logging.info("Getting comparison stars...")
+        # getting compstars
+        comparison_stars_1, comparison_stars_1_desc = do_compstars.get_fixed_compstars()
+        logging.info(f"Comparison stars_1: {comparison_stars_1}")
+        np.savetxt(init.basedir + "comparison_stars_1.txt", comparison_stars_1, fmt='%d', delimiter=';')
+        with open(init.basedir + 'comparison_stars_1_desc.bin', 'wb') as compfile:
+            pickle.dump(comparison_stars_1_desc, compfile)
+    else:
+        logging.info("Loading best compstars...")
+        comparison_stars_1, comparison_stars_1_desc = reading.read_compstars()
+        logging.info(f"comparison stars: {comparison_stars_1}")
+
+
+
+
+
 
     logging.info("Loading photometry...")
     jd, fwhm, nrstars, star_result = read_photometry.read_photometry(init.star_list, apertureidx)
@@ -264,13 +280,6 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
     # star_select: jd[nrfiles], fwhm[nrfiles], star_result[nrfiles, nrstars, 2]
 
 
-
-    if do_pos:
-        logging.info("Writing positions of all stars on the reference image...")
-        reference_matched = do_calibration.find_reference_matched(reference_frame_index)
-        print("reference match is ", reference_matched)
-        do_write_pos(init.star_list, comparison_stars_1, aperture, reference_matched, is_resume=False)
-        do_world_pos(wcs, init.star_list, reference_frame_index)
 
     logging.debug("Before do ml")
     if do_ml:
@@ -356,20 +365,21 @@ def interact():
 
 if __name__ == '__main__':
     print("Calculating", len(init.star_list), "stars from base dir:", init.basedir, "\nconvert_fits:\t", init.do_convert_fits,
-    "\nphotometry:\t", init.do_photometry,
-    "\nmatch:\t\t", init.do_match,
-    "\naperture search:\t", init.do_aperture_search,
-    "\nlightcurve:\t", init.do_lightcurve,
-    "\npos:\t\t", init.do_pos,
-    "\nupsilon:\t", init.do_ml,
-    "\nlightcurve plot:\t", init.do_lightcurve_plot,
-    "\nphasediagram:\t", init.do_phase_diagram,
-    "\nfield charts:\t", init.do_field_charts,
-    "\nreporting:\t", init.do_reporting)
+          "\nphotometry:\t", init.do_photometry,
+          "\nmatch:\t\t", init.do_match,
+          "\naperture search:\t", init.do_aperture_search,
+          "\npos:\t\t", init.do_pos,
+          "\ncompstars:\t\t", init.do_compstars,
+          "\nlightcurve:\t", init.do_lightcurve,
+          "\nupsilon:\t", init.do_ml,
+          "\nlightcurve plot:\t", init.do_lightcurve_plot,
+          "\nphasediagram:\t", init.do_phase_diagram,
+          "\nfield charts:\t", init.do_field_charts,
+          "\nreporting:\t", init.do_reporting)
     print("Press Enter to continue...")
     subprocess.call("read -t 10", shell=True, executable='/bin/bash')
     logging.getLogger().setLevel(logging.INFO)
     logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
-    run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_aperture_search, init.do_lightcurve,
+    run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_compstars, init.do_aperture_search, init.do_lightcurve,
                 init.do_pos, init.do_ml, init.do_lightcurve_plot, init.do_phase_diagram,
                 init.do_field_charts, init.do_reporting)

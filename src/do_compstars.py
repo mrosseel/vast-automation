@@ -15,7 +15,7 @@ def select_compstars(stddevs, apertureidx, counts):
     return compstars_1
 
 def get_fixed_compstars(star_descriptions=None):
-    logging.info("In fixed compstars")
+    logging.info(f"Using fixed compstars {init.comparison_stars}")
     if star_descriptions is None:
         star_descriptions = do_calibration.get_star_descriptions(init.star_list)
     result = []

@@ -107,14 +107,17 @@ def read_world_positions(the_path):
 def get_files_in_dir(mypath):
     return [f for f in listdir(mypath) if isfile(join(mypath, f))]
 
-def read_aperture_and_compstars():
-    comparison_stars_1 = np.loadtxt(init.basedir + "comparison_stars_1.txt", dtype=int, delimiter=';')
+def read_aperture():
     apertures = np.loadtxt(init.basedir + 'apertures.txt', dtype=float, delimiter=';')
     apertureidx = np.loadtxt(init.basedir + 'apertureidx_best.txt', dtype=int)
     aperture = apertures[apertureidx]
+    return apertures, apertureidx, aperture
+
+def read_compstars():
+    comparison_stars_1 = np.loadtxt(init.basedir + "comparison_stars_1.txt", dtype=int, delimiter=';')
     with open(init.basedir + 'comparison_stars_1_desc.bin', 'rb') as compfile:
         comparison_stars_1_desc = pickle.load(compfile)
-    return comparison_stars_1, comparison_stars_1_desc, apertures, apertureidx, aperture
+    return comparison_stars_1, comparison_stars_1_desc
 
 # Select files conforming to the match_pattern using percentage which is between 0 and 1
 def file_selector(the_dir, match_pattern, percentage=1):

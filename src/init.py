@@ -24,11 +24,13 @@ do_photometry=0
 do_match=0
 # search for ideal aperture for these matched photometry files. Results are saved when run, so can be set to 0 as long
 # as photometry/matching doesn't change
-do_aperture_search=0
+do_aperture_search=1
+# write X/Y and RA/DEC positions of each star to disk
+do_pos=1
+# process compstars
+do_compstars=1
 # write lightcurves to disk
 do_lightcurve=0
-# write RA/DEC positions of each star to disk
-do_pos=0
 # perform machine learning to find new variables
 do_ml=0
 # write lightcurve plots
