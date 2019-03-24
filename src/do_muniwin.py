@@ -235,6 +235,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_aperture_search, do
         stddevs = None
         # stddevs, _, apertures, apertureidx, _, _, counts = do_aperture.main(the_dir=init.matchedphotometrydir, percentage=init.aperture_find_percentage)
         apertureidx = np.abs(apertures - init.aperture).argmin()
+        apertures = do_aperture.get_apertures()
         aperture = apertures[apertureidx]
         # getting compstars
         comparison_stars_1, comparison_stars_1_desc = do_compstars.select_compstars(stddevs, apertureidx, counts)

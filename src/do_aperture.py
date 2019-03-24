@@ -15,16 +15,21 @@ from read_pht import read_pht_file
 def convert_to_aperture_only(apertures):
     return apertures[1::2]
 
-def gather_data(match_file_list):
-    nrfiles = len(match_file_list)
-    detectablestars = len(init.star_list) # this is the maximum of star id's, regardless of how many are detected on an image
-    # pre process
+def get_apertures():
+    match_file_list = file_selector(init.matchedphotometrydir, 'match*.pht', init.aperture_find_percentage)
     apertures = []
     with open(match_file_list[0], mode='rb') as file: # b is important -> binary
         fileContent = file.read()
         photheader, apertures, nrstars , _, _ = read_pht_file(match_file_list[0], fileContent)
         apertures = convert_to_aperture_only(apertures)
     file.close()
+    return apertures
+
+def gather_data(match_file_list):
+    nrfiles = len(match_file_list)
+    detectablestars = len(init.star_list) # this is the maximum of star id's, regardless of how many are detected on an image
+    # pre process
+    apertures = get_apertures(match_file_list)
     logging.info(f"Apertures: {apertures}, nr of files: {nrfiles}")
     collect = np.full([len(apertures), detectablestars, nrfiles, 2],np.inf, dtype=float)
     fwhm = np.full([nrfiles, 3], np.inf, dtype=float)
