@@ -23,23 +23,24 @@ MAX_MAG = 99.99999
 MAX_ERR = 9.99999
 STAR_DATA_MB=1.5274047851562502e-05 # the size of the data of one star
 
-def write_lightcurves(star_list_1, check_stars_1, aperture, apertureidx, jd, fwhm, star_result_):
+# multithreaded writing of lightcurves
+def write_lightcurves(star_list_1, comparison_stars_1, aperture, apertureidx, jd, fwhm, star_result_):
     trash_and_recreate_dir(init.lightcurvedir)
 
     global preamble
-    preamble = init_preamble(aperture, check_stars_1)
+    preamble = init_preamble(aperture, comparison_stars_1)
     global star_result
     star_result = star_result_
     pool = mp.Pool(init.nr_threads*2, maxtasksperchild=None)
-    func = partial(write_lightcurve, check_stars_1=check_stars_1, aperture=aperture, apertureidx=apertureidx, jd=jd, fwhm=fwhm)
+    func = partial(write_lightcurve, comparison_stars_1=comparison_stars_1, aperture=aperture, apertureidx=apertureidx, jd=jd, fwhm=fwhm)
     logging.debug("Writing star lightcurves for", len(star_list_1), "stars into", init.lightcurvedir)
     for _ in tqdm(pool.imap_unordered(func, star_list_1), total=len(star_list_1), desc='Writing lightcurve'):
         pass
 
-def write_lightcurve(star_1: int, check_stars_1: Vector, aperture: float, apertureidx: int, jd: float, fwhm: float):
+def write_lightcurve(star_1: int, comparison_stars_1: Vector, aperture: float, apertureidx: int, jd: float, fwhm: float):
     #print(f"Write lightcurve for star:", star_1)
-    check_stars_1 = join_check_stars(check_stars_1, star_1)
-    check_stars_0 = np.array(check_stars_1) - 1
+    comparison_stars_1 = join_comp_stars(comparison_stars_1, star_1)
+    comparison_stars_0 = np.array(comparison_stars_1) - 1
     star_0 = star_1 - 1
 
     lines = [preamble]
@@ -51,16 +52,12 @@ def write_lightcurve(star_1: int, check_stars_1: Vector, aperture: float, apertu
         V = star_result[fileidx][star_0][0]
         Verr = min(MAX_ERR, star_result[fileidx][star_0][1])
         if not is_valid(V, Verr): continue
-        # if V < 1 or V > 99:
-        #     print(f"Strange V for fileidx {fileidx}, V:{V}, Verr: {Verr}, Star_1: {star_1}")
-        C, Cerr = calculate_synthetic_c(star_result[fileidx], check_stars_0)
+        C, Cerr = calculate_synthetic_c(star_result[fileidx], comparison_stars_0)
         if C == 0 and Cerr == 0: continue # abort if one of the comparison stars is not available
         Cerr = min(MAX_ERR, Cerr)
-        # if star_1 == 14:
-        #     print(f"fileidx {fileidx}, V:{V}, V2:{star_result[fileidx][star_0][0]} Verr: {Verr}, Star_1: {star_1}, C: {C}, Cerr: {Cerr}")
 
         linedata = [(V-C, math.sqrt(Verr**2 + Cerr**2)), (V, Verr), (C, Cerr)] \
-            + [(star_result[fileidx][checkstar_0][0], star_result[fileidx][checkstar_0][1]) for checkstar_0 in check_stars_0]
+            + [(star_result[fileidx][checkstar_0][0], star_result[fileidx][checkstar_0][1]) for checkstar_0 in comparison_stars_0]
         # print(linedata)
         for tuple in linedata:
             line += f" {min(MAX_MAG, tuple[0]):.5f} {min(MAX_ERR, tuple[1]):.5f}"
@@ -145,7 +142,7 @@ def join_check_stars_string(check_stars, exclude_star):
     check_stars_string = ','.join(map(str, check_stars))
     return check_stars_string
 
-def join_check_stars(check_stars, exclude_star):
+def join_comp_stars(check_stars, exclude_star):
     check_stars = list(filter(lambda star: star != exclude_star, check_stars))
     return check_stars
 

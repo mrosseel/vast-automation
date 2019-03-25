@@ -26,11 +26,11 @@ do_match=0
 # as photometry/matching doesn't change
 do_aperture_search=1
 # write X/Y and RA/DEC positions of each star to disk
-do_pos=1
+do_pos=0
 # process compstars
 do_compstars=1
 # write lightcurves to disk
-do_lightcurve=0
+do_lightcurve=1
 # perform machine learning to find new variables
 do_ml=0
 # write lightcurve plots

@@ -24,8 +24,7 @@ import pickle
 import do_aavso_report
 import re
 import glob
-
-
+import argparse
 
 # Munifind fields: INDEX MEAN_MAG STDEV GOODPOINTS
 def read_munifind(filename):
@@ -126,13 +125,6 @@ def write_munifind_check_stars(check_star, aperture):
     print("write munifind check stars using check star:", check_star)
     os.system('munifind -a ' + str(aperture) + ' ' + ' -c ' + str(check_star) + ' ' + init.basedir + 'munifind.txt ' + init.matchedphotometrydir + 'match*')
 
-def write_lightcurve(star, check_stars_list_1, aperture):
-    check_stars = join_check_stars_string(check_stars_list_1, star)
-    print(check_stars)
-    os.system("munilist -a " + str(aperture) + " -q --object " + str(star) + " -v " + str(star) + " -c " + check_stars + " " + init.lightcurvedir + 'curve_' + str(star).zfill(5) + ".txt " + init.matchedphotometrydir + 'match*.pht >/dev/null')
-    # print("--verbose -a ", str(aperture), " -q --object ", str(star), " -v ", str(star), " -c ", check_stars, (init.lightcurve_dir + 'curve_' + str(star).zfill(5) + ".txt "), (init.basedir+'match*.pht  >/dev/null'))
-    # !munilist --verbose -a {str(aperture)} -q --object {str(star)} -v {str(star)} -c {str(8)} {lightcurve_dir + str(star) + ".txt"} {init.basedir+'match*.pht'}
-
 # TODO add check stars to this command?
 def write_pos(star, check_stars_list, matched_reference_frame, aperture):
     # start = time.time()
@@ -140,7 +132,6 @@ def write_pos(star, check_stars_list, matched_reference_frame, aperture):
     # os.system("munilist -a " + str(aperture)+ " -q --obj-plot --object "+ str(star)+ " " + get_pos_filename(star) + " " + init.matchedphotometrydir+'match*.pht >/dev/null')
     call("munilist -a " + str(aperture) + " -q --obj-plot --object " + str(star) + " " + reading.get_pos_filename(star) + " " + matched_reference_frame + ' >/dev/null', shell=True)
     # end = time.time()
-
 
 def do_write_pos(star_list, check_stars_list, aperture, matched_reference_frame, is_resume):
     if not is_resume:
@@ -152,28 +143,6 @@ def do_write_pos(star_list, check_stars_list, aperture, matched_reference_frame,
     print("Writing star positions for", len(star_list), "stars into", init.posdir)
     for _ in tqdm.tqdm(pool.imap_unordered(func, star_list, 10), total=len(star_list)):
         pass
-
-def do_write_curve_old(star_list, check_stars_1, aperture, is_resume):
-    # if not is_resume:
-    #     trash_and_recreate_dir(init.lightcurvedir)
-    # else:
-    #     star_list = reduce_star_list(star_list, init.lightcurvedir)
-    #check_stars_0 = np.array(check_stars_list_1) - 1
-    pool = mp.Pool(init.nr_threads, maxtasksperchild=100)
-    func = partial(write_lightcurve, check_stars_list_1=check_stars_1, aperture=aperture)
-    print("Writing star lightcurves for", len(star_list), "stars into", init.lightcurvedir)
-    for _ in tqdm.tqdm(pool.imap_unordered(func, star_list, 10), total=len(star_list)):
-        pass
-
-# experimental multithreading of new lightcurve writing method, not yet tested/used
-def do_write_curve(star_list, check_stars_1, aperture, apertureidx, jd, fwhm, star_result_):
-    pool = mp.Pool(init.nr_threads, maxtasksperchild=100)
-    func = partial(dolight.write_lightcurves, check_stars_list_1=check_stars_1, aperture=aperture,
-                   apertureidx=apertureidx, jd=jd, fwhm=fwhm, star_result_=star_result_)
-    print("Writing star lightcurves for", len(star_list), "stars into", init.lightcurvedir)
-    for _ in tqdm.tqdm(pool.imap_unordered(func, star_list, 10), total=len(star_list)):
-        pass
-
 
 def do_world_pos(wcs, star_list, reference_frame_index):
     trash_and_recreate_dir(init.worldposdir)
@@ -268,18 +237,11 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
         comparison_stars_1, comparison_stars_1_desc = reading.read_compstars()
         logging.info(f"comparison stars: {comparison_stars_1}")
 
-
-
-
-
-
     logging.info("Loading photometry...")
     jd, fwhm, nrstars, star_result = read_photometry.read_photometry(init.star_list, apertureidx)
 
     # Calculate the quality
     # star_select: jd[nrfiles], fwhm[nrfiles], star_result[nrfiles, nrstars, 2]
-
-
 
     logging.debug("Before do ml")
     if do_ml:
@@ -289,8 +251,8 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
 
     chart_premade = False
     chart_upsilon = False
-    chart_vsx = True
-    chart_custom = False
+    chart_vsx = False
+    chart_custom = True
     star_descriptions = []
     logging.info("Getting vsx in field")
     vsx_star_descriptions = do_calibration.get_vsx_in_field(do_calibration.get_star_descriptions(), 0.01)
@@ -332,14 +294,9 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
         chosen_stars = [x.local_id for x in star_descriptions_ucac4]
         dolight.write_lightcurves(chosen_stars,
                                   comparison_stars_1, aperture, int(apertureidx), jd, fwhm, star_result)
-        # do_write_curve(chosen_stars,
-        #                           comparison_stars_1, aperture, int(apertureidx), jd, fwhm, star_result)
-        #
-        # do_write_curve(chosen_stars, comparison_stars_1, aperture, False)
 
     if do_lightcurve_plot or do_phase_diagram:
         logging.info("starting charting / phase diagrams...")
-        print("comparison stars decs:", comparison_stars_1_desc)
         do_charts.run(star_descriptions_ucac4, comparison_stars_1_desc, do_lightcurve_plot, do_phase_diagram)
 
     if do_field_charting:
@@ -364,22 +321,35 @@ def interact():
     code.InteractiveConsole(locals=dict(globals(), **locals())).interact()
 
 if __name__ == '__main__':
-    print("Calculating", len(init.star_list), "stars from base dir:", init.basedir, "\nconvert_fits:\t", init.do_convert_fits,
-          "\nphotometry:\t", init.do_photometry,
-          "\nmatch:\t\t", init.do_match,
-          "\naperture search:\t", init.do_aperture_search,
-          "\npos:\t\t", init.do_pos,
-          "\ncompstars:\t\t", init.do_compstars,
-          "\nlightcurve:\t", init.do_lightcurve,
-          "\nupsilon:\t", init.do_ml,
-          "\nlightcurve plot:\t", init.do_lightcurve_plot,
-          "\nphasediagram:\t", init.do_phase_diagram,
-          "\nfield charts:\t", init.do_field_charts,
-          "\nreporting:\t", init.do_reporting)
-    print("Press Enter to continue...")
-    subprocess.call("read -t 10", shell=True, executable='/bin/bash')
-    logging.getLogger().setLevel(logging.INFO)
-    logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
-    run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_compstars, init.do_aperture_search, init.do_lightcurve,
-                init.do_pos, init.do_ml, init.do_lightcurve_plot, init.do_phase_diagram,
-                init.do_field_charts, init.do_reporting)
+    parser = argparse.ArgumentParser(description='munipack automation cli')
+    parser.add_argument('-c', '--chart', help="Generate lightcurve, lightcurve plot and phase diagram plot", nargs='+')
+    args = parser.parse_args()
+    if args.chart:
+        logging.info(f"Writing lightcurves... {[x.local_id for x in star_descriptions_ucac4]}")
+        chosen_stars = [x.local_id for x in star_descriptions_ucac4]
+        dolight.write_lightcurves(chosen_stars,
+                                  comparison_stars_1, aperture, int(apertureidx), jd, fwhm, star_result)
+        logging.info("starting charting / phase diagrams...")
+        print("comparison stars decs:", comparison_stars_1_desc)
+        do_charts.run(star_descriptions_ucac4, comparison_stars_1_desc, do_lightcurve_plot, do_phase_diagram)
+
+    else:
+        print("Calculating", len(init.star_list), "stars from base dir:", init.basedir, "\nconvert_fits:\t", init.do_convert_fits,
+              "\nphotometry:\t", init.do_photometry,
+              "\nmatch:\t\t", init.do_match,
+              "\naperture search:\t", init.do_aperture_search,
+              "\npos:\t\t", init.do_pos,
+              "\ncompstars:\t\t", init.do_compstars,
+              "\nlightcurve:\t", init.do_lightcurve,
+              "\nupsilon:\t", init.do_ml,
+              "\nlightcurve plot:\t", init.do_lightcurve_plot,
+              "\nphasediagram:\t", init.do_phase_diagram,
+              "\nfield charts:\t", init.do_field_charts,
+              "\nreporting:\t", init.do_reporting)
+        print("Press Enter to continue...")
+        subprocess.call("read -t 10", shell=True, executable='/bin/bash')
+        logging.getLogger().setLevel(logging.INFO)
+        logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
+        run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_compstars, init.do_aperture_search, init.do_lightcurve,
+                    init.do_pos, init.do_ml, init.do_lightcurve_plot, init.do_phase_diagram,
+                    init.do_field_charts, init.do_reporting)
