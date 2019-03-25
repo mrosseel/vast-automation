@@ -361,6 +361,8 @@ def get_ucac4_field(center_coord, radius, row_limit=2):
 # object_name = 'UCAC4 231-154752'
 def get_ucac4_id_as_dataframe(object_name):
     result = Vizier.query_object(object_name, catalog=['I/322A'])
+    if len(result) == 0:
+        logging.warning(f"Returned result from vizier for object {object_name} is empty.")
     df = result[0].to_pandas()
     df2 = df.loc[df['UCAC4'] == object_name.split()[1].encode('UTF-8')]
     return df2
