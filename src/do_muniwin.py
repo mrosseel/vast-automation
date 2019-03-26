@@ -247,8 +247,8 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
 
     chart_premade = False
     chart_upsilon = False
-    chart_vsx = False
-    chart_custom = True
+    chart_vsx = True
+    chart_custom = False
     star_descriptions = []
     logging.info("Getting vsx in field")
     vsx_star_descriptions = do_calibration.get_vsx_in_field(do_calibration.get_star_descriptions(), 0.01)
