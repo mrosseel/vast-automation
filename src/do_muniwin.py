@@ -237,7 +237,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
 
     if do_lightcurve_plot or do_phase_diagram:
         logging.info("starting charting / phase diagrams...")
-        do_charts.run(star_descriptions_ucac4, comparison_stars_1_desc, do_lightcurve_plot, do_phase_diagram)
+        do_charts.run(star_descriptions, comparison_stars_1_desc, do_lightcurve_plot, do_phase_diagram)
 
     if do_field_charting:
         logging.info("Starting field chart plotting...")
@@ -247,6 +247,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
     #import code
     #code.InteractiveConsole(locals=dict(globals(), **locals())).interact()
     if do_reporting:
+        star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
         logging.info(f"AAVSO Reporting with: {len(star_descriptions_ucac4)} stars")
         trash_and_recreate_dir(init.aavsoreportsdir)
         for star in star_descriptions_ucac4:
