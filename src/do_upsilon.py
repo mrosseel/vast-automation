@@ -6,14 +6,14 @@ import tqdm
 import pandas as pd
 from functools import partial
 
+
+# This code is not multithreaded because upsilon itself is already multithreaded and gives warnings if you
+# for nested multithreading.
 def start_upsilon(star_list, star_limit):
     print("Starting upsilon with nr stars:", len(star_list), "and star limit:", star_limit)
-    pool = Pool(init.nr_threads)
-    func = partial(predict_star,limit=star_limit)
     result_list = []
-    for _ in tqdm.tqdm(pool.imap_unordered(func, star_list, chunksize=10), total=len(star_list)):
-        result_list.append(_)
-        pass
+    for star in tqdm.tqdm(star_list, total=len(star_list)):
+        result_list.append(predict_star(star, star_limit))
     return result_list
 
 def test_upsilon():

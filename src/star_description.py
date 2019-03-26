@@ -1,25 +1,24 @@
 class StarDescription:
-    def __init__(self, local_id=None, aavso_id=None, coords=None, vmag=None, e_vmag=None, match=None, upsilon=None, label=None,
+    def __init__(self, local_id=None, aavso_id=None, coords=None, vmag=None, e_vmag=None, match=None, label=None,
                  xpos=None, ypos=None):
+        # star id given by munipack
         self.local_id = local_id
+        # id used to identify to aavso (could be real variable name or UCAC4?)
         self.aavso_id = aavso_id
+        # coords as measured by munipack
         self.coords = coords
+        # vmag as provided by one of the matching catalogs
         self.vmag = vmag
+        # error on vmag as provided by one of the matching catalogs
         self.e_vmag = e_vmag
-        self._match = match if match != None else []
-        self._upsilon = upsilon
+        # arrray of catalogs matching this star
+        self._match = match if match is not None else []
+        # x position on the reference frame
         self.xpos = xpos
+        # y position on the reference frame
         self.ypos = ypos
+        # label to be used when charting this star
         self.label = self.local_id if label is None else label
-
-    @property
-    def upsilon(self):
-        return self._upsilon
-
-    @upsilon.setter
-    def upsilon(self, val):
-        vartype, probability, flag, period = val
-        self._upsilon = {'vartype': vartype, 'probability': probability, 'flag': flag, 'period': period}
 
     @property
     def match(self):
@@ -30,11 +29,8 @@ class StarDescription:
     def match(self, val):
         self._match.append(val)
 
-    # extract matching strings from star_descr
-    def get_match_string(self, catalog, strict=True):
-        name = None
-        separation = None
 
+    def get_catalog(self, catalog: str, strict=True):
         if self.match is not None:
             catalog_match_list = [x for x in self.match if x.name_of_catalog == catalog]
             if len(catalog_match_list) != 1:
@@ -42,25 +38,34 @@ class StarDescription:
                     raise AssertionError("star_description.py: Searching for {} in {}, received {} matches, expected 1"
                                          .format(catalog, self, len(catalog_match_list)))
             else:
-                name = catalog_match_list[0].catalog_id
-                separation = catalog_match_list[0].separation
+                return catalog_match_list[0]
+        return None
 
-        return name, separation
+    # extract matching strings from star_descr
+    def get_match_string(self, catalog, strict=True):
+        # will give an assertion error if the catalog match is not unique
+        result = self.get_catalog(catalog, strict)
+        return result.catalog_id, result.separation
 
     def __repr__(self):
-        return "StarDescription({0},{1},{2},{3},{4},{5})".format(
-            self.local_id, self.aavso_id, self.coords, self.vmag, self._match, self._upsilon)
+        return "StarDescription({0},{1},{2},{3},{4})".format(
+            self.local_id, self.aavso_id, self.coords, self.vmag, self._match)
 
     def __str__(self):
-        return "local_id: {0}, aavso_id: {1}, coords: {2}, vmag: {3}".format(
-            self.local_id, self.aavso_id, self.coords, self.vmag, self._match, self._upsilon)
+        return "local_id: {0}, aavso_id: {1}, coords: {2}, vmag: {3}, nr matches: {4}".format(
+            self.local_id, self.aavso_id, self.coords, self.vmag, len(self._match))
 
 class CatalogMatch():
     def __init__(self, name_of_catalog=None, catalog_id=None, name=None, coords=None, separation=-1):
+        # the name of the catalog
         self.name_of_catalog = name_of_catalog
+        # the id in the catalog
         self.catalog_id = catalog_id
+        # the name of the object in this catalog
         self.name = name
+        # the coords in the catalog
         self.coords = coords
+        # the separation between the munipack-found coords and the catalog coords
         self.separation = separation
 
     def __repr__(self):
@@ -69,14 +74,22 @@ class CatalogMatch():
     def __str__(self):
         return f'Catalog:{self.name_of_catalog}, CatalogId:{self.catalog_id}, Name:{self.name}, Coords:{self.coords}, Separation:{self.separation}'
 
+class UpsilonMatch():
+    def __init__(self, name_of_catalog='Upsilon', var_type=None, probability=None, flag=None, period=None):
+        self.name_of_catalog = name_of_catalog
+        self.var_type = var_type
+        self.probability = probability
+        self.flag = flag
+        self.period = period
 
-# extract upsilon strings from star_descr
-# should be migrated to an upsilon catalog_match. Problem is format is quite different, could use extra_dict
-def get_upsilon_string(star_description):
-    upsilon = star_description.upsilon
-    if not upsilon == None:
-        upsilon_text = "\nVar: prob={0:.2f}({1}),type={2}".format(upsilon['probability'], upsilon['flag'],
-                                                                  upsilon['vartype'])
-    else:
-        upsilon_text = ''
-    return upsilon_text
+    # extract upsilon strings from star_descr
+    # might have to move outside of UpsilonMatch
+    def get_upsilon_string(self):
+        return "\nVar: prob={0:.2f}({1}),type={2}".format(self.probability, self.flag, self.var_type)
+
+    def __repr__(self):
+        return f'Catalog:{self.name_of_catalog}, Var Type:{self.var_type}, Probability:{self.probability}, flag:{self.flag}, Period:{self.period}'
+
+    def __str__(self):
+        return f'Catalog:{self.name_of_catalog}, Var Type:{self.var_type}, Probability:{self.probability}, flag:{self.flag}, Period:{self.period}'
+

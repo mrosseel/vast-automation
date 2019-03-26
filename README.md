@@ -46,6 +46,7 @@ _Password is 'muni'_
 
 ## TODO
 
+- after convert_fits we should stop and not crash if there is no reference frame defined
 - check out https://public.lanl.gov/palmer/fastchi.html for period determination
 - check out https://github.com/toros-astro/astroalign for aligning
 - new ensemble comparison star calculation?

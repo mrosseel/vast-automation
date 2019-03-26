@@ -5,6 +5,7 @@ import reading
 import logging
 from star_description import StarDescription
 from star_description import CatalogMatch
+from star_description import UpsilonMatch
 from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
@@ -107,7 +108,7 @@ def find_target_star(target_ra_deg, target_dec_deg, nr_results):
     df.sort_values(by='deg_separation', inplace=True)
     return df[:nr_results]
 
-# returns StarDescription with filled in local_id, upsilon, coord
+# returns StarDescription with filled in local_id, upsilon match, coord
 def get_candidates(threshold_prob=0.5, check_flag=False):
     df = pd.read_csv(init.basedir + 'upsilon_output.txt', index_col=0)
     df.sort_values(by='probability', ascending=False)
@@ -118,18 +119,31 @@ def get_candidates(threshold_prob=0.5, check_flag=False):
     result = []
     for index, row in df.iterrows():
         # print(index, row)
+        # name_of_catalog='Upsilon', var_type=None, probability=None, flag=None, period=None):
+        upsilon_match = UpsilonMatch(name_of_catalog='Upsilon', var_type=row['label'], probability=row['probability'], flag=row['flag'], period=row['period'])
         result.append(
-            StarDescription(local_id=index, upsilon=(row['label'], row['probability'], row['flag'], row['period']),
+            StarDescription(local_id=index, match=upsilon_match,
                             coords=SkyCoord(positions[int(index)][0], positions[int(index)][1], unit='deg')))
     return result
 
 # returns StarDescription with filled in local_id, upsilon, coord
-def add_upsilon_data(star_descriptions):
-    df = pd.read_csv(init.basedir + 'upsilon_output.txt')
+def add_upsilon_data(star_descriptions, threshold_prob=0.5, check_flag=False):
+    try:
+        upsilon_output_txt_ = init.basedir + 'upsilon_output.txt'
+        df = pd.read_csv(upsilon_output_txt_)
+    except:
+        logging.warning(f"Could not read the upsilon output file: {upsilon_output_txt_}. Make sure you ran ml once")
+        return star_descriptions
+
+    logging.info(f"Using {df.shape[0]} upsilon entries to augment {len(star_descriptions)} star descriptions")
+    df = df[df['label'] != 'NonVar']
+    df = df[df["probability"] > threshold_prob]
+    if check_flag: df = df[df["flag"] != 1]
     for star in star_descriptions:
         try:
             row = df.iloc[df.index.get_loc(star.local_id)]
-            star.upsilon = (row['label'], row['probability'], row['flag'], row['period'])
+            star.match.append(UpsilonMatch(name_of_catalog='Upsilon', var_type=row['label'],
+                                           probability=row['probability'], flag=row['flag'], period=row['period']))
         except:
             continue
     return star_descriptions
@@ -247,7 +261,7 @@ def create_vsx_astropy_catalog():
     vsx_dict = vsx_pickle.read(init.vsxcatalogdir)
     return create_generic_astropy_catalog(vsx_dict['ra_deg_np'], vsx_dict['dec_deg_np']), vsx_dict
 
-
+# NO LONGER USED
 def create_upsilon_astropy_catalog(threshold_prob_candidates=0.5):
     print("Creating upsilon star catalog...")
     ra2 = np.array([])

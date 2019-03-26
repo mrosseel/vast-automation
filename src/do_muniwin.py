@@ -6,17 +6,15 @@ import do_charts_stats
 import do_aperture
 import do_compstars
 import do_lightcurve as dolight
-from do_lightcurve import join_check_stars_string
 import read_photometry
 import reading
 from reading import trash_and_recreate_dir
 from reading import reduce_star_list
-import pandas as pd
 import numpy as np
 import multiprocessing as mp
 import logging
 import tqdm
-import os, sys
+import os
 from functools import partial
 from subprocess import call
 import subprocess
@@ -25,36 +23,6 @@ import do_aavso_report
 import re
 import glob
 import argparse
-
-# Munifind fields: INDEX MEAN_MAG STDEV GOODPOINTS
-def read_munifind(filename):
-    df = pd.read_csv(filename, skiprows=[1], sep=' ')
-    df.rename(columns={'INDEX': 'STAR'}, inplace=True)
-    print("max goodpoints:", df['GOODPOINTS'].max())
-    print("min stdev:", df['STDEV'].min())
-    print(df.sort_values('STDEV').head())
-    return df
-
-
-# gets the stars with a maximum of measurements and lowest stdev
-def getBestComparisonStars(nrOfStars, filename=init.basedir + 'munifind.txt'):
-    print('getBestComparisonStars: reading ', filename)
-    df = read_munifind(filename)
-    maxPoints = df['GOODPOINTS'].max()
-    df = df[df['GOODPOINTS'] > maxPoints * 0.99]
-    df_lowest_stdev = df.sort_values('STDEV')
-    comparison_stars = df_lowest_stdev.head(nrOfStars)
-    #print("Comparison stars:\n", comparison_stars.describe())
-    return comparison_stars
-
-
-def do_best_comparison_stars(nrOfStars):
-    bestcomps = getBestComparisonStars(nrOfStars)
-    check_stars = []
-    for _, row in bestcomps.iterrows():
-        # print(row, '\n')
-        check_stars.append(int(row['STAR']))
-    return check_stars
 
 def write_convert_fits():
     logging.info("Convert fits files to fts")
@@ -74,12 +42,6 @@ def write_photometry(config_file=init.basedir+'muniphot.conf', files=None, outpu
     for _ in tqdm.tqdm(pool.imap_unordered(func, files, 50), total=len(files)):
         pass
 
-def command_caller(fits, config_file_param, outputdir, outputfile_prefix):
-    if isinstance(fits, list):
-        fits = ' '.join(fits)
-    command = f"muniphot {fits} {config_file_param} -o {outputdir+outputfile_prefix}{int(''.join(filter(str.isdigit, fits))):06d}.pht"
-    logging.debug(f'Photometry command is: {command}')
-    subprocess.call(command, shell=True)
 
 def write_match(to_match_photomotry_file, base_photometry_file, to_match_is_full_path=False,
                 config_file=init.basedir+'match.conf', inputdir=init.photometrydir, outputdir=init.matchedphotometrydir):
@@ -92,38 +54,9 @@ def write_match(to_match_photomotry_file, base_photometry_file, to_match_is_full
     config_file = f'-p {config_file}' if config_file is not '' else ''
     photometry_file_full_path = init.photometrydir + to_match_photomotry_file if to_match_is_full_path is False else to_match_photomotry_file
     command = f'munimatch {config_file} {base_photometry_file} {photometry_file_full_path} -o {outputdir + "match" + numbers + ".pht"}'
-    print("Munimatch command:", command)
+    logging.debug(f"Munimatch command: {command}")
     subprocess.call(command, shell=True)
 
-# percentage is between 0 and 1
-def write_munifind_dirfile(match_pattern, percentage=1):
-    matched_files = glob.glob(init.matchedphotometrydir+match_pattern)
-    desired_length = int(len(matched_files) * percentage)
-    np.random.seed(42) # for the same percentage, we always get the same selection
-    selected_files = np.random.choice(matched_files, size=desired_length, replace=False).tolist()
-    with open(init.aperturedir+'/munifind_filelist.txt', mode='wt', encoding='utf-8') as myfile:
-        for lines in selected_files:
-            print(lines, file = myfile)
-    myfile.close
-    return len(selected_files)
-
-def write_munifind(aperture, match_file=False, match_pattern='match*', quiet=False, canonical=False, percentage=1):
-    quiet_switch = '-q ' if quiet else ''
-    quiet_null = ' > /dev/null' if quiet else ''
-    munifind_file = init.basedir + 'munifind.txt' if canonical else init.aperturedir + 'munifind_' + str(aperture) + '.txt'
-    selected = None
-    if match_file:
-        selected = write_munifind_dirfile(match_pattern, percentage)
-        sourcefiles = f'-i {init.aperturedir}/munifind_filelist.txt'
-    else:
-        sourcefiles = init.matchedphotometrydir + match_pattern
-    print(f"writing munifind for aperture {aperture}, file: {munifind_file}, quiet: {quiet}, nr_sourcefiles: {selected if selected else 'all'}")
-    os.system('munifind ' + quiet_switch + '-a ' + str(aperture) + ' ' + munifind_file + ' ' +  sourcefiles + quiet_null)
-    return munifind_file
-
-def write_munifind_check_stars(check_star, aperture):
-    print("write munifind check stars using check star:", check_star)
-    os.system('munifind -a ' + str(aperture) + ' ' + ' -c ' + str(check_star) + ' ' + init.basedir + 'munifind.txt ' + init.matchedphotometrydir + 'match*')
 
 # TODO add check stars to this command?
 def write_pos(star, check_stars_list, matched_reference_frame, aperture):
@@ -140,7 +73,7 @@ def do_write_pos(star_list, check_stars_list, aperture, matched_reference_frame,
         star_list = reduce_star_list(star_list, init.posdir)
     pool = mp.Pool(init.nr_threads, maxtasksperchild=100)
     func = partial(write_pos, check_stars_list=check_stars_list, matched_reference_frame=matched_reference_frame, aperture=aperture)
-    print("Writing star positions for", len(star_list), "stars into", init.posdir)
+    logging.info(f"Writing star positions for {len(star_list)} stars into {init.posdir}")
     for _ in tqdm.tqdm(pool.imap_unordered(func, star_list, 10), total=len(star_list)):
         pass
 
@@ -153,7 +86,6 @@ def do_world_pos(wcs, star_list, reference_frame_index):
     for _ in tqdm.tqdm(pool.imap_unordered(func, star_list), total=len(star_list)):
         pass
 
-
 # TODO check that JD of first line is equal to JD of reference frame !
 def world_pos(star, wcs, reference_frame_index):
     f = open(reading.get_pos_filename(star))
@@ -165,6 +97,14 @@ def world_pos(star, wcs, reference_frame_index):
     f2 = open(reading.get_worldpos_filename(star), 'w')
     f2.write(str(world_coords[0]) + " " + str(world_coords[1]))
     f2.close()
+
+def command_caller(fits, config_file_param, outputdir, outputfile_prefix):
+    if isinstance(fits, list):
+        fits = ' '.join(fits)
+    command = f"muniphot {fits} {config_file_param} -o {outputdir+outputfile_prefix}{int(''.join(filter(str.isdigit, fits))):06d}.pht"
+    logging.debug(f'Photometry command is: {command}')
+    subprocess.call(command, shell=True)
+
 
 def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_aperture_search, do_lightcurve, do_pos,
                 do_ml, do_lightcurve_plot, do_phase_diagram, do_field_charting, do_reporting):
@@ -244,38 +184,37 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
     # star_select: jd[nrfiles], fwhm[nrfiles], star_result[nrfiles, nrstars, 2]
 
 
+    ## Star description construction
 
     chart_premade = False
-    chart_upsilon = False
-    chart_vsx = True
-    chart_custom = False
+    chart_only_upsilon = False
+    chart_only_vsx = False
+    chart_only_custom = True
     star_descriptions = []
-    logging.info("Getting vsx in field")
-    vsx_star_descriptions = do_calibration.get_vsx_in_field(do_calibration.get_star_descriptions(), 0.01)
 
     if chart_premade:
         logging.info("Loading premade star_descriptions: star_descriptions_to_chart.bin")
         with open(init.basedir + 'star_descriptions_to_chart.bin', 'rb') as fp:
             star_descriptions = pickle.load(fp)
     else:
-        if (chart_upsilon):
+        if (chart_only_upsilon):
             # now we generate a list of StarDescriptions, with which all further processing will be done
             logging.info("Setting star_descriptions to upsilon candidates")
             star_descriptions = do_calibration.get_candidates(0.1)
-        elif(chart_vsx):
+        elif(chart_only_vsx):
             logging.info("Setting star_descriptions to vsx stars")
-            star_descriptions = vsx_star_descriptions
-        elif(chart_custom):
+            star_descriptions = do_calibration.get_vsx_in_field(do_calibration.get_star_descriptions(), 0.01)
+        elif(chart_only_custom):
             logging.info(f"Setting star_descriptions to custom: {init.star_list}")
             star_descriptions = do_calibration.get_star_descriptions(init.star_list)
 
-        if not chart_vsx: # vsx names are always added, but chart_vsx already has the vsx mappings
+        if not chart_only_vsx: # vsx names are always added, but chart_only_vsx already has the vsx mappings
             logging.info("Adding vsx names to star_descriptions")
             star_descriptions = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions)
 
-        # if not chart_upsilon:
-        #     logging.info("Adding upsilon data to star_descriptions")
-        #     star_descriptions = do_calibration.add_upsilon_data(star_descriptions)
+        if not chart_only_upsilon:
+            logging.info("Adding upsilon data to star_descriptions")
+            star_descriptions = do_calibration.add_upsilon_data(star_descriptions)
 
         logging.info("Writing star_descriptions_to_chart.bin...")
         with open(init.basedir + 'star_descriptions_to_chart.bin', 'wb') as fp:
@@ -283,7 +222,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
 
     # add ucac4 to star_descriptions for AAVSO reporting (specifically for unknown stars)
     # logging.info(f"Adding ucac4 to all stars of interest: {star_descriptions}")
-    star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
+    #star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
 
     if do_lightcurve:
         logging.info(f"Writing lightcurves... {[x.local_id for x in star_descriptions_ucac4]}")
@@ -291,9 +230,8 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
         dolight.write_lightcurves(chosen_stars,
                                   comparison_stars_1, aperture, int(apertureidx), jd, fwhm, star_result)
 
-    logging.debug("Before do ml")
     if do_ml:
-        logging.debug("Doing ML detection of variable stars...")
+        logging.info("Doing ML detection of variable stars...")
         import do_upsilon  # do it here because it takes some time at startup
         do_upsilon.run(init.star_list)
 
@@ -315,18 +253,22 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
             do_aavso_report.report(init.aavsoreportsdir, star, comparison_stars_1_desc[0])
 
 
-    # logger = mp.log_to_stderr()
-    # logger.setLevel(mp.SUBDEBUG)
 
 def interact():
     import code
     code.InteractiveConsole(locals=dict(globals(), **locals())).interact()
 
 if __name__ == '__main__':
+    logging.getLogger().setLevel(logging.INFO)
+    logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
+    # logger = mp.log_to_stderr()
+    # logger.setLevel(mp.SUBDEBUG)
+
     parser = argparse.ArgumentParser(description='munipack automation cli')
     parser.add_argument('-c', '--chart', help="Generate lightcurve, lightcurve plot and phase diagram plot", nargs='+')
     args = parser.parse_args()
     if args.chart:
+        print("in chart part")
         logging.info(f"Writing lightcurves... {[x.local_id for x in star_descriptions_ucac4]}")
         chosen_stars = [x.local_id for x in star_descriptions_ucac4]
         dolight.write_lightcurves(chosen_stars,
@@ -339,19 +281,17 @@ if __name__ == '__main__':
         print("Calculating", len(init.star_list), "stars from base dir:", init.basedir, "\nconvert_fits:\t", init.do_convert_fits,
               "\nphotometry:\t", init.do_photometry,
               "\nmatch:\t\t", init.do_match,
-              "\naperture search:\t", init.do_aperture_search,
+              "\naperture:\t", init.do_aperture_search,
               "\npos:\t\t", init.do_pos,
-              "\ncompstars:\t\t", init.do_compstars,
+              "\ncompstars:\t", init.do_compstars,
               "\nlightcurve:\t", init.do_lightcurve,
               "\nupsilon:\t", init.do_ml,
-              "\nlightcurve plot:\t", init.do_lightcurve_plot,
+              "\nlight plot:\t", init.do_lightcurve_plot,
               "\nphasediagram:\t", init.do_phase_diagram,
               "\nfield charts:\t", init.do_field_charts,
               "\nreporting:\t", init.do_reporting)
         print("Press Enter to continue...")
         subprocess.call("read -t 10", shell=True, executable='/bin/bash')
-        logging.getLogger().setLevel(logging.INFO)
-        logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
         run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_compstars, init.do_aperture_search, init.do_lightcurve,
                     init.do_pos, init.do_ml, init.do_lightcurve_plot, init.do_phase_diagram,
                     init.do_field_charts, init.do_reporting)
