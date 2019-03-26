@@ -243,11 +243,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
     # Calculate the quality
     # star_select: jd[nrfiles], fwhm[nrfiles], star_result[nrfiles, nrstars, 2]
 
-    logging.debug("Before do ml")
-    if do_ml:
-        logging.debug("Doing ML detection of variable stars...")
-        import do_upsilon  # do it here because it takes some time at startup
-        do_upsilon.run(init.star_list)
+
 
     chart_premade = False
     chart_upsilon = False
@@ -294,6 +290,12 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
         chosen_stars = [x.local_id for x in star_descriptions_ucac4]
         dolight.write_lightcurves(chosen_stars,
                                   comparison_stars_1, aperture, int(apertureidx), jd, fwhm, star_result)
+
+    logging.debug("Before do ml")
+    if do_ml:
+        logging.debug("Doing ML detection of variable stars...")
+        import do_upsilon  # do it here because it takes some time at startup
+        do_upsilon.run(init.star_list)
 
     if do_lightcurve_plot or do_phase_diagram:
         logging.info("starting charting / phase diagrams...")
