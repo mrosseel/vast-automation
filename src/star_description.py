@@ -30,7 +30,7 @@ class StarDescription:
         self._match.append(val)
 
 
-    def get_catalog(self, catalog: str, strict=True):
+    def get_catalog(self, catalog: str, strict=False):
         if self.match is not None:
             catalog_match_list = [x for x in self.match if x.name_of_catalog == catalog]
             if len(catalog_match_list) != 1:
@@ -42,9 +42,11 @@ class StarDescription:
         return None
 
     # extract matching strings from star_descr
-    def get_match_string(self, catalog, strict=True):
+    def get_match_string(self, catalog):
         # will give an assertion error if the catalog match is not unique
-        result = self.get_catalog(catalog, strict)
+        result = self.get_catalog(catalog)
+        if result is None:
+            return None, None
         return result.catalog_id, result.separation
 
     def __repr__(self):

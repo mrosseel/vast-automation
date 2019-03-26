@@ -14,6 +14,7 @@ from astropy.coordinates import SkyCoord
 from gatspy.periodic import LombScargleFast
 import init
 from reading import trash_and_recreate_dir
+import logging
 
 TITLE_PAD=40
 
@@ -27,10 +28,12 @@ def plot_lightcurve(tuple, comparison_stars):
     star_description = tuple[0]
     curve = tuple[1]
     star = star_description.local_id
-    star_match, separation = star_description.get_match_string("VSX", strict=False)
+    logging.debug(f"Plotting lightcurve for {star}")
+    star_match, separation = star_description.get_match_string("VSX")
     match_string = f"({star_match})" if not star_match == None else ''
     star_name = '' if star_match == None else " ({} - dist:{:.4f})".format(star_match, separation)
-    upsilon_text = star_description.get_match_string('Upsilon').get_upsilon_string(star_description)
+    upsilon_match = star_description.get_catalog('Upsilon')
+    upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
     coord = star_description.coords
     #print(f'Plotting lightcurve with star_description:{star_description}, curve length:{len(curve)}, star:{star}, curve:{curve}')
     if(curve is None):
@@ -48,7 +51,6 @@ def plot_lightcurve(tuple, comparison_stars):
                data=used_curve, height=20, aspect=5,scatter_kws={"s": 15},
                fit_reg=False)
 
-    plt.title("Star {0}{1}, position: {2}{3}".format(star, star_name, get_hms_dms(coord), upsilon_text), pad=TITLE_PAD)
 
     #plt.xaxis.set_major_formatter(ticker.FuncFormatter(format_date))
     #plt.set_title("Custom tick formatter")
@@ -67,6 +69,7 @@ def plot_lightcurve(tuple, comparison_stars):
     plt.gca().invert_yaxis()
     #g.map(plt.errorbar, 'Count', 'V-C', yerr='s1', fmt='o')
     #plt.ticklabel_format(style='plain', axis='x')
+    plt.title("Star {0}{1}, position: {2}{3}".format(star, star_name, get_hms_dms(coord), upsilon_text), pad=TITLE_PAD)
     g.savefig(init.chartsdir+str(star).zfill(5)+'_plot' )
     plt.close(g.fig)
 #    except:
@@ -77,9 +80,10 @@ def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
     star_description = tuple[0]
     curve = tuple[1]
     star = star_description.local_id
-    star_match, separation = star_description.get_match_string("VSX", strict=False)
+    star_match, separation = star_description.get_match_string("VSX")
     match_string = f" ({star_match})" if not star_match == None else ''
-    upsilon_text = star_description.get_catalog('Upsilon').get_upsilon_string()
+    upsilon_match = star_description.get_catalog('Upsilon')
+    upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
     #print("Calculating phase diagram for", star)
     if curve is None:
         print("Curve of star {} is None".format(star))
@@ -125,6 +129,7 @@ def format_date(x, pos=None):
     return r.date[thisind].strftime('%Y-%m-%d')
 
 def read_lightcurves(star_pos, star_descriptions, comparison_stars, do_charts, do_phase):
+    logging.debug("in read_lightcurves")
     star_description = star_descriptions[star_pos]
     try:
         df = reading.read_lightcurve(star_description.local_id,filter=True)
