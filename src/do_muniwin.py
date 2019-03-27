@@ -177,8 +177,9 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
         comparison_stars_1, comparison_stars_1_desc = reading.read_compstars()
         logging.info(f"comparison stars: {comparison_stars_1}")
 
-    logging.info("Loading photometry...")
-    jd, fwhm, nrstars, star_result = read_photometry.read_photometry(init.star_list, apertureidx)
+    if(do_lightcurve or do_field_charting):
+        logging.info("Loading photometry...")
+        jd, fwhm, nrstars, star_result = read_photometry.read_photometry(init.star_list, apertureidx)
 
     # Calculate the quality
     # star_select: jd[nrfiles], fwhm[nrfiles], star_result[nrfiles, nrstars, 2]

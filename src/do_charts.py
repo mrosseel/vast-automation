@@ -15,6 +15,7 @@ from gatspy.periodic import LombScargleFast
 import init
 from reading import trash_and_recreate_dir
 import logging
+from timeit import default_timer as timer
 
 TITLE_PAD=40
 
@@ -32,8 +33,11 @@ def plot_lightcurve(tuple, comparison_stars):
     star_match, separation = star_description.get_match_string("VSX")
     match_string = f"({star_match})" if not star_match == None else ''
     star_name = '' if star_match == None else " ({} - dist:{:.4f})".format(star_match, separation)
+    start = timer()
     upsilon_match = star_description.get_catalog('Upsilon')
     upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
+    end = timer()
+    print("timing upsilon stuff", end-start)
     coord = star_description.coords
     #print(f'Plotting lightcurve with star_description:{star_description}, curve length:{len(curve)}, star:{star}, curve:{curve}')
     if(curve is None):
@@ -51,26 +55,24 @@ def plot_lightcurve(tuple, comparison_stars):
                data=used_curve, height=20, aspect=5,scatter_kws={"s": 15},
                fit_reg=False)
 
-
-    #plt.xaxis.set_major_formatter(ticker.FuncFormatter(format_date))
-    #plt.set_title("Custom tick formatter")
-    #fig.autofmt_xdate()
     plt.xlabel('Count', labelpad=TITLE_PAD)
     plt.ylabel("Absolute Mag, comp star = {:2.2f}".format(comparison_stars[0].vmag), labelpad=TITLE_PAD)
     plot_max = used_curve_max
     plot_min = min(plot_max-1, used_curve_min)
-    #print('min', plot_min, 'max', plot_max, 'usedmin', used_curve_min, 'usedmax', used_curve_max)
+    logging.debug(f'min {plot_min} max {plot_max} usedmin {used_curve_min} usedmax {used_curve_max}')
     if np.isnan(plot_max) or np.isnan(plot_min):
         print(f"star is nan:{star}, plot_max:{plot_max}, plot_min:{plot_min}")
         return
-    #print("Star:{},dim:{},bright:{}".format(star, plot_dim, plot_bright))
     plt.ylim(plot_min,plot_max)
     plt.xlim(0, len(used_curve))
     plt.gca().invert_yaxis()
     #g.map(plt.errorbar, 'Count', 'V-C', yerr='s1', fmt='o')
     #plt.ticklabel_format(style='plain', axis='x')
     plt.title("Star {0}{1}, position: {2}{3}".format(star, star_name, get_hms_dms(coord), upsilon_text), pad=TITLE_PAD)
+    start = timer()
     g.savefig(init.chartsdir+str(star).zfill(5)+'_plot' )
+    end = timer()
+    print("timing saving fig", end-start)
     plt.close(g.fig)
 #    except:
 #        print("error", tuple)
@@ -129,24 +131,36 @@ def format_date(x, pos=None):
     return r.date[thisind].strftime('%Y-%m-%d')
 
 def read_lightcurves(star_pos, star_descriptions, comparison_stars, do_charts, do_phase):
-    logging.debug("in read_lightcurves")
+    start = timer()
+    logging.debug("Reading lightcurves...")
     star_description = star_descriptions[star_pos]
     try:
         df = reading.read_lightcurve(star_description.local_id,filter=True)
         if df is None or len(df) == 0:
             print("No lightcurve found for star", star_description.local_id)
             return
+
         # adding vmag of comparison star to all diff mags
         # TODO: this is wrong, should be composition of all comparison stars. To do error propagation use quadrature
         # rule: http://ipl.physics.harvard.edu/wp-uploads/2013/03/PS3_Error_Propagation_sp13.pdf
         df['V-C'] = df['V-C'] + comparison_stars[0].vmag
         tuple = star_description, df
         if do_charts:
+            # start = timer()
             plot_lightcurve(tuple, comparison_stars=comparison_stars)
+            # end = timer()
+            # print("plotting lightcurve:", end-start)
         if do_phase:
+            # start = timer()
             plot_phase_diagram(tuple, comparison_stars=comparison_stars)
+            # end = timer()
+            # print("plotting phase:", end-start)
     except FileNotFoundError:
         print("File not found error in store and curve for star", star_description.local_id)
+
+    end = timer()
+    print("Full lightcurve/phase:", end-start)
+
 
 # reads lightcurves and passes them to lightcurve plot or phase plot
 def run(star_descriptions, comparison_stars, do_charts, do_phase):
