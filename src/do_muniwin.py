@@ -58,13 +58,9 @@ def write_match(to_match_photomotry_file, base_photometry_file, to_match_is_full
     subprocess.call(command, shell=True)
 
 
-# TODO add check stars to this command?
+# TODO read the x y position from the photometry files, ditch munilist
 def write_pos(star, check_stars_list, matched_reference_frame, aperture):
-    # start = time.time()
-    # check_stars = join_check_stars(check_stars_list, star)
-    # os.system("munilist -a " + str(aperture)+ " -q --obj-plot --object "+ str(star)+ " " + get_pos_filename(star) + " " + init.matchedphotometrydir+'match*.pht >/dev/null')
     call("munilist -a " + str(aperture) + " -q --obj-plot --object " + str(star) + " " + reading.get_pos_filename(star) + " " + matched_reference_frame + ' >/dev/null', shell=True)
-    # end = time.time()
 
 def do_write_pos(star_list, check_stars_list, aperture, matched_reference_frame, is_resume):
     if not is_resume:
@@ -224,7 +220,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
 
     if do_lightcurve:
         logging.info(f"Writing lightcurves...")
-        chosen_stars = [x.local_id for x in star_descriptions_ucac4]
+        chosen_stars = [x.local_id for x in star_descriptions]
         dolight.write_lightcurves(chosen_stars,
                                   comparison_stars_1, aperture, int(apertureidx), jd, fwhm, star_result)
 
@@ -269,6 +265,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='munipack automation cli')
     parser.add_argument('-c', '--chart', help="Generate lightcurve, lightcurve plot and phase diagram plot", nargs='+')
+    parser.add_argument('-n', '--nowait', help="Don't wait 10 secs before starting", action="store_true")
     args = parser.parse_args()
     if args.chart:
         print("in chart part")
@@ -293,8 +290,9 @@ if __name__ == '__main__':
               "\nphasediagram:\t", init.do_phase_diagram,
               "\nfield charts:\t", init.do_field_charts,
               "\nreporting:\t", init.do_reporting)
-        print("Press Enter to continue...")
-        subprocess.call("read -t 10", shell=True, executable='/bin/bash')
+        if not args.nowait:
+            print("Press Enter to continue...")
+            subprocess.call("read -t 10", shell=True, executable='/bin/bash')
         run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_compstars, init.do_aperture_search, init.do_lightcurve,
                     init.do_pos, init.do_ml, init.do_lightcurve_plot, init.do_phase_diagram,
                     init.do_field_charts, init.do_reporting)
