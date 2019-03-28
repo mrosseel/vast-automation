@@ -103,7 +103,7 @@ def command_caller(fits, config_file_param, outputdir, outputfile_prefix):
 
 
 def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_aperture_search, do_lightcurve, do_pos,
-                do_ml, do_lightcurve_plot, do_phase_diagram, do_field_charting, do_reporting):
+                do_ml, do_lightcurve_plot, do_phase_diagram, do_field_charting, do_reporting, chart_vsx):
     if do_convert_fits:
         logging.info("Converting fits...")
         write_convert_fits()
@@ -185,8 +185,8 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
 
     chart_premade = False
     chart_only_upsilon = False
-    chart_only_vsx = False
-    chart_only_custom = True
+    chart_only_vsx = True if chart_vsx else False
+    chart_only_custom = False if chart_vsx else True
     star_descriptions = []
 
     if chart_premade:
@@ -239,7 +239,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
 
     if do_field_charting:
         logging.info("Starting field chart plotting...")
-        do_charts_field.run_standard_field_charts(vsx_star_descriptions, wcs)
+        do_charts_field.run_standard_field_charts(star_descriptions, wcs)
         do_charts_stats.main(fwhm)
 
     #import code
@@ -266,6 +266,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='munipack automation cli')
     parser.add_argument('-c', '--chart', help="Generate lightcurve, lightcurve plot and phase diagram plot", nargs='+')
     parser.add_argument('-n', '--nowait', help="Don't wait 10 secs before starting", action="store_true")
+    parser.add_argument('-v', '--vsx', help="Only do charting for the vsx stars", action="store_true")
     args = parser.parse_args()
     if args.chart:
         print("in chart part")
@@ -295,4 +296,4 @@ if __name__ == '__main__':
             subprocess.call("read -t 10", shell=True, executable='/bin/bash')
         run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_compstars, init.do_aperture_search, init.do_lightcurve,
                     init.do_pos, init.do_ml, init.do_lightcurve_plot, init.do_phase_diagram,
-                    init.do_field_charts, init.do_reporting)
+                    init.do_field_charts, init.do_reporting, args.vsx)
