@@ -213,9 +213,6 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
             logging.info("Adding vsx names to star_descriptions")
             star_descriptions = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions)
 
-        if not chart_only_upsilon:
-            logging.info("Adding upsilon data to star_descriptions")
-            star_descriptions = do_calibration.add_upsilon_data(star_descriptions)
 
         logging.info("Writing star_descriptions_to_chart.bin...")
         with open(init.basedir + 'star_descriptions_to_chart.bin', 'wb') as fp:
@@ -226,7 +223,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
     #star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
 
     if do_lightcurve:
-        logging.info(f"Writing lightcurves... {[x.local_id for x in star_result]}")
+        logging.info(f"Writing lightcurves...")
         chosen_stars = [x.local_id for x in star_descriptions_ucac4]
         dolight.write_lightcurves(chosen_stars,
                                   comparison_stars_1, aperture, int(apertureidx), jd, fwhm, star_result)
@@ -235,6 +232,10 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
         logging.info("Doing ML detection of variable stars...")
         import do_upsilon  # do it here because it takes some time at startup
         do_upsilon.run(init.star_list)
+    else:
+        if not chart_only_upsilon:
+            logging.info("Adding upsilon data to star_descriptions")
+            star_descriptions = do_calibration.add_upsilon_data(star_descriptions)
 
     if do_lightcurve_plot or do_phase_diagram:
         logging.info("starting charting / phase diagrams...")
