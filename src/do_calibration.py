@@ -21,12 +21,14 @@ import pandas as pd
 from functools import partial
 from multiprocessing import Pool
 
+
 def get_wcs(wcs_file):
     hdulist = fits.open(wcs_file)
     data = hdulist[0].data.astype(float)
     header = hdulist[0].header
     wcs = WCS(header)
     return wcs
+
 
 def calibrate():
     w = WCS(init.reference_header)
@@ -35,12 +37,14 @@ def calibrate():
     # print(w)
     return w
 
+
 def old_find_reference_frame_index():
     the_dir = os.listdir(init.reference_dir)
     the_dir.sort()
     reference_frame_index = the_dir.index(init.reference_frame)
     assert the_dir[reference_frame_index] == init.reference_frame
     return reference_frame_index
+
 
 # Either reads the previously chosen reference frame, or determines one if it's missing
 def get_reference_frame(file_limit, reference_method):
@@ -57,11 +61,13 @@ def get_reference_frame(file_limit, reference_method):
     assert reference_frame_index == do_calibration.find_file_index(init.convfitsdir, reference_frame, '*.fts')
     return [reference_frame, init.convfitsdir + reference_frame, reference_frame_index]
 
+
 def find_file_index(the_dir, the_file, the_filter='*'):
     the_dir = glob.glob(the_dir+the_filter)
     the_dir.sort()
     indices = [i for i, elem in enumerate(the_dir) if the_file in elem]
     return indices[0]
+
 
 # returns the converted_fits file with the highest compressed filesize, limited to 'limit'
 # if limit is higher than listdir length, no harm
@@ -80,11 +86,13 @@ def select_reference_frame_gzip(limit):
     sorted_by_value = sorted(result.items(), key=lambda kv: kv[1], reverse=True)
     return sorted_by_value[0][0]
 
+
 # returns the converted_fits file with the highest jpeg filesize, limited to 'limit'
 # if limit is higher than listdir length, no harm
 def select_reference_frame_jpeg(limit):
     bestfile, bestsize, jpegfile = do_reference_frame.runit(init.convfitsdir, limit)
     return bestfile.rsplit('/', 1)[1] # bestfile contains full path, split of the filename
+
 
 # returns 'path + phot????.pht', the photometry file matched with the reference frame
 def find_reference_photometry(reference_frame_index):
@@ -92,10 +100,12 @@ def find_reference_photometry(reference_frame_index):
     the_dir.sort()
     return init.photometrydir + the_dir[reference_frame_index]
 
+
 def find_reference_matched(reference_frame_index):
    the_dir = os.listdir(init.matchedphotometrydir)
    the_dir.sort()
    return init.matchedphotometrydir + the_dir[reference_frame_index]
+
 
 # not used atm
 def find_target_star(target_ra_deg, target_dec_deg, nr_results):
@@ -107,6 +117,7 @@ def find_target_star(target_ra_deg, target_dec_deg, nr_results):
     df = pd.DataFrame(list(distances_dict.items()), columns=['star_nr', 'deg_separation'])
     df.sort_values(by='deg_separation', inplace=True)
     return df[:nr_results]
+
 
 # returns StarDescription with filled in local_id, upsilon match, coord
 def get_candidates(threshold_prob=0.5, check_flag=False):
@@ -125,6 +136,7 @@ def get_candidates(threshold_prob=0.5, check_flag=False):
             StarDescription(local_id=index, match=upsilon_match,
                             coords=SkyCoord(positions[int(index)][0], positions[int(index)][1], unit='deg')))
     return result
+
 
 # returns StarDescription with filled in local_id, upsilon, coord
 def add_upsilon_data(star_descriptions, threshold_prob=0.5, check_flag=False):
@@ -148,6 +160,7 @@ def add_upsilon_data(star_descriptions, threshold_prob=0.5, check_flag=False):
             continue
     return star_descriptions
 
+
 # returns list of star descriptions
 def get_star_descriptions(star_id_list=None):
     # returns {'name': [ra.deg, dec.deg ]}
@@ -163,6 +176,7 @@ def get_star_descriptions(star_id_list=None):
         if star_id_list is None or star_id in star_id_list:
             result.append(StarDescription(local_id=reading.filename_to_star(str(key)), coords=SkyCoord(positions[key][0], positions[key][1], unit='deg')))
     return result
+
 
 # returns {'star_id': [label, probability, flag, period, SkyCoord, match_name, match_skycoord, match_type, separation_deg]}
 def add_vsx_names_to_star_descriptions(star_descriptions, max_separation=0.01):
@@ -183,6 +197,7 @@ def add_vsx_names_to_star_descriptions(star_descriptions, max_separation=0.01):
             found = found + 1
     return result
 
+
 # star_catalog = create_star_descriptions_catalog(star_descriptions)
 def get_starid_1_for_radec(ra_deg, dec_deg, all_star_catalog, max_separation=0.01):
     star_catalog = create_generic_astropy_catalog(ra_deg, dec_deg)
@@ -190,6 +205,7 @@ def get_starid_1_for_radec(ra_deg, dec_deg, all_star_catalog, max_separation=0.0
     logging.debug(f"len(idx):{len(idx)}, min(idx): {np.min(idx)}, max(idx): {np.max(idx)}, min(d2d): {np.min(d2d)}, "
                   f"max(d2d): {np.max(d2d)}, star_id: {idx[0]+1}, index in all_star_catalog: {all_star_catalog[idx[0]]}")
     return idx[0]+1
+
 
 # returns StarDescription array
 def get_vsx_in_field(star_descriptions, max_separation=0.01):
@@ -210,6 +226,7 @@ def get_vsx_in_field(star_descriptions, max_separation=0.01):
     print("Found {} VSX stars in field: {}".format(len(result), [star.local_id for star in result]))
     return result
 
+
 def _add_catalog_match_to_entry(entry, vsx_dict, index_vsx, separation):
     assert entry.match != None
     vsx_name = vsx_dict['metadata'][index_vsx]['Name']
@@ -220,6 +237,7 @@ def _add_catalog_match_to_entry(entry, vsx_dict, index_vsx, separation):
         unit='deg'))
     entry.match.append(match)
     return match
+
 
 # Takes in a list of known variables and maps them to the munipack-generated star numbers
 # usage:
@@ -260,6 +278,7 @@ def create_vsx_astropy_catalog():
     print("Creating vsx star catalog...")
     vsx_dict = vsx_pickle.read(init.vsxcatalogdir)
     return create_generic_astropy_catalog(vsx_dict['ra_deg_np'], vsx_dict['dec_deg_np']), vsx_dict
+
 
 # NO LONGER USED
 def create_upsilon_astropy_catalog(threshold_prob_candidates=0.5):
@@ -314,6 +333,7 @@ def add_ucac4_to_star_descriptions(star_descriptions, radius=0.01):
         result.append(entry)
     return result
 
+
 def add_ucac4_to_star(star, radius_angle):
     vizier_results = get_ucac4_field(star.coords, radius=radius_angle, row_limit=1)
     if vizier_results is None:
@@ -331,6 +351,7 @@ def add_ucac4_to_star(star, radius_angle):
         # code.InteractiveConsole(locals=dict(globals(), **locals())).interact()
     return star
 
+
 # take a star_description and add some info to it: vmag, error vmag, catalog information
 def add_info_to_star_description(star, vmag, e_vmag, catalog_id, catalog_name, coord_catalog):
     star.vmag = vmag
@@ -341,22 +362,27 @@ def add_info_to_star_description(star, vmag, e_vmag, catalog_id, catalog_name, c
     print("Star {} has vmag={}, error={}, dist={}".format(star.local_id, star.vmag, star.e_vmag, mindist))
     return star
 
+
 def get_apass_row_to_star_descriptions(row):
     return StarDescription(coords=SkyCoord(row['RAJ2000'], row['DEJ2000'], unit='deg'),
                            vmag=row['Vmag'], e_vmag=row['e_Vmag'])
+
 
 def get_ucac4_row_to_star_descriptions(row):
     ucac4 =  get_apass_row_to_star_descriptions(row)
     ucac4.aavso_id = row['UCAC4']
     return ucac4
 
+
 def get_apass_star_descriptions(center_coord, radius, row_limit=2):
     return get_vizier_star_descriptions(get_apass_field, get_apass_row_to_star_descriptions,center_coord,
                                         radius, row_limit)
 
+
 def get_ucac4_star_descriptions(center_coord, radius, row_limit=2):
     return get_vizier_star_descriptions(get_ucac4_field, get_ucac4_row_to_star_descriptions,center_coord,
                                         radius, row_limit)
+
 
 def get_vizier_star_descriptions(field_method, to_star_descr_method, center_coord, radius, row_limit=2):
     field = field_method(center_coord, radius, row_limit)
@@ -369,8 +395,10 @@ def get_vizier_star_descriptions(field_method, to_star_descr_method, center_coor
 def get_apass_field(center_coord, radius, row_limit=2):
     return get_vizier_field(center_coord, radius, 'II/336', row_limit)
 
+
 def get_ucac4_field(center_coord, radius, row_limit=2):
     return get_vizier_field(center_coord, radius, 'I/322A', row_limit)
+
 
 # object_name = 'UCAC4 231-154752'
 def get_ucac4_id_as_dataframe(object_name):
@@ -380,6 +408,7 @@ def get_ucac4_id_as_dataframe(object_name):
     df = result[0].to_pandas()
     df2 = df.loc[df['UCAC4'] == object_name.split()[1].encode('UTF-8')]
     return df2
+
 
 def get_vizier_field(center_coord, radius, catalog, row_limit=2):
     # Select all columns (this is a generic function so has to be all)
