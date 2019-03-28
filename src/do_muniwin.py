@@ -226,7 +226,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
     #star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
 
     if do_lightcurve:
-        logging.info(f"Writing lightcurves... {[x.local_id for x in star_descriptions_ucac4]}")
+        logging.info(f"Writing lightcurves... {[x.local_id for x in star_result]}")
         chosen_stars = [x.local_id for x in star_descriptions_ucac4]
         dolight.write_lightcurves(chosen_stars,
                                   comparison_stars_1, aperture, int(apertureidx), jd, fwhm, star_result)
