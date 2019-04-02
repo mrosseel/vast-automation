@@ -1,6 +1,6 @@
 import os
 import glob
-import init
+from init_loader import init
 import reading
 import logging
 from star_description import StarDescription

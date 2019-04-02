@@ -1,5 +1,5 @@
 import do_aperture as dop
-import init
+from init_loader import init
 import glob
 import argparse
 import logging

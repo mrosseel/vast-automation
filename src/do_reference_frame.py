@@ -13,7 +13,7 @@ import tqdm
 import multiprocessing as mp
 from functools import partial
 import glob
-import init
+from init_loader import init
 
 def fits_to_size(fitsfilename, vmin, vmax):
     return fitsdata_to_size(get_fits_data(fitsfilename, vmin, vmax), fitsfilename)

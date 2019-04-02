@@ -1,4 +1,4 @@
-import init
+from init_loader import init
 import argparse
 import do_calibration
 

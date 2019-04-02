@@ -1,4 +1,4 @@
-import init
+from init_loader import init
 import os
 from os import listdir
 from os.path import isfile, join

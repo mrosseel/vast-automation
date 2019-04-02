@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import glob
-import init
+from init_loader import init
 from tqdm import tqdm
 from functools import partial
 import multiprocessing as mp

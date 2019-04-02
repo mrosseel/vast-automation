@@ -5,7 +5,7 @@ from astropy import units as u
 import numpy as np
 import pandas as pd
 import os
-import init
+from init_loader import init
 import reading
 
 # not used

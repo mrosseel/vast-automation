@@ -4,7 +4,7 @@ from tqdm import tqdm
 import numpy as np
 import logging
 import scipy.stats
-import init
+from init_loader import init
 import do_compstars
 import do_calibration
 from reading import file_selector

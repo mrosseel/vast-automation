@@ -1,6 +1,6 @@
 from functools import partial
 
-import init
+from init_loader import init
 import reading
 #import astropy_helper
 import matplotlib as mp
@@ -12,7 +12,7 @@ import tqdm
 import numpy as np
 from astropy.coordinates import SkyCoord
 from gatspy.periodic import LombScargleFast
-import init
+from init_loader import init
 from reading import trash_and_recreate_dir
 import logging
 from timeit import default_timer as timer

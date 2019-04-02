@@ -6,7 +6,7 @@ from astropy.coordinates import SkyCoord, EarthLocation, AltAz
 #supress the warning about vector transforms so as not to clutter the doc build log
 import warnings
 warnings.filterwarnings('ignore',module='astropy.coordinates.baseframe')
-import init
+from init_loader import init
 import tqdm
 
 def calculate_airmass(coord, location, jd):

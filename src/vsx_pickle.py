@@ -1,7 +1,7 @@
 import pickle
 import pandas as pd
 import argparse
-import init
+from init_loader import init
 
 
 def convert(path):

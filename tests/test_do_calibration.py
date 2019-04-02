@@ -1,3 +1,4 @@
+from .context import src
 import unittest
 import do_calibration
 from star_description import StarDescription

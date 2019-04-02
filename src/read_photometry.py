@@ -4,7 +4,7 @@
 # Aperture: 2, Filter: V
 # 2457657.5088310 -0.50728 0.10291 16.65794 0.05604 17.16522 0.08631
 
-import init
+from init_loader import init
 from reading import trash_and_recreate_dir
 from tqdm import tqdm
 from functools import partial

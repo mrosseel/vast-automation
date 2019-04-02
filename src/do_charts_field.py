@@ -3,7 +3,7 @@ from astropy.io import fits
 import matplotlib.pyplot as plt
 from photutils import aperture_photometry, CircularAperture
 import numpy as np
-import init
+from init_loader import init
 import do_calibration
 import reading
 from reading import trash_and_recreate_dir
@@ -78,7 +78,9 @@ def run_standard_field_charts(vsx_star_descr, wcs):
 
     # if SHOW_UPSILON:
     #     candidates = do_calibration.get_candidates(0.5)
-    hand_candidates_descr = do_calibration.get_star_descriptions(init.wwcra_certain_candidates)
+
+    # TODO this should be fed into this file by command line args
+    # hand_candidates_descr = do_calibration.get_star_descriptions(init.wwcra_certain_candidates)
     all_stars_descr = do_calibration.get_star_descriptions()
 
     # if SHOW_UPSILON:

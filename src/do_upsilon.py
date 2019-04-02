@@ -1,4 +1,4 @@
-import init
+from init_loader import init
 import upsilon
 import reading
 from multiprocessing import Pool, Queue

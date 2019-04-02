@@ -1,4 +1,4 @@
-import init
+from init_loader import init
 import do_calibration
 import do_charts
 import do_charts_field
@@ -43,7 +43,7 @@ def write_photometry(config_file=init.basedir + 'muniphot.conf', files=None, out
     pool = mp.Pool(init.nr_threads * 2, maxtasksperchild=100)
     func = partial(command_caller, config_file_param=config_file_param, outputdir=outputdir,
                    outputfile_prefix=outputfile_prefix)
-    logging.info("Writing star photometry for", len(files), "stars into", init.lightcurvedir)
+    logging.info(f"Writing star photometry for {len(files)} stars into {init.lightcurvedir}")
     for _ in tqdm.tqdm(pool.imap_unordered(func, files, 50), total=len(files)):
         pass
 

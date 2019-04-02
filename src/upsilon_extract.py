@@ -1,4 +1,4 @@
-import init
+from init_loader import init
 
 def getResults(number):
     with open(init.basedir+'upsilon_output.txt') as f:

@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import init
+from init_loader import init
 import read_photometry
 import reading
 import logging

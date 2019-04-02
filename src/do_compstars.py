@@ -1,6 +1,6 @@
 import do_calibration
 import logging
-import init
+from init_loader import init
 import argparse
 import do_aperture
 import numpy as np
