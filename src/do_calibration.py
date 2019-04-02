@@ -50,23 +50,31 @@ def old_find_reference_frame_index():
 def get_reference_frame(file_limit, reference_method):
     # Calculate or retrieve reference frame and its index
     try:
-        reference_frame, reference_frame_index=reading.read_reference_frame()
+        reference_frame_fits, reference_frame_index = reading.read_reference_frame()
+        reference_frame = do_calibration.find_file_for_index(init.convfitsdir, reference_frame_index, '*.fts')
+        logging.info(f"Loaded fits file: {reference_frame_fits}, corresponds with converted file:{reference_frame}")
     except:
         reference_frame = reference_method(file_limit)
-        reference_frame_index = do_calibration.find_file_index(init.convfitsdir, reference_frame, '*.fts')
+        reference_frame_index = do_calibration.find_index_of_file(init.convfitsdir, reference_frame, '*.fts')
         lines = [reference_frame, str(reference_frame_index)]
         with open(init.basedir + 'reference_frame.txt', 'w') as f:
             f.write('\n'.join(lines))
     print("Reference frame: {}, index: {}".format(reference_frame, reference_frame_index))
-    assert reference_frame_index == do_calibration.find_file_index(init.convfitsdir, reference_frame, '*.fts')
+    assert reference_frame_index == do_calibration.find_index_of_file(init.convfitsdir, reference_frame, '*.fts')
     return [reference_frame, init.convfitsdir + reference_frame, reference_frame_index]
 
 
-def find_file_index(the_dir, the_file, the_filter='*'):
-    the_dir = glob.glob(the_dir+the_filter)
+def find_index_of_file(the_dir, the_file, the_filter='*'):
+    the_dir = glob.glob(the_dir + the_filter)
     the_dir.sort()
     indices = [i for i, elem in enumerate(the_dir) if the_file in elem]
     return indices[0]
+
+
+def find_file_for_index(the_dir, index, the_filter='*'):
+    the_dir = glob.glob(the_dir + the_filter)
+    the_dir.sort()
+    return the_dir[index]
 
 
 # returns the converted_fits file with the highest compressed filesize, limited to 'limit'
@@ -321,6 +329,7 @@ def add_apass_to_star_descriptions(star_descriptions, radius=0.01, row_limit=2):
                                            name=catalog_id, coords=coord_catalog, separation=mindist))
             print("APASS: Star {} has vmag={}, error={:.5f}, dist={}".format(star.local_id, star.vmag, star.e_vmag, mindist))
     return star_descriptions
+
 
 def add_ucac4_to_star_descriptions(star_descriptions, radius=0.01):
     print("Retrieving ucac4 for {} star(s)".format(len(star_descriptions)))
