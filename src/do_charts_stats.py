@@ -15,11 +15,11 @@ def plot_cumul_histo_detections(savefig=True):
     result = read_lightcurves()
     matplotlib.rcParams.update({'font.size': 38})
     fig_size = (36, 32)
-    dpi=100
-    #print(len(result))
+    dpi = 100
+    # print(len(result))
     keys = result.keys()
-    values = list(map(lambda x: x[0]/x[1]*100, result.values()))
-    #print(len(keys), len(values))
+    values = list(map(lambda x: x[0] / x[1] * 100, result.values()))
+    # print(len(keys), len(values))
     num_bins = 10
     fig, ax = plt.subplots(figsize=fig_size, dpi=dpi, facecolor='w', edgecolor='k')
 
@@ -27,24 +27,24 @@ def plot_cumul_histo_detections(savefig=True):
     n, bins, patches = ax.hist(values, num_bins, density=1)
 
     # add a 'best fit' line
-    #y = ((1 / (np.sqrt(2 * np.pi) * sigma)) *
+    # y = ((1 / (np.sqrt(2 * np.pi) * sigma)) *
     #     np.exp(-0.5 * (1 / sigma * (bins - mu))**2))
-    #ax.plot(bins, range(1,50), '--')
+    # ax.plot(bins, range(1,50), '--')
     ax.set_xlabel('% of star detections, on which star was found')
     ax.set_ylabel('Nr of stars')
     ax.set_title(r'Cumulative histogram of star detections')
     ax.grid(True)
-    #plt.xticks(np.arange(0, 110, step=10))
+    # plt.xticks(np.arange(0, 110, step=10))
     major_ticks = np.arange(0, 11000, 2000)
     minor_ticks = np.arange(0, 11000, 1000)
     ax.set_yticks(major_ticks)
     ax.set_yticks(minor_ticks, minor=True)
     plt.minorticks_on()
-    plt.xlim(0,100)
-    plt.ylim(0,10000)
-    #plt.yticks(np.arange(0, 11000, step=1000))
+    plt.xlim(0, 100)
+    plt.ylim(0, 10000)
+    # plt.yticks(np.arange(0, 11000, step=1000))
     # Tweak spacing to prevent clipping of ylabel
-    #fig.tight_layout()
+    # fig.tight_layout()
     plt.hist(bins=num_bins, x=values, cumulative=1)
     plt.show()
     if savefig:
@@ -61,9 +61,10 @@ def plot_cumul_histo_detections(savefig=True):
     plt.show()
     save(fig, init.fieldchartsdirs + 'barcharts.png')
 
+
 def plot_fwhm(fwhm):
     fig_size = (36, 32)
-    dpi=100
+    dpi = 100
     matplotlib.rcParams.update({'font.size': 38})
 
     fig, ax = plt.subplots(figsize=fig_size, dpi=dpi, facecolor='w', edgecolor='k')
@@ -78,23 +79,25 @@ def plot_fwhm(fwhm):
 
 
 def read_lightcurves():
-    files = glob.glob(init.lightcurvedir+'*.txt')
+    files = glob.glob(init.lightcurvedir + '*.txt')
     result = {}
-    pool = mp.Pool(init.nr_threads*2, maxtasksperchild=None)
-    # func = partial(write_lightcurve, check_stars_1=check_stars_1, aperture=aperture, apertureidx=apertureidx, jd=jd, fwhm=fwhm)
+    pool = mp.Pool(init.nr_threads * 2, maxtasksperchild=None)
 
-    for file, partial_result in tqdm(pool.imap_unordered(read_lightcurve, files), total=len(files), desc='Reading all lightcurves'):
+    for file, partial_result in tqdm(pool.imap_unordered(read_lightcurve, files), total=len(files),
+                                     desc='Reading all lightcurves'):
         result[file] = partial_result
 
     return result
+
 
 def read_lightcurve(file):
     df = pd.read_csv(file, skiprows=[1], sep=' ')
     length = len(df.index)
     df = df[df['V-C'] < 99]
     filterlength = len(df.index)
-    #print (filterlength/length)
+    # print (filterlength/length)
     return file, [filterlength, length]
+
 
 def save(fig, path):
     fig.savefig(path)

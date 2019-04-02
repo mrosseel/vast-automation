@@ -18,6 +18,7 @@ Once you're in this VM, all python commands can be run.
 
 * take one reference frame and calculate a fits header using http://Astrometry.net
 * edit init.py to set all correct directories and values
+* call `./set_reference_frame.py ./currrent/fits/my_reference_frame.fits`
 
 ### Run
 
@@ -46,10 +47,11 @@ _Password is 'muni'_
 
 ## TODO
 
-- after convert_fits we should stop and not crash if there is no reference frame defined
+- don't start muniwin if reference frame is not defined
 - AAVSO report should use instrumental magnitudes for comparison stars
-- all things use VSX
 - other stars in command line
++ all things use VSX
++ move log to current dir
 - check out https://public.lanl.gov/palmer/fastchi.html for period determination
 - check out https://github.com/toros-astro/astroalign for aligning
 - new ensemble comparison star calculation?

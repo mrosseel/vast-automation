@@ -33,7 +33,7 @@ def write_lightcurves(star_list_1, comparison_stars_1, aperture, apertureidx, jd
     star_result = star_result_
     pool = mp.Pool(init.nr_threads*2, maxtasksperchild=None)
     func = partial(write_lightcurve, comparison_stars_1=comparison_stars_1, aperture=aperture, apertureidx=apertureidx, jd=jd, fwhm=fwhm)
-    logging.debug("Writing star lightcurves for", len(star_list_1), "stars into", init.lightcurvedir)
+    logging.debug("Writing star lightcurve txt files for", len(star_list_1), "stars into", init.lightcurvedir)
     for _ in tqdm(pool.imap_unordered(func, star_list_1), total=len(star_list_1), desc='Writing lightcurve'):
         pass
 

@@ -42,9 +42,9 @@ class StarDescription:
         return None
 
     # extract matching strings from star_descr
-    def get_match_string(self, catalog):
+    def get_match_string(self, catalog, strict=False):
         # will give an assertion error if the catalog match is not unique
-        result = self.get_catalog(catalog)
+        result = self.get_catalog(catalog, strict)
         if result is None:
             return None, None
         return result.catalog_id, result.separation

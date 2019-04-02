@@ -37,7 +37,7 @@ def plot_lightcurve(tuple, comparison_stars):
     upsilon_match = star_description.get_catalog('Upsilon')
     upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
     end = timer()
-    print("timing upsilon stuff", end-start)
+    logging.debug("timing upsilon stuff", end-start)
     coord = star_description.coords
     #print(f'Plotting lightcurve with star_description:{star_description}, curve length:{len(curve)}, star:{star}, curve:{curve}')
     if(curve is None):
@@ -61,7 +61,7 @@ def plot_lightcurve(tuple, comparison_stars):
     plot_min = min(plot_max-1, used_curve_min)
     logging.debug(f'min {plot_min} max {plot_max} usedmin {used_curve_min} usedmax {used_curve_max}')
     if np.isnan(plot_max) or np.isnan(plot_min):
-        print(f"star is nan:{star}, plot_max:{plot_max}, plot_min:{plot_min}")
+        logging.info(f"star is nan:{star}, plot_max:{plot_max}, plot_min:{plot_min}")
         return
     plt.ylim(plot_min,plot_max)
     plt.xlim(0, len(used_curve))
@@ -70,9 +70,11 @@ def plot_lightcurve(tuple, comparison_stars):
     #plt.ticklabel_format(style='plain', axis='x')
     plt.title("Star {0}{1}, position: {2}{3}".format(star, star_name, get_hms_dms(coord), upsilon_text), pad=TITLE_PAD)
     start = timer()
-    g.savefig(init.chartsdir+str(star).zfill(5)+'_plot' )
+    figure = g.fig
+    figure.savefig(init.chartsdir+str(star).zfill(5)+'_plot')
+    # g.savefig(init.chartsdir+str(star).zfill(5)+'_plot')
     end = timer()
-    print("timing saving fig", end-start)
+    logging.debug("timing saving fig", end-start)
     plt.close(g.fig)
 #    except:
 #        print("error", tuple)
@@ -80,6 +82,7 @@ def plot_lightcurve(tuple, comparison_stars):
 
 def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
     star_description = tuple[0]
+    coords = star_description.coords
     curve = tuple[1]
     star = star_description.local_id
     star_match, separation = star_description.get_match_string("VSX")
@@ -104,7 +107,7 @@ def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
     fig=plt.figure(figsize=(18, 16), dpi= 80, facecolor='w', edgecolor='k')
     plt.xlabel("Phase", labelpad=TITLE_PAD)
     plt.ylabel("Magnitude", labelpad=TITLE_PAD)
-    plt.title("Star {}{}, period: {:.5f} d{}".format(star, match_string, period, upsilon_text), pad=TITLE_PAD)
+    plt.title(f"Star {star}{match_string}, period: {period:.5f} d{upsilon_text}, {get_hms_dms(coords)}", pad=TITLE_PAD)
     plt.tight_layout()
     # plotting + calculation of 'double' phase diagram from -1 to 1
     phased_t = np.fmod(t_np/period,1)
@@ -130,10 +133,9 @@ def format_date(x, pos=None):
     thisind = np.clip(int(x + 0.5), 0, N - 1)
     return r.date[thisind].strftime('%Y-%m-%d')
 
-def read_lightcurves(star_pos, star_descriptions, comparison_stars, do_charts, do_phase):
+def read_lightcurves(star_description, comparison_stars, do_charts, do_phase):
     start = timer()
     logging.debug("Reading lightcurves...")
-    star_description = star_descriptions[star_pos]
     try:
         df = reading.read_lightcurve(star_description.local_id,filter=True)
         if df is None or len(df) == 0:
@@ -156,17 +158,15 @@ def read_lightcurves(star_pos, star_descriptions, comparison_stars, do_charts, d
             # end = timer()
             # print("plotting phase:", end-start)
     except FileNotFoundError:
-        print("File not found error in store and curve for star", star_description.local_id)
+        logging.error("File not found error in store and curve for star", star_description.local_id)
 
     end = timer()
-    print("Full lightcurve/phase:", end-start)
+    logging.debug("Full lightcurve/phase:", end-start)
 
 
 # reads lightcurves and passes them to lightcurve plot or phase plot
 def run(star_descriptions, comparison_stars, do_charts, do_phase):
-    CHUNK = 100
-    # star_list = [star.local_id for star in star_descriptions]
-    star_list = range(0, len(star_descriptions))
+    CHUNK = 10
     set_seaborn_style()
     pool = mp.Pool(init.nr_threads)
 
@@ -175,6 +175,6 @@ def run(star_descriptions, comparison_stars, do_charts, do_phase):
     if do_phase:
         trash_and_recreate_dir(init.phasedir)
 
-    func = partial(read_lightcurves, star_descriptions=star_descriptions, comparison_stars=comparison_stars, do_charts=do_charts, do_phase=do_phase)
-    for _ in tqdm.tqdm(pool.imap_unordered(func, star_list, chunksize=CHUNK), total=len(star_descriptions)):
+    func = partial(read_lightcurves, comparison_stars=comparison_stars, do_charts=do_charts, do_phase=do_phase)
+    for _ in tqdm.tqdm(pool.imap_unordered(func, star_descriptions, chunksize=CHUNK), total=len(star_descriptions)):
         pass
