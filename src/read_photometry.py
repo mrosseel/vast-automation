@@ -4,7 +4,7 @@
 # Aperture: 2, Filter: V
 # 2457657.5088310 -0.50728 0.10291 16.65794 0.05604 17.16522 0.08631
 
-from init_loader import init
+from init_loader import init, settings
 from reading import trash_and_recreate_dir
 from tqdm import tqdm
 from functools import partial
@@ -23,7 +23,7 @@ STAR_DATA_MB = 1.5274047851562502e-05 # the size of the data of one star
 #   and extract info about ONLY those stars, then write them to file. Maybe dense numpy lists with the range as index?
 def read_photometry(star_list_1, apertureidx: int, matched_files=None, fake_references=False):
     if matched_files is None:
-        matched_files = glob.glob(init.matchedphotometrydir+"*.pht") # todo extract dir, pattern
+        matched_files = glob.glob(settings.matchedphotometrydir+"*.pht") # todo extract dir, pattern
     nrfiles = len(matched_files)
     nrstars = len(star_list_1)
     star_range_0 = np.array(star_list_1) - 1
@@ -32,7 +32,7 @@ def read_photometry(star_list_1, apertureidx: int, matched_files=None, fake_refe
     jd = np.full([nrfiles], np.inf, dtype=float)
     nrstars = np.full([nrfiles], np.inf, dtype=int)
     nr_threads=init.nr_threads*2
-    pbar = tqdm(total=len(matched_files))
+    pbar = tqdm(total=len(matched_files), desc="Reading photometry")
     pool = mp.Pool(nr_threads, maxtasksperchild=None)
     func = partial(read_pht, star_range_0=star_range_0, apertureidx=apertureidx, fake_references=fake_references)
 

@@ -3,11 +3,11 @@ from astropy.io import fits
 import matplotlib.pyplot as plt
 from photutils import aperture_photometry, CircularAperture
 import numpy as np
-from init_loader import init
+from init_loader import init, settings
 import do_calibration
 import reading
 from reading import trash_and_recreate_dir
-
+import argparse
 
 PADDING = 200
 
@@ -70,16 +70,16 @@ def save(fig, path):
     plt.close(fig)
 
 def run_standard_field_charts(vsx_star_descr, wcs):
-    trash_and_recreate_dir(init.fieldchartsdirs)
+    trash_and_recreate_dir(settings.fieldchartsdirs)
     # reference_frame, reference_frame_index=reading.read_reference_frame()
-    # reference_fits_frame=init.convfitsdir+reference_frame
-    reference_fits_frame=init.reference_header
+    # reference_fits_frame=settings.convfitsdir+reference_frame
+    reference_fits_frame=settings.reference_header
     SHOW_UPSILON = False
 
     # if SHOW_UPSILON:
     #     candidates = do_calibration.get_candidates(0.5)
 
-    # TODO this should be fed into this file by command line args
+    # TODO hand labeled stars
     # hand_candidates_descr = do_calibration.get_star_descriptions(init.wwcra_certain_candidates)
     all_stars_descr = do_calibration.get_star_descriptions()
 
@@ -94,7 +94,9 @@ def run_standard_field_charts(vsx_star_descr, wcs):
     all_stars_labeled = set_custom_label(all_stars_descr, '')
     vsx_labeled = set_aavso_id_label(vsx_star_descr)
     #vsx_labeled = set_custom_label(vsx_star_descr, [o.local_id for o in vsx_star_descr])
-    hand_candidates_labeled = set_local_id_label(hand_candidates_descr)
+
+    # TODO hand labeled stars
+    # hand_candidates_labeled = set_local_id_label(hand_candidates_descr)
 
     # default fields
     empty = []
@@ -104,19 +106,29 @@ def run_standard_field_charts(vsx_star_descr, wcs):
     big_green = empty
     small_red = all_stars_labeled
     fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "All detected stars", PADDING)
-    save(fig, init.fieldchartsdirs + 'all_detections_for_{}_stars'.format(len(small_red)))
+    save(fig, settings.fieldchartsdirs + 'all_detections_for_{}_stars'.format(len(small_red)))
 
     # field chart with all vsx stars
     print("Plotting field chart with all VSX variable stars...")
     big_green = vsx_labeled
     small_red = empty
     fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "All VSX variable stars", PADDING)
-    save(fig, init.fieldchartsdirs + 'all_vsx_stars_{}'.format(len(big_green)))
+    save(fig, settings.fieldchartsdirs + 'all_vsx_stars_{}'.format(len(big_green)))
 
     # field chart with all vsx stars
     print("Plotting field chart with all VSX variable stars + hand picked vars...")
     big_green = vsx_labeled
-    small_red = hand_candidates_labeled
+    # TODO hand labeled stars
+    small_red = [] # hand_candidates_labeled
     fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "VSX variable stars + detected variables", PADDING)
-    save(fig, init.fieldchartsdirs + 'all_vsx_stars_{}_hand_picked_{}'.format(len(big_green), len(small_red)))
+    save(fig, settings.fieldchartsdirs + 'all_vsx_stars_{}_hand_picked_{}'.format(len(big_green), len(small_red)))
 
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='munipack automation field charts')
+    parser.add_argument('-d', '--datadir',
+                        help="The directory where the data can be found (fits in ./fits dir under the data dir",
+                        nargs='?', required=True)
+    parser.add_argument('-s', '--stars', help="List the star id's to plot", nargs='+')
+    parser.add_argument('-n', '--novsx', help="Don't plot vsx stars", nargs='+')
+    args = parser.parse_args()

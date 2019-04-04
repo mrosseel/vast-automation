@@ -1,5 +1,5 @@
 import do_aperture as dop
-from init_loader import init
+from init_loader import init, settings
 import glob
 import argparse
 import logging
@@ -26,7 +26,7 @@ def process_one_pht(the_file, apertureidx:int, star0=None):
 
 def do_all(apertureidx, directory, star0=None):
     phtdir = directory + "*.pht"
-    logging.debug(f"init dir is {init.matchedphotometrydir}")
+    logging.debug(f"init dir is {settings.matchedphotometrydir}")
     print(phtdir)
 
     files = sorted(glob.glob(phtdir))

@@ -1,25 +1,29 @@
-from init_loader import init
+import os
 import argparse
-import do_calibration
+import utils
+import init_loader
 
-
-def run(filename, extension):
+def run(datadir, fits_dir, filename, extension):
     reference_frame = filename
-    reference_frame_index = do_calibration.find_index_of_file(init.fitsdir, reference_frame, extension)
+    reference_frame_index = utils.find_index_of_file(fits_dir, reference_frame, extension)
     lines = [reference_frame, str(reference_frame_index)]
-    with open(init.basedir + 'reference_frame.txt', 'w') as f:
+    with open(datadir + 'reference_frame.txt', 'w') as f:
         f.write('\n'.join(lines))
     print("Reference frame: {}, index: {}".format(reference_frame, reference_frame_index))
-    assert reference_frame_index == do_calibration.find_index_of_file(init.fitsdir, reference_frame, extension)
+    assert reference_frame_index == utils.find_index_of_file(fits_dir, reference_frame, extension)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Set the reference frame to be used.')
-    parser.add_argument('filename', help='the filename of the reference frame')
-    parser.add_argument('-e', '--extension', help='the wildcard to select all files in the fits directory. Default is *.fits')
+    parser.add_argument('filename', help='the full path to the reference frame, should be in the dir with all the fits files.')
+    parser.add_argument('datadir', help='the root dir for this dataset, this is where the file will be written.')
     args = parser.parse_args()
-    extension = '*.fit'
-    if args.extension:
-        extension = args.extension
-    print(args)
-    run(args.filename, extension)
+    fits_dir = os.path.dirname(args.filename)
+    fits_dir = os.path.join(fits_dir, '')
+    filename, file_extension = os.path.splitext(args.filename)
+    if not os.path.isfile(args.filename):
+        print("The given file does not exist:", args.filename)
+        exit(1)
+    init_loader.meta_init(args.datadir)
+    run(args.datadir, fits_dir, args.filename, file_extension)
+

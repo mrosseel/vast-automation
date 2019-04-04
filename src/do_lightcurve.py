@@ -2,7 +2,7 @@
 # Aperture: 2, Filter: V
 # 2457657.5088310 -0.50728 0.10291 16.65794 0.05604 17.16522 0.08631
 
-from init_loader import init
+from init_loader import init, settings
 from reading import trash_and_recreate_dir
 from reading import reduce_star_list
 from tqdm import tqdm
@@ -23,9 +23,33 @@ MAX_MAG = 99.99999
 MAX_ERR = 9.99999
 STAR_DATA_MB=1.5274047851562502e-05 # the size of the data of one star
 
+print("initing the do lightcurve and now the settings are", dir(settings))
+print("initing the do lightcurve and now the settings are", dir(settings))
+print("initing the do lightcurve and now the settings are", dir(settings))
+print("initing the do lightcurve and now the settings are", dir(settings))
+print("initing the do lightcurve and now the settings are", dir(settings))
+print("initing the do lightcurve and now the settings are", dir(settings))
+print("initing the do lightcurve and now the settings are", dir(settings))
+print("initing the do lightcurve and now the settings are", dir(settings))
+print("initing the do lightcurve and now the settings are", dir(settings))
+print("initing the do lightcurve and now the settings are", dir(settings))
+print("initing the do lightcurve and now the settings are", dir(settings))
+print("initing the do lightcurve and now the settings are", dir(settings))
+print("initing the do lightcurve and now the settings are", dir(settings))
+print("initing the do lightcurve and now the settings are", dir(settings))
+print("initing the do lightcurve and now the settings are", dir(settings))
+print("initing the do lightcurve and now the settings are", dir(settings))
+print("initing the do lightcurve and now the settings are", dir(settings))
+print("initing the do lightcurve and now the settings are", dir(settings))
+print("initing the do lightcurve and now the settings are", dir(settings))
+print("initing the do lightcurve and now the settings are", dir(settings))
+print("initing the do lightcurve and now the settings are", dir(settings))
+print("initing the do lightcurve and now the settings are", dir(settings))
+
 # multithreaded writing of lightcurves
 def write_lightcurves(star_list_1, comparison_stars_1, aperture, apertureidx, jd, fwhm, star_result_):
-    trash_and_recreate_dir(init.lightcurvedir)
+    print("Settings are", dir(settings))
+    trash_and_recreate_dir(settings.lightcurvedir)
 
     global preamble
     preamble = init_preamble(aperture, comparison_stars_1)
@@ -33,7 +57,7 @@ def write_lightcurves(star_list_1, comparison_stars_1, aperture, apertureidx, jd
     star_result = star_result_
     pool = mp.Pool(init.nr_threads*2, maxtasksperchild=None)
     func = partial(write_lightcurve, comparison_stars_1=comparison_stars_1, aperture=aperture, apertureidx=apertureidx, jd=jd, fwhm=fwhm)
-    logging.debug("Writing star lightcurve txt files for", len(star_list_1), "stars into", init.lightcurvedir)
+    logging.debug("Writing star lightcurve txt files for", len(star_list_1), "stars into", settings.lightcurvedir)
     for _ in tqdm(pool.imap_unordered(func, star_list_1), total=len(star_list_1), desc='Writing lightcurve'):
         pass
 
@@ -63,7 +87,7 @@ def write_lightcurve(star_1: int, comparison_stars_1: Vector, aperture: float, a
             line += f" {min(MAX_MAG, tuple[0]):.5f} {min(MAX_ERR, tuple[1]):.5f}"
         lines.append(line)
 
-    with open(init.lightcurvedir + 'curve_' + str(star_1).zfill(5) + ".txt", 'wt') as f:
+    with open(settings.lightcurvedir + 'curve_' + str(star_1).zfill(5) + ".txt", 'wt') as f:
         # for l in lines: f.write('%s\n' % l)
         f.write('\n'.join(lines)+'\n')
 

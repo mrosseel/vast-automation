@@ -1,6 +1,6 @@
 import do_calibration
 import logging
-from init_loader import init
+from init_loader import init, settings
 import argparse
 import do_aperture
 import numpy as np
@@ -94,7 +94,7 @@ if __name__ == '__main__':
         result = get_fixed_compstars()
         logging.info(f"result: {result}")
     elif args.calculated:
-        stddevs, _, apertures, apertureidx, _, _, counts = do_aperture.main(the_dir=init.matchedphotometrydir,
+        stddevs, _, apertures, apertureidx, _, _, counts = do_aperture.main(the_dir=settings.matchedphotometrydir,
                                                                             percentage=init.aperture_find_percentage)
         result = get_calculated_compstars(apertureidx, stddevs, counts)
         logging.info(f"result: {result}")

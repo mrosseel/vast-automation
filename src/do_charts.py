@@ -1,6 +1,6 @@
 from functools import partial
 
-from init_loader import init
+from init_loader import init, settings
 import reading
 #import astropy_helper
 import matplotlib as mp
@@ -12,7 +12,7 @@ import tqdm
 import numpy as np
 from astropy.coordinates import SkyCoord
 from gatspy.periodic import LombScargleFast
-from init_loader import init
+from init_loader import init, settings
 from reading import trash_and_recreate_dir
 import logging
 from timeit import default_timer as timer
@@ -71,8 +71,8 @@ def plot_lightcurve(tuple, comparison_stars):
     plt.title("Star {0}{1}, position: {2}{3}".format(star, star_name, get_hms_dms(coord), upsilon_text), pad=TITLE_PAD)
     start = timer()
     figure = g.fig
-    figure.savefig(init.chartsdir+str(star).zfill(5)+'_plot')
-    # g.savefig(init.chartsdir+str(star).zfill(5)+'_plot')
+    figure.savefig(settings.chartsdir+str(star).zfill(5)+'_plot')
+    # g.savefig(settings.chartsdir+str(star).zfill(5)+'_plot')
     end = timer()
     logging.debug("timing saving fig", end-start)
     plt.close(g.fig)
@@ -121,7 +121,7 @@ def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
     phased_err = np.clip(np.append(dy_np, dy_np), -0.5, 0.5) # error values are clipped to +0.5 and -0.5
     plt.gca().invert_yaxis()
     plt.errorbar(phased_t_final,phased_lc_final,yerr=phased_err,linestyle='none',marker='o', ecolor='gray', elinewidth=1)
-    fig.savefig(init.phasedir+str(star).zfill(5)+'_phase'+suffix)
+    fig.savefig(settings.phasedir+str(star).zfill(5)+'_phase'+suffix)
     plt.close(fig)
 
 def get_hms_dms(coord):
@@ -171,10 +171,10 @@ def run(star_descriptions, comparison_stars, do_charts, do_phase):
     pool = mp.Pool(init.nr_threads)
 
     if do_charts:
-        trash_and_recreate_dir(init.chartsdir)
+        trash_and_recreate_dir(settings.chartsdir)
     if do_phase:
-        trash_and_recreate_dir(init.phasedir)
+        trash_and_recreate_dir(settings.phasedir)
 
     func = partial(read_lightcurves, comparison_stars=comparison_stars, do_charts=do_charts, do_phase=do_phase)
-    for _ in tqdm.tqdm(pool.imap_unordered(func, star_descriptions, chunksize=CHUNK), total=len(star_descriptions)):
+    for _ in tqdm.tqdm(pool.imap_unordered(func, star_descriptions, chunksize=CHUNK), total=len(star_descriptions), desc='Writing light curve charts/phase diagrams'):
         pass

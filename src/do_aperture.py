@@ -4,7 +4,7 @@ from tqdm import tqdm
 import numpy as np
 import logging
 import scipy.stats
-from init_loader import init
+from init_loader import init, settings
 import do_compstars
 import do_calibration
 from reading import file_selector
@@ -16,7 +16,7 @@ def convert_to_aperture_only(apertures):
     return apertures[1::2]
 
 def get_apertures():
-    match_file_list = file_selector(init.matchedphotometrydir, 'match*.pht', init.aperture_find_percentage)
+    match_file_list = file_selector(settings.matchedphotometrydir, 'match*.pht', init.aperture_find_percentage)
     apertures = []
     with open(match_file_list[0], mode='rb') as file: # b is important -> binary
         fileContent = file.read()
@@ -74,7 +74,7 @@ def process(collect, apertures):
     logging.info("Calculating stddevs...")
     # pool = mp.Pool(init.nr_threads*2, maxtasksperchild=None)
     # func = partial(write_lightcurve, check_stars_1=check_stars_1, aperture=aperture, apertureidx=apertureidx, jd=jd, fwhm=fwhm)
-    # logging.debug("Writing star lightcurves for", len(star_list_1), "stars into", init.lightcurvedir)
+    # logging.debug("Writing star lightcurves for", len(star_list_1), "stars into", settings.lightcurvedir)
     # for _ in tqdm(pool.imap_unordered(func, star_list_1), total=len(star_list_1), desc='Writing lightcurve'):
     #     pass
 
@@ -111,7 +111,7 @@ def select_aperture(fwhm, apertures):
     return apertureidx
 
 def main(the_dir, match_files='match*.pht', percentage=0.1):
-    jd, fwhm, collect, apertures = gather_data(file_selector(init.matchedphotometrydir, 'match*.pht', init.aperture_find_percentage))
+    jd, fwhm, collect, apertures = gather_data(file_selector(settings.matchedphotometrydir, 'match*.pht', init.aperture_find_percentage))
     stddevs, counts = process(collect, apertures)
     return stddevs, collect, apertures, select_aperture(fwhm, apertures), fwhm, jd, counts
 

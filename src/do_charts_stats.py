@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import glob
-from init_loader import init
+from init_loader import init, settings
 from tqdm import tqdm
 from functools import partial
 import multiprocessing as mp
@@ -48,7 +48,7 @@ def plot_cumul_histo_detections(savefig=True):
     plt.hist(bins=num_bins, x=values, cumulative=1)
     plt.show()
     if savefig:
-        save(fig, init.fieldchartsdirs + 'cumul_histo_detections.png')
+        save(fig, settings.fieldchartsdirs + 'cumul_histo_detections.png')
 
     fig, ax = plt.subplots(figsize=fig_size, dpi=dpi, facecolor='w', edgecolor='k')
     ax.set_xlabel('star number')
@@ -59,7 +59,7 @@ def plot_cumul_histo_detections(savefig=True):
     print(len(xaxis), len(values))
     plt.bar(x=xaxis, height=sorted(values), width=1)
     plt.show()
-    save(fig, init.fieldchartsdirs + 'barcharts.png')
+    save(fig, settings.fieldchartsdirs + 'barcharts.png')
 
 
 def plot_fwhm(fwhm):
@@ -75,11 +75,11 @@ def plot_fwhm(fwhm):
     xaxis = range(0, len(fwhm))
     plt.bar(x=xaxis, height=np.take(fwhm, 1, axis=1), width=1)
     plt.show()
-    save(fig, init.fieldchartsdirs + 'fwhm.png')
+    save(fig, settings.fieldchartsdirs + 'fwhm.png')
 
 
 def read_lightcurves():
-    files = glob.glob(init.lightcurvedir + '*.txt')
+    files = glob.glob(settings.lightcurvedir + '*.txt')
     result = {}
     pool = mp.Pool(init.nr_threads * 2, maxtasksperchild=None)
 

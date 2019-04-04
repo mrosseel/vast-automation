@@ -39,6 +39,11 @@ Once you're in this VM, all python commands can be run.
 The docker image also exposes a Jupyter lab instance on port 8888.
 _Password is 'muni'_
 
+## Importing UCAC4 star catalog
+
+* Use a tool like filezilla and connect to this location: cdsarc.u-strasbg.fr/0/more/UCAC4
+* ... TODO
+
 ## Importing VSX star catalog
 
 * AAVSO VSX catalog can be downloaded here: http://cdsarc.u-strasbg.fr/viz-bin/Cat?cat=B%2Fvsx%2Fversions%2F2018-02-26&target=brief&
@@ -47,6 +52,7 @@ _Password is 'muni'_
 
 ## TODO
 
+- set_reference_frame doesn't work
 - don't start muniwin if reference frame is not defined
 - AAVSO report should use instrumental magnitudes for comparison stars
 - other stars in command line

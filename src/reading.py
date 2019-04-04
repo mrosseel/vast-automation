@@ -1,7 +1,5 @@
-from init_loader import init
+from init_loader import init, settings
 import os
-from os import listdir
-from os.path import isfile, join
 import pandas as pd
 import numpy as np
 import errno
@@ -10,7 +8,9 @@ import glob
 import logging
 import pickle
 
-def read_lightcurve(star,filter=True,preprocess=True, directory=init.lightcurvedir):
+def read_lightcurve(star,filter=True,preprocess=True, directory=None):
+    if directory is None:
+        directory = settings.lightcurvedir
     try:
         #print("Reading lightcurve", star, init.lightcurve_dir + 'curve_' + str(star).zfill(5) + '.txt')
         df = pd.read_csv(directory + 'curve_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
@@ -32,7 +32,7 @@ def preprocess_lightcurve(df):
 
 def read_pos(star, jd):
     try:
-        df = pd.read_csv(init.posdir + 'pos_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
+        df = pd.read_csv(settings.posdir + 'pos_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
         print(df.head())
         df2 = df[df['X'] > 0]
         df3 = df2[df['MAG'] < 99]
@@ -47,12 +47,9 @@ def read_pos(star, jd):
         #print("df:",len(df),"df2:", len(df2),"df3:", len(df3))
         print(len(df))
 
-def read_worldpos(star):
-    with open(get_worldpos_filename(star)) as f: # No need to specify 'r': this is the default.
-        return f.readlines()[0].split(' ')
 
 def read_reference_frame():
-    reference_file = open(init.basedir + 'reference_frame.txt', 'r')
+    reference_file = open(settings.basedir + 'reference_frame.txt', 'r')
     reference_file_contents = reference_file.readlines()
     reference_frame=reference_file_contents[0].rstrip()
     reference_frame_index=int(reference_file_contents[1])
@@ -67,12 +64,6 @@ def trash_and_recreate_dir(dir):
 def create_dir(dir):
     os.makedirs(dir, exist_ok=True)
 
-# helper function
-def get_pos_filename(star):
-    return init.posdir + "pos_" + str(star).zfill(5) + ".txt"
-
-def get_worldpos_filename(star):
-    return init.worldposdir + "worldpos_" + str(star).zfill(5) + ".txt"
 
 # takes a star_list and a dir, and returns a reduced star list - all stars which already have a file in that dir are removed
 def reduce_star_list(star_list_1, the_path):
@@ -104,18 +95,16 @@ def read_world_positions(the_path):
                 raise # Propagate other kinds of IOError.
     return results
 
-def get_files_in_dir(mypath):
-    return [f for f in listdir(mypath) if isfile(join(mypath, f))]
 
 def read_aperture():
-    apertures = np.loadtxt(init.basedir + 'apertures.txt', dtype=float, delimiter=';')
-    apertureidx = np.loadtxt(init.basedir + 'apertureidx_best.txt', dtype=int)
+    apertures = np.loadtxt(settings.basedir + 'apertures.txt', dtype=float, delimiter=';')
+    apertureidx = np.loadtxt(settings.basedir + 'apertureidx_best.txt', dtype=int)
     aperture = apertures[apertureidx]
     return apertures, apertureidx, aperture
 
 def read_compstars():
-    comparison_stars_1 = np.loadtxt(init.basedir + "comparison_stars_1.txt", dtype=int, delimiter=';')
-    with open(init.basedir + 'comparison_stars_1_desc.bin', 'rb') as compfile:
+    comparison_stars_1 = np.loadtxt(settings.basedir + "comparison_stars_1.txt", dtype=int, delimiter=';')
+    with open(settings.basedir + 'comparison_stars_1_desc.bin', 'rb') as compfile:
         comparison_stars_1_desc = pickle.load(compfile)
     return comparison_stars_1, comparison_stars_1_desc
 

@@ -1,4 +1,4 @@
-from init_loader import init
+from init_loader import init, settings
 import upsilon
 import reading
 from multiprocessing import Pool, Queue
@@ -60,7 +60,7 @@ def predict_star(star, limit=-1):
         return [star, 'NA', -1, 1]
 
 def run(star_list):
-    upsilon_output =init.basedir+'upsilon_output.txt'
+    upsilon_output =settings.basedir+'upsilon_output.txt'
     unsorted_result_list = start_upsilon(star_list, 5000)
     # save before sorting
     save_results(unsorted_result_list, upsilon_output)

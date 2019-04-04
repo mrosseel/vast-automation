@@ -5,7 +5,7 @@ from astropy import units as u
 import numpy as np
 import pandas as pd
 import os
-from init_loader import init
+from init_loader import init, settings
 import reading
 
 # not used
@@ -85,7 +85,7 @@ def testing(w):
 
 
 def test_code(reference_frame, xpos, ypos, arcsecond_width, arssecond_heigth):
-    reference_frame_full = init.fitsdir +reference_frame
+    reference_frame_full = settings.fitsdir +reference_frame
     fits_header = get_fits_header(reference_frame_full)
     object_ra = fits_header['OBJCTRA']
     object_dec = fits_header['OBJCTDEC']
@@ -99,7 +99,7 @@ def test_code(reference_frame, xpos, ypos, arcsecond_width, arssecond_heigth):
     c = SkyCoord(object_ra, object_dec, unit="deg")
     #wcs_config = setup_wcs(c, naxis1, naxis2)
     #print("file:",reference_frame, os.getcwd())
-    #wcs_config = setup_wcs_from_file(init.basedir +reference_frame)
+    #wcs_config = setup_wcs_from_file(settings.basedir +reference_frame)
     #result = pixel_to_radec(wcs_config, 1365, 1365)
     #print(result)
 
@@ -153,7 +153,7 @@ def test_code(reference_frame, xpos, ypos, arcsecond_width, arssecond_heigth):
     # hdu.writeto('test.fits')
 
 #w, jd = calculate_wcs('WWCrA#30V_000185980_FLAT.fit', 695, 671, 47*60, 47*60)
-w, jd = calculate_wcs_from_file(init.reference_header, init.reference_dir+init.reference_frame, init.xpos, init.ypos)
+w, jd = calculate_wcs_from_file(settings.reference_header, init.reference_dir+init.reference_frame, init.xpos, init.ypos)
 print(w, jd)
 testing(w)
 pd.set_option('precision', 10)

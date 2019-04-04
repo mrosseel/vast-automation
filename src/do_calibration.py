@@ -1,6 +1,5 @@
 import os
-import glob
-from init_loader import init
+from init_loader import init, settings
 import reading
 import logging
 from star_description import StarDescription
@@ -12,6 +11,7 @@ from astropy.coordinates import SkyCoord
 from astropy.coordinates import match_coordinates_sky
 from astropy import units as u
 from astropy.coordinates import Angle
+# astroquery imports the keyring backend, but why?
 from astroquery.vizier import Vizier
 import vsx_pickle
 import do_calibration
@@ -21,7 +21,7 @@ import pandas as pd
 from functools import partial
 from multiprocessing import Pool
 from typing import List
-
+import utils
 
 def get_wcs(wcs_file):
     hdulist = fits.open(wcs_file)
@@ -32,10 +32,7 @@ def get_wcs(wcs_file):
 
 
 def calibrate():
-    w = WCS(init.reference_header)
-    # xpos, ypos = w.all_world2pix(init.ra_deg, init.dec_deg, 0, ra_dec_order=True)
-    # print(xpos, ypos)
-    # print(w)
+    w = WCS(settings.reference_header)
     return w
 
 
@@ -52,30 +49,18 @@ def get_reference_frame(file_limit, reference_method):
     # Calculate or retrieve reference frame and its index
     try:
         reference_frame_fits, reference_frame_index = reading.read_reference_frame()
-        reference_frame = do_calibration.find_file_for_index(init.convfitsdir, reference_frame_index, '*.fts')
+        reference_frame = utils.find_file_for_index(settings.convfitsdir, reference_frame_index, '*.fts')
         logging.info(f"Loaded fits file: {reference_frame_fits}, corresponds with converted file:{reference_frame}")
     except:
         reference_frame = reference_method(file_limit)
-        reference_frame_index = do_calibration.find_index_of_file(init.convfitsdir, reference_frame, '*.fts')
+        reference_frame_index = utils.find_index_of_file(settings.convfitsdir, reference_frame, '*.fts')
         lines = [reference_frame, str(reference_frame_index)]
-        with open(init.basedir + 'reference_frame.txt', 'w') as f:
+        with open(settings.basedir + 'reference_frame.txt', 'w') as f:
             f.write('\n'.join(lines))
     print("Reference frame: {}, index: {}".format(reference_frame, reference_frame_index))
-    assert reference_frame_index == do_calibration.find_index_of_file(init.convfitsdir, reference_frame, '*.fts')
-    return [reference_frame, init.convfitsdir + reference_frame, reference_frame_index]
+    assert reference_frame_index == utils.find_index_of_file(settings.convfitsdir, reference_frame, '*.fts')
+    return [reference_frame, settings.convfitsdir + reference_frame, reference_frame_index]
 
-
-def find_index_of_file(the_dir, the_file, the_filter='*'):
-    the_dir = glob.glob(the_dir + the_filter)
-    the_dir.sort()
-    indices = [i for i, elem in enumerate(the_dir) if the_file in elem]
-    return indices[0]
-
-
-def find_file_for_index(the_dir, index, the_filter='*'):
-    the_dir = glob.glob(the_dir + the_filter)
-    the_dir.sort()
-    return the_dir[index]
 
 
 # returns the converted_fits file with the highest compressed filesize, limited to 'limit'
@@ -84,10 +69,10 @@ def select_reference_frame_gzip(limit):
     import gzip
     count = 0
     result = {}
-    for filename in os.listdir(init.convfitsdir):
+    for filename in os.listdir(settings.convfitsdir):
         if count < limit:
             count = count + 1
-            with open(init.convfitsdir + filename, 'rb') as f_in:
+            with open(settings.convfitsdir + filename, 'rb') as f_in:
                 length = len(gzip.compress(f_in.read()))
                 result[filename] = length
                 print(length)
@@ -99,27 +84,27 @@ def select_reference_frame_gzip(limit):
 # returns the converted_fits file with the highest jpeg filesize, limited to 'limit'
 # if limit is higher than listdir length, no harm
 def select_reference_frame_jpeg(limit):
-    bestfile, bestsize, jpegfile = do_reference_frame.runit(init.convfitsdir, limit)
+    bestfile, bestsize, jpegfile = do_reference_frame.runit(settings.convfitsdir, limit)
     return bestfile.rsplit('/', 1)[1]  # bestfile contains full path, split of the filename
 
 
 # returns 'path + phot????.pht', the photometry file matched with the reference frame
 def find_reference_photometry(reference_frame_index):
-    the_dir = os.listdir(init.photometrydir)
+    the_dir = os.listdir(settings.photometrydir)
     the_dir.sort()
-    return init.photometrydir + the_dir[reference_frame_index]
+    return settings.photometrydir + the_dir[reference_frame_index]
 
 
 def find_reference_matched(reference_frame_index):
-    the_dir = os.listdir(init.matchedphotometrydir)
+    the_dir = os.listdir(settings.matchedphotometrydir)
     the_dir.sort()
-    return init.matchedphotometrydir + the_dir[reference_frame_index]
+    return settings.matchedphotometrydir + the_dir[reference_frame_index]
 
 
 # not used atm
 def find_target_star(target_ra_deg, target_dec_deg, nr_results):
     target = SkyCoord(target_ra_deg, target_dec_deg, unit='deg')
-    result_dict = reading.read_world_positions(init.worldposdir)
+    result_dict = reading.read_world_positions(settings.worldposdir)
     distances_dict = {}
     for key in result_dict:
         distances_dict[key] = target.separation(SkyCoord(result_dict[key][0], result_dict[key][1], unit='deg')).degree
@@ -131,7 +116,7 @@ def find_target_star(target_ra_deg, target_dec_deg, nr_results):
 # returns list of star descriptions
 def get_star_descriptions(star_id_list=None):
     # returns {'name': [ra.deg, dec.deg ]}
-    positions = reading.read_world_positions(init.worldposdir)
+    positions = reading.read_world_positions(settings.worldposdir)
     result = []
     plist = "all stars"
     if star_id_list is not None:
@@ -161,7 +146,7 @@ def get_candidates(threshold_prob=0.5, check_flag=False):
     df = get_upsilon_candidates_raw(threshold_prob, check_flag)
     if df is None:
         return result
-    positions = reading.read_world_positions(init.worldposdir)
+    positions = reading.read_world_positions(settings.worldposdir)
     for index, row in df.iterrows():
         upsilon_match = UpsilonMatch(name_of_catalog='Upsilon', var_type=row['label'], probability=row['probability'],
                                      flag=row['flag'], period=row['period'])
@@ -185,7 +170,7 @@ def add_candidates_to_star_descriptions(stars: List[StarDescription], threshold_
 
 # common upsilon code
 def get_upsilon_candidates_raw(threshold_prob, check_flag):
-    upsilon_file = init.basedir + 'upsilon_output.txt'
+    upsilon_file = settings.basedir + 'upsilon_output.txt'
     try:
         df = pd.read_csv(upsilon_file, index_col=0)
     except:
@@ -200,12 +185,12 @@ def get_upsilon_candidates_raw(threshold_prob, check_flag):
 
 # returns {'star_id': [label, probability, flag, period, SkyCoord, match_name, match_skycoord,
 # match_type, separation_deg]}
-def add_vsx_names_to_star_descriptions(star_descriptions, max_separation=0.01):
-    logging.debug("Adding VSX names to star descriptions")
-    result = star_descriptions  # no deep copy for now
+def add_vsx_names_to_star_descriptions(stars: List[StarDescription], max_separation=0.01):
+    logging.info("Adding VSX names to star descriptions")
+    result = stars  # no deep copy for now
     # copy.deepcopy(star_descriptions)
     vsx_catalog, vsx_dict = create_vsx_astropy_catalog()
-    star_catalog = create_star_descriptions_catalog(star_descriptions)
+    star_catalog = create_star_descriptions_catalog(stars)
     # vsx catalog is bigger in this case than star_catalog, but if we switch then different stars can be
     # matched with the same variable which is wrong.
     #
@@ -228,7 +213,7 @@ def add_vsx_names_to_star_descriptions(star_descriptions, max_separation=0.01):
     for keys, values in results_dict.items():
         _add_catalog_match_to_entry('VSX', result[values[0]], vsx_dict,
                                     values[1], values[2])
-        logging.debug(f"Adding {values[0]},{values[1]}, {values[2]}\n\n")
+        logging.debug(f"Adding vsx match: {values[0]},{values[1]}, {values[2]}\n\n")
     logging.info(f"Added {len(results_dict)} vsx stars.")
     return result
 
@@ -299,8 +284,8 @@ def _add_catalog_match_to_entry(catalog_name, matchedStarDesc, vsx_dict, index_v
 
 # Takes in a list of known variables and maps them to the munipack-generated star numbers
 # usage:
-# vsx = getVSX(init.basedir+'SearchResults.csv')
-# detections = reading.read_world_positions(init.worldposdir)
+# vsx = getVSX(settings.basedir+'SearchResults.csv')
+# detections = reading.read_world_positions(settings.worldposdir)
 # returns { 'name of VSX variable': [VSX_var_SkyCoord, best_starfit, best_separation] }
 def find_star_for_known_vsx(vsx, detections_catalog, max_separation=0.01):
     result = {}
@@ -317,30 +302,19 @@ def find_star_for_known_vsx(vsx, detections_catalog, max_separation=0.01):
 
 
 def create_generic_astropy_catalog(ra_deg_np, dec_deg_np):
-    print("Creating astropy Catalog with " + str(len(ra_deg_np)) + " objects...")
+    logging.debug("Creating generic astropy Catalog with " + str(len(ra_deg_np)) + " objects...")
     return SkyCoord(ra=ra_deg_np, dec=dec_deg_np, unit='deg')
 
 
-def create_detections_astropy_catalog(detections):
-    print("Created detected stars catalog...")
-    ra2 = np.array([])
-    dec2 = np.array([])
-    # rewrite ra/dec to skycoord objects
-    for key in detections:
-        ra2 = np.append(ra2, [detections[key][0]])
-        dec2 = np.append(dec2, [detections[key][1]])
-    return create_generic_astropy_catalog(ra2, dec2)
-
-
 def create_vsx_astropy_catalog():
-    print("Creating vsx star catalog...")
-    vsx_dict = vsx_pickle.read(init.vsxcatalogdir)
+    logging.info("Creating vsx star catalog...")
+    vsx_dict = vsx_pickle.read(settings.vsxcatalogdir)
     return create_generic_astropy_catalog(vsx_dict['ra_deg_np'], vsx_dict['dec_deg_np']), vsx_dict
 
 
 # NO LONGER USED
 def create_upsilon_astropy_catalog(threshold_prob_candidates=0.5):
-    print("Creating upsilon star catalog...")
+    logging.info("Creating upsilon star catalog...")
     ra2 = np.array([])
     dec2 = np.array([])
     candidates_array = get_candidates(threshold_prob_candidates)
@@ -351,7 +325,7 @@ def create_upsilon_astropy_catalog(threshold_prob_candidates=0.5):
 
 
 def create_star_descriptions_catalog(star_descriptions):
-    print("Creating star_descriptions star catalog with {} stars...".format(len(star_descriptions)))
+    logging.info("Creating star_descriptions star catalog with {} stars...".format(len(star_descriptions)))
     ra2 = np.array([])
     dec2 = np.array([])
     for entry in star_descriptions:

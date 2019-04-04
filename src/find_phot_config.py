@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from init_loader import init
+from init_loader import init, settings
 import read_photometry
 import reading
 import logging
@@ -37,10 +37,10 @@ sp_maxoffset=2000
 # print results
 def find_best_photometry_config(percentage):
     # get subset of files for photometry
-    trash_and_recreate_dir(init.testdir)
+    trash_and_recreate_dir(settings.testdir)
     pattern = 'kout*.fts'
-    logging.debug(f"Selecting files from {init.convfitsdir} with pattern {pattern}")
-    chosen_files = file_selector(init.convfitsdir, pattern, percentage)
+    logging.debug(f"Selecting files from {settings.convfitsdir} with pattern {pattern}")
+    chosen_files = file_selector(settings.convfitsdir, pattern, percentage)
     logging.info(f"Chosen {len(chosen_files)} files per photometry run")
     filelist = generate_photometry_config_files()
     perform_photometry(filelist, chosen_files)
@@ -73,13 +73,13 @@ def write_config(filename, dict_of_entries):
 
 def generate_photometry_config_files():
     logging.info("Generating photometry config files...")
-    create_dir(init.testdir+'conf')
+    create_dir(settings.testdir+'conf')
     result = []
     counter = 0
     for fwhm in np.arange(1, 8, 0.5):
         for thresh in range(1,8,1):
             counter+=1
-            filename = f'{init.testdir}conf/muniphot{counter}.conf'
+            filename = f'{settings.testdir}conf/muniphot{counter}.conf'
             write_photometry_config(filename, apertures, maxstar, fwhm, thresh, gain, skyinner, skyouter)
             result.append(filename)
     logging.info(f"{len(result)} config files generated.")
@@ -92,7 +92,7 @@ def generate_photometry_config_files():
 # sp_maxoffset=2000
 def generate_matching_config_files():
     logging.info("Generating matching config files...")
-    trash_and_recreate_dir(init.testdir+'matching')
+    trash_and_recreate_dir(settings.testdir+'matching')
     result = []
     counter = 0
     for max_stars in np.arange(10, 60, 15):
@@ -101,7 +101,7 @@ def generate_matching_config_files():
               for sp_fields in range(0,3,1):
                   for sp_maxoffset in range(1,3000,1000):
                     counter+=1
-                    filename = f'{init.testdir}matching/match{counter}.conf'
+                    filename = f'{settings.testdir}matching/match{counter}.conf'
                     print("Writing to filename", filename)
                     write_matching_config(filename, max_stars, vertices, clip_thresh, sp_fields, sp_maxoffset)
                     result.append(filename)
@@ -114,7 +114,7 @@ def perform_photometry(configfilelist, chosen_files, offset=1):
     logging.debug(f"Perform photometry {filestring}, {configfilelist}")
     for id, entry in enumerate(configfilelist):
         logging.debug(f"Perform photometry {id} {entry}")
-        outputdir = f'{init.testdir}{id+offset:05d}/'
+        outputdir = f'{settings.testdir}{id+offset:05d}/'
         create_dir(outputdir)
         do_muniwin.write_photometry(config_file=entry, files=filestring, outputdir=outputdir)
 
@@ -125,7 +125,7 @@ def perform_matching(configfilelist, all_photometry_files, reference_frame, offs
     logging.debug(f"Perform photometry {input_file_string}, {configfilelist}")
     for id, entry in enumerate(configfilelist):
         logging.debug(f"Perform photometry {id} {entry}")
-        outputdir = f'{init.testdir}match{id+offset:05d}/'
+        outputdir = f'{settings.testdir}match{id+offset:05d}/'
         create_dir(outputdir)
         print("========================================")
         for photfile in all_photometry_files:
@@ -133,7 +133,7 @@ def perform_matching(configfilelist, all_photometry_files, reference_frame, offs
 
 def analyse(resultdirs=None, apertureidx=None):
     if resultdirs is None:
-        resultdirs = sorted([f for f in glob.glob(init.testdir+"*" + os.path.sep) if not "conf" in f])
+        resultdirs = sorted([f for f in glob.glob(settings.testdir+"*" + os.path.sep) if not "conf" in f])
     if apertureidx is None:
         _, _, apertureidx, _ = reading.read_aperture_and_compstars()
     print("apertureidx: ", apertureidx)
@@ -148,14 +148,14 @@ def analyse(resultdirs=None, apertureidx=None):
         print("number of finite star results:", np.sum(np.isfinite(star_result.flatten().shape)))
         print(f"Percent of stars detected: {starsdetectedpct}")
         df.loc[len(df)]=[resultdir, np.sum(nrstarsphot.flatten()), starsdetectedpct, show_percentage_real(star_result)]
-    df.to_csv(init.testdir+'results_phot.txt',index=False)
+    df.to_csv(settings.testdir+'results_phot.txt',index=False)
     winningdf = df.sort_values(['realpercentage', 'nrstars'], ascending=[False, False]).iloc[0]
     print("Best result: ", winningdf)
     return winningdf['resultdir']
 
 def analyse_match(resultdirs=None, apertureidx=None):
     if resultdirs is None:
-        resultdirs = sorted([f for f in glob.glob(init.testdir+"match*" + os.path.sep) if not "matching" in f])
+        resultdirs = sorted([f for f in glob.glob(settings.testdir+"match*" + os.path.sep) if not "matching" in f])
         print(resultdirs)
     if apertureidx is None:
         _, _, apertureidx, _ = reading.read_aperture_and_compstars()
@@ -171,7 +171,7 @@ def analyse_match(resultdirs=None, apertureidx=None):
         print("number of finite star results:", np.sum(np.isfinite(star_result.flatten().shape)))
         print(f"Percent of stars detected: {starsdetectedpct}")
         df.loc[len(df)]=[resultdir, np.sum(nrstarsphot.flatten()), starsdetectedpct, show_percentage_real(star_result)]
-    df.to_csv(init.testdir+'results_match.txt',index=False)
+    df.to_csv(settings.testdir+'results_match.txt',index=False)
     winningdf = df.sort_values(['realpercentage', 'nrstars'], ascending=[False, False]).iloc[0]
     print("Best result: ", winningdf)
     return winningdf['resultdir']

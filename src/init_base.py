@@ -1,29 +1,31 @@
 #### DO NOT TOUCH ####
 # standard directories
-datadir = 'current/'
-reference_file = 'new-image.fits'
-codedir = './'
-basedir = codedir + datadir
-reference_header = basedir + reference_file
-# input + processing
-fitsdir = basedir + "fits/"
-convfitsdir = basedir + "converted_fits/"
-photometrydir = basedir + "photometry/"
-matchedphotometrydir = basedir + "matched_photometry/"
-aperturedir = basedir + "aperture/"
-vsxcatalogdir = codedir + "vsx_catalog.bin"
-testdir = basedir + 'test/'
-conf_phot=basedir+'muniphot.conf'
-conf_match=basedir+'match.conf'
-
-# results
-resultdir = basedir + "results/"
-lightcurvedir = resultdir + "lightcurves/"
-posdir = resultdir + "positions/"
-worldposdir = resultdir + "world_positions/"
-chartsdir = resultdir + "charts/"
-phasedir = resultdir + "phasediagrams/"
-aavsoreportsdir = resultdir + "aavso_reports/"
-fieldchartsdirs = resultdir + "field_charts/"
 
 #### DO NOT TOUCH ####
+
+# various dir settings
+class Settings:
+    def __init__(self, datadir, reference_file='new-image.fits'):
+        self.datadir = datadir
+        self.codedir = './'
+        self.basedir = self.datadir
+        self.reference_file = reference_file
+        self.reference_header = self.basedir + self.reference_file
+        self.vsxcatalogdir = self.codedir + "vsx_catalog.bin"
+        self.testdir = self.basedir + 'test/'
+        self.conf_phot=self.basedir+'muniphot.conf'
+        self.conf_match=self.basedir+'match.conf'
+        self.fitsdir = self.basedir + "fits/"
+        self.convfitsdir = self.basedir + "converted_fits/"
+        self.photometrydir = self.basedir + "photometry/"
+        self.matchedphotometrydir = self.basedir + "matched_photometry/"
+
+        # results
+        self.resultdir = self.basedir + "results/"
+        self.lightcurvedir = self.resultdir + "lightcurves/"
+        self.posdir = self.resultdir + "positions/"
+        self.worldposdir = self.resultdir + "world_positions/"
+        self.chartsdir = self.resultdir + "charts/"
+        self.phasedir = self.resultdir + "phasediagrams/"
+        self.aavsoreportsdir = self.resultdir + "aavso_reports/"
+        self.fieldchartsdirs = self.resultdir + "field_charts/"

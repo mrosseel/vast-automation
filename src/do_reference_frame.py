@@ -13,7 +13,7 @@ import tqdm
 import multiprocessing as mp
 from functools import partial
 import glob
-from init_loader import init
+from init_loader import init, settings
 
 def fits_to_size(fitsfilename, vmin, vmax):
     return fitsdata_to_size(get_fits_data(fitsfilename, vmin, vmax), fitsfilename)
@@ -60,7 +60,7 @@ def fitsdata_to_jpeg(data, fitsfilename):
     return imagename
 
 # limit is not used at the moment
-def runit(fitsdir):
+def runit(fitsdir, limit=0):
     # between 0 and 65535
     _vmin=50
     _vmax=5000
@@ -84,4 +84,4 @@ def runit(fitsdir):
 
 if __name__ == '__main__':
     logging.info("Starting reference frame searching...")
-    runit(init.convfitsdir)
+    runit(settings.convfitsdir)
