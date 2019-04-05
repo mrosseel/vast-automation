@@ -22,7 +22,7 @@ if __name__ == '__main__':
     parser.add_argument('-u', '--upsilon', help="Add upsilon star info to the star descriptions", action="store_true")
     args = parser.parse_args()
 
-    fh = logging.FileHandler(args.datadir + 'munilog-{:%B %d, %Y}.log'.format(datetime.now()))
+    fh = logging.FileHandler(f"{args.datadir}munilog-{datetime.now():%Y%M%d-%H_%M_%S}.log")
     fh.setLevel(logging.INFO)
     # add the handlers to the logger
     logger.addHandler(fh)

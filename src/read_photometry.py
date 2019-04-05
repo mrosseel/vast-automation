@@ -61,8 +61,6 @@ def read_pht(matched_files_tuple, star_range_0, apertureidx: int, fake_reference
 
         # for every star
         for staridx, starentry in enumerate(stardata):
-            # if stars[staridx].ref_id-1 == 13:
-            #   print("readandcollectpht:", [starentry.mag, starentry.err], stars[staridx].ref_id-1)
             ref_id_0 = stars[staridx].ref_id - 1 # if photometry then all is -1
 
             if ref_id_0 is -2: # -1 - 1
@@ -71,6 +69,8 @@ def read_pht(matched_files_tuple, star_range_0, apertureidx: int, fake_reference
                 else:
                     continue
             try:
+                if ref_id_0 > len(collect):
+                    logging.warn(f"staridx: {staridx}, ref_id_0: {ref_id_0}, shape: {collect.shape}")
                 collect[ref_id_0] = [starentry.mag, starentry.err]
             except:
                 logging.error(f"staridx: {staridx}, ref_id_0: {ref_id_0}, shape: {collect.shape}")

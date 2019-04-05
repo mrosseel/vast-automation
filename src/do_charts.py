@@ -107,7 +107,7 @@ def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
     fig=plt.figure(figsize=(18, 16), dpi= 80, facecolor='w', edgecolor='k')
     plt.xlabel("Phase", labelpad=TITLE_PAD)
     plt.ylabel("Magnitude", labelpad=TITLE_PAD)
-    plt.title(f"Star {star}{match_string}, period: {period:.5f} d{upsilon_text}, {get_hms_dms(coords)}", pad=TITLE_PAD)
+    plt.title(f"Star {star}{match_string}, p: {period:.5f} d{upsilon_text}\n{get_hms_dms(coords)}", pad=TITLE_PAD)
     plt.tight_layout()
     # plotting + calculation of 'double' phase diagram from -1 to 1
     phased_t = np.fmod(t_np/period,1)
