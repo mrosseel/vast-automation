@@ -16,7 +16,7 @@ from reading import create_dir
 from do_aperture import gather_data
 
 # globals photometry
-maxstar=len(init.star_list)
+maxstar = -1
 apertures="2,2.73,3.82,5.27,7.09,9.27,11.82,14.73,18,21.64,25.64,30"
 gain=1.4 # ADC gain of Josch's camera
 skyinner=8
@@ -216,8 +216,10 @@ if __name__ == '__main__':
     init = init_loader.init
     settings = init_loader.settings
     #find_photometry_configs(args.percentage)
-    #resultdir = analyse(apertureidx=None)
-    resultdir='./current/test/00001/'
+    #resultdir =analyse(apertureidx=None)
+    global maxstar
+    maxstar =len(init.star_list)
+    resultdir=args.datadir+'/findconfig/'
     # find_best_matching_config(resultdir, args.percentage, resume=True)
     analyse_match()
 
