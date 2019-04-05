@@ -23,32 +23,8 @@ MAX_MAG = 99.99999
 MAX_ERR = 9.99999
 STAR_DATA_MB=1.5274047851562502e-05 # the size of the data of one star
 
-print("initing the do lightcurve and now the settings are", dir(settings))
-print("initing the do lightcurve and now the settings are", dir(settings))
-print("initing the do lightcurve and now the settings are", dir(settings))
-print("initing the do lightcurve and now the settings are", dir(settings))
-print("initing the do lightcurve and now the settings are", dir(settings))
-print("initing the do lightcurve and now the settings are", dir(settings))
-print("initing the do lightcurve and now the settings are", dir(settings))
-print("initing the do lightcurve and now the settings are", dir(settings))
-print("initing the do lightcurve and now the settings are", dir(settings))
-print("initing the do lightcurve and now the settings are", dir(settings))
-print("initing the do lightcurve and now the settings are", dir(settings))
-print("initing the do lightcurve and now the settings are", dir(settings))
-print("initing the do lightcurve and now the settings are", dir(settings))
-print("initing the do lightcurve and now the settings are", dir(settings))
-print("initing the do lightcurve and now the settings are", dir(settings))
-print("initing the do lightcurve and now the settings are", dir(settings))
-print("initing the do lightcurve and now the settings are", dir(settings))
-print("initing the do lightcurve and now the settings are", dir(settings))
-print("initing the do lightcurve and now the settings are", dir(settings))
-print("initing the do lightcurve and now the settings are", dir(settings))
-print("initing the do lightcurve and now the settings are", dir(settings))
-print("initing the do lightcurve and now the settings are", dir(settings))
-
 # multithreaded writing of lightcurves
 def write_lightcurves(star_list_1, comparison_stars_1, aperture, apertureidx, jd, fwhm, star_result_):
-    print("Settings are", dir(settings))
     trash_and_recreate_dir(settings.lightcurvedir)
 
     global preamble
