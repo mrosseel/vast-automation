@@ -142,7 +142,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
     apertureidx = None
 
     if do_photometry:
-        logging.info("Writing photometry with config file {settings.conf_phot}...")
+        logging.info(f"Writing photometry with config file {settings.conf_phot}...")
         write_photometry(config_file=settings.conf_phot)
 
     if do_match:

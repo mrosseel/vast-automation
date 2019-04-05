@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
-from init_loader import init, settings
+import init_loader
+from init_loader import init, settings, meta_init
 import read_photometry
 import reading
 import logging
@@ -203,9 +204,17 @@ def show_percentage_real(star_result):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Testing photometry and matching config params')
     parser.add_argument('percentage')
+    parser.add_argument('-d', '--datadir',
+                        help="The directory where the data can be found (fits in ./fits dir under the data dir",
+                        nargs='?', required=True)
     args = parser.parse_args()
     logging.getLogger().setLevel(logging.INFO)
     logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
+
+    meta_init(args.datadir)
+    # global init
+    init = init_loader.init
+    settings = init_loader.settings
     #find_photometry_configs(args.percentage)
     #resultdir = analyse(apertureidx=None)
     resultdir='./current/test/00001/'
