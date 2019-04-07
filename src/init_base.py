@@ -12,7 +12,7 @@ class Settings:
         self.reference_file = reference_file
         self.reference_header = self.basedir + self.reference_file
         self.vsxcatalogdir = self.codedir + "vsx_catalog.bin"
-        self.testdir = self.basedir + 'configsearch/'
+        self.testdir = self.basedir + 'search/'
         self.conf_phot=self.basedir+'muniphot.conf'
         self.conf_match=self.basedir+'match.conf'
         self.fitsdir = self.basedir + "fits/"

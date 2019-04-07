@@ -46,7 +46,7 @@ def write_photometry(config_file=settings.basedir + 'muniphot.conf', files=None,
                    outputfile_prefix=outputfile_prefix)
     logging.info(f"Writing star photometry for {len(files)} stars into {outputdir}")
     print(files)
-    for _ in tqdm.tqdm(pool.imap_unordered(func, files, 50), total=len(files)):
+    for _ in tqdm.tqdm(pool.imap_unordered(func, files, 5), total=len(files)):
         pass
 
 

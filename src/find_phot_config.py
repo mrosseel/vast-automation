@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 import init_loader
 from init_loader import init, settings, meta_init
-import read_photometry
 import reading
 import logging
 import glob
@@ -112,7 +111,7 @@ def generate_matching_config_files():
                     for sp_maxoffset in range(1, 3000, 1000):
                         counter += 1
                         filename = f'{settings.testdir}matching/match{counter}.conf'
-                        print("Writing to filename", filename)
+                        logging.info(f"Writing to filename {filename}")
                         write_matching_config(filename, max_stars, vertices, clip_thresh, sp_fields, sp_maxoffset)
                         result.append(filename)
     logging.info(f"{len(result)} matching config files generated.")
@@ -121,15 +120,13 @@ def generate_matching_config_files():
 
 # offset param is to allow generating non-standard photometry in a range beyond the existing dirs
 def perform_photometry(configfilelist, chosen_files, offset=1):
-    filestring = ' '.join(chosen_files)
-    logging.debug(f"Perform photometry {filestring}, {configfilelist}")
-    main_muniwin.settings = settings
-    main_muniwin.init = init
+    # filestring = ' '.join(chosen_files)
+    logging.debug(f"Perform photometry {chosen_files}, {configfilelist}")
     for id, entry in enumerate(configfilelist):
         logging.debug(f"Perform photometry {id} {entry}")
         outputdir = f'{settings.testdir}{id + offset:05d}/'
         create_dir(outputdir)
-        main_muniwin.write_photometry(config_file=entry, files=filestring, outputdir=outputdir)
+        main_muniwin.write_photometry(config_file=entry, files=chosen_files, outputdir=outputdir)
 
 
 # offset param is to allow generating non-standard photometry in a range beyond the existing dirs
@@ -141,67 +138,71 @@ def perform_matching(configfilelist, all_photometry_files, reference_frame, offs
         logging.debug(f"Perform photometry {id} {entry}")
         outputdir = f'{settings.testdir}match{id + offset:05d}/'
         create_dir(outputdir)
-        print("========================================")
+        logging.info("========================================")
         for photfile in all_photometry_files:
             main_muniwin.write_match(photfile, reference_frame, config_file=entry, to_match_is_full_path=True,
-                                   outputdir=outputdir)
+                                     outputdir=outputdir)
 
 
 def analyse(resultdirs=None, apertureidx=None):
+    logging.info("starting analysis")
     if resultdirs is None:
+        logging.info("resultdirs is none")
         resultdirs = sorted([f for f in glob.glob(settings.testdir + "*" + os.path.sep) if not "conf" in f])
+        print(resultdirs)
     if apertureidx is None:
-        _, _, apertureidx, _ = reading.read_aperture_and_compstars()
-    print("apertureidx: ", apertureidx)
+        _, apertureidx, _ = reading.read_aperture()
+    logging.info(f"apertureidx: {apertureidx}")
     df = pd.DataFrame(columns=['resultdir', 'nrstars', 'starsdetectedpct', 'realpercentage'])
     for resultdir in resultdirs:
         # reading photometry files
-        print("Reading dir:", resultdir)
+        logging.info(f"Reading dir: {resultdir}")
         jdphot, fwhmphot, nrstarsphot, star_result = read_photometry.read_photometry(star_list_1=init.star_list,
                                                                                      apertureidx=apertureidx,
                                                                                      matched_files=glob.glob(
                                                                                          resultdir + '/*.pht'),
                                                                                      fake_references=True)
-        print(f"Results: nr stars photometry:{len(nrstarsphot)}, sum of {np.sum(nrstarsphot)}, length of star list:{len(init.star_list)}")
+        logging.info(
+            f"Results: nr stars photometry:{len(nrstarsphot)}, sum of {np.sum(nrstarsphot)}, length of star list:{len(init.star_list)}")
         starsdetectedpct = np.sum(nrstarsphot) / (len(init.star_list) * len(nrstarsphot)) * 100
-        print(star_result.flatten())
-        print("number of finite star results:", np.sum(np.isfinite(star_result.flatten().shape)))
-        print(f"Percent of stars detected: {starsdetectedpct}")
+        logging.info(star_result.flatten())
+        logging.info(f"number of finite star results: {np.sum(np.isfinite(star_result.flatten().shape))}")
+        logging.info(f"Percent of stars detected: {starsdetectedpct}")
         df.loc[len(df)] = [resultdir, np.sum(nrstarsphot.flatten()), starsdetectedpct,
                            show_percentage_real(star_result)]
     df.to_csv(settings.testdir + 'results_phot.txt', index=False)
     winningdf = df.sort_values(['realpercentage', 'nrstars'], ascending=[False, False]).iloc[0]
-    print("Best result: ", winningdf)
+    logging.info(f"Best result: {winningdf}")
     return winningdf['resultdir']
 
 
 def analyse_match(resultdirs=None, apertureidx=None):
     if resultdirs is None:
         resultdirs = sorted([f for f in glob.glob(settings.testdir + "match*" + os.path.sep) if not "matching" in f])
-        print(resultdirs)
+        logging.info(resultdirs)
     if apertureidx is None:
-        _, _, apertureidx, _ = reading.read_aperture_and_compstars()
-    print("apertureidx: ", apertureidx)
+        _, apertureidx, _ = reading.read_aperture()
+    logging.info(f"apertureidx: {apertureidx}")
     df = pd.DataFrame(columns=['resultdir', 'nrstars', 'starsdetectedpct', 'realpercentage'])
     for resultdir in resultdirs:
         # reading photometry files
-        print("Reading dir:", resultdir)
+        logging.info(f"Reading dir:  {resultdir}")
         jdphot, fwhmphot, nrstarsphot, star_result = read_photometry.read_photometry(star_list_1=init.star_list,
                                                                                      apertureidx=apertureidx,
                                                                                      matched_files=glob.glob(
                                                                                          resultdir + '/*.pht'),
                                                                                      fake_references=False)
-        print(f"Results: nr stars photometry:{len(nrstarsphot)}, " +
-              f"sum of {np.sum(nrstarsphot)}, length of star list:{len(init.star_list)}")
+        logging.info(f"Results: nr stars photometry:{len(nrstarsphot)}, " +
+                     f"sum of {np.sum(nrstarsphot)}, length of star list:{len(init.star_list)}")
         starsdetectedpct = np.sum(nrstarsphot) / (len(init.star_list) * len(nrstarsphot)) * 100
-        print(star_result.flatten())
-        print("number of finite star results:", np.sum(np.isfinite(star_result.flatten().shape)))
-        print(f"Percent of stars detected: {starsdetectedpct}")
+        logging.info(star_result.flatten())
+        logging.info(f"number of finite star results: {np.sum(np.isfinite(star_result.flatten().shape))}")
+        logging.info(f"Percent of stars detected: {starsdetectedpct}")
         df.loc[len(df)] = [resultdir, np.sum(nrstarsphot.flatten()), starsdetectedpct,
                            show_percentage_real(star_result)]
     df.to_csv(settings.testdir + 'results_match.txt', index=False)
     winningdf = df.sort_values(['realpercentage', 'nrstars'], ascending=[False, False]).iloc[0]
-    print("Best result: ", winningdf)
+    logging.info(f"Best result: {winningdf}")
     return winningdf['resultdir']
 
 
@@ -210,7 +211,7 @@ def show_percentage_real(star_result):
     for fileentry in star_result:
         totalcount += np.sum(np.isfinite(fileentry)) / 2
     result = totalcount / (len(init.star_list) * len(star_result))
-    print("Percentage real:", result)
+    logging.info(f"Percentage real: {result}")
     return result
 
 
@@ -238,19 +239,20 @@ if __name__ == '__main__':
     args = parser.parse_args()
     logging.getLogger().setLevel(logging.INFO)
     logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
-
+    logging.info("before init")
     meta_init(args.datadir)
     # global init
     init = init_loader.init
     settings = init_loader.settings
     import main_muniwin
+    import read_photometry
+
     # from importlib import reload
     # main_muniwin = reload(main_muniwin)
 
-    # find_photometry_configs(args.percentage)
-    # resultdir =analyse(apertureidx=None)
     maxstar = len(init.star_list)
     resultdir = settings.testdir + '/findconfig/'
     find_best_photometry_config(args.percentage)
-    #find_best_matching_config(resultdir, args.percentage, resume=True)
-    analyse_match(apertureidx=init.aperture)
+    resultdir = analyse(apertureidx=None)
+    # find_best_matching_config(resultdir, args.percentage, resume=True)
+    # analyse_match(apertureidx=init.aperture)
