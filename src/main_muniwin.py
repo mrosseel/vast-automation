@@ -44,7 +44,8 @@ def write_photometry(config_file=settings.basedir + 'muniphot.conf', files=None,
     pool = mp.Pool(init.nr_threads * 2, maxtasksperchild=100)
     func = partial(command_caller, config_file_param=config_file_param, outputdir=outputdir,
                    outputfile_prefix=outputfile_prefix)
-    logging.info(f"Writing star photometry for {len(files)} stars into {settings.lightcurvedir}")
+    logging.info(f"Writing star photometry for {len(files)} stars into {outputdir}")
+    print(files)
     for _ in tqdm.tqdm(pool.imap_unordered(func, files, 50), total=len(files)):
         pass
 
@@ -119,8 +120,8 @@ def get_worldpos_filename(star):
 def command_caller(fits, config_file_param, outputdir, outputfile_prefix):
     if isinstance(fits, list):
         fits = ' '.join(fits)
-    command = f"muniphot {fits} {config_file_param} -o " \
-        f"{outputdir + outputfile_prefix}{int(''.join(filter(str.isdigit, fits))):06d}.pht"
+    print(f"'{fits}' '{config_file_param}'")
+    command = f"muniphot {fits} {config_file_param} -o {outputdir + outputfile_prefix}{int(''.join(filter(str.isdigit, fits))):06d}.pht"
     logging.debug(f'Photometry command is: {command}')
     subprocess.call(command, shell=True)
 

@@ -4,6 +4,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 # import importlib
 import imp
+import utils
 
 # importing base and current init as init
 from init_base import Settings
@@ -15,7 +16,7 @@ settings = None
 
 def meta_init(datadir: str):
     # make sure datadir has trailing slash
-    datadir = os.path.join(datadir, '')
+    datadir = utils.add_trailing_slash(datadir)
     global settings
     settings = Settings(datadir)
     global init

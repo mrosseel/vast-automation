@@ -17,14 +17,15 @@ Once you're in this VM, all python commands can be run.
 ### Init settings
 
 * take one reference frame and calculate a fits header using http://Astrometry.net
-* edit init.py to set all correct directories and values
-* call `./set_reference_frame.py ./currrent/fits/my_reference_frame.fits`
+* copy init.py.example to init.py in your working dir (for example ./current) and fill in correct values.
+* call `./set_reference_frame.py ./currrent/fits/my_reference_frame.fits ./current`
+
 
 ### Run
 
-* command: `python do_muniwin.py`
+* call `./run.sh -d ./current`
 
-### File overview
+### File overview (partial)
 
 * init.py : directory settings, processing settings
 * do_muniwin.py : start all

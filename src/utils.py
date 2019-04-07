@@ -15,5 +15,9 @@ def find_file_for_index(the_dir, index, the_filter='*'):
     return the_dir[index]
 
 
+def add_trailing_slash(the_path):
+    return join(the_path, '')
+
+
 def get_files_in_dir(mypath):
     return [f for f in listdir(mypath) if isfile(join(mypath, f))]

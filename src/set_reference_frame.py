@@ -19,11 +19,12 @@ if __name__ == '__main__':
     parser.add_argument('datadir', help='the root dir for this dataset, this is where the file will be written.')
     args = parser.parse_args()
     fits_dir = os.path.dirname(args.filename)
-    fits_dir = os.path.join(fits_dir, '')
+    fits_dir = utils.add_trailing_slash(fits_dir)
+    datadir = utils.add_trailing_slash(args.datadir)
     filename, file_extension = os.path.splitext(args.filename)
     if not os.path.isfile(args.filename):
         print("The given file does not exist:", args.filename)
         exit(1)
-    init_loader.meta_init(args.datadir)
-    run(args.datadir, fits_dir, args.filename, file_extension)
+    init_loader.meta_init(datadir)
+    run(datadir, fits_dir, args.filename, file_extension)
 
