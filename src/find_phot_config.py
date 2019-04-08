@@ -251,7 +251,6 @@ if __name__ == '__main__':
     # main_muniwin = reload(main_muniwin)
 
     maxstar = len(init.star_list)
-    resultdir = settings.testdir + '/findconfig/'
     find_best_photometry_config(args.percentage)
     resultdir = analyse(apertureidx=None)
     # find_best_matching_config(resultdir, args.percentage, resume=True)
