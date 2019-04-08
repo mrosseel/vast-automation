@@ -1,2 +1,2 @@
-#!/usr/bin/env bash
-python ./src/set_reference_frame.py ("$@")
+#!/bin/sh
+python ./src/set_reference_frame.py $@

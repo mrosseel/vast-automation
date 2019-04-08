@@ -16,15 +16,25 @@ Once you're in this VM, all python commands can be run.
 
 ### Init settings
 
+* copy init.py.example to init.py in your working dir (for example ./current) and fill in correct values.
+
+### Set reference frame
+
 * take one reference frame and calculate a fits header using http://Astrometry.net
-* edit init.py to set all correct directories and values
-* call `./set_reference_frame.py ./currrent/fits/my_reference_frame.fits`
+* call `./set_reference_frame.py ./currrent/fits/my_reference_frame.fits ./current`
+
+### Find correct config files for muniphot and munimatch
+
+* How to find the best config file (takes long): `python src/find_phot_config.py -d current 0.1` => this 
+uses 1 percent of the fits to calculate the optimal photometry config.
+* The resulting directory indicates the number of the best config file, e.g current/search/00001 means that 
+the best result is in ./current/search/conf/muniphot1.conf
 
 ### Run
 
-* command: `python do_muniwin.py`
+* call `./run.sh -d ./current`
 
-### File overview
+### File overview (partial)
 
 * init.py : directory settings, processing settings
 * do_muniwin.py : start all
