@@ -18,7 +18,7 @@ Once you're in this VM, all python commands can be run.
 
 * copy init.py.example to init.py in your working dir (for example ./current) and fill in correct values.
 
-### Set reference frame
+### Set reference frame (used during matching)
 
 * take one reference frame and calculate a fits header using http://Astrometry.net
 * call `./set_reference_frame.py ./currrent/fits/my_reference_frame.fits ./current`
