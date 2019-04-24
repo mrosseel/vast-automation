@@ -1,0 +1,2 @@
+./current/fits/WWCrA#30V_000184532_FLAT.fit
+1
