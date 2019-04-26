@@ -6,7 +6,7 @@ import argparse
 import subprocess
 import utils
 from datetime import datetime
-from hanging_threads import start_monitoring
+#from hanging_threads import start_monitoring
 
 if __name__ == '__main__':
     logger = logging.getLogger()
