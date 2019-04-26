@@ -70,7 +70,7 @@ def read_pht(matched_files_tuple, star_range_0, apertureidx: int, fake_reference
                     continue
             try:
                 if ref_id_0 > len(collect):
-                    logging.warn(f"staridx: {staridx}, ref_id_0: {ref_id_0}, shape: {collect.shape}")
+                    logging.trace(f"Star idx too big for collect shape: staridx: {staridx}, ref_id_0: {ref_id_0}, shape: {collect.shape}")
                 collect[ref_id_0] = [starentry.mag, starentry.err]
             except:
                 logging.error(f"staridx: {staridx}, ref_id_0: {ref_id_0}, shape: {collect.shape}")

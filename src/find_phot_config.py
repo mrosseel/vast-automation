@@ -149,7 +149,7 @@ def analyse(resultdirs=None, apertureidx=None):
     if resultdirs is None:
         logging.info("resultdirs is none")
         resultdirs = sorted([f for f in glob.glob(settings.testdir + "*" + os.path.sep) if not "conf" in f])
-        print(resultdirs)
+        logging.info(resultdirs)
     if apertureidx is None:
         _, apertureidx, _ = reading.read_aperture()
     logging.info(f"apertureidx: {apertureidx}")

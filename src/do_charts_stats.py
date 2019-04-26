@@ -6,6 +6,7 @@ import glob
 from init_loader import init, settings
 from tqdm import tqdm
 from functools import partial
+import logging
 import multiprocessing as mp
 
 
@@ -56,7 +57,7 @@ def plot_cumul_histo_detections(savefig=True):
     ax.set_title(r'Barchart of on which % of images the star is seen')
     ax.grid(True)
     xaxis = range(0, len(values))
-    print(len(xaxis), len(values))
+    logging.info(f"len xaxis: {len(xaxis)}, len values: {len(values)}")
     plt.bar(x=xaxis, height=sorted(values), width=1)
     plt.show()
     save(fig, settings.fieldchartsdirs + 'barcharts.png')

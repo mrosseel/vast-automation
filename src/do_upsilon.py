@@ -5,12 +5,13 @@ from multiprocessing import Pool, Queue
 import tqdm
 import pandas as pd
 from functools import partial
+import logging
 
 
 # This code is not multithreaded because upsilon itself is already multithreaded and gives warnings if you
 # for nested multithreading.
 def start_upsilon(star_list, star_limit):
-    print("Starting upsilon with nr stars:", len(star_list), "and star limit:", star_limit)
+    logging.info(f"Starting upsilon with nr stars: {len(star_list)} and star limit: {star_limit}")
     result_list = []
     for star in tqdm.tqdm(star_list, total=len(star_list)):
         result_list.append(predict_star(star, star_limit))
@@ -34,7 +35,7 @@ def save_results(result_list, output_file):
         final_list.append(entry)
         columns_done = True
     df=pd.DataFrame(final_list,columns=column_names)
-    print("Upsilon results will be saved with size ", df.size)
+    logging.info(f"Upsilon results will be saved with size {df.size}")
     df.to_csv(output_file, index=False)
 
 # returns [ star, label, probability, flag ]
@@ -56,7 +57,7 @@ def predict_star(star, limit=-1):
         label, probability, flag = upsilon.predict(rf_model, features)
         return [star, label, probability, flag, features]
     except:
-        print(star, 'error')
+        logging.info(f"{star} error")
         return [star, 'NA', -1, 1]
 
 def run(star_list):

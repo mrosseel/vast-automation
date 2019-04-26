@@ -1,4 +1,5 @@
 from init_loader import init, settings
+import logging
 
 def getResults(number):
     with open(settings.basedir+'upsilon_output.txt') as f:
@@ -10,13 +11,13 @@ def getResults(number):
         return result
 
 def getCopyPng(number):
-    print(getFileList(number, 'cp', '.png'))
+    logging.info(getFileList(number, 'cp', '.png'))
 
 def getEogPng(number):
-    print(getFileList(number, 'eog', '.png'))
+    logging.info(getFileList(number, 'eog', '.png'))
 
 def getCopyCurves(number):
-    print(getFileList(number, 'cp', '.txt', fileprefix='curve_'))
+    logging.info(getFileList(number, 'cp', '.txt', fileprefix='curve_'))
 
 def getFileList(number, prefix, suffix, fileprefix=''):
     input = getResults(number)
@@ -30,7 +31,7 @@ def getArray(number):
     result = []
     for star in input:
         result.append(int(star[0]))
-    print(result)
+    logging.info(result)
 
 
 num = 100

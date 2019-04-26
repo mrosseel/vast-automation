@@ -41,7 +41,7 @@ def plot_lightcurve(tuple, comparison_stars):
     coord = star_description.coords
     #print(f'Plotting lightcurve with star_description:{star_description}, curve length:{len(curve)}, star:{star}, curve:{curve}')
     if(curve is None):
-        print("Curve is None for star", star)
+        logging.info(f"Curve is None for star {star}")
         return
     #curve = curve.replace(to_replace=99.99999, value=np.nan, inplace=False) # we filter now
     used_curve = curve
@@ -91,7 +91,7 @@ def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
     upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
     #print("Calculating phase diagram for", star)
     if curve is None:
-        print("Curve of star {} is None".format(star))
+        logging.info("Curve of star {} is None".format(star))
         return
     t_np = curve['JD'].to_numpy()
     y_np = curve['V-C'].to_numpy()
@@ -139,7 +139,7 @@ def read_lightcurves(star_description, comparison_stars, do_charts, do_phase):
     try:
         df = reading.read_lightcurve(star_description.local_id,filter=True)
         if df is None or len(df) == 0:
-            print("No lightcurve found for star", star_description.local_id)
+            logging.info(f"No lightcurve found for star {star_description.local_id}")
             return
 
         # adding vmag of comparison star to all diff mags

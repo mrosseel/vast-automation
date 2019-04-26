@@ -40,10 +40,10 @@ def gather_data(match_file_list):
         # open the file for reading
         with open(entry, mode='rb') as file: # b is important -> binary
             fileContent = file.read()
-            print(f"{fileidx}/{nrfiles}: {entry}")
+            logging.info(f"{fileidx}/{nrfiles}: {entry}")
             photheader, apertures, nrstars, stars, stardata = read_pht_file(entry, fileContent)
             apertures = convert_to_aperture_only(apertures)
-            print("\tDate from header:",photheader.jd, "fwhm:", photheader.fwhm_mean)
+            logging.info(f"\tDate from header:{photheader.jd} fwhm: {photheader.fwhm_mean}")
             fwhm[fileidx] = [photheader.fwhm_exp, photheader.fwhm_mean, photheader.fwhm_err]
             jd[fileidx] = photheader.jd
             # logging.debug(f"the result is {result[0]}")
@@ -53,16 +53,16 @@ def gather_data(match_file_list):
                 # for every aperture
                 for apidx, aperturedata in enumerate(stardata[staridx]):
                     if aperturedata.mag == 0:
-                        print(aperturedata)
+                        logging.info(f"aperture data: {aperturedata}")
                     collect[apidx][starentry.ref_id-1][fileidx] = [aperturedata.mag, aperturedata.err]
                     # collect[apidx][starentry.ref_id-1][fileidx][1] = aperturedata.err
                     if collect[apidx][starentry.ref_id-1][fileidx][0] == 0:
-                        print("nul")
+                        logging.info("gather data is nul")
 
-    print("Nr of stars for apertureidx 2:", len(collect[2]))
-    print("Mb used:", collect.nbytes/1024/1024)
-    print("Entry for First aperture, first star:", collect[0][0])
-    print("Shape for collect:", collect.shape)
+    logging.info(f"Nr of stars for apertureidx 2: {len(collect[2])}")
+    logging.info(f"Mb used: {collect.nbytes/1024/1024}")
+    logging.info(f"Entry for First aperture, first star: {collect[0][0]}")
+    logging.info(f"Shape for collect: {collect.shape}")
     return jd, fwhm, collect, apertures
 
 def process(collect, apertures):

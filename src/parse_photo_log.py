@@ -1,4 +1,5 @@
 import re
+import logging
 
 file = open("output.txt", 'r')
 lines = file.readlines()
@@ -11,10 +12,10 @@ regexsecond = re.compile(patternsecond)
 
 testline = "./inputfiles/WWCrA_allflat/converted_fits/kout017938.fts => ./inputfiles/WWCrA_allflat/photometry/phot017938.pht"
 testmatch = regexfirst.match(testline)
-print(testmatch)
+logging.info(testmatch)
 
 # raise SystemExit
-print("length of lines is ", len(lines))
+logging.info(f"length of lines is {len(lines)}")
 
 anom = 0
 for index, line in enumerate(lines):
@@ -29,5 +30,5 @@ for index, line in enumerate(lines):
             # print(lines[index+1])
         if int(number) != 10000 and int(number) != -1:
             anom=anom+1
-            print(f"For file {filename} there are {number} matches.")
-print(f"Number of anomalies: {anom}")
+            logging.info(f"For file {filename} there are {number} matches.")
+logging.info(f"Number of anomalies: {anom}")

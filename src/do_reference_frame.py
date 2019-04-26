@@ -69,7 +69,7 @@ def runit(fitsdir, limit=0):
     logging.info(f"Processing {len(fitslist)} files...")
     pool = mp.Pool(init.nr_threads, maxtasksperchild=100)
     func = partial(fits_to_size, vmin=_vmin, vmax=_vmax)
-    print("Calculating fits quality for", len(fitslist), " images in", fitsdir)
+    logging.info(f"Calculating fits quality for {len(fitslist)} images in {fitsdir}")
     for resulttuple in tqdm.tqdm(pool.imap_unordered(func, fitslist, 10), total=len(fitslist)):
         result.append(resulttuple)
     bestfile = ''
@@ -79,7 +79,7 @@ def runit(fitsdir, limit=0):
             bestsize = size
             bestfile = name
     jpegfile = fits_to_jpeg(bestfile, _vmin, _vmax)
-    print("result:", bestfile, bestsize, jpegfile)
+    logging.info(f"result: {bestfile}, {bestsize}, {jpegfile}")
     return (bestfile, bestsize, jpegfile)
 
 if __name__ == '__main__':

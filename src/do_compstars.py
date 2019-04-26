@@ -32,9 +32,9 @@ def get_fixed_compstars(star_descriptions=None):
         # adding info to star_description
         star = star_descriptions[star_id_1 - 1]
         coord_catalog = SkyCoord(df['RAJ2000'], df['DEJ2000'], unit='deg')
-        print(df.info())
+        logging.info(df.info())
         # df['e_Vmag'] is not present !!!
-        print(df['UCAC4'].iloc(0)[0])
+        logging.info(df['UCAC4'].iloc(0)[0])
         vmag = df['Vmag'].iloc(0)[0]
         do_calibration.add_info_to_star_description(star, vmag, np.nan, df['UCAC4'].iloc(0)[0].decode("utf-8"),
                                                     "UCAC4", coord_catalog)
@@ -77,7 +77,7 @@ def get_comparison_star_descriptions(comparison_stars_1):
     logging.info(f'Added apass info to comparison stars: {comparison_stars_1_desc}')
 
     if np.isnan(comparison_stars_1_desc[0].vmag):
-        print("Comparison star has nan vmag, will screw up everything coming after")
+        logging.info("Comparison star has nan vmag, will screw up everything coming after")
         exit()
     return comparison_stars_1_desc
 

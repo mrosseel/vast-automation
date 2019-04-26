@@ -5,7 +5,7 @@ from photutils import aperture_photometry, CircularAperture
 import numpy as np
 from init_loader import init, settings
 import do_calibration
-import reading
+import logging
 from reading import trash_and_recreate_dir
 import argparse
 
@@ -37,7 +37,7 @@ def add_pixels(results, wcs, offset):
     return results
 
 def plot_it(big_green, small_red, fits_file, wcs, title, padding=PADDING):
-    print("plotting {} green and {} red circles.".format(len(big_green), len(small_red)))
+    logging.info("plotting {} green and {} red circles.".format(len(big_green), len(small_red)))
     big_green = add_pixels(big_green, wcs, PADDING)
     small_red = add_pixels(small_red, wcs, PADDING)
 
@@ -102,21 +102,21 @@ def run_standard_field_charts(vsx_star_descr, wcs):
     empty = []
 
     # field chart with all detections
-    print("Plotting field chart with all detected stars...")
+    logging.info("Plotting field chart with all detected stars...")
     big_green = empty
     small_red = all_stars_labeled
     fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "All detected stars", PADDING)
     save(fig, settings.fieldchartsdirs + 'all_detections_for_{}_stars'.format(len(small_red)))
 
     # field chart with all vsx stars
-    print("Plotting field chart with all VSX variable stars...")
+    logging.info("Plotting field chart with all VSX variable stars...")
     big_green = vsx_labeled
     small_red = empty
     fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "All VSX variable stars", PADDING)
     save(fig, settings.fieldchartsdirs + 'all_vsx_stars_{}'.format(len(big_green)))
 
     # field chart with all vsx stars
-    print("Plotting field chart with all VSX variable stars + hand picked vars...")
+    logging.info("Plotting field chart with all VSX variable stars + hand picked vars...")
     big_green = vsx_labeled
     # TODO hand labeled stars
     small_red = [] # hand_candidates_labeled

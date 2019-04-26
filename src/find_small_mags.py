@@ -21,20 +21,20 @@ def process_one_pht(the_file, apertureidx:int, star0=None):
             # if entry.mag > 99:
             #     print(f"found big thing: {the_file}")
             if 0.000001 > entry.mag and -0.000001 < entry.mag:
-                print(f"found small thing: {the_file} at star0 index:{idx}")
+                logging.info(f"found small thing: {the_file} at star0 index:{idx}")
     return end-start
 
 def do_all(apertureidx, directory, star0=None):
     phtdir = directory + "*.pht"
     logging.debug(f"init dir is {settings.matchedphotometrydir}")
-    print(phtdir)
+    logging.info(phtdir)
 
     files = sorted(glob.glob(phtdir))
     #print(files)
     total_count = 0
     for entry in tqdm(files, total=len(files)):
         total_count += process_one_pht(entry, apertureidx, star0)
-    print(total_count)
+    logging.info(total_count)
 
 def do_one(apertureidx, directory, the_file, star0):
     phtfile= directory + the_file

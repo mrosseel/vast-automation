@@ -20,7 +20,7 @@ def read_lightcurve(star,filter=True,preprocess=True, directory=None):
             df = preprocess_lightcurve(df)
         return df
     except OSError as e:
-        print("OSError for star:", star, e)
+        logging.error(f"OSError for star: {star}, {e}")
 
 def preprocess_lightcurve(df):
     try:
@@ -28,32 +28,33 @@ def preprocess_lightcurve(df):
         df2 = df[(df['V-C'] > P[0]) & (df['V-C'] < P[1])]
         return df2
     except IndexError:
-        print("len df:", len(df))
+        logging.error(f"len df: {len(df)}")
 
 def read_pos(star, jd):
     try:
         df = pd.read_csv(settings.posdir + 'pos_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
-        print(df.head())
+        logging.info(df.head())
         df2 = df[df['X'] > 0]
         df3 = df2[df['MAG'] < 99]
         row = df.loc[df['JD'] == jd]
-        print("row", row, jd)
+        logging.info(f"reading position, row: {row}, jd: {jd}")
         row = df3.iloc[0]
         return [row['JD'], row['X'],row['Y'], row['MAG']]
         #return (df3['X'].iloc[0], df3['Y'].iloc[0])
         # return df
     except IndexError:
-        print("ERROR: IndexError")
+        logging.error("ERROR: IndexError")
         #print("df:",len(df),"df2:", len(df2),"df3:", len(df3))
-        print(len(df))
+        logging.error(len(df))
 
 
 def read_reference_frame():
-    reference_file = open(settings.basedir + 'reference_frame.txt', 'r')
+    file_to_load = settings.basedir + 'reference_frame.txt'
+    reference_file = open(file_to_load, 'r')
     reference_file_contents = reference_file.readlines()
     reference_frame=reference_file_contents[0].rstrip()
     reference_frame_index=int(reference_file_contents[1])
-    return reference_frame, reference_frame_index
+    return file_to_load, reference_frame, reference_frame_index
 
 
 def trash_and_recreate_dir(dir):
@@ -72,7 +73,7 @@ def reduce_star_list(star_list_1, the_path):
     found = []
     for filename in the_dir:
         found.append(filename_to_star(filename))
-    print("Found", len(found), "stars already processed in", the_path)
+    logging.info(f"Found {len(found)} stars already processed in {the_path}")
     return [item for item in star_list_1 if item not in found]
 
 # takes a filename and extracts the star number from it

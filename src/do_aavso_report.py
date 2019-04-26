@@ -1,5 +1,6 @@
 import aavso
 import reading
+import logging
 from astropy import units as u
 from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz
@@ -37,16 +38,16 @@ def report(target_dir, star_description, comparison_star):
     var_display_name = star_match_ucac4 if star_match_vsx == None else star_match_vsx
     check_display_name = comparison_star.aavso_id if not comparison_star.aavso_id is None else comp_ucac4[0]
 
-    print(" Star match:{}, comparison_star:{}".format(var_display_name, comparison_star))
+    logging.info(" Star match:{}, comparison_star:{}".format(var_display_name, comparison_star))
     comparison_star_vmag = comparison_star.vmag
     title = str(star_description.local_id if star_description.aavso_id is None else star_description.aavso_id)
     earth_location = EarthLocation(lat=init.sitelat, lon=init.sitelong, height=init.sitealt*u.m)
-    print("Starting aavso report with star:{}".format(star_description))
+    logging.info("Starting aavso report with star:{}".format(star_description))
 
     with open(target_dir + title+'_extended.txt', 'w') as fp:
         writer = aavso.ExtendedFormatWriter(fp, 'RMH', software='munipack-automation', obstype='CCD')
         for _, row in tqdm.tqdm(curve.iterrows(), total=len(curve), unit="observations"):
-            #print(row, type(row))
+            #logging.info(row, type(row))
             writer.writerow({
                 'name': var_display_name,
                 'date': row['JD'],

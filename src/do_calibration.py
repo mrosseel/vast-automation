@@ -48,16 +48,16 @@ def old_find_reference_frame_index():
 def get_reference_frame(file_limit, reference_method):
     # Calculate or retrieve reference frame and its index
     try:
-        reference_frame_fits, reference_frame_index = reading.read_reference_frame()
+        reference_file, reference_frame_fits, reference_frame_index = reading.read_reference_frame()
         reference_frame = utils.find_file_for_index(settings.convfitsdir, reference_frame_index, '*.fts')
-        logging.info(f"Loaded fits file: {reference_frame_fits}, corresponds with converted file:{reference_frame}")
+        logging.info(f"Loaded existing reference file '{reference_file}, found fits reference: {reference_frame_fits} == converted fits:{reference_frame}")
     except:
         reference_frame = reference_method(file_limit)
         reference_frame_index = utils.find_index_of_file(settings.convfitsdir, reference_frame, '*.fts')
         lines = [reference_frame, str(reference_frame_index)]
         with open(settings.basedir + 'reference_frame.txt', 'w') as f:
             f.write('\n'.join(lines))
-    print("Reference frame: {}, index: {}".format(reference_frame, reference_frame_index))
+        logging.info(f"Loaded reference file: '{reference_file}', found reference frame: {reference_frame}, index: {reference_frame_index}")
     assert reference_frame_index == utils.find_index_of_file(settings.convfitsdir, reference_frame, '*.fts')
     return [reference_frame, settings.convfitsdir + reference_frame, reference_frame_index]
 
@@ -75,7 +75,7 @@ def select_reference_frame_gzip(limit):
             with open(settings.convfitsdir + filename, 'rb') as f_in:
                 length = len(gzip.compress(f_in.read()))
                 result[filename] = length
-                print(length)
+                logging.info(f"select reference frame length: {length}")
 
     sorted_by_value = sorted(result.items(), key=lambda kv: kv[1], reverse=True)
     return sorted_by_value[0][0]
@@ -122,7 +122,7 @@ def get_star_descriptions(star_id_list=None):
     if star_id_list is not None:
         plist = star_id_list
 
-    print(f'Reading star descriptions for: {plist} with size {len(init.star_list)}')
+    logging.info(f'Reading star descriptions for: {plist} with size {len(init.star_list)}')
     for key in positions:
         star_id = reading.filename_to_star(str(key))
         if star_id_list is None or star_id in star_id_list:
@@ -252,7 +252,7 @@ def get_starid_1_for_radec(ra_deg, dec_deg, all_star_catalog, max_separation=0.0
 
 # returns StarDescription array
 def get_vsx_in_field(star_descriptions, max_separation=0.01):
-    print("Get VSX in field star descriptions")
+    logging.info("Get VSX in field star descriptions")
     vsx_catalog, vsx_dict = create_vsx_astropy_catalog()
     star_catalog = create_star_descriptions_catalog(star_descriptions)
     idx, d2d, d3d = match_coordinates_sky(vsx_catalog, star_catalog)
@@ -266,7 +266,7 @@ def get_vsx_in_field(star_descriptions, max_separation=0.01):
             result_entry.coords = star_coords
             _add_catalog_match_to_entry('VSX', result_entry, vsx_dict, index_vsx, entry.value)
             result.append(result_entry)
-    print("Found {} VSX stars in field: {}".format(len(result), [star.local_id for star in result]))
+    logging.info("Found {} VSX stars in field: {}".format(len(result), [star.local_id for star in result]))
     return result
 
 
@@ -289,15 +289,15 @@ def _add_catalog_match_to_entry(catalog_name, matchedStarDesc, vsx_dict, index_v
 # returns { 'name of VSX variable': [VSX_var_SkyCoord, best_starfit, best_separation] }
 def find_star_for_known_vsx(vsx, detections_catalog, max_separation=0.01):
     result = {}
-    print("Searching best matches with max separation", max_separation, "...")
+    logging.info(f"Searching best matches with max separation: {max_separation} ...")
     kdtree_cache = ""
     for variable in vsx:
-        print("Searching for", variable[0])
+        logging.info(f"Searching for {variable[0]}")
         idx, d2d, d3d = match_coordinates_sky(variable[1], detections_catalog, storedkdtree=kdtree_cache)
         if d2d.degree < max_separation:
             result[variable[0]] = [variable[1], idx + 1, d2d.degree]
-            print("Found result for ", variable[0], ":", result[variable[0]])
-    print("Found", len(result), "matches")
+            logging.info(f"Found result for {variable[0]} : {result[variable[0]]}")
+    logging.info(f"Found {len(result)} matches")
     return result
 
 
@@ -335,14 +335,14 @@ def create_star_descriptions_catalog(star_descriptions):
 
 
 def add_apass_to_star_descriptions(star_descriptions, radius=0.01, row_limit=2):
-    print("apass input", len(star_descriptions))
+    logging.info(f"apass input {len(star_descriptions)}")
     radius_angle = Angle(radius, unit=u.deg)
     for star in star_descriptions:
         apass = get_apass_field(star.coords, radius=radius_angle, row_limit=row_limit)
         if apass is None:
-            print("More/less results received from APASS than expected: {}".format(
+            logging.info("More/less results received from APASS than expected: {}".format(
                 apass.shape[0] if not apass is None and not apass.shape is None else 0))
-            print(apass)
+            logging.info(apass)
             continue
         else:
             star.vmag = apass['Vmag'][0]
@@ -352,13 +352,13 @@ def add_apass_to_star_descriptions(star_descriptions, radius=0.01, row_limit=2):
             mindist = star.coords.separation(SkyCoord(apass['RAJ2000'], apass['DEJ2000'], unit='deg'))
             star.match.append(CatalogMatch(name_of_catalog="APASS", catalog_id=catalog_id,
                                            name=catalog_id, coords=coord_catalog, separation=mindist))
-            print("APASS: Star {} has vmag={}, error={:.5f}, dist={}".format(star.local_id, star.vmag, star.e_vmag,
+            logging.info("APASS: Star {} has vmag={}, error={:.5f}, dist={}".format(star.local_id, star.vmag, star.e_vmag,
                                                                              mindist))
     return star_descriptions
 
 
 def add_ucac4_to_star_descriptions(star_descriptions, radius=0.01):
-    print("Retrieving ucac4 for {} star(s)".format(len(star_descriptions)))
+    logging.info("Retrieving ucac4 for {} star(s)".format(len(star_descriptions)))
     radius_angle = Angle(radius, unit=u.deg)
 
     pool = Pool(init.nr_threads * 2)
@@ -372,7 +372,7 @@ def add_ucac4_to_star_descriptions(star_descriptions, radius=0.01):
 def add_ucac4_to_star(star, radius_angle):
     vizier_results = get_ucac4_field(star.coords, radius=radius_angle, row_limit=1)
     if vizier_results is None:
-        print("More/less results received from UCAC4 than expected: {}".format(
+        logging.info("More/less results received from UCAC4 than expected: {}".format(
             vizier_results.shape[0] if not vizier_results is None and not vizier_results.shape is None else 0))
         # print(vizier_results)
     else:
@@ -395,7 +395,7 @@ def add_info_to_star_description(star, vmag, e_vmag, catalog_id, catalog_name, c
     mindist = star.coords.separation(coord_catalog)
     star.match.append(CatalogMatch(name_of_catalog=catalog_name, catalog_id=catalog_id,
                                    name=catalog_id, coords=coord_catalog, separation=mindist))
-    print("Star {} has vmag={}, error={}, dist={}".format(star.local_id, star.vmag, star.e_vmag, mindist))
+    logging.info("Star {} has vmag={}, error={}, dist={}".format(star.local_id, star.vmag, star.e_vmag, mindist))
     return star
 
 
@@ -456,7 +456,7 @@ def get_vizier_field(center_coord, radius, catalog, row_limit=2):
     result = v.query_region(center_coord,
                             radius=radius,
                             catalog=[catalog])
-    print(result)
+    logging.info(f"result of getting vizier field: {result}")
     try:
         df = result[0].to_pandas() if len(result) > 0 else None
     except:
@@ -469,4 +469,4 @@ if __name__ == '__main__':
     star_descriptions = do_calibration.get_star_descriptions(init.star_list)
     star_catalog = create_star_descriptions_catalog(star_descriptions)
     result = get_starid_1_for_radec(star_catalog, [271.234735], [-43.845816])
-    print(result)
+    logging.info(f"calibration result: {result}")

@@ -45,7 +45,7 @@ def write_photometry(config_file=settings.basedir + 'muniphot.conf', files=None,
     func = partial(command_caller, config_file_param=config_file_param, outputdir=outputdir,
                    outputfile_prefix=outputfile_prefix)
     logging.info(f"Writing star photometry for {len(files)} stars into {outputdir}")
-    print(files)
+    logging.info(files)
     for _ in tqdm.tqdm(pool.imap_unordered(func, files, 5), total=len(files)):
         pass
 
@@ -57,7 +57,7 @@ def write_match(to_match_photomotry_file, base_photometry_file, to_match_is_full
     m = re.search(r'(\d+)(.pht)', to_match_photomotry_file)
 
     numbers = m.group(0)[:-4]
-    print("numbers is", numbers, to_match_photomotry_file, m)
+    logging.info(f"numbers is {numbers} {to_match_photomotry_file} {m}")
     # see munimatch.c for arguments of config file
     config_file = f'-p {config_file}' if config_file is not '' else ''
     photometry_file_full_path = settings.photometrydir + to_match_photomotry_file if to_match_is_full_path is False else to_match_photomotry_file
@@ -81,18 +81,18 @@ def do_write_pos(star_list, aperture, matched_reference_frame, is_resume):
     func = partial(write_pos, matched_reference_frame=matched_reference_frame,
                    aperture=aperture)
     logging.info(f"Writing star positions for {len(star_list)} stars into {settings.posdir}")
-    print(dir(init))
-    print(dir(settings))
+    logging.info(dir(init))
+    logging.info(dir(settings))
     for _ in tqdm.tqdm(pool.imap_unordered(func, star_list, 10), total=len(star_list)):
         pass
 
 
 def do_world_pos(wcs, star_list, reference_frame_index):
     trash_and_recreate_dir(settings.worldposdir)
-    print("index", reference_frame_index)
+    logging.info(f"index {reference_frame_index}")
     pool = mp.Pool(init.nr_threads, maxtasksperchild=100)
     func = partial(world_pos, wcs=wcs, reference_frame_index=reference_frame_index)
-    print("Writing world positions for", len(star_list), "stars into", settings.posdir)
+    logging.info(f"Writing world positions for {len(star_list)} stars into {settings.posdir}")
     for _ in tqdm.tqdm(pool.imap_unordered(func, star_list), total=len(star_list)):
         pass
 
@@ -120,7 +120,7 @@ def get_worldpos_filename(star):
 def command_caller(fits, config_file_param, outputdir, outputfile_prefix):
     if isinstance(fits, list):
         fits = ' '.join(fits)
-    print(f"'{fits}' '{config_file_param}'")
+    logging.info(f"'{fits}' '{config_file_param}'")
     command = f"muniphot {fits} {config_file_param} -o {outputdir + outputfile_prefix}{int(''.join(filter(str.isdigit, fits))):06d}.pht"
     logging.debug(f'Photometry command is: {command}')
     subprocess.call(command, shell=True)
@@ -135,7 +135,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
     # either read the previous reference frame or calculate a new one
     _, _, reference_frame_index = do_calibration.get_reference_frame(100, do_calibration.select_reference_frame_jpeg)
 
-    print("reference header is", settings.reference_header)
+    logging.info(f"reference header is {settings.reference_header}")
     # get wcs model from the reference header. Used in writing world positions and field charts
     wcs = do_calibration.get_wcs(settings.reference_header)
     apertures = None
@@ -153,7 +153,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
         file_list = utils.get_files_in_dir(settings.photometrydir)
         file_list.sort()
         func = partial(write_match, base_photometry_file=ref_frame)
-        print("Writing matches for", len(file_list), "stars with reference frame", ref_frame)
+        logging.info(f"Writing matches for {len(file_list)} stars with reference frame {ref_frame}")
         trash_and_recreate_dir(settings.matchedphotometrydir)
         for _ in tqdm.tqdm(pool.imap_unordered(func, file_list, 10), total=len(file_list)):
             pass
@@ -179,7 +179,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
     if do_pos:
         logging.info("Writing positions of all stars on the reference image...")
         reference_matched = do_calibration.find_reference_matched(reference_frame_index)
-        print("reference match is ", reference_matched)
+        logging.info(f"reference match is {reference_matched}")
         do_write_pos(init.star_list, aperture, reference_matched, is_resume=False)
         do_world_pos(wcs, init.star_list, reference_frame_index)
 
@@ -226,8 +226,9 @@ def construct_star_descriptions(args, do_compstars_flag):
     # Start with the list of all detected stars
     star_descriptions = do_calibration.get_star_descriptions(init.star_list)
     if args.laststars:
-        logging.info("Loading premade star_descriptions: star_descriptions_to_chart.bin")
-        with open(settings.basedir + 'star_descriptions_to_chart.bin', 'rb') as fp:
+        file_to_load = settings.basedir + 'star_descriptions_to_chart.bin'
+        logging.info(f"Loading premade star_descriptions: {file_to_load}")
+        with open(file_to_load, 'rb') as fp:
             star_descriptions = pickle.load(fp)
     else:
         if args.upsilon:

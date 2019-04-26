@@ -4,7 +4,9 @@ import logging
 import do_lightcurve
 import argparse
 import subprocess
+import utils
 from datetime import datetime
+from hanging_threads import start_monitoring
 
 if __name__ == '__main__':
     logger = logging.getLogger()
@@ -21,45 +23,48 @@ if __name__ == '__main__':
                         action="store_true")
     parser.add_argument('-u', '--upsilon', help="Add upsilon star info to the star descriptions", action="store_true")
     args = parser.parse_args()
+    datadir = utils.add_trailing_slash(args.datadir)
 
-    fh = logging.FileHandler(f"{args.datadir}munilog-{datetime.now():%Y%M%d-%H_%M_%S}.log")
+    fh = logging.FileHandler(f"{datadir}munilog-{datetime.now():%Y%M%d-%H_%M_%S}.log")
     fh.setLevel(logging.INFO)
     # add the handlers to the logger
     logger.addHandler(fh)
-    init_loader.meta_init(args.datadir)
+    init_loader.meta_init(datadir)
     # global init
     init = init_loader.init
     settings = init_loader.settings
     # print(dir(init))
-    # print(dir(settings))
+    # print(dir(settings))pr
     import main_muniwin
 
+    #monitoring_thread = start_monitoring(seconds_frozen=15, test_interval=1000)
+
     if args.chart:
-        print("in chart part")
+        logging.info("in chart part")
         logging.info(f"Writing lightcurves... {[x.local_id for x in star_descriptions_ucac4]}")
         chosen_stars = [x.local_id for x in star_descriptions_ucac4]
         do_lightcurve.write_lightcurves(chosen_stars,
                                   comparison_stars_1, aperture, int(apertureidx), jd, fwhm, star_result)
         logging.info("starting charting / phase diagrams...")
-        print("comparison stars decs:", comparison_stars_1_desc)
+        logging.info(f"comparison stars decs: {comparison_stars_1_desc}")
         do_charts.run(star_descriptions_ucac4, comparison_stars_1_desc, do_lightcurve_plot, do_phase_diagram)
 
     else:
-        print("Calculating", len(init.star_list), "stars from base dir:", settings.basedir,
-              "\nconvert_fits:\t", init.do_convert_fits,
-              "\nphotometry:\t", init.do_photometry,
-              "\nmatch:\t\t", init.do_match,
-              "\naperture:\t", init.do_aperture_search,
-              "\npos:\t\t", init.do_pos,
-              "\ncompstars:\t", init.do_compstars,
-              "\nlightcurve:\t", init.do_lightcurve,
-              "\nupsilon:\t", init.do_ml,
-              "\nlight plot:\t", init.do_lightcurve_plot,
-              "\nphasediagram:\t", init.do_phase_diagram,
-              "\nfield charts:\t", init.do_field_charts,
-              "\nreporting:\t", init.do_reporting)
+        logging.info(f"Calculating {len(init.star_list)} stars from base dir: {settings.basedir} \
+              \nconvert_fits:\t{init.do_convert_fits} \
+              \nphotometry:\t{init.do_photometry} \
+              \nmatch:\t\t{init.do_match} \
+              \naperture:\t{init.do_aperture_search} \
+              \npos:\t\t{init.do_pos} \
+              \ncopstars:\t{init.do_compstars} \
+              \nlightcurve:\t{init.do_lightcurve} \
+              \nupsilon:\t{init.do_ml} \
+              \nlight plot:\t{init.do_lightcurve_plot} \
+              \nphasediagram:\t{init.do_phase_diagram} \
+              \nfield charts:\t{init.do_field_charts} \
+              \nreporting:\t{init.do_reporting}")
         if not args.nowait:
-            print("Press Enter to continue...")
+            logging.info("Press Enter to continue...")
             subprocess.call("read -t 10", shell=True, executable='/bin/bash')
         main_muniwin.run_do_rest(init.do_convert_fits, init.do_photometry, init.do_match, init.do_compstars,
                                  init.do_aperture_search, init.do_lightcurve,

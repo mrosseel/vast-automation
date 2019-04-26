@@ -52,7 +52,7 @@ def write_lightcurve(star_1: int, comparison_stars_1: Vector, aperture: float, a
         V = star_result[fileidx][star_0][0]
         Verr = min(MAX_ERR, star_result[fileidx][star_0][1])
         if not is_valid(V, Verr): continue
-        C, Cerr = calculate_synthetic_c(star_result[fileidx], comparison_stars_0)
+        C, Cerr = calculate_synthetic_c(fileidx, star_result[fileidx], comparison_stars_0)
         if C == 0 and Cerr == 0: continue # abort if one of the comparison stars is not available
         Cerr = min(MAX_ERR, Cerr)
 
@@ -108,7 +108,7 @@ def init_preamble(aperture, check_stars_list):
 # 		comp_ok = 0;
 # 	}
 # }
-def calculate_synthetic_c(star_result_file, check_stars_0):
+def calculate_synthetic_c(fileidx, star_result_file, check_stars_0):
     if len(check_stars_0) == 1:
         cmag = star_result_file[check_stars_0[0]][0]
         cerr = star_result_file[check_stars_0[0]][1]
@@ -131,7 +131,7 @@ def calculate_synthetic_c(star_result_file, check_stars_0):
         cerr = (cerr/valid)/math.sqrt(valid)
     else:
         cmag, cerr = 0, 0
-        print("losing line")
+        logging.info(f"losing line in {fileidx}")
     return cmag, cerr
 
 def is_valid(mag, err):
