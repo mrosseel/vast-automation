@@ -58,7 +58,7 @@ _Password is 'muni'_
 
 * AAVSO VSX catalog can be downloaded here: http://cdsarc.u-strasbg.fr/viz-bin/Cat?cat=B%2Fvsx%2Fversions%2F2018-02-26&target=brief&
 * run 'python vsx_pickle.py vsx.dat' where vsx.dat is the unzipped versin of the downloaded vsx catalog
-* check that 'vsx_catalog.bin' has been written succesfully
+* check that 'vsx_catalog.bin' has been written successfully
 
 ## TODO
 
@@ -74,7 +74,7 @@ _Password is 'muni'_
 - check error column for any stars having error bars > 1%
 - stacking images to detect fainter stars+have better signal/noise ratio: https://github.com/fedhere/coaddfitim
 - write munifind_ intermediate files in a folder
-- detect less stars to do the aperture calculations (generate them in a seperate folder, subset of images)
+- detect less stars to do the aperture calculations (generate them in a separate folder, subset of images)
 
 ## References
 
