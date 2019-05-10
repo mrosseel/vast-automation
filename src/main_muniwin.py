@@ -12,6 +12,7 @@ reading = reload(reading)
 from reading import trash_and_recreate_dir
 from reading import reduce_star_list
 from star_description import StarDescription
+from photometry_blob import PhotometryBlob
 import numpy as np
 import multiprocessing as mp
 import tqdm
@@ -141,6 +142,8 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
     apertures = None
     aperture = None
     apertureidx = None
+    comparison_stars_1, comparison_stars_1_desc = None, None
+    photometry_blob = PhotometryBlob() # not yet used
 
     if do_photometry:
         logging.info(f"Writing photometry with config file {settings.conf_phot}...")
@@ -158,14 +161,23 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
         for _ in tqdm.tqdm(pool.imap_unordered(func, file_list, 10), total=len(file_list)):
             pass
 
+    # if we need to calculate aperture or comparison stars, we need the photometry blob
+    if do_aperture_search or init.comparison_stars is None:
+        photometry_blob = do_aperture.get_photometry_blob(the_dir=settings.matchedphotometrydir,
+                                                          percentage=init.aperture_find_percentage)
+
     if do_aperture_search:
         logging.info("Searching best aperture...")
         # getting aperture
         stddevs = None
         counts = None
-        # stddevs, _, apertures, apertureidx, _, _, counts = do_aperture.main(the_dir=settings.matchedphotometrydir, percentage=init.aperture_find_percentage)
         apertures = [x for x in do_aperture.get_apertures()]
-        apertureidx = np.abs(np.array(apertures) - init.aperture).argmin()
+
+        if init.aperture is None:
+            logging.error("automatic aperture search is not supported yet !!!")
+        else:
+            apertureidx = np.abs(np.array(apertures) - init.aperture).argmin()
+
         aperture = apertures[apertureidx]
         # saving all calculated data
         np.savetxt(settings.basedir + "apertures.txt", apertures, fmt='%.2f', delimiter=';')
@@ -175,6 +187,13 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
         logging.info("Loading best aperture...")
         apertures, apertureidx, aperture = reading.read_aperture()
         logging.info(f"aperture: {aperture}, apertures:{apertures}")
+
+    # get comparison stars
+    if init.comparison_stars is None:
+        comparison_stars_1, comparison_stars_1_desc = do_compstars.get_calculated_compstars(apertureidx, photometry_blob)
+    else:
+        comparison_stars_1, comparison_stars_1_desc = do_compstars.get_fixed_compstars()
+
 
     if do_pos:
         logging.info("Writing positions of all stars on the reference image...")
@@ -192,37 +211,43 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
         logging.info("Loading photometry...")
         jd, fwhm, nrstars, star_result = read_photometry.read_photometry(init.star_list, apertureidx)
 
+
     # costruction of the star descriptions list
-    comparison_stars_1, comparison_stars_1_desc, star_descriptions = construct_star_descriptions(args,
-                                                                                                 do_compstars_flag)
+    star_descriptions = construct_star_descriptions(args, do_compstars_flag, comparison_stars_1, comparison_stars_1_desc)
+
+    # select a subset of star_descriptions, as specified in starfile
+    if args.starfile:
+        selected_filter = partial(catalog_filter, catalog_name='SELECTED')
+        selected_stars = list(filter(selected_filter, star_descriptions))
+        logging.debug(f"Light curve: selecting chosen stars with {len(selected_stars)} stars selected.")
+    else:
+        logging.debug(f"No starfile, selecting all stars")
+        selected_stars = star_descriptions
+
     if do_lightcurve_flag:
         logging.info(f"Writing lightcurves...")
-        chosen_stars = [x.local_id for x in star_descriptions]
-        do_lightcurve.write_lightcurves(chosen_stars,
-                                  comparison_stars_1, aperture, int(apertureidx), jd, fwhm, star_result)
+        do_lightcurve.write_lightcurves([x.local_id for x in selected_stars],
+                                        comparison_stars_1, aperture, int(apertureidx), jd, fwhm, star_result)
 
     if do_lightcurve_plot or do_phase_diagram:
         logging.info("starting charting / phase diagrams...")
-        do_charts.run(star_descriptions, comparison_stars_1_desc, do_lightcurve_plot, do_phase_diagram)
+        do_charts.run(selected_stars, comparison_stars_1_desc, do_lightcurve_plot, do_phase_diagram)
 
     if do_field_charting:
         logging.info("Starting field chart plotting...")
-        vsx_stars = list(filter(vsx_filter, star_descriptions))
-        do_charts_field.run_standard_field_charts(vsx_stars, wcs)
-        # do_charts_stats.main(fwhm)
+        do_charts_field.run_standard_field_charts(selected_stars, wcs)
 
     # import code
     # code.InteractiveConsole(locals=dict(globals(), **locals())).interact()
     if do_reporting:
         # star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
-        vsx_stars = list(filter(vsx_filter, star_descriptions))
-        logging.info(f"AAVSO Reporting with: {len(vsx_stars)} stars")
+        logging.info(f"AAVSO Reporting with: {len(selected_stars)} stars")
         trash_and_recreate_dir(settings.aavsoreportsdir)
-        for star in vsx_stars:
+        for star in selected_stars:
             do_aavso_report.report(settings.aavsoreportsdir, star, comparison_stars_1_desc[0])
 
 
-def construct_star_descriptions(args, do_compstars_flag):
+def construct_star_descriptions(args, do_compstars_flag, comparison_stars_1, comparison_stars_1_desc):
     # Start with the list of all detected stars
     star_descriptions = do_calibration.get_star_descriptions(init.star_list)
     if args.laststars:
@@ -237,14 +262,23 @@ def construct_star_descriptions(args, do_compstars_flag):
             star_descriptions = do_calibration.add_candidates_to_star_descriptions(star_descriptions, 0.1)
 
         if args.vsx:
-            logging.info("Adding vsx names to star_descriptions")
-            star_descriptions = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions, 0.01)
+            star_descriptions, results_ids = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions, 0.01)
+            logging.info(f"Added {len(results_ids)} vsx names to star descriptions")
+            do_calibration.add_selected_match_to_stars(star_descriptions, results_ids) # select star ids
+
+        if args.starfile:
+            with open(settings.basedir + args.starfile, 'r') as fp:
+                lines = fp.readlines()
+                starlist = [x.rstrip() for x in lines]
+                logging.debug(f"The list of stars read from the starfile is: {starlist} ")
+                starlist = [int(x) for x in filter(str.isdigit, starlist)]
+                logging.debug(f"The list of stars read from the starfile is: {starlist} ")
+                logging.info(f"Selecting {starlist} stars added by {args.starfile}")
+                do_calibration.add_selected_match_to_stars(star_descriptions, starlist) # select star ids
 
         # compstar data is added to star descriptions
         if do_compstars_flag:
             logging.info("Getting comparison stars...")
-            # getting compstars
-            comparison_stars_1, comparison_stars_1_desc = do_compstars.get_fixed_compstars()
             logging.info(f"Comparison stars_1: {comparison_stars_1}")
             np.savetxt(settings.basedir + "comparison_stars_1.txt", comparison_stars_1, fmt='%d', delimiter=';')
             with open(settings.basedir + 'comparison_stars_1_desc.bin', 'wb') as compfile:
@@ -257,11 +291,12 @@ def construct_star_descriptions(args, do_compstars_flag):
         logging.info("Writing star_descriptions_to_chart.bin...")
         with open(settings.basedir + 'star_descriptions_to_chart.bin', 'wb') as fp:
             pickle.dump(star_descriptions, fp)
-    return comparison_stars_1, comparison_stars_1_desc, star_descriptions
+    return star_descriptions
 
 
-def vsx_filter(star: StarDescription):
-    if star.get_catalog('VSX') is not None:
+# filter a list of star descriptions on the presence of a catalog
+def catalog_filter(star: StarDescription, catalog_name):
+    if star.get_catalog(catalog_name) is not None:
         return True
     return False
 

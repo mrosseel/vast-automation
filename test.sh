@@ -9,4 +9,4 @@ rm $INTDIR/*
 cp $INTDIR/config_files/* $INTDIR
 python src/set_reference_frame.py $INTDIR/fits/WWCrA#30V_000184532_FLAT.fit $INTDIR
 timestamp=$(date +'%m-%d-%Y-%H_%M')
-python -u ./src/do_muniwin.py -d $INTDIR --nowait --vsx --upsilon |& tee $INTDIR/test-$timestamp.log
+python -u ./src/do_muniwin.py -d $INTDIR --verbose --nowait --vsx --upsilon --starfile starlist.txt |& tee $INTDIR/test-$timestamp.log

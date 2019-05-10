@@ -9,14 +9,14 @@ import do_compstars
 import do_calibration
 from reading import file_selector
 from read_pht import read_pht_file
+from photometry_blob import PhotometryBlob
 
 
 # apertures list has first the index and then the actual aperture. Select only the actual apertures.
 def convert_to_aperture_only(apertures):
     return apertures[1::2]
 
-def get_apertures():
-    match_file_list = file_selector(settings.matchedphotometrydir, 'match*.pht', init.aperture_find_percentage)
+def get_apertures(match_file_list=file_selector(settings.matchedphotometrydir, 'match*.pht', init.aperture_find_percentage)):
     apertures = []
     with open(match_file_list[0], mode='rb') as file: # b is important -> binary
         fileContent = file.read()
@@ -65,6 +65,7 @@ def gather_data(match_file_list):
     logging.info(f"Shape for collect: {collect.shape}")
     return jd, fwhm, collect, apertures
 
+# returns stddev of magnitude and the counts of non-nan mags and errors
 def process(collect, apertures):
     detectablestars = len(init.star_list) # this is the maximum of star id's, regardless of how many are detected on an image
     nrapertures = len(apertures)
@@ -110,12 +111,18 @@ def select_aperture(fwhm, apertures):
     logging.info(f"FWHM median: {median_fwhm}, multiplied: {median_multiply}, aperture chosen is: {apertures[apertureidx]}")
     return apertureidx
 
-def main(the_dir, match_files='match*.pht', percentage=0.1):
+
+def get_photometry_blob(the_dir, match_files='match*.pht', percentage=0.1) -> PhotometryBlob:
     jd, fwhm, collect, apertures = gather_data(file_selector(settings.matchedphotometrydir, 'match*.pht', init.aperture_find_percentage))
     stddevs, counts = process(collect, apertures)
-    return stddevs, collect, apertures, select_aperture(fwhm, apertures), fwhm, jd, counts
+    photometry_blob = PhotometryBlob(stddevs=stddevs, collect=collect, apertures=apertures, fwhm=fwhm, jd=jd, counts=counts)
+    return photometry_blob
+
+
+def main(photometry_blob: PhotometryBlob):
+    return select_aperture(photometry_blob.fwhm, photometry_blob.apertures)
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
-    main()
+    # main()
 

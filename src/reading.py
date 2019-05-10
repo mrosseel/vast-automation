@@ -8,12 +8,14 @@ import glob
 import logging
 import pickle
 
-def read_lightcurve(star,filter=True,preprocess=True, directory=None):
+def read_lightcurve(star,filter=True,preprocess=False, directory=None):
     if directory is None:
         directory = settings.lightcurvedir
     try:
         #print("Reading lightcurve", star, init.lightcurve_dir + 'curve_' + str(star).zfill(5) + '.txt')
-        df = pd.read_csv(directory + 'curve_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
+        df = pd.read_csv(directory + 'curve_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ',
+                         dtype={'mask': np.unicode_})
+        logging.debug(f"Read lightcurve of {star} with {df.shape[0]}")
         if(filter):
             df = df[df['V-C'] < 99]
         if(preprocess):

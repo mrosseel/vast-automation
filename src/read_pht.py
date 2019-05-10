@@ -55,7 +55,7 @@ def read_pht_file(the_file, fileContent, only_apertureidx: int =-1, read_stars=T
     if check:
         assert bytes(MAGIC_STRING, encoding='utf-8') == photheader.magic
     for name, entry in photheader._asdict().items():
-        logging.debug(f"{name}: {entry}")
+        logging.debug(f"name entries: {name}: {entry}")
     ############################### WCS ###############################################
     wcsdatalength = unpack_wcsformat(fileContent[headerlength:headerlength+wcssize])[0]
     wcslength = headerlength + wcssize + wcsdatalength
@@ -101,17 +101,17 @@ def read_pht_file(the_file, fileContent, only_apertureidx: int =-1, read_stars=T
     if only_apertureidx != -1:
         start += only_apertureidx*dataformatsize
 
-    for _ in range(nrstars):
+    for idx in range(nrstars):
         result = []
         if only_apertureidx != -1:
             mag, err, code = unpack_data(fileContent[start:start+dataformatsize])
-            result = StarData._make((getConvertedStarData(mag, err, code)))
+            result = StarData._make((getConvertedStarData(mag, err, code, idx, the_file)))
             start += napertures*dataformatsize
         else:
             # logging.debug(f"raw bytes: {fileContent[start:start+dataformatsize]}")
             for apidx in range(napertures):
                 mag, err, code = unpack_data(fileContent[start:start+dataformatsize])
-                result.append(StarData._make((getConvertedStarData(mag, err, code))))
+                result.append(StarData._make((getConvertedStarData(mag, err, code, idx, the_file))))
                 start += dataformatsize
         stardata.append(result)
 
@@ -121,7 +121,7 @@ def read_pht_file(the_file, fileContent, only_apertureidx: int =-1, read_stars=T
     return (photheader, apertures, nrstars, stars, stardata)
 
 # take magnitude and error, and convert them to NAN if it's nonsense
-def getConvertedStarData(mag, err, code):
+def getConvertedStarData(mag, err, code, idx, the_file):
     #print(f"Converting: {mag}, {err}, {code}")
     if mag != INT_MAX:
         mag = mag / 0x1000000
@@ -132,6 +132,6 @@ def getConvertedStarData(mag, err, code):
     else:
         err = np.nan
     if code != 0:
-        logging.debug(f"Error code: {code} mag:{mag}, err:{err}") # see cmpack_common.h, enum CmpackError
+        logging.debug(f"Error code: {code} mag:{mag}, err:{err}, star_0:{idx}, file:{the_file}") # see cmpack_common.h, enum CmpackError
     #print(f"Converted: {mag}, {err}, {code}")
     return mag, err, code

@@ -2,7 +2,6 @@ from functools import partial
 
 from init_loader import init, settings
 import reading
-#import astropy_helper
 import matplotlib as mp
 mp.use('Agg') # needs no X server
 import matplotlib.pyplot as plt
@@ -10,7 +9,7 @@ import seaborn as sns
 import multiprocessing as mp
 import tqdm
 import numpy as np
-from astropy.coordinates import SkyCoord
+import pandas as pd
 from gatspy.periodic import LombScargleFast
 from init_loader import init, settings
 from reading import trash_and_recreate_dir
@@ -80,7 +79,7 @@ def plot_lightcurve(tuple, comparison_stars):
 #        print("error", tuple)
 
 
-def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
+def plot_phase_diagram(tuple, suffix='', period=None):
     star_description = tuple[0]
     coords = star_description.coords
     curve = tuple[1]
@@ -94,7 +93,7 @@ def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
         logging.info("Curve of star {} is None".format(star))
         return
     t_np = curve['JD'].to_numpy()
-    y_np = curve['V-C'].to_numpy()
+    y_np = curve['realV'].to_numpy()
     dy_np = curve['s1'].to_numpy()
     if period is None:
         period_max = np.max(t_np)-np.min(t_np)
@@ -117,7 +116,6 @@ def plot_phase_diagram(tuple, comparison_stars, suffix='', period=None):
     phased_lc = y_np[:]
     phased_t_final = np.append(phased_t2, phased_t)
     phased_lc_final = np.append(phased_lc, phased_lc)
-    #phased_lc_final = phased_lc_final + comparison_stars[0].vmag
     phased_err = np.clip(np.append(dy_np, dy_np), -0.5, 0.5) # error values are clipped to +0.5 and -0.5
     plt.gca().invert_yaxis()
     plt.errorbar(phased_t_final,phased_lc_final,yerr=phased_err,linestyle='none',marker='o', ecolor='gray', elinewidth=1)
@@ -136,6 +134,8 @@ def format_date(x, pos=None):
 def read_lightcurves(star_description, comparison_stars, do_charts, do_phase):
     start = timer()
     logging.debug("Reading lightcurves...")
+    comp_mags = [x.vmag for x in comparison_stars]
+
     try:
         df = reading.read_lightcurve(star_description.local_id,filter=True)
         if df is None or len(df) == 0:
@@ -145,7 +145,10 @@ def read_lightcurves(star_description, comparison_stars, do_charts, do_phase):
         # adding vmag of comparison star to all diff mags
         # TODO: this is wrong, should be composition of all comparison stars. To do error propagation use quadrature
         # rule: http://ipl.physics.harvard.edu/wp-uploads/2013/03/PS3_Error_Propagation_sp13.pdf
-        df['V-C'] = df['V-C'] + comparison_stars[0].vmag
+        #df['V-C'] = df['V-C'] + comparison_stars[0].vmag
+        logging.debug(f"Calculate real v for {star_description.local_id}")
+        df['realV'] = calculate_real_mag(df, comp_mags)
+        logging.debug(f"charting {star_description}")
         tuple = star_description, df
         if do_charts:
             # start = timer()
@@ -154,21 +157,45 @@ def read_lightcurves(star_description, comparison_stars, do_charts, do_phase):
             # print("plotting lightcurve:", end-start)
         if do_phase:
             # start = timer()
-            plot_phase_diagram(tuple, comparison_stars=comparison_stars)
+            plot_phase_diagram(tuple)
             # end = timer()
             # print("plotting phase:", end-start)
     except FileNotFoundError:
         logging.error("File not found error in store and curve for star", star_description.local_id)
 
     end = timer()
-    logging.debug("Full lightcurve/phase:", end-start)
+    logging.debug(f"Full lightcurve/phase: {end-start}")
+
+def calculate_real_mag(df, comp_mags):
+    logging.debug(f"Start calculate_real with {df.shape[0]} rows")
+
+    cees = []
+    for index, row in df.iterrows():
+        logging.debug(f"row is {row}, comp_mags is {comp_mags}")
+        the_mask = [not bool(int(x)) for x in row['mask']] # read and invert for masking
+        logging.debug(f"The mask is {the_mask}")
+        comp_mags_masked = np.ma.array(comp_mags, mask=the_mask)
+        logging.debug(f"The masked comps is {comp_mags_masked}")
+        mean = np.ma.mean(comp_mags_masked)
+        logging.debug(f"The mean is {mean}")
+        cees.append(mean)
+        logging.debug(f"print cees: {cees}")
+
+    logging.debug(f"print cees: {cees}")
+    logging.debug(f"df V-C beforel: {df['V-C']}")
+    result  = df['V-C'].add(cees)
+    logging.debug(f"df V-C after: {result}")
+    logging.debug(f"end calculate_real")
+    return result
+
 
 
 # reads lightcurves and passes them to lightcurve plot or phase plot
 def run(star_descriptions, comparison_stars, do_charts, do_phase):
-    CHUNK = 10
+    CHUNK = 2
     set_seaborn_style()
     pool = mp.Pool(init.nr_threads)
+    logging.info(f"Using {init.nr_threads} threads for lightcurve and phase plotting.")
 
     if do_charts:
         trash_and_recreate_dir(settings.chartsdir)
@@ -176,5 +203,19 @@ def run(star_descriptions, comparison_stars, do_charts, do_phase):
         trash_and_recreate_dir(settings.phasedir)
 
     func = partial(read_lightcurves, comparison_stars=comparison_stars, do_charts=do_charts, do_phase=do_phase)
-    for _ in tqdm.tqdm(pool.imap_unordered(func, star_descriptions, chunksize=CHUNK), total=len(star_descriptions), desc='Writing light curve charts/phase diagrams'):
-        pass
+    with tqdm.tqdm(total=len(star_descriptions), desc='Writing light curve charts/phase diagrams') as pbar:
+        for _ in pool.imap_unordered(func, star_descriptions, chunksize=CHUNK):
+            pbar.update(1)
+            pass
+
+# this is a unit test
+if __name__ == '__main__':
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    logging.basicConfig(format="%(asctime)s %(name)s: %(levelname)s %(message)s")
+    a = np.zeros(shape=(3,2))
+    df = pd.DataFrame(a,columns=['V-C','mask'])
+    df['V-C'] = pd.to_numeric(df['V-C'])
+    df['mask'] = ['01', '11', '10']
+    result = calculate_real_mag(df, [10, 12])
+    print('\n\n\n',result)

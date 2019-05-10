@@ -188,6 +188,7 @@ def get_upsilon_candidates_raw(threshold_prob, check_flag):
 def add_vsx_names_to_star_descriptions(stars: List[StarDescription], max_separation=0.01):
     logging.info("Adding VSX names to star descriptions")
     result = stars  # no deep copy for now
+    result_ids = []
     # copy.deepcopy(star_descriptions)
     vsx_catalog, vsx_dict = create_vsx_astropy_catalog()
     star_catalog = create_star_descriptions_catalog(stars)
@@ -213,9 +214,10 @@ def add_vsx_names_to_star_descriptions(stars: List[StarDescription], max_separat
     for keys, values in results_dict.items():
         _add_catalog_match_to_entry('VSX', result[values[0]], vsx_dict,
                                     values[1], values[2])
+        result_ids.append(values[0]) # append star id
         logging.debug(f"Adding vsx match: {values[0]},{values[1]}, {values[2]}\n\n")
     logging.info(f"Added {len(results_dict)} vsx stars.")
-    return result
+    return result, result_ids
 
 # returns {'star_id': [label, probability, flag, period, SkyCoord, match_name, match_skycoord,
 # match_type, separation_deg]}
@@ -269,6 +271,16 @@ def get_vsx_in_field(star_descriptions, max_separation=0.01):
     logging.info("Found {} VSX stars in field: {}".format(len(result), [star.local_id for star in result]))
     return result
 
+# tags a list of star id's with the 'selected' CatalogMatch for later filtering
+def add_selected_match_to_stars(stars: List[StarDescription], star_id_list):
+    catalog_name = "SELECTED"
+    for star_id in star_id_list:
+        star_id_0 = star_id - 1
+        curr_sd = stars[star_id_0]
+        print(curr_sd.local_id, star_id)
+        assert int(curr_sd.local_id) == int(star_id)
+        match = CatalogMatch(name_of_catalog=catalog_name, catalog_id=curr_sd.local_id)
+        curr_sd.match.append(match)
 
 def _add_catalog_match_to_entry(catalog_name, matchedStarDesc, vsx_dict, index_vsx, separation):
     assert matchedStarDesc.match != None

@@ -5,6 +5,7 @@ import argparse
 import do_aperture
 import numpy as np
 from astropy.coordinates import SkyCoord
+from photometry_blob import PhotometryBlob
 
 
 # main entry
@@ -42,8 +43,11 @@ def get_fixed_compstars(star_descriptions=None):
         logging.debug(f"Using fixed compstar '{ucac_id}' with Vmag: '{vmag}' and star id: {star_id_1}")
     return star_ids_1, star_desc_result
 
-def get_calculated_compstars(apertureidx, stddevs, counts):
+def get_calculated_compstars(apertureidx, photometry_blob: PhotometryBlob):
+    stddevs = photometry_blob.stddevs
+    counts = photometry_blob.counts
     selectedcounts = counts[apertureidx]
+
     # winners = np.argwhere(np.amax(selectedcounts)).flatten()
     logging.info(f"Before selection on counts: {len(selectedcounts)}")
     logging.info(f"counts threshold {np.max(selectedcounts) * 0.9}")
@@ -66,7 +70,9 @@ def get_calculated_compstars(apertureidx, stddevs, counts):
     logging.info(f"Compstars counts: {selectedcounts[compstars_0]}")
     # for star in compstars_0:
     #     logging.info(f"Error for compstar_0:{star} is \t {errors[star].median()}")
-    return (compstars_0 + 1).tolist()
+    comparison_stars_1 = (compstars_0 + 1).tolist()
+    comparison_stars_1_desc = do_calibration.get_star_descriptions(comparison_stars_1)
+    return comparison_stars_1, comparison_stars_1_desc
 
 
 # get star_descriptions and ucuc4 info
