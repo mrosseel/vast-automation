@@ -188,19 +188,18 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
         apertures, apertureidx, aperture = reading.read_aperture()
         logging.info(f"aperture: {aperture}, apertures:{apertures}")
 
-    # get comparison stars
-    if init.comparison_stars is None:
-        comparison_stars_1, comparison_stars_1_desc = do_compstars.get_calculated_compstars(apertureidx, photometry_blob)
-    else:
-        comparison_stars_1, comparison_stars_1_desc = do_compstars.get_fixed_compstars()
-
-
     if do_pos:
         logging.info("Writing positions of all stars on the reference image...")
         reference_matched = do_calibration.find_reference_matched(reference_frame_index)
         logging.info(f"reference match is {reference_matched}")
         do_write_pos(init.star_list, aperture, reference_matched, is_resume=False)
         do_world_pos(wcs, init.star_list, reference_frame_index)
+
+    # get comparison stars
+    if init.comparison_stars is None:
+        comparison_stars_1, comparison_stars_1_desc = do_compstars.get_calculated_compstars(apertureidx, photometry_blob)
+    else:
+        comparison_stars_1, comparison_stars_1_desc = do_compstars.get_fixed_compstars()
 
     if do_ml:
         logging.info("Doing ML detection of variable stars...")
@@ -276,7 +275,7 @@ def construct_star_descriptions(args, do_compstars_flag, comparison_stars_1, com
                 logging.info(f"Selecting {starlist} stars added by {args.starfile}")
                 do_calibration.add_selected_match_to_stars(star_descriptions, starlist) # select star ids
 
-        # compstar data is added to star descriptions
+        # compstar data is added to star descriptions ==> no it's not
         if do_compstars_flag:
             logging.info("Getting comparison stars...")
             logging.info(f"Comparison stars_1: {comparison_stars_1}")
