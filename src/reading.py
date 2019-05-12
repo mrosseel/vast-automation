@@ -35,7 +35,7 @@ def preprocess_lightcurve(df):
 def read_pos(star, jd):
     try:
         df = pd.read_csv(settings.posdir + 'pos_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
-        logging.info(df.head())
+        logging.info(f"reading pos head: {df.head()}")
         df2 = df[df['X'] > 0]
         df3 = df2[df['MAG'] < 99]
         row = df.loc[df['JD'] == jd]
@@ -115,7 +115,7 @@ def read_compstars():
 def file_selector(the_dir, match_pattern, percentage=1):
     matched_files = glob.glob(the_dir+match_pattern)
     desired_length = max(1, int(len(matched_files) * float(percentage)))
-    logging.debug(f"Reading.file_selector: {the_dir+match_pattern}, total:{len(matched_files)}, desired:{desired_length}")
+    logging.info(f"Reading.file_selector: {the_dir+match_pattern}, total:{len(matched_files)}, desired:{desired_length}")
     np.random.seed(42) # for the same percentage, we always get the same selection
     selected_files = np.random.choice(matched_files, size=desired_length, replace=False).tolist()
     return selected_files

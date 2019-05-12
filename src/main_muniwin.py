@@ -195,7 +195,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
         do_write_pos(init.star_list, aperture, reference_matched, is_resume=False)
         do_world_pos(wcs, init.star_list, reference_frame_index)
 
-    # get comparison stars
+    # get comparison stars, needs world positions !!!
     if init.comparison_stars is None:
         comparison_stars_1, comparison_stars_1_desc = do_compstars.get_calculated_compstars(apertureidx, photometry_blob)
     else:
@@ -214,23 +214,19 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
     # costruction of the star descriptions list
     star_descriptions = construct_star_descriptions(args, do_compstars_flag, comparison_stars_1, comparison_stars_1_desc)
 
-    # select a subset of star_descriptions, as specified in starfile
-    if args.starfile:
-        selected_filter = partial(catalog_filter, catalog_name='SELECTED')
-        selected_stars = list(filter(selected_filter, star_descriptions))
-        logging.debug(f"Light curve: selecting chosen stars with {len(selected_stars)} stars selected.")
-    else:
-        logging.debug(f"No starfile, selecting all stars")
-        selected_stars = star_descriptions
+    selected_filter = partial(catalog_filter, catalog_name='SELECTED')
+    selected_stars = list(filter(selected_filter, star_descriptions))
+
+    logging.debug(f"Selecting chosen stars with {len(selected_stars)} stars selected.")
 
     if do_lightcurve_flag:
         logging.info(f"Writing lightcurves...")
-        do_lightcurve.write_lightcurves([x.local_id for x in selected_stars],
+        do_lightcurve.write_lightcurves([x.local_id for x in star_descriptions],
                                         comparison_stars_1, aperture, int(apertureidx), jd, fwhm, star_result)
 
     if do_lightcurve_plot or do_phase_diagram:
         logging.info("starting charting / phase diagrams...")
-        do_charts.run(selected_stars, comparison_stars_1_desc, do_lightcurve_plot, do_phase_diagram)
+        do_charts.run(star_descriptions, comparison_stars_1_desc, do_lightcurve_plot, do_phase_diagram)
 
     if do_field_charting:
         logging.info("Starting field chart plotting...")
@@ -260,10 +256,16 @@ def construct_star_descriptions(args, do_compstars_flag, comparison_stars_1, com
             logging.info("Setting star_descriptions to upsilon candidates")
             star_descriptions = do_calibration.add_candidates_to_star_descriptions(star_descriptions, 0.1)
 
+        star_descriptions, results_ids_0 = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions, 0.01)
+        results_ids_0.sort()
+        results_id_1 = np.array(results_ids_0) + 1
+        with open(settings.basedir + 'vsx_stars.txt', 'wt') as fp:
+            for vsx_id in results_id_1:
+                fp.write(f"{vsx_id}:\t{star_descriptions[vsx_id].aavso_id}\n")
+
         if args.vsx:
-            star_descriptions, results_ids = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions, 0.01)
-            logging.info(f"Added {len(results_ids)} vsx names to star descriptions")
-            do_calibration.add_selected_match_to_stars(star_descriptions, results_ids) # select star ids
+            do_calibration.log_star_descriptions(star_descriptions, results_ids_0)
+            do_calibration.add_selected_match_to_stars(star_descriptions, results_ids_0)  # select star ids
 
         if args.starfile:
             with open(settings.basedir + args.starfile, 'r') as fp:

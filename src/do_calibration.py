@@ -22,6 +22,7 @@ from functools import partial
 from multiprocessing import Pool
 from typing import List
 import utils
+from collections import namedtuple
 
 def get_wcs(wcs_file):
     hdulist = fits.open(wcs_file)
@@ -112,6 +113,7 @@ def find_target_star(target_ra_deg, target_dec_deg, nr_results):
     df.sort_values(by='deg_separation', inplace=True)
     return df[:nr_results]
 
+############# star description utils #################
 
 # returns list of star descriptions
 def get_star_descriptions(star_id_list=None):
@@ -130,6 +132,13 @@ def get_star_descriptions(star_id_list=None):
                                           coords=SkyCoord(positions[key][0], positions[key][1], unit='deg')))
     return result
 
+# returns list of star descriptions
+def get_empty_star_descriptions(star_id_list=None):
+    # returns {'name': [ra.deg, dec.deg ]}
+    result = []
+    for star in star_id_list:
+        result.append(StarDescription(local_id=star))
+    return result
 
 # for testinsg
 def get_random_star_descriptions(nr=10):
@@ -138,6 +147,14 @@ def get_random_star_descriptions(nr=10):
         result.append(StarDescription(local_id=idx,
                                       coords=SkyCoord(idx, idx, unit='deg')))
     return result
+
+
+def log_star_descriptions(star_descriptions: StarDescription, star_id_list):
+    logging.debug(f"Logging {len(star_id_list)} star  descriptions:")
+    for star_id in star_id_list:
+        logging.debug(star_descriptions[star_id])
+
+############# star description utils #################
 
 
 # returns new list of StarDescription s with filled in local_id, upsilon match, coord
@@ -185,13 +202,13 @@ def get_upsilon_candidates_raw(threshold_prob, check_flag):
 
 # returns {'star_id': [label, probability, flag, period, SkyCoord, match_name, match_skycoord,
 # match_type, separation_deg]}
-def add_vsx_names_to_star_descriptions(stars: List[StarDescription], max_separation=0.01):
+def add_vsx_names_to_star_descriptions(star_descriptions: List[StarDescription], max_separation=0.01):
     logging.info("Adding VSX names to star descriptions")
-    result = stars  # no deep copy for now
+    result = star_descriptions  # no deep copy for now
     result_ids = []
     # copy.deepcopy(star_descriptions)
     vsx_catalog, vsx_dict = create_vsx_astropy_catalog()
-    star_catalog = create_star_descriptions_catalog(stars)
+    star_catalog = create_star_descriptions_catalog(star_descriptions)
     # vsx catalog is bigger in this case than star_catalog, but if we switch then different stars can be
     # matched with the same variable which is wrong.
     #
@@ -201,53 +218,31 @@ def add_vsx_names_to_star_descriptions(stars: List[StarDescription], max_separat
     # sep2d : Angle
     # The on-sky separation between the closest match for each matchcoord and the matchcoord. Shape matches matchcoord.
     idx, d2d, _ = match_coordinates_sky(star_catalog, vsx_catalog)
-    logging.debug(len(idx))
+    logging.debug(f"length of idx: {len(idx)}")
     results_dict = {} # have temp results_dict so we can remove duplicates
+    VsxInfo = namedtuple('VsxInfo', 'starid_0 vsx_id sep')
     for index_star_catalog, entry in enumerate(d2d):
         if entry.value < max_separation:
             index_vsx = idx[index_star_catalog]
             # if it's a new vsx star or a better match than the last match, write into dict
             if index_vsx not in results_dict or results_dict[index_vsx][2] > entry.value:
                 index_vsx = idx[index_star_catalog]
-                results_dict[index_vsx] = (index_star_catalog, index_vsx, entry.value)
+                results_dict[index_vsx] = VsxInfo(index_star_catalog, index_vsx, entry.value)
     # loop over dict and add the new vsx matches to the star descriptions
-    for keys, values in results_dict.items():
-        _add_catalog_match_to_entry('VSX', result[values[0]], vsx_dict,
-                                    values[1], values[2])
-        result_ids.append(values[0]) # append star id
-        logging.debug(f"Adding vsx match: {values[0]},{values[1]}, {values[2]}\n\n")
+    for keys, vsxinfo in results_dict.items():
+        _add_catalog_match_to_entry('VSX', result[vsxinfo.starid_0], vsx_dict,
+                                    vsxinfo.vsx_id, vsxinfo.sep)
+        result_ids.append(vsxinfo.starid_0)
+        logging.debug(f"Adding vsx match: {vsxinfo}, {result[vsxinfo.starid_0]}\n")
     logging.info(f"Added {len(results_dict)} vsx stars.")
     return result, result_ids
-
-# returns {'star_id': [label, probability, flag, period, SkyCoord, match_name, match_skycoord,
-# match_type, separation_deg]}
-# def add_vsx_names_to_star_descriptions_old(star_descriptions, max_separation=0.01):
-#     logging.debug("Adding VSX names to star descriptions")
-#     result = star_descriptions  # no deep copy for now
-#     # copy.deepcopy(star_descriptions)
-#     vsx_catalog, vsx_dict = create_vsx_astropy_catalog()
-#     star_catalog = create_star_descriptions_catalog(star_descriptions)
-#     idx, d2d, d3d = match_coordinates_sky(star_catalog,
-#                                           vsx_catalog)  # vsx catalog is bigger in this case than star_catalog
-#     logging.debug(len(idx))
-#     found = 0
-#     logging.info(f"vsx dictoinary is: {vsx_dict}")
-#     for index_star_catalog, entry in enumerate(d2d):
-#         if entry.value < max_separation:
-#             index_vsx = idx[index_star_catalog]
-#             _add_catalog_match_to_entry('VSX', result[index_star_catalog], vsx_dict,
-#                                         index_vsx, entry.value)
-#             logging.info(f"Adding {result[index_star_catalog].match}, {index_star_catalog}, {entry}\n\n")
-#             found = found + 1
-#     logging.info(f"Added {len(result)} vsx stars.")
-#     return result
 
 
 # star_catalog = create_star_descriptions_catalog(star_descriptions)
 def get_starid_1_for_radec(ra_deg, dec_deg, all_star_catalog, max_separation=0.01):
     star_catalog = create_generic_astropy_catalog(ra_deg, dec_deg)
     idx, d2d, d3d = match_coordinates_sky(star_catalog, all_star_catalog)
-    logging.debug(f"len(idx):{len(idx)}, min(idx): {np.min(idx)}, max(idx): {np.max(idx)}, min(d2d): {np.min(d2d)}, "
+    logging.debug(f"get_starid_1_for_radec: len(idx):{len(idx)}, min(idx): {np.min(idx)}, max(idx): {np.max(idx)}, min(d2d): {np.min(d2d)}, "
                   f"max(d2d): {np.max(d2d)}, star_id: {idx[0] + 1}, index in all_star_catalog: {all_star_catalog[idx[0]]}")
     return idx[0] + 1
 
@@ -271,19 +266,21 @@ def get_vsx_in_field(star_descriptions, max_separation=0.01):
     logging.info("Found {} VSX stars in field: {}".format(len(result), [star.local_id for star in result]))
     return result
 
-# tags a list of star id's with the 'selected' CatalogMatch for later filtering
-def add_selected_match_to_stars(stars: List[StarDescription], star_id_list):
-    catalog_name = "SELECTED"
-    for star_id in star_id_list:
-        star_id_0 = star_id - 1
-        curr_sd = stars[star_id_0]
-        print(curr_sd.local_id, star_id)
-        assert int(curr_sd.local_id) == int(star_id)
-        match = CatalogMatch(name_of_catalog=catalog_name, catalog_id=curr_sd.local_id)
-        curr_sd.match.append(match)
 
-def _add_catalog_match_to_entry(catalog_name, matchedStarDesc, vsx_dict, index_vsx, separation):
-    assert matchedStarDesc.match != None
+# tags a list of star id's with the 'selected' CatalogMatch for later filtering
+def add_selected_match_to_stars(stars: List[StarDescription], star_id_list_0):
+    catalog_name = "SELECTED"
+    for star_id_0 in star_id_list_0:
+        curr_sd = stars[star_id_0]
+        assert int(curr_sd.local_id) == int(star_id_0)+1
+        match = CatalogMatch(name_of_catalog=catalog_name, catalog_id=curr_sd.local_id)
+        logging.debug(f"Voor de append: {curr_sd.match}")
+        curr_sd.match.append(match)
+        logging.debug(f"Na de append: {curr_sd.match}")
+
+
+def _add_catalog_match_to_entry(catalog_name: str, matchedStarDesc: StarDescription, vsx_dict, index_vsx, separation):
+    assert matchedStarDesc.match is not None
     vsx_name = vsx_dict['metadata'][index_vsx]['Name']
     matchedStarDesc.aavso_id = vsx_name
     match = CatalogMatch(name_of_catalog=catalog_name, catalog_id=vsx_name,

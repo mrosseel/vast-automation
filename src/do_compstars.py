@@ -33,7 +33,7 @@ def get_fixed_compstars(star_descriptions=None):
         # adding info to star_description
         star = star_descriptions[star_id_1 - 1]
         coord_catalog = SkyCoord(df['RAJ2000'], df['DEJ2000'], unit='deg')
-        logging.info(df.info())
+        #logging.info(f"get fixed compstars: {df.info()}")
         # df['e_Vmag'] is not present !!!
         logging.info(df['UCAC4'].iloc(0)[0])
         vmag = df['Vmag'].iloc(0)[0]

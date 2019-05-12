@@ -16,29 +16,33 @@ from photometry_blob import PhotometryBlob
 def convert_to_aperture_only(apertures):
     return apertures[1::2]
 
-def get_apertures(match_file_list=file_selector(settings.matchedphotometrydir, 'match*.pht', init.aperture_find_percentage)):
+
+def get_apertures(match_file_list=None):
+    if match_file_list is None:
+        match_file_list = file_selector(settings.matchedphotometrydir, 'match*.pht', init.aperture_find_percentage)
     apertures = []
-    with open(match_file_list[0], mode='rb') as file: # b is important -> binary
+    with open(match_file_list[0], mode='rb') as file:  # b is important -> binary
         fileContent = file.read()
-        photheader, apertures, nrstars , _, _ = read_pht_file(match_file_list[0], fileContent)
+        photheader, apertures, nrstars, _, _ = read_pht_file(match_file_list[0], fileContent)
         apertures = convert_to_aperture_only(apertures)
     file.close()
     return apertures
 
+
 def gather_data(match_file_list):
     nrfiles = len(match_file_list)
-    detectablestars = len(init.star_list) # this is the maximum of star id's, regardless of how many are detected on an image
+    detectablestars = len(init.star_list)  # this is the maximum of star id's, regardless of how many are detected on an image
     # pre process
     apertures = get_apertures(match_file_list)
     logging.info(f"Apertures: {apertures}, nr of files: {nrfiles}")
-    collect = np.full([len(apertures), detectablestars, nrfiles, 2],np.inf, dtype=float)
+    collect = np.full([len(apertures), detectablestars, nrfiles, 2], np.inf, dtype=float)
     fwhm = np.full([nrfiles, 3], np.inf, dtype=float)
     jd = np.full([nrfiles], np.inf, dtype=float)
     # for all files
     for fileidx, entry in enumerate(match_file_list):
         fileContent = None
         # open the file for reading
-        with open(entry, mode='rb') as file: # b is important -> binary
+        with open(entry, mode='rb') as file:  # b is important -> binary
             fileContent = file.read()
             logging.info(f"{fileidx}/{nrfiles}: {entry}")
             photheader, apertures, nrstars, stars, stardata = read_pht_file(entry, fileContent)
@@ -54,20 +58,22 @@ def gather_data(match_file_list):
                 for apidx, aperturedata in enumerate(stardata[staridx]):
                     if aperturedata.mag == 0:
                         logging.info(f"aperture data: {aperturedata}")
-                    collect[apidx][starentry.ref_id-1][fileidx] = [aperturedata.mag, aperturedata.err]
+                    collect[apidx][starentry.ref_id - 1][fileidx] = [aperturedata.mag, aperturedata.err]
                     # collect[apidx][starentry.ref_id-1][fileidx][1] = aperturedata.err
-                    if collect[apidx][starentry.ref_id-1][fileidx][0] == 0:
+                    if collect[apidx][starentry.ref_id - 1][fileidx][0] == 0:
                         logging.info("gather data is nul")
 
     logging.info(f"Nr of stars for apertureidx 2: {len(collect[2])}")
-    logging.info(f"Mb used: {collect.nbytes/1024/1024}")
+    logging.info(f"Mb used: {collect.nbytes / 1024 / 1024}")
     logging.info(f"Entry for First aperture, first star: {collect[0][0]}")
     logging.info(f"Shape for collect: {collect.shape}")
     return jd, fwhm, collect, apertures
 
+
 # returns stddev of magnitude and the counts of non-nan mags and errors
 def process(collect, apertures):
-    detectablestars = len(init.star_list) # this is the maximum of star id's, regardless of how many are detected on an image
+    detectablestars = len(
+        init.star_list)  # this is the maximum of star id's, regardless of how many are detected on an image
     nrapertures = len(apertures)
     # print(scipy.stats.mstats.describe(np.ma.masked_invalid(collect[2]), axis=0))
     stddevs = np.full([nrapertures, detectablestars], np.inf)
@@ -84,15 +90,15 @@ def process(collect, apertures):
             # print(apidx, staridx)
             masked_collect = np.ma.masked_invalid(collect[apidx][staridx])
             # print("Shape of the thing we calculate stddev on:", collect[apidx][staridx].shape, collect[apidx][staridx])
-            std = masked_collect.std(axis=0)[0] # take the stddev of the magnitude
+            std = masked_collect.std(axis=0)[0]  # take the stddev of the magnitude
             # TODO this is the reason that counts are off, this counts mag and err together
-            count= masked_collect.count()
+            count = masked_collect.count()
             # print("count", count)
             # print("std:", std, type(std), std is np.ma.masked)
             stddevs[apidx, staridx] = std if not std is np.ma.masked else np.nan
             counts[apidx, staridx] = count
 
-    logging.info(stddevs[0,0:20])
+    logging.info(stddevs[0, 0:20])
     logging.info(f"Shape for stddevs: {stddevs.shape}")
     logging.info(np.argmin(stddevs[0]))
     # for idx in range(len(stddevs)):
@@ -105,24 +111,27 @@ def select_aperture(fwhm, apertures):
     # taking the median fwhm
     median_fwhm = np.median(np.take(fwhm, 1, axis=1))
     # using the lesve heuristic of multiplying the fwhm with 1,75 or 2
-    median_multiply = median_fwhm*1.75
+    median_multiply = median_fwhm * 1.75
     # taking the index of the aperture closest to fwhm * 1.75
     apertureidx = np.abs(apertures - median_multiply).argmin()
-    logging.info(f"FWHM median: {median_fwhm}, multiplied: {median_multiply}, aperture chosen is: {apertures[apertureidx]}")
+    logging.info(
+        f"FWHM median: {median_fwhm}, multiplied: {median_multiply}, aperture chosen is: {apertures[apertureidx]}")
     return apertureidx
 
 
 def get_photometry_blob(the_dir, match_files='match*.pht', percentage=0.1) -> PhotometryBlob:
-    jd, fwhm, collect, apertures = gather_data(file_selector(settings.matchedphotometrydir, 'match*.pht', init.aperture_find_percentage))
+    jd, fwhm, collect, apertures = gather_data(
+        file_selector(settings.matchedphotometrydir, 'match*.pht', init.aperture_find_percentage))
     stddevs, counts = process(collect, apertures)
-    photometry_blob = PhotometryBlob(stddevs=stddevs, collect=collect, apertures=apertures, fwhm=fwhm, jd=jd, counts=counts)
+    photometry_blob = PhotometryBlob(stddevs=stddevs, collect=collect, apertures=apertures, fwhm=fwhm, jd=jd,
+                                     counts=counts)
     return photometry_blob
 
 
 def main(photometry_blob: PhotometryBlob):
     return select_aperture(photometry_blob.fwhm, photometry_blob.apertures)
 
+
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
     # main()
-

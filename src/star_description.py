@@ -1,6 +1,6 @@
 class StarDescription:
     def __init__(self, local_id=None, aavso_id=None, coords=None, vmag=None, e_vmag=None, match=None, label=None,
-                 xpos=None, ypos=None):
+                 xpos=None, ypos=None, path=None):
         # star id given by munipack
         self.local_id = local_id
         # id used to identify to aavso (could be real variable name or UCAC4?)
@@ -19,6 +19,8 @@ class StarDescription:
         self.ypos = ypos
         # label to be used when charting this star
         self.label = self.local_id if label is None else label
+        # the path where the star is defined
+        self.path = path
 
     @property
     def match(self):
@@ -28,6 +30,7 @@ class StarDescription:
     @match.setter
     def match(self, val):
         self._match.append(val)
+        print(f"appending, is now {self._match}")
 
 
     def get_catalog(self, catalog: str, strict=False):
@@ -54,8 +57,8 @@ class StarDescription:
             self.local_id, self.aavso_id, self.coords, self.vmag, self._match)
 
     def __str__(self):
-        return "local_id: {0}, aavso_id: {1}, coords: {2}, vmag: {3}, nr matches: {4}".format(
-            self.local_id, self.aavso_id, self.coords, self.vmag, len(self._match))
+        return "local_id: {0}, aavso_id: {1}, coords: {2}, vmag: {3}, nr matches: {4}, matches: {5}".format(
+            self.local_id, self.aavso_id, self.coords, self.vmag, len(self._match), self._match)
 
 class CatalogMatch():
     def __init__(self, name_of_catalog=None, catalog_id=None, name=None, coords=None, separation=-1):

@@ -26,7 +26,7 @@ def report(target_dir, star_description: StarDescription, comparison_star: StarD
     var_display_name = var_display_name if var_display_name is not None else 'None_name'
     check_display_name = comparison_star.aavso_id if not comparison_star.aavso_id is None else comp_ucac4[0]
 
-    logging.info(" Star match:{}, comparison_star:{}".format(var_display_name, comparison_star))
+    # logging.info(" Star match:{}, comparison_star:{}".format(var_display_name, comparison_star))
     comparison_star_vmag = comparison_star.vmag
     title = str(star_description.local_id if star_description.aavso_id is None else star_description.aavso_id)
     earth_location = EarthLocation(lat=init.sitelat, lon=init.sitelong, height=init.sitealt*u.m)

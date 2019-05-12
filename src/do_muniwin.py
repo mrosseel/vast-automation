@@ -62,7 +62,7 @@ if __name__ == '__main__':
               \nmatch:\t\t{init.do_match} \
               \naperture:\t{init.do_aperture_search} \
               \npos:\t\t{init.do_pos} \
-              \ncopstars:\t{init.do_compstars} \
+              \ncompstars:\t{init.do_compstars} \
               \nlightcurve:\t{init.do_lightcurve} \
               \nupsilon:\t{init.do_ml} \
               \nlight plot:\t{init.do_lightcurve_plot} \

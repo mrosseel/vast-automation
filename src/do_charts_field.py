@@ -8,6 +8,9 @@ import do_calibration
 import logging
 from reading import trash_and_recreate_dir
 import argparse
+from typing import List
+from star_description import StarDescription
+StarDescriptionList = List[StarDescription]
 
 PADDING = 200
 
@@ -36,7 +39,8 @@ def add_pixels(results, wcs, offset):
         star.ypos = y + offset
     return results
 
-def plot_it(big_green, small_red, fits_file, wcs, title, padding=PADDING):
+
+def plot_it(big_green: StarDescriptionList, small_red: StarDescriptionList, fits_file, wcs, title, padding=PADDING):
     logging.info("plotting {} green and {} red circles.".format(len(big_green), len(small_red)))
     big_green = add_pixels(big_green, wcs, PADDING)
     small_red = add_pixels(small_red, wcs, PADDING)
@@ -50,7 +54,7 @@ def plot_it(big_green, small_red, fits_file, wcs, title, padding=PADDING):
     big_green_apps = CircularAperture(big_green_positions, r=10.)
     small_red_apps = CircularAperture(small_red_positions, r=5.)
     # target_app = CircularAperture(target_xy, r=20.)
-    plt.title('Test')
+    plt.title(title)
     plt.imshow(data, cmap='gray_r', origin='lower', vmin=0, vmax=2500)
     big_green_apps.plot(color='green', lw=1.5, alpha=0.5)
     small_red_apps.plot(color='red', lw=1.5, alpha=0.5)
