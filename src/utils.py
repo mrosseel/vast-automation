@@ -1,6 +1,7 @@
 import glob
 from os import listdir
 from os.path import isfile, join
+from star_description import StarDescription
 
 def find_index_of_file(the_dir, the_file, the_filter='*'):
     the_dir = glob.glob(the_dir + "*"+the_filter)
@@ -21,3 +22,8 @@ def add_trailing_slash(the_path):
 
 def get_files_in_dir(mypath):
     return [f for f in listdir(mypath) if isfile(join(mypath, f))]
+
+
+# filter a list of star descriptions on the presence of a catalog
+def catalog_filter(star: StarDescription, catalog_name):
+    return star.has_catalog(catalog_name)

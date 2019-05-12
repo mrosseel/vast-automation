@@ -22,15 +22,27 @@ class StarDescription:
         # the path where the star is defined
         self.path = path
 
+
     @property
     def match(self):
         return self._match
+
 
     # val is a CatalogMatch object
     @match.setter
     def match(self, val):
         self._match.append(val)
         print(f"appending, is now {self._match}")
+
+
+    # does this star has a catalog with a certain name?
+    def has_catalog(self, catalog: str) -> bool:
+        if self.match is not None:
+            catalog_match_list = [x for x in self.match if x.name_of_catalog == catalog]
+            if len(catalog_match_list) >= 1:
+                return True
+        else:
+            return False
 
 
     def get_catalog(self, catalog: str, strict=False):
@@ -44,6 +56,7 @@ class StarDescription:
                 return catalog_match_list[0]
         return None
 
+
     # extract matching strings from star_descr
     def get_match_string(self, catalog, strict=False):
         # will give an assertion error if the catalog match is not unique
@@ -52,13 +65,16 @@ class StarDescription:
             return None, None
         return result.catalog_id, result.separation
 
+
     def __repr__(self):
         return "StarDescription({0},{1},{2},{3},{4})".format(
             self.local_id, self.aavso_id, self.coords, self.vmag, self._match)
 
+
     def __str__(self):
         return "local_id: {0}, aavso_id: {1}, coords: {2}, vmag: {3}, nr matches: {4}, matches: {5}".format(
             self.local_id, self.aavso_id, self.coords, self.vmag, len(self._match), self._match)
+
 
 class CatalogMatch():
     def __init__(self, name_of_catalog=None, catalog_id=None, name=None, coords=None, separation=-1):
@@ -73,11 +89,14 @@ class CatalogMatch():
         # the separation between the munipack-found coords and the catalog coords
         self.separation = separation
 
+
     def __repr__(self):
         return f'Catalog:{self.name_of_catalog}, CatalogId:{self.catalog_id}, Name:{self.name}, Coords:{self.coords}, Separation:{self.separation}'
 
+
     def __str__(self):
         return f'Catalog:{self.name_of_catalog}, CatalogId:{self.catalog_id}, Name:{self.name}, Coords:{self.coords}, Separation:{self.separation}'
+
 
 class UpsilonMatch():
     def __init__(self, name_of_catalog='Upsilon', var_type=None, probability=None, flag=None, period=None):
@@ -87,14 +106,16 @@ class UpsilonMatch():
         self.flag = flag
         self.period = period
 
+
     # extract upsilon strings from star_descr
     # might have to move outside of UpsilonMatch
     def get_upsilon_string(self):
         return "\nVar: prob={0:.2f}({1}),type={2}".format(self.probability, self.flag, self.var_type)
 
+
     def __repr__(self):
         return f'Catalog:{self.name_of_catalog}, Var Type:{self.var_type}, Probability:{self.probability}, flag:{self.flag}, Period:{self.period}'
 
+
     def __str__(self):
         return f'Catalog:{self.name_of_catalog}, Var Type:{self.var_type}, Probability:{self.probability}, flag:{self.flag}, Period:{self.period}'
-

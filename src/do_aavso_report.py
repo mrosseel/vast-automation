@@ -23,7 +23,7 @@ def report(target_dir, star_description: StarDescription, comparison_star: StarD
     star_match_vsx, separation = star_description.get_match_string("VSX", strict=False)
     comp_ucac4 = comparison_star.get_match_string("UCAC4", strict=True)
     var_display_name = star_match_ucac4 if star_match_vsx == None else star_match_vsx
-    var_display_name = var_display_name if var_display_name is not None else 'None_name'
+    var_display_name = var_display_name if var_display_name is not None else f"Star_{star_description.local_id}"
     check_display_name = comparison_star.aavso_id if not comparison_star.aavso_id is None else comp_ucac4[0]
 
     # logging.info(" Star match:{}, comparison_star:{}".format(var_display_name, comparison_star))

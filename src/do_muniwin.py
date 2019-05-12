@@ -27,7 +27,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     datadir = utils.add_trailing_slash(args.datadir)
     datenow = datetime.now()
-    filehandler = f"{datadir}munilog-{datenow:%Y%M%d-%H_%M_%S}.log"
+    filehandler = f"{datadir}munilog-{datenow:%Y%m%d-%H_%M_%S}.log"
     fh = logging.FileHandler(filehandler)
     fh.setLevel(logging.INFO)
     # add the handlers to the logger

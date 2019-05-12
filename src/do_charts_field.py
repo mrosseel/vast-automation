@@ -9,6 +9,7 @@ import logging
 from reading import trash_and_recreate_dir
 import argparse
 from typing import List
+import utils
 from star_description import StarDescription
 StarDescriptionList = List[StarDescription]
 
@@ -69,11 +70,13 @@ def plot_it(big_green: StarDescriptionList, small_red: StarDescriptionList, fits
     annotate_it(small_red, -10, 10, size=12)
     return fig
 
+
 def save(fig, path):
     fig.savefig(path)
     plt.close(fig)
 
-def run_standard_field_charts(vsx_star_descr, wcs):
+
+def run_standard_field_charts(selected_star_descriptions: StarDescriptionList, wcs):
     trash_and_recreate_dir(settings.fieldchartsdirs)
     # reference_frame, reference_frame_index=reading.read_reference_frame()
     # reference_fits_frame=settings.convfitsdir+reference_frame
@@ -95,12 +98,14 @@ def run_standard_field_charts(vsx_star_descr, wcs):
     #     big_green = set_aavso_id_label(vsx_star_descr)
     #     small_red = set_local_id_label(hand_candidates_descr)
 
+    # all stars get a blank label
     all_stars_labeled = set_custom_label(all_stars_descr, '')
-    vsx_labeled = set_aavso_id_label(vsx_star_descr)
-    #vsx_labeled = set_custom_label(vsx_star_descr, [o.local_id for o in vsx_star_descr])
-
-    # TODO hand labeled stars
-    # hand_candidates_labeled = set_local_id_label(hand_candidates_descr)
+    # vsx stars get their aavso id label
+    vsx_descr = [x for x in selected_star_descriptions if x.has_catalog('VSX')]
+    vsx_labeled = set_aavso_id_label(vsx_descr)
+    # other stars get their local id label
+    hand_candidates_descr = [x for x in selected_star_descriptions if (x.has_catalog('SELECTED') and not x.has_catalog('VSX'))]
+    hand_candidates_labeled = set_local_id_label(hand_candidates_descr)
 
     # default fields
     empty = []
@@ -122,9 +127,8 @@ def run_standard_field_charts(vsx_star_descr, wcs):
     # field chart with all vsx stars
     logging.info("Plotting field chart with all VSX variable stars + hand picked vars...")
     big_green = vsx_labeled
-    # TODO hand labeled stars
-    small_red = [] # hand_candidates_labeled
-    fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "VSX variable stars + detected variables", PADDING)
+    small_red = hand_candidates_labeled
+    fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "VSX variable stars + hand picked stars", PADDING)
     save(fig, settings.fieldchartsdirs + 'all_vsx_stars_{}_hand_picked_{}'.format(len(big_green), len(small_red)))
 
 

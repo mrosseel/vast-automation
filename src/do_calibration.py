@@ -279,15 +279,15 @@ def add_selected_match_to_stars(stars: List[StarDescription], star_id_list_0):
         logging.debug(f"Na de append: {curr_sd.match}")
 
 
-def _add_catalog_match_to_entry(catalog_name: str, matchedStarDesc: StarDescription, vsx_dict, index_vsx, separation):
-    assert matchedStarDesc.match is not None
+def _add_catalog_match_to_entry(catalog_name: str, matchedstardesc: StarDescription, vsx_dict, index_vsx, separation):
+    assert matchedstardesc.match is not None
     vsx_name = vsx_dict['metadata'][index_vsx]['Name']
-    matchedStarDesc.aavso_id = vsx_name
+    matchedstardesc.aavso_id = vsx_name
     match = CatalogMatch(name_of_catalog=catalog_name, catalog_id=vsx_name,
                          name=vsx_name, separation=separation,
                          coords=SkyCoord(vsx_dict['ra_deg_np'][index_vsx], vsx_dict['dec_deg_np'][index_vsx],
                                          unit='deg'))
-    matchedStarDesc.match.append(match)
+    matchedstardesc.match.append(match)
     return match
 
 

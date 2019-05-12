@@ -214,7 +214,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
     # costruction of the star descriptions list
     star_descriptions = construct_star_descriptions(args, do_compstars_flag, comparison_stars_1, comparison_stars_1_desc)
 
-    selected_filter = partial(catalog_filter, catalog_name='SELECTED')
+    selected_filter = partial(utils.catalog_filter, catalog_name='SELECTED')
     selected_stars = list(filter(selected_filter, star_descriptions))
 
     logging.debug(f"Selecting chosen stars with {len(selected_stars)} stars selected.")
@@ -258,9 +258,8 @@ def construct_star_descriptions(args, do_compstars_flag, comparison_stars_1, com
 
         star_descriptions, results_ids_0 = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions, 0.01)
         results_ids_0.sort()
-        results_id_1 = np.array(results_ids_0) + 1
         with open(settings.basedir + 'vsx_stars.txt', 'wt') as fp:
-            for vsx_id in results_id_1:
+            for vsx_id in results_ids_0:
                 fp.write(f"{vsx_id}:\t{star_descriptions[vsx_id].aavso_id}\n")
 
         if args.vsx:
@@ -270,12 +269,13 @@ def construct_star_descriptions(args, do_compstars_flag, comparison_stars_1, com
         if args.starfile:
             with open(settings.basedir + args.starfile, 'r') as fp:
                 lines = fp.readlines()
-                starlist = [x.rstrip() for x in lines]
-                logging.debug(f"The list of stars read from the starfile is: {starlist} ")
-                starlist = [int(x) for x in filter(str.isdigit, starlist)]
-                logging.debug(f"The list of stars read from the starfile is: {starlist} ")
-                logging.info(f"Selecting {starlist} stars added by {args.starfile}")
-                do_calibration.add_selected_match_to_stars(star_descriptions, starlist) # select star ids
+                starlist_1 = [x.rstrip() for x in lines]
+                logging.debug(f"The list of stars read from the starfile is: {starlist_1} ")
+                starlist_1 = [int(x) for x in filter(str.isdigit, starlist_1)]
+                logging.debug(f"The list of stars read from the starfile is: {starlist_1} ")
+                logging.info(f"Selecting {starlist_1} stars added by {args.starfile}")
+                starlist_0 = [x-1 for x in starlist_1]
+                do_calibration.add_selected_match_to_stars(star_descriptions, starlist_0)  # select star ids
 
         # compstar data is added to star descriptions ==> no it's not
         if do_compstars_flag:
@@ -293,13 +293,6 @@ def construct_star_descriptions(args, do_compstars_flag, comparison_stars_1, com
         with open(settings.basedir + 'star_descriptions_to_chart.bin', 'wb') as fp:
             pickle.dump(star_descriptions, fp)
     return star_descriptions
-
-
-# filter a list of star descriptions on the presence of a catalog
-def catalog_filter(star: StarDescription, catalog_name):
-    if star.get_catalog(catalog_name) is not None:
-        return True
-    return False
 
 
 def interact():
