@@ -36,7 +36,7 @@ def plot_lightcurve(tuple, comparison_stars):
     upsilon_match = star_description.get_catalog('Upsilon')
     upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
     end = timer()
-    logging.debug("timing upsilon stuff", end-start)
+    logging.debug(f"timing upsilon stuff {end-start}")
     coord = star_description.coords
     #print(f'Plotting lightcurve with star_description:{star_description}, curve length:{len(curve)}, star:{star}, curve:{curve}')
     if(curve is None):
@@ -73,7 +73,7 @@ def plot_lightcurve(tuple, comparison_stars):
     figure.savefig(settings.chartsdir+str(star).zfill(5)+'_plot')
     # g.savefig(settings.chartsdir+str(star).zfill(5)+'_plot')
     end = timer()
-    logging.debug("timing saving fig", end-start)
+    logging.debug(f"timing saving fig {end-start}")
     plt.close(g.fig)
 #    except:
 #        print("error", tuple)

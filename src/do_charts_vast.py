@@ -79,7 +79,7 @@ def plot_lightcurve(tuple):
     figure.savefig(settings.chartsdir+str(star).zfill(5)+'_plot')
     # g.savefig(settings.chartsdir+str(star).zfill(5)+'_plot')
     end = timer()
-    logging.debug("timing saving fig", end-start)
+    logging.debug(f"timing saving fig {end-start}")
     plt.close(g.fig)
 #    except:
 #        print("error", tuple)

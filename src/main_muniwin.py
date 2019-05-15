@@ -260,7 +260,7 @@ def construct_star_descriptions(args, do_compstars_flag, comparison_stars_1, com
         results_ids_0.sort()
         with open(settings.basedir + 'vsx_stars.txt', 'wt') as fp:
             for vsx_id in results_ids_0:
-                fp.write(f"{vsx_id}:\t{star_descriptions[vsx_id].aavso_id}\n")
+                fp.write(f"{vsx_id+1}:\t{star_descriptions[vsx_id].aavso_id}\n")
 
         if args.vsx:
             do_calibration.log_star_descriptions(star_descriptions, results_ids_0)
