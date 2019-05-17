@@ -33,7 +33,7 @@ def report(target_dir, star_description: StarDescription, comparison_star: StarD
     logging.info("Starting aavso report with star:{}".format(star_description))
 
     with open(target_dir + title+'_extended.txt', 'w') as fp:
-        writer = aavso.ExtendedFormatWriter(fp, 'RMH', software='munipack-automation', obstype='EXTENDED')
+        writer = aavso.ExtendedFormatWriter(fp, 'RMH', software='munipack-automation', type='EXTENDED', obstype='CCD')
         for _, row in tqdm.tqdm(curve.iterrows(), total=len(curve), unit="observations"):
             # logging.info(row, type(row))
             writer.writerow({

@@ -34,8 +34,8 @@ class ExtendedFormatWriter(object):
     .. _`Visual File Format`: http://www.aavso.org/aavso-visual-file-format
     """
 
-    def __init__(self, fp, observer_code, *, delimiter=',', date_format='JD',
-                 obstype='Extended', software='pyaavso'):
+    def __init__(self, fp, observer_code, *, delimiter=',', date_format='JD', type='EXTENDED',
+                 obstype='CCD', software='pyaavso'):
         """
         Creates the writer which will write observations into the file-like
         object given in first parameter. The only other required parameter
@@ -57,7 +57,7 @@ class ExtendedFormatWriter(object):
         self.observer_code = observer_code
         self.date_format = date_format
         self.obstype = obstype
-        n__format = "#TYPE={}\n".format(obstype)
+        n__format = "#TYPE={}\n".format(type)
         fp.write(n__format)
         fp.write('#OBSCODE={}\n'.format(observer_code))
         fp.write("#SOFTWARE={}\n".format(software))
