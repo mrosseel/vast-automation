@@ -17,8 +17,8 @@ def calculate_airmass(coord, location, jd):
     return altazs.secz
 
 
-def report(target_dir, star_description: StarDescription, comparison_star: StarDescription):
-    curve = reading.read_lightcurve(star_description.local_id, filter=True, preprocess=False)
+def report(target_dir, star_description: StarDescription, comparison_star: StarDescription, observer='RMH', chunk_size=5000):
+    df_curve = reading.read_lightcurve(star_description.local_id, filter=True, preprocess=False)
     star_match_ucac4, separation = star_description.get_match_string("UCAC4")
     star_match_vsx, separation = star_description.get_match_string("VSX", strict=False)
     comp_ucac4 = comparison_star.get_match_string("UCAC4", strict=True)
@@ -32,27 +32,32 @@ def report(target_dir, star_description: StarDescription, comparison_star: StarD
     earth_location = EarthLocation(lat=init.sitelat, lon=init.sitelong, height=init.sitealt*u.m)
     logging.info("Starting aavso report with star:{}".format(star_description))
 
-    with open(target_dir + title+'_extended.txt', 'w') as fp:
-        writer = aavso.ExtendedFormatWriter(fp, 'RMH', software='munipack-automation', type='EXTENDED', obstype='CCD')
-        for _, row in tqdm.tqdm(curve.iterrows(), total=len(curve), unit="observations"):
-            # logging.info(row, type(row))
-            writer.writerow({
-                'name': var_display_name,
-                'date': row['JD'],
-                'magnitude': row['V-C'] + comparison_star_vmag,
-                'magnitude_error': row['s1'],
-                'filter': 'V',
-                'transformed': 'YES',
-                'magnitude_type': 'STD',
-                'comparison_name': 'ENSEMBLE',
-                'comparison_magnitude': 'na',
-                'check_name': check_display_name,
-                'check_magnitude': comparison_star_vmag,
-                'airmass': calculate_airmass(star_description.coords, earth_location, row['JD']),
-                'group': 'na',
-                'chart': 'na',
-                'notes': 'na'
-            })
+    star_chunks = [df_curve[i:i+chunk_size] for i in range(0,df_curve.shape[0],chunk_size)]
+    chunk_counters = 0
+
+    for chunk in star_chunks:
+        chunk_counters += 1
+        with open(f"{target_dir}{title}_extended_{chunk_counters}.txt", 'w') as fp:
+            writer = aavso.ExtendedFormatWriter(fp, observer, software='munipack-automation', type='EXTENDED', obstype='CCD')
+            for _, row in tqdm.tqdm(chunk.iterrows(), total=len(chunk), unit="observations"):
+                # logging.info(row, type(row))
+                writer.writerow({
+                    'name': var_display_name,
+                    'date': row['JD'],
+                    'magnitude': row['V-C'] + comparison_star_vmag,
+                    'magnitude_error': row['s1'],
+                    'filter': 'V',
+                    'transformed': 'YES',
+                    'magnitude_type': 'STD',
+                    'comparison_name': 'ENSEMBLE',
+                    'comparison_magnitude': 'na',
+                    'check_name': check_display_name,
+                    'check_magnitude': comparison_star_vmag,
+                    'airmass': calculate_airmass(star_description.coords, earth_location, row['JD']),
+                    'group': 'na',
+                    'chart': 'na',
+                    'notes': 'na'
+                })
 
 if __name__ == '__main__':
     logger = logging.getLogger()

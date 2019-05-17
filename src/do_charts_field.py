@@ -55,16 +55,16 @@ def plot_it(big_green: StarDescriptionList, small_red: StarDescriptionList, fits
     big_green_apps = CircularAperture(big_green_positions, r=10.)
     small_red_apps = CircularAperture(small_red_positions, r=5.)
     # target_app = CircularAperture(target_xy, r=20.)
-    plt.title(title)
+    plt.title(title, fontsize=40)
     plt.imshow(data, cmap='gray_r', origin='lower', vmin=0, vmax=2500)
     big_green_apps.plot(color='green', lw=1.5, alpha=0.5)
     small_red_apps.plot(color='red', lw=1.5, alpha=0.5)
     # target_app.plot(color='blue', lw=1.5, alpha=0.5)
     #to_plot = results
-    def annotate_it(results, offset1, offset2, size=16):
-        for to_annotate in results:
-            plt.annotate('{}'.format(to_annotate.label),
-                         xy=(to_annotate.xpos, to_annotate.ypos), xycoords='data',
+    def annotate_it(star_descriptions, offset1, offset2, size=16):
+        for stardescr in star_descriptions:
+            plt.annotate('{}'.format(stardescr.label),
+                         xy=(stardescr.xpos, stardescr.ypos), xycoords='data',
                          xytext=(offset1, offset2), textcoords='offset points', size=size, arrowprops=dict(arrowstyle="->"))
     annotate_it(big_green, -10, -20, size=10)
     annotate_it(small_red, -10, 10, size=12)
@@ -78,6 +78,9 @@ def save(fig, path):
 
 def run_standard_field_charts(selected_star_descriptions: StarDescriptionList, wcs):
     trash_and_recreate_dir(settings.fieldchartsdirs)
+
+    # setting the font size for titles/axes
+    plt.rcParams.update({'axes.titlesize': 'large', 'axes.labelsize': 'large'})
     # reference_frame, reference_frame_index=reading.read_reference_frame()
     # reference_fits_frame=settings.convfitsdir+reference_frame
     reference_fits_frame=settings.reference_header
