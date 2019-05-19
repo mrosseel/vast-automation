@@ -1,16 +1,13 @@
-version: '2'
+version: '3'
 
 services:
   muni:
+    container_name: variables
     build:
       context: ./docker
+    image: mrosseel/munipack-automation
     volumes:
       - .:/home/jovyan/work
     ports:
      - "8888:8888"
     command: jupyter lab
-
-
-
-#docker run --user root -e GRANT_SUDO=yes -v $(pwd):/home/jovyan/work -d -p 8888:888 --8 miker/jupyter start.sh jupyter lab
-# --NotebookApp.iopub_data_rate_limit=10000000 --NotebookApp.rate_limit_window=10.0
