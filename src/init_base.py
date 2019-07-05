@@ -5,13 +5,14 @@
 
 # various dir settings
 class Settings:
+    vsx_catalog_name = "vsx_catalog.bin"
     def __init__(self, datadir, reference_file='new-image.fits'):
         self.datadir = datadir
         self.codedir = './'
         self.basedir = self.datadir
         self.reference_file = reference_file
         self.reference_header = self.basedir + self.reference_file
-        self.vsxcatalogdir = self.codedir + "vsx_catalog.bin"
+        self.vsxcatalogdir = self.codedir + Settings.vsx_catalog_name
         self.testdir = self.basedir + 'search/'
         self.conf_phot=self.basedir+'muniphot.conf'
         self.conf_match=self.basedir+'match.conf'
