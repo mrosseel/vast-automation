@@ -148,7 +148,7 @@ def get_random_star_descriptions(nr=10):
                                       coords=SkyCoord(idx, idx, unit='deg')))
     return result
 
-
+# given a list of SD's and a list of star id's, output the matching SD's in log.debug
 def log_star_descriptions(star_descriptions: StarDescription, star_id_list):
     logging.debug(f"Logging {len(star_id_list)} star  descriptions:")
     for star_id in star_id_list:
