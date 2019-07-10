@@ -27,3 +27,8 @@ def get_files_in_dir(mypath):
 # filter a list of star descriptions on the presence of a catalog
 def catalog_filter(star: StarDescription, catalog_name):
     return star.has_catalog(catalog_name)
+
+def get_hms_dms(coord):
+    return "{:2.0f}h {:02.0f}m {:02.2f}s | {:2.0f}d {:02.0f}' {:02.2f}\"" \
+        .format(coord.ra.hms.h, abs(coord.ra.hms.m), abs(coord.ra.hms.s),
+                coord.dec.dms.d, abs(coord.dec.dms.m), abs(coord.dec.dms.s))
