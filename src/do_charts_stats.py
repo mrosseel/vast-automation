@@ -5,7 +5,6 @@ import pandas as pd
 import glob
 from init_loader import init, settings
 from tqdm import tqdm
-from functools import partial
 import logging
 import multiprocessing as mp
 

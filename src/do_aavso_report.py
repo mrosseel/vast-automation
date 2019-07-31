@@ -10,6 +10,7 @@ warnings.filterwarnings('ignore',module='astropy.coordinates.baseframe')
 from init_loader import init, settings
 from star_description import StarDescription
 import tqdm
+import read_camera_filters
 
 def calculate_airmass(coord, location, jd):
     time = Time(jd, format='jd')
@@ -17,7 +18,7 @@ def calculate_airmass(coord, location, jd):
     return altazs.secz
 
 
-def report(target_dir, star_description: StarDescription, comparison_star: StarDescription, observer='RMH', chunk_size=5000):
+def report(target_dir, star_description: StarDescription, comparison_star: StarDescription, filter=None, observer='RMH', chunk_size=5000):
     df_curve = reading.read_lightcurve(star_description.local_id, filter=True, preprocess=False)
     star_match_ucac4, separation = star_description.get_match_string("UCAC4")
     star_match_vsx, separation = star_description.get_match_string("VSX", strict=False)
@@ -35,6 +36,15 @@ def report(target_dir, star_description: StarDescription, comparison_star: StarD
     star_chunks = [df_curve[i:i+chunk_size] for i in range(0,df_curve.shape[0],chunk_size)]
     chunk_counters = 0
 
+    filterdict = None
+    # Setting up the filter value
+    if filter is None:
+        filterdict = read_camera_filters.read_filters()
+        print(filterdict)
+        filterlambda = lambda x: filterdict[x]
+    else:
+        filterlambda = lambda x: filter
+
     for chunk in star_chunks:
         chunk_counters += 1
         with open(f"{target_dir}{title}_extended_{chunk_counters}.txt", 'w') as fp:
@@ -46,7 +56,7 @@ def report(target_dir, star_description: StarDescription, comparison_star: StarD
                     'date': row['JD'],
                     'magnitude': row['V-C'] + comparison_star_vmag,
                     'magnitude_error': row['s1'],
-                    'filter': 'V',
+                    'filter': filterlambda(row['JD']),
                     'transformed': 'YES',
                     'magnitude_type': 'STD',
                     'comparison_name': 'ENSEMBLE',

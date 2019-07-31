@@ -122,8 +122,9 @@ def plot_phase_diagram(tuple, suffix='', period=None):
     fig.savefig(settings.phasedir+str(star).zfill(5)+'_phase'+suffix)
     plt.close(fig)
 
+# Turn SkyCoord coordinates into a pretty representation with hms and dms
 def get_hms_dms(coord):
-    return "{:2.0f}$^h$ {:02.0f}$^m$ {:02.2f}$^s$ | {:2.0f}$\degree$ {:02.0f}$'$ {:02.2f}$''$"\
+    return "{:2.0f}$^h$ {:02.0f}$^m$ {:02.2f}$^s$ | {:2.0f}$\degree$ {:02.0f}$'$ {:02.2f}$''$" \
         .format(coord.ra.hms.h, abs(coord.ra.hms.m), abs(coord.ra.hms.s),
                 coord.dec.dms.d, abs(coord.dec.dms.m), abs(coord.dec.dms.s))
 
@@ -194,7 +195,7 @@ def calculate_real_mag(df, comp_mags):
 def run(star_descriptions, comparison_stars, do_charts, do_phase):
     CHUNK = 2
     set_seaborn_style()
-    pool = mp.Pool(init.nr_threads)
+    pool = mp.Pool(init.nr_threads, maxtasksperchild=10)
     logging.info(f"Using {init.nr_threads} threads for lightcurve and phase plotting.")
 
     if do_charts:

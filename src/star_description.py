@@ -1,5 +1,7 @@
+from astropy.coordinates import SkyCoord
+
 class StarDescription:
-    def __init__(self, local_id=None, aavso_id=None, coords=None, vmag=None, e_vmag=None, match=None, label=None,
+    def __init__(self, local_id=None, aavso_id=None, coords: SkyCoord=None, vmag=None, e_vmag=None, match=None, label=None,
                  xpos=None, ypos=None, path=None):
         # star id given by munipack
         self.local_id = local_id
@@ -77,7 +79,7 @@ class StarDescription:
 
 
 class CatalogMatch():
-    def __init__(self, name_of_catalog=None, catalog_id=None, name=None, coords=None, separation=-1):
+    def __init__(self, name_of_catalog=None, catalog_id=None, name=None, coords: SkyCoord=None, separation=-1):
         # the name of the catalog
         self.name_of_catalog = name_of_catalog
         # the id in the catalog
