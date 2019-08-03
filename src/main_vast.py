@@ -13,6 +13,7 @@ import utils
 from astropy.coordinates import SkyCoord
 from typing import List
 import re
+import os.path
 
 vsx_catalog_name = "vsx_catalog.bin"
 vsxcatalogdir = '/home/jovyan/work/' + vsx_catalog_name
@@ -20,20 +21,21 @@ vsxcatalogdir = '/home/jovyan/work/' + vsx_catalog_name
 
 def run_do_rest(args):
 
-    # either read the previous reference frame or calculate a new one
-    # _, _, reference_frame_index = do_calibration.get_reference_frame(100, do_calibration.select_reference_frame_jpeg)
-
     vastdir = utils.add_trailing_slash(args.datadir)
-    # '/home/jovyan/work/support/vast/vast-1.0rc84/'
+    logging.info(f"Directory where all files will be read & written: {vastdir}")
+    wcs_file = vastdir+'new-image.fits'
     reference_frame = extract_reference_frame(vastdir)
-    print(f"The reference frame is {reference_frame}")
+    logging.info(f"The reference frame is {reference_frame}")
+    logging.info(f"reference header is {wcs_file}")
+    while not os.path.isfile(wcs_file):
+        logging.info("Please provide the reference header '{wcs_file}', which is an astrometry.net plate-solve of {reference_frame} and press Enter to continue...")
+        subprocess.call("read -t 10", shell=True, executable='/bin/bash')
+
     selected_files = file_selector(the_dir=vastdir, match_pattern="*.dat")
     nr_selected = len(selected_files)
 
     logging.info(f"Selected {nr_selected} light curves from vast dir.")
 
-    wcs_file = vastdir+'new-image.fits'
-    logging.info(f"reference header is {wcs_file}")
     # get wcs model from the reference header. Used in writing world positions and field charts
     wcs = do_calibration.get_wcs(wcs_file)
     all_stardict = read_stardict(vastdir)
@@ -45,7 +47,8 @@ def run_do_rest(args):
     # print(star_descriptions)
     write_augmented_autocandidates(vastdir, star_descriptions)
     write_augmented_all_stars(vastdir, star_descriptions)
-    do_charts_vast.run(star_descriptions, vastdir+'phase/', vastdir+'chart/', cpu_count())
+    if args.phase:
+        do_charts_vast.run(star_descriptions, vastdir+'phase/', vastdir+'chart/', cpu_count())
 
 
     comparison_stars_1, comparison_stars_1_desc = None, None
@@ -99,6 +102,7 @@ def get_starid_from_outfile(outfile):
 def write_augmented_autocandidates(dir, stars: List[StarDescription]):
     origname = 'vast_autocandidates.log'
     newname = 'vast_autocandidates_pos.txt'
+    logging.info(f"Writing {newname}...")
     cachedict = {}
     for sd in stars:
         cachedict[sd.local_id] = sd
@@ -112,6 +116,7 @@ def write_augmented_autocandidates(dir, stars: List[StarDescription]):
 def write_augmented_all_stars(dir, stars: List[StarDescription]):
     origname = 'vast_list_of_all_stars.log'
     newname = 'vast_list_of_all_stars_pos.txt'
+    logging.info(f"Writing {newname}...")
     cachedict = {}
     for sd in stars:
         cachedict[sd.local_id] = sd
@@ -120,6 +125,17 @@ def write_augmented_all_stars(dir, stars: List[StarDescription]):
             star_id = line.split()[0]
             cacheentry = cachedict[int(star_id)]
             outfile.write(f"{star_id}\t{cacheentry.aavso_id}\t{utils.get_hms_dms(cacheentry.coords)}\n")
+
+def write_vsx_stars(dir, results_ids, star_descriptions: List[StarDescription]):
+    newname = 'vsx_stars.txt'
+    logging.info(f"Writing {newname}...")
+    total_found = 0
+    with open(dir+newname, 'wt') as fp:
+        for vsx_id in results_ids:
+            found = False if star_descriptions[vsx_id].path is '' else True
+            total_found += 1 if found else 0
+            fp.write(f"{vsx_id}{'' if found else '*'}:\t{star_descriptions[vsx_id].aavso_id}\t{utils.get_hms_dms(star_descriptions[vsx_id].coords)}\n")
+        fp.write(f"# Total entries: {len(results_ids)}, found: {total_found}, not found: {len(results_ids) - total_found}\n")
 
 def construct_star_descriptions(vastdir, wcs, all_stardict, selected_files, args):
     # start with the list of all detected stars
@@ -152,6 +168,9 @@ def construct_star_descriptions(vastdir, wcs, all_stardict, selected_files, args
         star_descriptions, results_ids = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions, vsxcatalogdir, 0.01)
         logging.info(f"Added {len(results_ids)} vsx names to star descriptions")
         do_calibration.add_selected_match_to_stars(star_descriptions, results_ids, one_based=False) # select star ids
+        # write the vsx stars used into a file
+        results_ids.sort()
+        write_vsx_stars(vastdir, results_ids, star_descriptions)
 
     if args.starfile:
         with open(settings.basedir + args.starfile, 'r') as fp:
