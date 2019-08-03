@@ -45,7 +45,7 @@ def run_do_rest(args):
     # print(star_descriptions)
     write_augmented_autocandidates(vastdir, star_descriptions)
     write_augmented_all_stars(vastdir, star_descriptions)
-    # do_charts_vast.run(star_descriptions, vastdir+'phase/', vastdir+'chart/', cpu_count())
+    do_charts_vast.run(star_descriptions, vastdir+'phase/', vastdir+'chart/', cpu_count())
 
 
     comparison_stars_1, comparison_stars_1_desc = None, None

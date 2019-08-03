@@ -274,13 +274,12 @@ def add_selected_match_to_stars(stars: List[StarDescription], star_id_list_0, on
     for sd in stars:
         cachedict[int(sd.local_id)] = sd
     catalog_name = "SELECTED"
-    print("selected matches", cachedict.keys(), star_id_list_0)
     for star_id_0 in star_id_list_0:
         if star_id_0 not in cachedict:
             logging.info(f"Star {star_id_0} is a vsx star but did not have enough entries")
             continue
         curr_sd = cachedict[star_id_0]
-        logging.info(f"selected match {curr_sd.local_id}, {star_id_0}")
+        logging.debug(f"selected match {curr_sd.local_id}, {star_id_0}")
         assert int(curr_sd.local_id) == int(star_id_0)+one_based
         match = CatalogMatch(name_of_catalog=catalog_name, catalog_id=curr_sd.local_id)
         logging.debug(f"Voor de append: {curr_sd.match}")

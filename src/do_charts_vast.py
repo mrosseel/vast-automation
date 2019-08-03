@@ -110,7 +110,7 @@ def plot_phase_diagram(tuple, phasedir, suffix='', period=None):
     plt.xlabel("Phase", labelpad=TITLE_PAD)
     plt.ylabel("Magnitude", labelpad=TITLE_PAD)
     # plt.title(f"Star {star}{match_string}, p: {period:.5f} d{upsilon_text}\n{get_hms_dms(coords)}", pad=TITLE_PAD)
-    plt.title(f"Star {star}", pad=TITLE_PAD)
+    plt.title(f"Star {star} - {period}", pad=TITLE_PAD)
     plt.tight_layout()
     # plotting + calculation of 'double' phase diagram from -1 to 1
     phased_t = np.fmod(t_np/period,1)
@@ -138,9 +138,9 @@ def format_date(x, pos=None):
 def read_vast_lightcurves(star_description: StarDescription, do_charts, do_phase, chartsdir, phasedir):
     start = timer()
     if star_description.path is '':
-        logging.info(f"Path for {star_description.local_id} is empty")
+        logging.debug(f"Path for {star_description.local_id} is empty")
         return
-    logging.info(f"Reading lightcurves for star {star_description.local_id} at path {star_description.path} for {star_description}...")
+    logging.debug(f"Reading lightcurves for star {star_description.local_id} at path {star_description.path} for {star_description}...")
     # comp_mags = [x.vmag for x in comparison_stars]
 
     try:
@@ -159,7 +159,7 @@ def read_vast_lightcurves(star_description: StarDescription, do_charts, do_phase
         if do_charts:
             # start = timer()
             logging.debug("NO LICGHTCRUVEGYET ")
-            plot_lightcurve(tuple, chartsdir)
+            # plot_lightcurve(tuple, chartsdir)
             # end = timer()
             # print("plotting lightcurve:", end-start)
         if do_phase:
