@@ -1,5 +1,5 @@
 from functools import partial
-
+from multiprocessing import cpu_count
 from init_loader import init, settings
 import reading
 import matplotlib as mp
@@ -11,13 +11,10 @@ import tqdm
 import numpy as np
 import pandas as pd
 from gatspy.periodic import LombScargleFast
-from init_loader import init, settings
 from reading import trash_and_recreate_dir
 from reading import file_selector
 import logging
 from timeit import default_timer as timer
-import init_loader
-from init_loader import init, settings
 import utils
 import argparse
 from star_description import StarDescription
@@ -29,7 +26,7 @@ def set_seaborn_style():
     sns.set_style("ticks")
 
 # takes:  [ {'id': star_id, 'match': {'name': match_name, 'separation': separation_deg  } } ]
-def plot_lightcurve(tuple):
+def plot_lightcurve(tuple, chartsdir):
 #    try:
     star_description = tuple[0]
     curve = tuple[1]
@@ -76,8 +73,8 @@ def plot_lightcurve(tuple):
     plt.title("Star {0}{1}, position: {2}{3}".format(star, star_name, get_hms_dms(coord), upsilon_text), pad=TITLE_PAD)
     start = timer()
     figure = g.fig
-    figure.savefig(settings.chartsdir+str(star).zfill(5)+'_plot')
-    # g.savefig(settings.chartsdir+str(star).zfill(5)+'_plot')
+    figure.savefig(chartsdir+str(star).zfill(5)+'_plot')
+    # g.savefig(chartsdir+str(star).zfill(5)+'_plot')
     end = timer()
     logging.debug(f"timing saving fig {end-start}")
     plt.close(g.fig)
@@ -85,7 +82,7 @@ def plot_lightcurve(tuple):
 #        print("error", tuple)
 
 
-def plot_phase_diagram(tuple, suffix='', period=None):
+def plot_phase_diagram(tuple, phasedir, suffix='', period=None):
     star_description = tuple[0]
     coords = star_description.coords
     curve = tuple[1]
@@ -126,7 +123,7 @@ def plot_phase_diagram(tuple, suffix='', period=None):
     phased_err = np.clip(np.append(dy_np, dy_np), -0.5, 0.5) # error values are clipped to +0.5 and -0.5
     plt.gca().invert_yaxis()
     plt.errorbar(phased_t_final,phased_lc_final,yerr=phased_err,linestyle='none',marker='o', ecolor='gray', elinewidth=1)
-    fig.savefig(settings.phasedir+str(star).zfill(5)+'_phase'+suffix)
+    fig.savefig(phasedir+str(star).zfill(5)+'_phase'+suffix)
     plt.close(fig)
 
 def get_hms_dms(coord):
@@ -138,9 +135,12 @@ def format_date(x, pos=None):
     thisind = np.clip(int(x + 0.5), 0, N - 1)
     return r.date[thisind].strftime('%Y-%m-%d')
 
-def read_vast_lightcurves(star_description: StarDescription, do_charts, do_phase):
+def read_vast_lightcurves(star_description: StarDescription, do_charts, do_phase, chartsdir, phasedir):
     start = timer()
-    logging.debug(f"Reading lightcurves for star {star_description.local_id}...")
+    if star_description.path is '':
+        logging.info(f"Path for {star_description.local_id} is empty")
+        return
+    logging.info(f"Reading lightcurves for star {star_description.local_id} at path {star_description.path} for {star_description}...")
     # comp_mags = [x.vmag for x in comparison_stars]
 
     try:
@@ -159,12 +159,12 @@ def read_vast_lightcurves(star_description: StarDescription, do_charts, do_phase
         if do_charts:
             # start = timer()
             logging.debug("NO LICGHTCRUVEGYET ")
-            plot_lightcurve(tuple)
+            plot_lightcurve(tuple, chartsdir)
             # end = timer()
             # print("plotting lightcurve:", end-start)
         if do_phase:
             # start = timer()
-            plot_phase_diagram(tuple)
+            plot_phase_diagram(tuple, phasedir)
             # end = timer()
             # print("plotting phase:", end-start)
     except FileNotFoundError:
@@ -197,17 +197,17 @@ def calculate_real_mag(df, comp_mags):
 
 # reads lightcurves and passes them to lightcurve plot or phase plot
 # def run(star_descriptions, comparison_stars, do_charts, do_phase):
-def run(star_descriptions, do_charts=False, do_phase=True):
+def run(star_descriptions, phasedir, chartsdir, do_charts=False, do_phase=True, nr_threads=cpu_count()):
     CHUNK = 2
     set_seaborn_style()
-    pool = mp.Pool(init.nr_threads)
+    pool = mp.Pool(nr_threads)
     # pool = mp.Pool(1)
-    logging.info(f"Using {init.nr_threads} threads for lightcurve and phase plotting.")
+    logging.info(f"Using {nr_threads} threads for lightcurve and phase plotting.")
 
     if do_phase:
-        trash_and_recreate_dir(settings.phasedir+'vast')
+        trash_and_recreate_dir(phasedir+'vast')
 
-    func = partial(read_vast_lightcurves, do_charts=do_charts, do_phase=do_phase)
+    func = partial(read_vast_lightcurves, do_charts=do_charts, do_phase=do_phase, phasedir=phasedir, chartsdir=chartsdir)
     with tqdm.tqdm(total=len(star_descriptions), desc='Writing light curve charts/phase diagrams') as pbar:
         for _ in pool.imap_unordered(func, star_descriptions, chunksize=CHUNK):
             pbar.update(1)

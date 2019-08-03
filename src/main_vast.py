@@ -1,3 +1,4 @@
+from multiprocessing import cpu_count
 import do_calibration
 from importlib import reload
 import do_charts_vast
@@ -29,21 +30,22 @@ def run_do_rest(args):
     selected_files = file_selector(the_dir=vastdir, match_pattern="*.dat")
     nr_selected = len(selected_files)
 
-    logging.info(f"Selected {nr_selected} from vast dir.")
+    logging.info(f"Selected {nr_selected} light curves from vast dir.")
 
     wcs_file = vastdir+'new-image.fits'
     logging.info(f"reference header is {wcs_file}")
     # get wcs model from the reference header. Used in writing world positions and field charts
     wcs = do_calibration.get_wcs(wcs_file)
     all_stardict = read_stardict(vastdir)
-    print(sorted(all_stardict.keys())[:10])
-    print(len(selected_files))
+    #print(sorted(all_stardict.keys())[:10])
+    logging.info(f"Number of found lightcurves: {len(selected_files)}")
     star_descriptions = construct_star_descriptions(vastdir, wcs, all_stardict, selected_files, args)
 
-    print([x for x in star_descriptions if x.path is not ''])
+    #print([x for x in star_descriptions if x.path is not ''])
     # print(star_descriptions)
     write_augmented_autocandidates(vastdir, star_descriptions)
     write_augmented_all_stars(vastdir, star_descriptions)
+    # do_charts_vast.run(star_descriptions, vastdir+'phase/', vastdir+'chart/', cpu_count())
 
 
     comparison_stars_1, comparison_stars_1_desc = None, None
@@ -134,7 +136,7 @@ def construct_star_descriptions(vastdir, wcs, all_stardict, selected_files, args
     star_descriptions = do_calibration.get_empty_star_descriptions(all_stars)
     for idx, sd in enumerate(star_descriptions):
         #print(f"idx:{idx}, sd.localid: {sd.local_id}")
-        sd.path = '' if sd.local_id not in measured_stars_dict else measured_stars_dict[sd.local_id]
+        sd.path = '' if sd.local_id not in measured_stars_dict else measured_stars_dict[sd.local_id][1]
         sd.xpos = all_stardict[int(sd.local_id)][0]
         sd.ypos = all_stardict[int(sd.local_id)][1]
         world_coords = wcs.all_pix2world(float(sd.xpos), float(sd.ypos), 0, ra_dec_order=True)

@@ -1,6 +1,5 @@
 import logging
 import argparse
-import subprocess
 import utils
 from datetime import datetime
 
