@@ -13,7 +13,7 @@ class TestDoCalibration(unittest.TestCase):
         stars.append(self.stardesc(1, 3, 3))
         stars.append(self.stardesc(1, 10.24496,  9.96736))
         stars.append(self.stardesc(1, 10.24490,  9.96730))
-        result = do_calibration.add_vsx_names_to_star_descriptions(stars, max_separation=0.1)
+        result = do_calibration.add_vsx_names_to_star_descriptions(stars, 'FIXME', max_separation=0.1)
         for entry in result:
             print(entry, '\n')
         total = 0

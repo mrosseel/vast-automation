@@ -7,6 +7,8 @@ import logging
 import multiprocessing as mp
 import tqdm
 
+# TODO all C's need to be changed into CV
+
 # read the filter value for each fits file, to be used in aavso reporting
 
 def read_filters(files=None, inputdir: str = None):

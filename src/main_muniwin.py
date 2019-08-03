@@ -256,7 +256,7 @@ def construct_star_descriptions(args, do_compstars_flag, comparison_stars_1, com
             logging.info("Setting star_descriptions to upsilon candidates")
             star_descriptions = do_calibration.add_candidates_to_star_descriptions(star_descriptions, 0.1)
 
-        star_descriptions, results_ids_0 = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions, 0.01)
+        star_descriptions, results_ids_0 = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions, settings.vsxcatalogdir, 0.01)
         results_ids_0.sort()
 
         # write the vsx stars used into a file

@@ -69,13 +69,13 @@ class StarDescription:
 
 
     def __repr__(self):
-        return "StarDescription({0},{1},{2},{3},{4})".format(
-            self.local_id, self.aavso_id, self.coords, self.vmag, self._match)
+        return "StarDescription({0},{1},{2},{3},{4},{5})".format(
+            self.local_id, self.aavso_id, self.coords, self.vmag, self._match, self.path)
 
 
     def __str__(self):
-        return "local_id: {0}, aavso_id: {1}, coords: {2}, vmag: {3}, nr matches: {4}, matches: {5}".format(
-            self.local_id, self.aavso_id, self.coords, self.vmag, len(self._match), self._match)
+        return "local_id: {0}, aavso_id: {1}, coords: {2}, vmag: {3}, nr matches: {4}, matches: {5}, path: {6}".format(
+            self.local_id, self.aavso_id, self.coords, self.vmag, len(self._match), self._match, self.path)
 
 
 class CatalogMatch():

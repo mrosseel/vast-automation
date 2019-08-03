@@ -202,12 +202,12 @@ def get_upsilon_candidates_raw(threshold_prob, check_flag):
 
 # returns {'star_id': [label, probability, flag, period, SkyCoord, match_name, match_skycoord,
 # match_type, separation_deg]}
-def add_vsx_names_to_star_descriptions(star_descriptions: List[StarDescription], max_separation=0.01):
+def add_vsx_names_to_star_descriptions(star_descriptions: List[StarDescription], vsxcatalogdir: str, max_separation=0.01):
     logging.info("Adding VSX names to star descriptions")
     result = star_descriptions  # no deep copy for now
     result_ids = []
     # copy.deepcopy(star_descriptions)
-    vsx_catalog, vsx_dict = create_vsx_astropy_catalog()
+    vsx_catalog, vsx_dict = create_vsx_astropy_catalog(vsxcatalogdir)
     star_catalog = create_star_descriptions_catalog(star_descriptions)
     # vsx catalog is bigger in this case than star_catalog, but if we switch then different stars can be
     # matched with the same variable which is wrong.
@@ -250,7 +250,7 @@ def get_starid_1_for_radec(ra_deg, dec_deg, all_star_catalog, max_separation=0.0
 # returns StarDescription array
 def get_vsx_in_field(star_descriptions, max_separation=0.01):
     logging.info("Get VSX in field star descriptions")
-    vsx_catalog, vsx_dict = create_vsx_astropy_catalog()
+    vsx_catalog, vsx_dict = create_vsx_astropy_catalog(settings.vsxcatalogdir)
     star_catalog = create_star_descriptions_catalog(star_descriptions)
     idx, d2d, d3d = match_coordinates_sky(vsx_catalog, star_catalog)
     result = []
@@ -268,11 +268,20 @@ def get_vsx_in_field(star_descriptions, max_separation=0.01):
 
 
 # tags a list of star id's with the 'selected' CatalogMatch for later filtering
-def add_selected_match_to_stars(stars: List[StarDescription], star_id_list_0):
+def add_selected_match_to_stars(stars: List[StarDescription], star_id_list_0, one_based = True):
+    one_based = 1 if one_based else 0
+    cachedict = {}
+    for sd in stars:
+        cachedict[int(sd.local_id)] = sd
     catalog_name = "SELECTED"
+    print("selected matches", cachedict.keys(), star_id_list_0)
     for star_id_0 in star_id_list_0:
-        curr_sd = stars[star_id_0]
-        assert int(curr_sd.local_id) == int(star_id_0)+1
+        if star_id_0 not in cachedict:
+            logging.info(f"Star {star_id_0} is a vsx star but did not have enough entries")
+            continue
+        curr_sd = cachedict[star_id_0]
+        logging.info(f"selected match {curr_sd.local_id}, {star_id_0}")
+        assert int(curr_sd.local_id) == int(star_id_0)+one_based
         match = CatalogMatch(name_of_catalog=catalog_name, catalog_id=curr_sd.local_id)
         logging.debug(f"Voor de append: {curr_sd.match}")
         curr_sd.match.append(match)
@@ -315,9 +324,9 @@ def create_generic_astropy_catalog(ra_deg_np, dec_deg_np):
     return SkyCoord(ra=ra_deg_np, dec=dec_deg_np, unit='deg')
 
 
-def create_vsx_astropy_catalog():
+def create_vsx_astropy_catalog(vsx_catalog_location):
     logging.info("Creating vsx star catalog...")
-    vsx_dict = vsx_pickle.read(settings.vsxcatalogdir)
+    vsx_dict = vsx_pickle.read(vsx_catalog_location)
     return create_generic_astropy_catalog(vsx_dict['ra_deg_np'], vsx_dict['dec_deg_np']), vsx_dict
 
 

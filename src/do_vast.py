@@ -1,5 +1,3 @@
-import init_loader
-from init_loader import init, settings
 import logging
 import argparse
 import subprocess
@@ -12,9 +10,8 @@ if __name__ == '__main__':
     logging.basicConfig(format="%(asctime)s %(name)s: %(levelname)s %(message)s")
     parser = argparse.ArgumentParser(description='munipack automation cli')
     parser.add_argument('-d', '--datadir',
-                        help="The directory where the data can be found (fits in ./fits dir under the data dir",
+                        help="The directory where the data can be found (usually the vast dir)",
                         nargs='?', required=True)
-    parser.add_argument('-n', '--nowait', help="Don't wait 10 secs before starting", action="store_true")
     parser.add_argument('-v', '--vsx', help="Add vsx stars to field charts/reporting list", action="store_true")
     parser.add_argument('-s', '--starfile', help="Load a file with star ids, these ids will be used for field charts/reporting")
     parser.add_argument('-x', '--verbose', help="Set logging to debug mode", action="store_true")
@@ -29,10 +26,6 @@ if __name__ == '__main__':
     fh.setLevel(logging.INFO)
     # add the handlers to the logger
     logger.addHandler(fh)
-    init_loader.meta_init(datadir)
-    # global init
-    init = init_loader.init
-    settings = init_loader.settings
     # print(dir(init))
     # print(dir(settings))pr
     import main_vast
@@ -42,14 +35,4 @@ if __name__ == '__main__':
         logger.setLevel(logging.DEBUG)
         fh.setLevel(logging.DEBUG)
 
-    logging.info(f"Calculating {len(init.star_list)} stars from base dir: {settings.basedir} \
-          \nupsilon:\t{init.do_ml} \
-          \nlight plot:\t{init.do_lightcurve_plot} \
-          \nphasediagram:\t{init.do_phase_diagram} \
-          \nfield charts:\t{init.do_field_charts} \
-          \nreporting:\t{init.do_reporting}")
-    if not args.nowait:
-        logging.info("Press Enter to continue...")
-        subprocess.call("read -t 10", shell=True, executable='/bin/bash')
-    main_vast.run_do_rest(init.do_ml, init.do_lightcurve_plot, init.do_phase_diagram,
-                             init.do_field_charts, init.do_reporting, args)
+    main_vast.run_do_rest(args)

@@ -1,42 +1,53 @@
 import do_calibration
 from importlib import reload
 import do_charts_vast
-import do_charts_field
 import reading
 reading = reload(reading)
-from reading import trash_and_recreate_dir
 from star_description import StarDescription
 from photometry_blob import PhotometryBlob
-import re
 import logging
 from init_loader import init, settings
 from reading import file_selector
+import utils
+from astropy.coordinates import SkyCoord
+from typing import List
+import re
+
+vsx_catalog_name = "vsx_catalog.bin"
+vsxcatalogdir = '/home/jovyan/work/' + vsx_catalog_name
 
 
-
-def run_do_rest(do_ml, do_lightcurve_plot, do_phase_diagram, do_field_charting, do_reporting, args):
+def run_do_rest(args):
 
     # either read the previous reference frame or calculate a new one
     # _, _, reference_frame_index = do_calibration.get_reference_frame(100, do_calibration.select_reference_frame_jpeg)
 
-    vast_dir = '/home/jovyan/work/support/vast/vast-1.0rc84/'
-    selected_files = file_selector(the_dir=vast_dir, match_pattern="*.dat")
+    vastdir = utils.add_trailing_slash(args.datadir)
+    # '/home/jovyan/work/support/vast/vast-1.0rc84/'
+    reference_frame = extract_reference_frame(vastdir)
+    print(f"The reference frame is {reference_frame}")
+    selected_files = file_selector(the_dir=vastdir, match_pattern="*.dat")
     nr_selected = len(selected_files)
 
     logging.info(f"Selected {nr_selected} from vast dir.")
 
-    logging.info(f"reference header is {settings.reference_header}")
+    wcs_file = vastdir+'new-image.fits'
+    logging.info(f"reference header is {wcs_file}")
     # get wcs model from the reference header. Used in writing world positions and field charts
-    # wcs = do_calibration.get_wcs(settings.reference_header)
-    apertures = None
-    aperture = None
-    apertureidx = None
+    wcs = do_calibration.get_wcs(wcs_file)
+    all_stardict = read_stardict(vastdir)
+    print(sorted(all_stardict.keys())[:10])
+    print(len(selected_files))
+    star_descriptions = construct_star_descriptions(vastdir, wcs, all_stardict, selected_files, args)
+
+    print([x for x in star_descriptions if x.path is not ''])
+    # print(star_descriptions)
+    write_augmented_autocandidates(vastdir, star_descriptions)
+    write_augmented_all_stars(vastdir, star_descriptions)
+
+
     comparison_stars_1, comparison_stars_1_desc = None, None
     photometry_blob = PhotometryBlob() # not yet used
-
-
-    # construction of the star descriptions list
-    star_descriptions = construct_star_descriptions(vast_dir, selected_files, args)
 
     # select a subset of star_descriptions, as specified in starfile
     # if args.starfile:
@@ -48,9 +59,9 @@ def run_do_rest(do_ml, do_lightcurve_plot, do_phase_diagram, do_field_charting, 
     #     selected_stars = star_descriptions
     #
 
-    if do_lightcurve_plot or do_phase_diagram:
-        logging.info("starting charting / phase diagrams...")
-        do_charts_vast.run(star_descriptions, do_lightcurve_plot, do_phase_diagram)
+    # if do_lightcurve_plot or do_phase_diagram:
+    #     logging.info("starting charting / phase diagrams...")
+    #     do_charts_vast.run(star_descriptions, do_lightcurve_plot, do_phase_diagram)
 
     # if do_field_charting:
     #     logging.info("Starting field chart plotting...")
@@ -66,19 +77,69 @@ def run_do_rest(do_ml, do_lightcurve_plot, do_phase_diagram, do_field_charting, 
     #         do_aavso_report.report(settings.aavsoreportsdir, star, comparison_stars_1_desc[0])
 
 
-def construct_star_descriptions(main_path, selected_files, args):
-    # Start with the list of all detected stars
-    star_id_list = []
+def extract_reference_frame(from_dir):
+    # Ref.  image: 2458586.50154 13.04.2019 00:00:41   ../../inputfiles/TXCar/fits/TXCar#45V_000601040_FLAT.fit
+    result = [re.findall(r'Ref.  image: (?:.*) (.*)',line) for line in open(from_dir+'vast_summary.log')]
+    return [x for x in result if x != []][0][0]
+
+def read_stardict(vastdir):
+    stardict = {}
+    for line in open(vastdir+'vast_list_of_all_stars.log'):
+        splitline = line.split()
+        stardict[int(splitline[0])] = (splitline[1], splitline[2])
+    return stardict
+
+
+def get_starid_from_outfile(outfile):
+    m = re.search('out(.*).dat', outfile)
+    return int(m.group(1).lstrip('0'))
+
+def write_augmented_autocandidates(dir, stars: List[StarDescription]):
+    origname = 'vast_autocandidates.log'
+    newname = 'vast_autocandidates_pos.txt'
+    cachedict = {}
+    for sd in stars:
+        cachedict[sd.local_id] = sd
+    with open(dir+origname, 'r', encoding='utf-8') as infile, open(dir+newname, 'w') as outfile:
+        for line in infile:
+            linetext = line.rstrip()
+            star_id = get_starid_from_outfile(linetext)
+            cacheentry = cachedict[star_id]
+            outfile.write(f"{linetext}\t{cacheentry.aavso_id}\t{utils.get_hms_dms(cacheentry.coords)}\n")
+
+def write_augmented_all_stars(dir, stars: List[StarDescription]):
+    origname = 'vast_list_of_all_stars.log'
+    newname = 'vast_list_of_all_stars_pos.txt'
+    cachedict = {}
+    for sd in stars:
+        cachedict[sd.local_id] = sd
+    with open(dir+origname, 'r', encoding='utf-8') as infile, open(dir+newname, 'w') as outfile:
+        for line in infile:
+            star_id = line.split()[0]
+            cacheentry = cachedict[int(star_id)]
+            outfile.write(f"{star_id}\t{cacheentry.aavso_id}\t{utils.get_hms_dms(cacheentry.coords)}\n")
+
+def construct_star_descriptions(vastdir, wcs, all_stardict, selected_files, args):
+    # start with the list of all detected stars
+    all_stars = all_stardict.keys()
+
+    # Start with the list of all measured stars
+    measured_stars_dict = {}
     selected_files.sort()
     for afile in selected_files:
-        m = re.search('out(.*).dat', afile)
-        star_id = m.group(1).lstrip('0')
-        star_id_list.append(star_id)
-    #logging.debug(f"Star id list is : {star_id_list}")
+        star_id = get_starid_from_outfile(afile)
+        measured_stars_dict[star_id] = (star_id, afile)
+    #logging.debug(f"Star id list is : {measured_stars}")
 
-    star_descriptions = do_calibration.get_empty_star_descriptions(star_id_list)
+    star_descriptions = do_calibration.get_empty_star_descriptions(all_stars)
     for idx, sd in enumerate(star_descriptions):
-        sd.path = selected_files[idx]
+        #print(f"idx:{idx}, sd.localid: {sd.local_id}")
+        sd.path = '' if sd.local_id not in measured_stars_dict else measured_stars_dict[sd.local_id]
+        sd.xpos = all_stardict[int(sd.local_id)][0]
+        sd.ypos = all_stardict[int(sd.local_id)][1]
+        world_coords = wcs.all_pix2world(float(sd.xpos), float(sd.ypos), 0, ra_dec_order=True)
+        logging.debug(f"world coords for star {sd.local_id}, {world_coords}")
+        sd.coords = SkyCoord(world_coords[0], world_coords[1], unit='deg')
 
     if args.upsilon:
         # now we generate a list of StarDescriptions, with which all further processing will be done
@@ -86,9 +147,9 @@ def construct_star_descriptions(main_path, selected_files, args):
         star_descriptions = do_calibration.add_candidates_to_star_descriptions(star_descriptions, 0.1)
 
     if args.vsx:
-        star_descriptions, results_ids = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions, 0.01)
+        star_descriptions, results_ids = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions, vsxcatalogdir, 0.01)
         logging.info(f"Added {len(results_ids)} vsx names to star descriptions")
-        do_calibration.add_selected_match_to_stars(star_descriptions, results_ids) # select star ids
+        do_calibration.add_selected_match_to_stars(star_descriptions, results_ids, one_based=False) # select star ids
 
     if args.starfile:
         with open(settings.basedir + args.starfile, 'r') as fp:
@@ -98,7 +159,7 @@ def construct_star_descriptions(main_path, selected_files, args):
             starlist = [int(x) for x in filter(str.isdigit, starlist)]
             logging.debug(f"The list of stars read from the starfile is: {starlist} ")
             logging.info(f"Selecting {starlist} stars added by {args.starfile}")
-            do_calibration.add_selected_match_to_stars(star_descriptions, starlist) # select star ids
+            do_calibration.add_selected_match_to_stars(star_descriptions, starlist, one_based=False) # select star ids
 
     return star_descriptions
 
