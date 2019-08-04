@@ -109,8 +109,8 @@ def plot_phase_diagram(tuple, phasedir, suffix='', period=None):
     fig=plt.figure(figsize=(18, 16), dpi= 80, facecolor='w', edgecolor='k')
     plt.xlabel("Phase", labelpad=TITLE_PAD)
     plt.ylabel("Magnitude", labelpad=TITLE_PAD)
-    # plt.title(f"Star {star}{match_string}, p: {period:.5f} d{upsilon_text}\n{get_hms_dms(coords)}", pad=TITLE_PAD)
-    plt.title(f"Star {star} - {period}", pad=TITLE_PAD)
+    plt.title(f"Star {star}{match_string}, p: {period:.5f} d{upsilon_text}\n{get_hms_dms(coords)}", pad=TITLE_PAD)
+    #plt.title(f"Star {star} - {period}", pad=TITLE_PAD)
     plt.tight_layout()
     # plotting + calculation of 'double' phase diagram from -1 to 1
     phased_t = np.fmod(t_np/period,1)
@@ -123,6 +123,7 @@ def plot_phase_diagram(tuple, phasedir, suffix='', period=None):
     phased_err = np.clip(np.append(dy_np, dy_np), -0.5, 0.5) # error values are clipped to +0.5 and -0.5
     plt.gca().invert_yaxis()
     plt.errorbar(phased_t_final,phased_lc_final,yerr=phased_err,linestyle='none',marker='o', ecolor='gray', elinewidth=1)
+    logging.info(f"Saving phase plot to {phasedir}")
     fig.savefig(phasedir+str(star).zfill(5)+'_phase'+suffix)
     plt.close(fig)
 

@@ -132,6 +132,9 @@ def get_star_descriptions(star_id_list=None):
                                           coords=SkyCoord(positions[key][0], positions[key][1], unit='deg')))
     return result
 
+def select_star_descriptions(star_id_list: List[int], stars: List[StarDescription]):
+    return [x for x in stars if x.local_id in star_id_list]
+
 # returns list of star descriptions
 def get_empty_star_descriptions(star_id_list=None):
     # returns {'name': [ra.deg, dec.deg ]}
@@ -268,15 +271,14 @@ def get_vsx_in_field(star_descriptions, max_separation=0.01):
 
 
 # tags a list of star id's with the 'selected' CatalogMatch for later filtering
-def add_selected_match_to_stars(stars: List[StarDescription], star_id_list_0, one_based = True):
+def add_selected_match_to_stars(stars: List[StarDescription], star_id_list_0, one_based = True, catalog_name="SELECTED"):
     one_based = 1 if one_based else 0
     cachedict = {}
     for sd in stars:
         cachedict[int(sd.local_id)] = sd
-    catalog_name = "SELECTED"
     for star_id_0 in star_id_list_0:
         if star_id_0 not in cachedict:
-            logging.info(f"Star {star_id_0} is a vsx star but did not have enough entries")
+            logging.info(f"Star {star_id_0} is selected but it's not a known star.")
             continue
         curr_sd = cachedict[star_id_0]
         logging.debug(f"selected match {curr_sd.local_id}, {star_id_0}")

@@ -12,7 +12,8 @@ if __name__ == '__main__':
                         help="The directory where the data can be found (usually the vast dir)",
                         nargs='?', required=True)
     parser.add_argument('-v', '--vsx', help="Add vsx stars to field charts/reporting list", action="store_true")
-    parser.add_argument('-p', '--phase', help="Generate phase diagrams for all stars", action="store_true")
+    parser.add_argument('-p', '--phaseall', help="Generate phase diagrams for all stars", action="store_true")
+    parser.add_argument('-c', '--candidates', help="Generate phase diagrams for autocandidates", action="store_true")
     parser.add_argument('-s', '--starfile', help="Load a file with star ids, these ids will be used for field charts/reporting")
     parser.add_argument('-x', '--verbose', help="Set logging to debug mode", action="store_true")
     parser.add_argument('-l', '--laststars', help="Use the star descriptions of the previous run to do the charting",

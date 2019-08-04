@@ -14,6 +14,7 @@ from astropy.coordinates import SkyCoord
 from typing import List
 import re
 import os.path
+from functools import partial
 
 vsx_catalog_name = "vsx_catalog.bin"
 vsxcatalogdir = '/home/jovyan/work/' + vsx_catalog_name
@@ -42,13 +43,15 @@ def run_do_rest(args):
     #print(sorted(all_stardict.keys())[:10])
     logging.info(f"Number of found lightcurves: {len(selected_files)}")
     star_descriptions = construct_star_descriptions(vastdir, wcs, all_stardict, selected_files, args)
-
-    #print([x for x in star_descriptions if x.path is not ''])
-    # print(star_descriptions)
     write_augmented_autocandidates(vastdir, star_descriptions)
     write_augmented_all_stars(vastdir, star_descriptions)
-    if args.phase:
+    if args.phaseall:
         do_charts_vast.run(star_descriptions, vastdir+'phase/', vastdir+'chart/', cpu_count())
+    elif args.candidates:
+        candidate_ids = get_autocandidates(vastdir)
+        logging.info(f"Selecting {len(candidate_ids)} candidates to plot")
+        selected_stars = do_calibration.select_star_descriptions(candidate_ids, star_descriptions)
+        do_charts_vast.run(selected_stars, vastdir+'phase/', vastdir+'chart/', cpu_count())
 
 
     comparison_stars_1, comparison_stars_1_desc = None, None
@@ -111,7 +114,18 @@ def write_augmented_autocandidates(dir, stars: List[StarDescription]):
             linetext = line.rstrip()
             star_id = get_starid_from_outfile(linetext)
             cacheentry = cachedict[star_id]
-            outfile.write(f"{linetext}\t{cacheentry.aavso_id}\t{utils.get_hms_dms(cacheentry.coords)}\n")
+            outfile.write(f"{linetext}{'' if cacheentry.path is not '' else '*'}\t{cacheentry.aavso_id}\t{utils.get_hms_dms(cacheentry.coords)}\n")
+
+
+def get_autocandidates(dir) -> List[int]:
+    origname = 'vast_autocandidates.log'
+    result = []
+    with open(dir+origname, 'r', encoding='utf-8') as infile:
+        for line in infile:
+            linetext = line.rstrip()
+            star_id = get_starid_from_outfile(linetext)
+            result.append(star_id)
+    return result
 
 def write_augmented_all_stars(dir, stars: List[StarDescription]):
     origname = 'vast_list_of_all_stars.log'
