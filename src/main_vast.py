@@ -14,6 +14,7 @@ from astropy.coordinates import SkyCoord
 from typing import List
 import re
 import os.path
+import subprocess
 from functools import partial
 
 vsx_catalog_name = "vsx_catalog.bin"
@@ -29,7 +30,7 @@ def run_do_rest(args):
     logging.info(f"The reference frame is {reference_frame}")
     logging.info(f"reference header is {wcs_file}")
     while not os.path.isfile(wcs_file):
-        logging.info("Please provide the reference header '{wcs_file}', which is an astrometry.net plate-solve of {reference_frame} and press Enter to continue...")
+        logging.info(f"Please provide the reference header '{wcs_file}', which is an astrometry.net plate-solve of {reference_frame} and press Enter to continue...")
         subprocess.call("read -t 10", shell=True, executable='/bin/bash')
 
     selected_files = file_selector(the_dir=vastdir, match_pattern="*.dat")
