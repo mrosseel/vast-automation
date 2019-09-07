@@ -22,15 +22,16 @@ Once you're in this VM, all python commands can be run.
 
 ## Run VAST on the fits files
 
-`./vast_run.sh ../location/of/fits/*.fit`
+`./vast -u -x 3 ../location/of/fits/*.fit`
 
-This will generate many vast files in the support/vast directory
+This uses UTC time, and ignores the 'blended' flag for stars which are close to each other.
+This will generate many vast files in the vast directory
 
 ## Process VAST results
 
 ### run the command
 
-`./vast_process.sh --vsx -d support/vast-1.0rc84`
+`./vast_process.sh --vsx --candidates -d support/vast-1.0rc84`
 
 ### plate solve the reference frame (first run only)
 
@@ -41,7 +42,8 @@ The software will stop and ask you to do this.
 
 ### look at the results
 
-This will generate vsx information and create phase diagrams for all vast autocandidates.
+This command line above will generate vsx information and create phase diagrams for 
+all vast autocandidates and vsx stars.
 Also a few extra files are generated:
 
 * vsx_stars.txt
