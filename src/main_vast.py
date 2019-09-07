@@ -127,7 +127,6 @@ def read_stardict(vastdir):
     for line in open(vastdir+'vast_list_of_all_stars.log'):
         splitline = line.split()
         stardict[int(splitline[0])] = PixelPos(splitline[1], splitline[2], f"out{splitline[0]}.dat")
-    print("stardict bla", stardict[25832])
     return stardict
 
 
@@ -148,7 +147,6 @@ def get_starid_from_outfile(outfile):
     m = re.search('out(.*).dat', outfile)
     return int(m.group(1).lstrip('0'))
 
-def write_augmented_autocandidates(dir, stardict: Dict[int, StarDescription]):
     origname = 'vast_autocandidates.log'
     newname = 'vast_autocandidates_pos.txt'
     logging.info(f"Writing {newname}...")
