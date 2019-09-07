@@ -206,7 +206,7 @@ def run(star_descriptions, phasedir, chartsdir, do_charts=False, do_phase=True, 
     logging.info(f"Using {nr_threads} threads for lightcurve and phase plotting.")
 
     if do_phase:
-        trash_and_recreate_dir(phasedir+'vast')
+        trash_and_recreate_dir(phasedir)
 
     func = partial(read_vast_lightcurves, do_charts=do_charts, do_phase=do_phase, phasedir=phasedir, chartsdir=chartsdir)
     with tqdm.tqdm(total=len(star_descriptions), desc='Writing light curve charts/phase diagrams') as pbar:

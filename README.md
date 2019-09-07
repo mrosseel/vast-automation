@@ -3,7 +3,15 @@
 Docker is used to construct a light-weight virtual machine linux containing all necessary dependencies.
 Once you're in this VM, all python commands can be run.
 
-## Starting Docker
+## Preparation
+
+### Importing VSX star catalog
+
+* AAVSO VSX catalog can be downloaded here: http://cdsarc.u-strasbg.fr/viz-bin/Cat?cat=B%2Fvsx%2Fversions%2F2018-02-26&target=brief&
+* run 'python vsx_pickle.py vsx.dat' where vsx.dat is the unzipped versin of the downloaded vsx catalog
+* check that 'vsx_catalog.bin' has been written successfully
+
+### Starting Docker
 
 * have a working docker installation: https://www.docker.com/community-edition
 * cd docker
@@ -12,39 +20,45 @@ Once you're in this VM, all python commands can be run.
 * command: `./startJupyter.sh`
 * you are automatically logged into a root shell of the docker container
 
-## Usage
+## Run VAST on the fits files
 
-### Importing VSX star catalog
+`./vast_run.sh ../location/of/fits/*.fit`
 
-* AAVSO VSX catalog can be downloaded here: http://cdsarc.u-strasbg.fr/viz-bin/Cat?cat=B%2Fvsx%2Fversions%2F2018-02-26&target=brief&
-* run 'python vsx_pickle.py vsx.dat' where vsx.dat is the unzipped versin of the downloaded vsx catalog
-* check that 'vsx_catalog.bin' has been written successfully
+This will generate many vast files in the support/vast directory
 
-### Run it
+## Process VAST results
 
-Start in the munipack home dir.
+### run the command
 
-* python src/do_vast.py --vsx --candidates -d path/to/vast/files
+`./vast_process.sh --vsx -d support/vast-1.0rc84`
 
-This will generate vsx information and create phase diagrams for all vast autocandidates
-
-### Set reference frame
+### plate solve the reference frame (first run only)
 
 The software will stop and ask you to do this.
 
-* take one reference frame and calculate a fits header using http://Astrometry.net
+* take the reference frame and calculate a fits header using http://Astrometry.net
 * store it in the vast directory as *new-image.fits*
 
-## Jupyter lab usage
+### look at the results
+
+This will generate vsx information and create phase diagrams for all vast autocandidates.
+Also a few extra files are generated:
+
+* vsx_stars.txt
+* vast_list_of_all_stars_pos.txt
+* vast_autocandidates_pos.txt
+
+## Other
+
+### Jupyter lab usage
 
 The docker image also exposes a Jupyter lab instance on port 8888.
 _Password is 'muni'_
 
-## Importing UCAC4 star catalog
+### Importing UCAC4 star catalog
 
 * Use a tool like filezilla and connect to this location: cdsarc.u-strasbg.fr/0/more/UCAC4
 * ... TODO
-
 
 ## TODO
 
