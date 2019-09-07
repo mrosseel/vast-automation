@@ -178,6 +178,20 @@ def get_vsx_stars(stars: List[StarDescription]) -> List[StarDescription]:
             result.append(star)
     return result
 
+def write_augmented_autocandidates(dir, stardict: Dict[int, StarDescription]):
+    origname = 'vast_autocandidates.log'
+    newname = 'vast_autocandidates_pos.txt'
+    logging.info(f"Writing {newname}...")
+    with open(dir+origname, 'r', encoding='utf-8') as infile, open(dir+newname, 'w') as outfile:
+        for line in infile:
+            linetext = line.rstrip()
+            star_id = get_starid_from_outfile(linetext)
+            if star_id in stardict:
+                cacheentry = stardict[star_id]
+                outfile.write(f"{linetext}{'' if cacheentry.path is not '' else '*'}\t{cacheentry.aavso_id}\t{utils.get_hms_dms(cacheentry.coords)}\n")
+            else:
+                outfile.write(f"{linetext}*\t{'None'}\n")
+
 def write_augmented_all_stars(dir, stardict: Dict[int, StarDescription]):
     origname = 'vast_list_of_all_stars.log'
     newname = 'vast_list_of_all_stars_pos.txt'
