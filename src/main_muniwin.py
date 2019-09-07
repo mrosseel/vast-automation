@@ -230,7 +230,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
 
     if do_field_charting:
         logging.info("Starting field chart plotting...")
-        do_charts_field.run_standard_field_charts(selected_stars, wcs)
+        do_charts_field.run_standard_field_charts(selected_stars, wcs, settings.fieldchartsdirs, settings.reference_header)
 
     # import code
     # code.InteractiveConsole(locals=dict(globals(), **locals())).interact()

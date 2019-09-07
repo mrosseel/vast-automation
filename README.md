@@ -12,37 +12,28 @@ Once you're in this VM, all python commands can be run.
 * command: `./startJupyter.sh`
 * you are automatically logged into a root shell of the docker container
 
-## Command line usage
+## Usage
 
-### Init settings
+### Importing VSX star catalog
 
-* copy init.py.example to init.py in your working dir (for example ./current) and fill in correct values.
+* AAVSO VSX catalog can be downloaded here: http://cdsarc.u-strasbg.fr/viz-bin/Cat?cat=B%2Fvsx%2Fversions%2F2018-02-26&target=brief&
+* run 'python vsx_pickle.py vsx.dat' where vsx.dat is the unzipped versin of the downloaded vsx catalog
+* check that 'vsx_catalog.bin' has been written successfully
 
-### Set reference frame (used during matching)
+### Run it
+
+Start in the munipack home dir.
+
+* python src/do_vast.py --vsx --candidates -d path/to/vast/files
+
+This will generate vsx information and create phase diagrams for all vast autocandidates
+
+### Set reference frame
+
+The software will stop and ask you to do this.
 
 * take one reference frame and calculate a fits header using http://Astrometry.net
-* call `./set_reference_frame.py ./currrent/fits/my_reference_frame.fits ./current`
-
-### Find correct config files for muniphot and munimatch
-
-* How to find the best config file (takes long): `python src/find_phot_config.py -d current 0.1` => this 
-uses 1 percent of the fits to calculate the optimal photometry config.
-* The resulting directory indicates the number of the best config file, e.g current/search/00001 means that 
-the best result is in ./current/search/conf/muniphot1.conf
-
-### Run
-
-* call `./run.sh -d ./current`
-
-### File overview (partial)
-
-* init.py : directory settings, processing settings
-* do_muniwin.py : start all
-* do_charts.py : plots of lightcurve and phase diagrams
-* do_field_charts.py : plot the reference frame + circles around stars of interest
-* do_upsilon.py : only do machine learning detection
-* do_aavso_report: write files in the AAVSO Extended Format
-* do_profile.py : do performance profiling on the app (not sure if working)
+* store it in the vast directory as *new-image.fits*
 
 ## Jupyter lab usage
 
@@ -54,27 +45,15 @@ _Password is 'muni'_
 * Use a tool like filezilla and connect to this location: cdsarc.u-strasbg.fr/0/more/UCAC4
 * ... TODO
 
-## Importing VSX star catalog
-
-* AAVSO VSX catalog can be downloaded here: http://cdsarc.u-strasbg.fr/viz-bin/Cat?cat=B%2Fvsx%2Fversions%2F2018-02-26&target=brief&
-* run 'python vsx_pickle.py vsx.dat' where vsx.dat is the unzipped versin of the downloaded vsx catalog
-* check that 'vsx_catalog.bin' has been written successfully
 
 ## TODO
 
-- set_reference_frame doesn't work
-- don't start muniwin if reference frame is not defined
 - AAVSO report should use instrumental magnitudes for comparison stars
 - other stars in command line
-+ all things use VSX
-+ move log to current dir
 - check out https://public.lanl.gov/palmer/fastchi.html for period determination
 - check out https://github.com/toros-astro/astroalign for aligning
 - new ensemble comparison star calculation?
-- check error column for any stars having error bars > 1%
 - stacking images to detect fainter stars+have better signal/noise ratio: https://github.com/fedhere/coaddfitim
-- write munifind_ intermediate files in a folder
-- detect less stars to do the aperture calculations (generate them in a separate folder, subset of images)
 
 ## References
 

@@ -207,7 +207,6 @@ def get_upsilon_candidates_raw(threshold_prob, check_flag):
 # match_type, separation_deg]}
 def add_vsx_names_to_star_descriptions(star_descriptions: List[StarDescription], vsxcatalogdir: str, max_separation=0.01):
     logging.info("Adding VSX names to star descriptions")
-    result = star_descriptions  # no deep copy for now
     result_ids = []
     # copy.deepcopy(star_descriptions)
     vsx_catalog, vsx_dict = create_vsx_astropy_catalog(vsxcatalogdir)
@@ -228,17 +227,19 @@ def add_vsx_names_to_star_descriptions(star_descriptions: List[StarDescription],
         if entry.value < max_separation:
             index_vsx = idx[index_star_catalog]
             # if it's a new vsx star or a better match than the last match, write into dict
-            if index_vsx not in results_dict or results_dict[index_vsx][2] > entry.value:
-                index_vsx = idx[index_star_catalog]
-                results_dict[index_vsx] = VsxInfo(index_star_catalog, index_vsx, entry.value)
+            if index_vsx not in results_dict or results_dict[index_vsx].sep > entry.value:
+                star_id = star_descriptions[index_star_catalog].local_id
+                results_dict[index_vsx] = VsxInfo(star_id, index_vsx, entry.value)
+                logging.debug(f"Adding {results_dict[index_vsx]} to VSX results")
+    cachedict = utils.get_star_description_cache(star_descriptions)
     # loop over dict and add the new vsx matches to the star descriptions
     for keys, vsxinfo in results_dict.items():
-        _add_catalog_match_to_entry('VSX', result[vsxinfo.starid_0], vsx_dict,
+        logging.debug(f"len sd is {len(star_descriptions)}, vsxinfo.starid is {vsxinfo.starid_0}")
+        _add_catalog_match_to_entry('VSX', cachedict[vsxinfo.starid_0], vsx_dict,
                                     vsxinfo.vsx_id, vsxinfo.sep)
         result_ids.append(vsxinfo.starid_0)
-        logging.debug(f"Adding vsx match: {vsxinfo}, {result[vsxinfo.starid_0]}\n")
     logging.info(f"Added {len(results_dict)} vsx stars.")
-    return result, result_ids
+    return star_descriptions, result_ids
 
 
 # star_catalog = create_star_descriptions_catalog(star_descriptions)
