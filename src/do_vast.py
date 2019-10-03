@@ -12,9 +12,14 @@ if __name__ == '__main__':
                         help="The directory where the data can be found (usually the vast dir)",
                         nargs='?', required=True)
     parser.add_argument('-v', '--vsx', help="Add vsx stars to field charts/reporting list", action="store_true")
-    parser.add_argument('-p', '--phaseall', help="Generate phase diagrams for all stars", action="store_true")
+    parser.add_argument('-p', '--allstars', help="Generate phase/lightcurve for all stars. WARNING: takes long",
+                        action="store_true")
+    parser.add_argument('-f', '--field', help="Generate field charts (finder charts)", action="store_true")
+    parser.add_argument('-i', '--lightcurve', help="Generate lightcurve charts", action="store_true")
     parser.add_argument('-c', '--candidates', help="Generate phase diagrams for autocandidates", action="store_true")
-    parser.add_argument('-s', '--starfile', help="Load a file with star ids, these ids will be used for field charts/reporting")
+    parser.add_argument('-a', '--aavso', help="Generate aavso reports, add your UCAC4 comparison stars", nargs='+')
+    parser.add_argument('-s', '--starfile',
+                        help="Load a file with star ids, these ids will be used for field charts/reporting")
     parser.add_argument('-x', '--verbose', help="Set logging to debug mode", action="store_true")
     parser.add_argument('-l', '--laststars', help="Use the star descriptions of the previous run to do the charting",
                         action="store_true")
@@ -31,7 +36,7 @@ if __name__ == '__main__':
     # print(dir(settings))pr
     import main_vast
 
-    #monitoring_thread = start_monitoring(seconds_frozen=15, test_interval=1000)
+    # monitoring_thread = start_monitoring(seconds_frozen=15, test_interval=1000)
     if args.verbose:
         logger.setLevel(logging.DEBUG)
         fh.setLevel(logging.DEBUG)

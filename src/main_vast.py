@@ -1,33 +1,33 @@
 from multiprocessing import cpu_count
-import do_calibration
-from importlib import reload
-import do_charts_vast
-import reading
-reading = reload(reading)
-from star_description import StarDescription
-from photometry_blob import PhotometryBlob
 import logging
-from init_loader import init, settings
-from reading import file_selector
-import utils
-from utils import get_star_description_cache
-from astropy.coordinates import SkyCoord
-from typing import List, Dict, Tuple
 import re
 import os.path
 import subprocess
 from functools import partial
 from collections import namedtuple
+import do_calibration
+import do_charts_vast
+import do_aavso_report
 import do_charts_field
+import do_compstars
+import utils
+from utils import get_star_description_cache
+from reading import trash_and_recreate_dir
+from reading import file_selector
+from star_description import StarDescription
+from photometry_blob import PhotometryBlob
+from init_loader import init, settings
+from astropy.coordinates import SkyCoord
+from typing import List, Dict, Tuple
 
 vsx_catalog_name = "vsx_catalog.bin"
 vsxcatalogdir = '/home/jovyan/work/' + vsx_catalog_name
-
 
 def run_do_rest(args):
 
     vastdir = utils.add_trailing_slash(args.datadir)
     fieldchartsdir = vastdir + 'fieldcharts/'
+    aavsodir = vastdir + 'aavso/'
     logging.info(f"Directory where all files will be read & written: {vastdir}")
     wcs_file = vastdir+'new-image.fits'
     reference_frame = extract_reference_frame(vastdir)
@@ -50,19 +50,41 @@ def run_do_rest(args):
     print("star descriptoios", star_descriptions[:100])
     write_augmented_autocandidates(vastdir, stardict)
     write_augmented_all_stars(vastdir, stardict)
-    do_charts_field.run_standard_field_charts(star_descriptions, wcs, fieldchartsdir, wcs_file)
-    if args.phaseall:
-        do_charts_vast.run(star_descriptions, vastdir+'phase/', vastdir+'chart/', cpu_count())
+    do_charts = args.lightcurve
+    if args.field:
+        do_charts_field.run_standard_field_charts(star_descriptions, wcs, fieldchartsdir, wcs_file)
+    selected_stars = []
+    if args.allstars:
+        do_charts_vast.run(star_descriptions, vastdir, 'phase_all/', 'chart_all/', do_charts=do_charts,
+                           nr_threads=cpu_count())
     else:
         if args.candidates:
             candidate_ids = get_autocandidates(vastdir)
             logging.info(f"Selecting {len(candidate_ids)} candidates to plot")
             selected_stars = do_calibration.select_star_descriptions(candidate_ids, star_descriptions)
-            do_charts_vast.run(selected_stars, vastdir+'phase/', vastdir+'chart/', cpu_count())
+            do_charts_vast.run(selected_stars, vastdir, 'phase_candidates/', 'chart_candidates/', do_charts=do_charts,
+                               nr_threads=cpu_count())
         if args.vsx:
             vsx_stars = get_vsx_stars(star_descriptions)
+            selected_stars = selected_stars + vsx_stars
             logging.info(f"Selecting {len(vsx_stars)} vsx stars to plot")
-            do_charts_vast.run(vsx_stars, vastdir+'phase_vsx/', vastdir+'chart_vsx/', cpu_count())
+            do_charts_vast.run(vsx_stars, vastdir, 'phase_vsx/', 'chart_vsx/', do_charts=do_charts,
+                               nr_threads=cpu_count())
+
+    if args.aavso:
+        # star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
+        logging.info(f"AAVSO Reporting with: {len(selected_stars)} stars")
+        print("avaso args", args.aavso)
+        comparison_stars_1, comparison_stars_1_desc = do_compstars.get_fixed_compstars(star_descriptions, args.aavso)
+        trash_and_recreate_dir(aavsodir)
+        print("selected stars", selected_stars)
+        # TODO put this in settings.txt
+        sitelat = '-22 57 10'
+        sitelong = '-68 10 49'
+        sitealt= 2500
+        for star in selected_stars:
+            do_aavso_report.report(aavsodir, vastdir, star, sitelat, sitelong, sitealt,
+                                   comparison_stars_1_desc[0], filter='V') # put filter to None for autodetect
 
 
     comparison_stars_1, comparison_stars_1_desc = None, None

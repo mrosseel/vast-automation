@@ -53,14 +53,16 @@ def plot_it(big_green: StarDescriptionList, small_red: StarDescriptionList, fits
     logging.info("plotting {} green and {} red circles.".format(len(big_green), len(small_red)))
     big_green = add_pixels(big_green, wcs, PADDING)
     small_red = add_pixels(small_red, wcs, PADDING)
-    big_green_positions = ([o.xpos for o in big_green],[o.ypos for o in big_green])
-    small_red_positions = ([o.xpos for o in small_red],[o.ypos for o in small_red])
-    big_green_apps = CircularAperture(big_green_positions, r=10.)
-    small_red_apps = CircularAperture(small_red_positions, r=5.)
+    big_green_positions = [(o.xpos, o.ypos) for o in big_green]
+    small_red_positions = [(o.xpos, o.ypos) for o in small_red]
+    if len(big_green_positions) > 0:
+        big_green_apps = CircularAperture(big_green_positions, r=10.)
+        big_green_apps.plot(color='green', lw=1.5, alpha=0.5)
+    if len(small_red_positions) > 0:
+        small_red_apps = CircularAperture(small_red_positions, r=5.)
+        small_red_apps.plot(color='red', lw=1.5, alpha=0.5)
 
     # plot background fits image if one is provided
-    big_green_apps.plot(color='green', lw=1.5, alpha=0.5)
-    small_red_apps.plot(color='red', lw=1.5, alpha=0.5)
     # target_app.plot(color='blue', lw=1.5, alpha=0.5)
     #to_plot = results
     def annotate_it(star_descriptions, offset1, offset2, size=16):

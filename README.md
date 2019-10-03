@@ -59,8 +59,11 @@ _Password is 'muni'_
 
 ### Importing UCAC4 star catalog
 
-* Use a tool like filezilla and connect to this location: cdsarc.u-strasbg.fr/0/more/UCAC4
-* ... TODO
+Getting the 900 files (9Gb):
+- `wget ftp://cdsarc.u-strasbg.fr/0/more/UCAC4/u4b/*`
+
+Checking that all 900 files were downloaded correctly:
+- `md5sum -c md5sum.txt`
 
 ## TODO
 

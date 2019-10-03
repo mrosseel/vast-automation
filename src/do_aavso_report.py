@@ -18,8 +18,8 @@ def calculate_airmass(coord, location, jd):
     return altazs.secz
 
 
-def report(target_dir, star_description: StarDescription, comparison_star: StarDescription, filter=None, observer='RMH', chunk_size=5000):
-    df_curve = reading.read_lightcurve(star_description.local_id, filter=True, preprocess=False)
+def report(target_dir, vastdir: str, star_description: StarDescription, sitelat, sitelong, sitealt, comparison_star: StarDescription, filter=None, observer='RMH', chunk_size=5000):
+    df_curve = reading.read_lightcurve_vast(star_description.local_id, vastdir=vastdir, filter=True, preprocess=False)
     star_match_ucac4, separation = star_description.get_match_string("UCAC4")
     star_match_vsx, separation = star_description.get_match_string("VSX", strict=False)
     comp_ucac4 = comparison_star.get_match_string("UCAC4", strict=True)
@@ -30,7 +30,7 @@ def report(target_dir, star_description: StarDescription, comparison_star: StarD
     # logging.info(" Star match:{}, comparison_star:{}".format(var_display_name, comparison_star))
     comparison_star_vmag = comparison_star.vmag
     title = str(star_description.local_id if star_description.aavso_id is None else star_description.aavso_id)
-    earth_location = EarthLocation(lat=init.sitelat, lon=init.sitelong, height=init.sitealt*u.m)
+    earth_location = EarthLocation(lat=sitelat, lon=sitelong, height=sitealt*u.m)
     logging.info("Starting aavso report with star:{}".format(star_description))
 
     star_chunks = [df_curve[i:i+chunk_size] for i in range(0,df_curve.shape[0],chunk_size)]
@@ -54,8 +54,8 @@ def report(target_dir, star_description: StarDescription, comparison_star: StarD
                 writer.writerow({
                     'name': var_display_name,
                     'date': row['JD'],
-                    'magnitude': row['V-C'] + comparison_star_vmag,
-                    'magnitude_error': row['s1'],
+                    'magnitude': row['mag'] + comparison_star_vmag,
+                    'magnitude_error': row['mag_e'],
                     'filter': filterlambda(row['JD']),
                     'transformed': 'YES',
                     'magnitude_type': 'STD',
