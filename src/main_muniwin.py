@@ -239,7 +239,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
         logging.info(f"AAVSO Reporting with: {len(selected_stars)} stars")
         trash_and_recreate_dir(settings.aavsoreportsdir)
         for star in selected_stars:
-            do_aavso_report.report(settings.aavsoreportsdir, star, comparison_stars_1_desc[0], filter=None)
+            do_aavso_report.report(star, settings.aavsoreportsdir, comparison_stars_1_desc[0], filter=None)
 
 # make a list of star_descriptions containing all selected stars
 def construct_star_descriptions(args, do_compstars_flag, comparison_stars_1, comparison_stars_1_desc):

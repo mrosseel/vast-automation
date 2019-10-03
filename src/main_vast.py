@@ -1,4 +1,6 @@
 from multiprocessing import cpu_count
+import multiprocessing as mp
+import tqdm
 import logging
 import re
 import os.path
@@ -24,7 +26,7 @@ vsx_catalog_name = "vsx_catalog.bin"
 vsxcatalogdir = '/home/jovyan/work/' + vsx_catalog_name
 
 def run_do_rest(args):
-
+    thread_count = cpu_count()-1
     vastdir = utils.add_trailing_slash(args.datadir)
     fieldchartsdir = vastdir + 'fieldcharts/'
     aavsodir = vastdir + 'aavso/'
@@ -47,7 +49,7 @@ def run_do_rest(args):
     logging.info(f"Number of found lightcurves: {len(selected_files)}, number of identified stars: {len(all_stardict.keys())}")
     star_descriptions = construct_star_descriptions(vastdir, wcs, all_stardict, selected_files, args)
     stardict = get_star_description_cache(star_descriptions)
-    print("star descriptoios", star_descriptions[:100])
+    print("star descriptoios", star_descriptions[:10])
     write_augmented_autocandidates(vastdir, stardict)
     write_augmented_all_stars(vastdir, stardict)
     do_charts = args.lightcurve
@@ -56,7 +58,7 @@ def run_do_rest(args):
     selected_stars = []
     if args.allstars:
         do_charts_vast.run(star_descriptions, vastdir, 'phase_all/', 'chart_all/', do_charts=do_charts,
-                           nr_threads=cpu_count())
+                           nr_threads=thread_count)
         selected_stars = star_descriptions
     else:
 
@@ -65,13 +67,13 @@ def run_do_rest(args):
             logging.info(f"Selecting {len(candidate_ids)} candidates to plot")
             selected_stars = do_calibration.select_star_descriptions(candidate_ids, star_descriptions)
             do_charts_vast.run(selected_stars, vastdir, 'phase_candidates/', 'chart_candidates/', do_charts=do_charts,
-                                   nr_threads=cpu_count())
+                                   nr_threads=thread_count)
         if args.vsx:
             vsx_stars = get_vsx_stars(star_descriptions)
             selected_stars = selected_stars + vsx_stars
             logging.info(f"Selecting {len(vsx_stars)} vsx stars to plot")
             do_charts_vast.run(vsx_stars, vastdir, 'phase_vsx/', 'chart_vsx/', do_charts=do_charts,
-                               nr_threads=cpu_count())
+                               nr_threads=thread_count)
     if args.aavso:
         # star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
         logging.info(f"AAVSO Reporting with: {len(selected_stars)} stars and comparison stars {args.aavso}")
@@ -80,11 +82,15 @@ def run_do_rest(args):
         # TODO put this in settings.txt
         sitelat = '-22 57 10'
         sitelong = '-68 10 49'
-        sitealt= 2500
-        for star in selected_stars:
-            do_aavso_report.report(aavsodir, vastdir, star, sitelat, sitelong, sitealt,
-                                   comparison_stars_1_desc[0], filter='V') # put filter to None for autodetect
-
+        sitealt = 2500
+        observer = 'RMH'
+        pool = mp.Pool(thread_count, maxtasksperchild=10)
+        # put filter to None for autodetect
+        func = partial(do_aavso_report.report, target_dir=aavsodir, vastdir=vastdir,
+                       sitelat=sitelat, sitelong=sitelong, sitealt=sitealt,
+                       comparison_star=comparison_stars_1_desc[0], filter='V', observer=observer)
+        for _ in tqdm.tqdm(pool.imap_unordered(func, selected_stars, 5), total=len(selected_stars), unit="files"):
+            pass
 
     comparison_stars_1, comparison_stars_1_desc = None, None
     photometry_blob = PhotometryBlob() # not yet used

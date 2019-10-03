@@ -165,7 +165,7 @@ def read_vast_lightcurves(star_description: StarDescription, do_charts, do_phase
                                 'vast6', 'vast7', 'vast8', 'vast9', 'vast10', 'vast11'])
 
         if df is None or len(df) == 0:
-            logging.info(f"No lightcurve found for  {filename}")
+            logging.info(f"No lightcurve found for {star_description.path}")
             return
 
         # adding vmag of comparison star to all diff mags
