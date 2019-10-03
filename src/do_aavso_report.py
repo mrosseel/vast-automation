@@ -19,7 +19,7 @@ def calculate_airmass(coord, location, jd):
 
 
 def report(target_dir, vastdir: str, star_description: StarDescription, sitelat, sitelong, sitealt, comparison_star: StarDescription, filter=None, observer='RMH', chunk_size=5000):
-    df_curve = reading.read_lightcurve_vast(star_description.local_id, vastdir=vastdir, filter=True, preprocess=False)
+    df_curve = reading.read_lightcurve_vast(star_description.local_id, vastdir=vastdir, preprocess=False)
     star_match_ucac4, separation = star_description.get_match_string("UCAC4")
     star_match_vsx, separation = star_description.get_match_string("VSX", strict=False)
     comp_ucac4 = comparison_star.get_match_string("UCAC4", strict=True)
@@ -29,9 +29,11 @@ def report(target_dir, vastdir: str, star_description: StarDescription, sitelat,
 
     # logging.info(" Star match:{}, comparison_star:{}".format(var_display_name, comparison_star))
     comparison_star_vmag = comparison_star.vmag
+    # NO COMP STAR TODAY
+    comparison_star_vmag = 0.0
     title = str(star_description.local_id if star_description.aavso_id is None else star_description.aavso_id)
     earth_location = EarthLocation(lat=sitelat, lon=sitelong, height=sitealt*u.m)
-    logging.info("Starting aavso report with star:{}".format(star_description))
+    logging.debug("Starting aavso report with star:{}".format(star_description))
 
     star_chunks = [df_curve[i:i+chunk_size] for i in range(0,df_curve.shape[0],chunk_size)]
     chunk_counters = 0
@@ -49,7 +51,7 @@ def report(target_dir, vastdir: str, star_description: StarDescription, sitelat,
         chunk_counters += 1
         with open(f"{target_dir}{title}_extended_{chunk_counters}.txt", 'w') as fp:
             writer = aavso.ExtendedFormatWriter(fp, observer, software='munipack-automation', type='EXTENDED', obstype='CCD')
-            for _, row in tqdm.tqdm(chunk.iterrows(), total=len(chunk), unit="observations"):
+            for _, row in tqdm.tqdm(chunk.iterrows(), desc=f"AAVSO reporting star {star_description.local_id}", total=len(chunk), unit="observations"):
                 # logging.info(row, type(row))
                 writer.writerow({
                     'name': var_display_name,

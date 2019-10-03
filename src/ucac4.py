@@ -105,6 +105,7 @@
 # I ucac2_number;
 
 # NOTE !!!!!!!!!!!  The ra/dec and proper motion sigmas are now offset by 128; i.e.,  a value of -128 would indicate a zero sigma.
+import logging
 import struct
 from collections import namedtuple
 from typing import List
@@ -124,19 +125,19 @@ def get_ucac4_details(ucac_id):
     zone = id[:3]
     run_nr = int(id[4:].lstrip("0"))
 
-    print("id", id, zone, run_nr)
+    logging.debug("UCAC4 id", id, zone, run_nr)
     with open(f"./support/ucac4/UCAC4/u4b/z{zone}" , mode='rb') as file:  # b is important -> binary
         fileContent = file.read()
-        print("filecontent mod 78 is ", len(fileContent) % 78)
+        logging.debug("filecontent mod 78 is ", len(fileContent) % 78)
         # print("filecontent", fileContent[:78])
         # starformat = "=iihhBBBBBBBBhhhhBBihhhBBBBBBhhhhhBBBBBBiBBihi"
         starformat = "=iiHHBBBbbBBBHHhhbbIHHHBBBBBBHHHHHbbbbbBIBBIHI"
         starlength = struct.calcsize(starformat)
-        print("starlength is", starlength)
+        logging.debug("starlength is", starlength)
         unpack_starformat = struct.Struct(starformat).unpack
         result = unpack_starformat(fileContent[starlength*(run_nr-1):starlength*run_nr])
         star = make_star(result)
-        print("read ucac4 star:", star)
+        logging.debug("read ucac4 star:", star)
         return star
 
 def get_ucac4_star_description(ucac4_id):

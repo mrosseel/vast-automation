@@ -57,27 +57,26 @@ def run_do_rest(args):
     if args.allstars:
         do_charts_vast.run(star_descriptions, vastdir, 'phase_all/', 'chart_all/', do_charts=do_charts,
                            nr_threads=cpu_count())
+        selected_stars = star_descriptions
     else:
+
         if args.candidates:
             candidate_ids = get_autocandidates(vastdir)
             logging.info(f"Selecting {len(candidate_ids)} candidates to plot")
             selected_stars = do_calibration.select_star_descriptions(candidate_ids, star_descriptions)
             do_charts_vast.run(selected_stars, vastdir, 'phase_candidates/', 'chart_candidates/', do_charts=do_charts,
-                               nr_threads=cpu_count())
+                                   nr_threads=cpu_count())
         if args.vsx:
             vsx_stars = get_vsx_stars(star_descriptions)
             selected_stars = selected_stars + vsx_stars
             logging.info(f"Selecting {len(vsx_stars)} vsx stars to plot")
             do_charts_vast.run(vsx_stars, vastdir, 'phase_vsx/', 'chart_vsx/', do_charts=do_charts,
                                nr_threads=cpu_count())
-
     if args.aavso:
         # star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
-        logging.info(f"AAVSO Reporting with: {len(selected_stars)} stars")
-        print("avaso args", args.aavso)
+        logging.info(f"AAVSO Reporting with: {len(selected_stars)} stars and comparison stars {args.aavso}")
         comparison_stars_1, comparison_stars_1_desc = do_compstars.get_fixed_compstars(star_descriptions, args.aavso)
         trash_and_recreate_dir(aavsodir)
-        print("selected stars", selected_stars)
         # TODO put this in settings.txt
         sitelat = '-22 57 10'
         sitelong = '-68 10 49'

@@ -31,7 +31,7 @@ def read_lightcurve(star,filter=True,preprocess=False, directory=None):
 # - 5th column - Y position of the star on the current frame (in pixels)
 # - 6th column - diameter of the circular aperture used to measure the current frame (in pixels)
 # - 7th column - file path corresponding to the current frame
-def read_lightcurve_vast(star: int, vastdir:str, filter=True,preprocess=False):
+def read_lightcurve_vast(star: int, vastdir:str, preprocess=False):
     try:
         df = pd.read_csv(vastdir + f"out{star:05}.dat", names=['JD', 'mag', 'mag_e', 'X', 'Y', 'aperture', 'file', 'c1', 'c1b', 'c2', 'c2b', 'c3', 'c3b', 'c4', 'c4b', 'c5', 'c5b'],
                          header=None, delim_whitespace=True)
@@ -44,6 +44,7 @@ def read_lightcurve_vast(star: int, vastdir:str, filter=True,preprocess=False):
 
 
 def preprocess_lightcurve(df):
+    logging.error("not adapted for vast usage!!!!!!!!!!!!!")
     try:
         P = np.percentile(df['V-C'], [5, 95])
         df2 = df[(df['V-C'] > P[0]) & (df['V-C'] < P[1])]
