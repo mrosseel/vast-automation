@@ -88,7 +88,7 @@ def run_do_rest(args):
         # put filter to None for autodetect
         func = partial(do_aavso_report.report, target_dir=aavsodir, vastdir=vastdir,
                        sitelat=sitelat, sitelong=sitelong, sitealt=sitealt,
-                       comparison_star=comparison_stars_1_desc[0], filter='V', observer=observer)
+                       comparison_star=comparison_stars_1_desc[0], filter='V', observer=observer, chunk_size=args.aavsolimit)
         for _ in tqdm.tqdm(pool.imap_unordered(func, selected_stars, 5), total=len(selected_stars), unit="files"):
             pass
 

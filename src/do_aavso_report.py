@@ -7,7 +7,6 @@ from astropy.coordinates import SkyCoord, EarthLocation, AltAz
 #supress the warning about vector transforms so as not to clutter the doc build log
 import warnings
 warnings.filterwarnings('ignore',module='astropy.coordinates.baseframe')
-from init_loader import init, settings
 from star_description import StarDescription
 import tqdm
 import read_camera_filters
@@ -18,7 +17,7 @@ def calculate_airmass(coord, location, jd):
     return altazs.secz
 
 
-def report(star_description: StarDescription, target_dir, vastdir: str, sitelat, sitelong, sitealt, comparison_star: StarDescription, filter=None, observer='RMH', chunk_size=5000):
+def report(star_description: StarDescription, target_dir, vastdir: str, sitelat, sitelong, sitealt, comparison_star: StarDescription, filter=None, observer='RMH', chunk_size=None):
     df_curve = reading.read_lightcurve_vast(star_description.local_id, vastdir=vastdir, preprocess=False)
     star_match_ucac4, separation = star_description.get_match_string("UCAC4")
     star_match_vsx, separation = star_description.get_match_string("VSX", strict=False)
@@ -34,7 +33,8 @@ def report(star_description: StarDescription, target_dir, vastdir: str, sitelat,
     title = str(star_description.local_id if star_description.aavso_id is None else star_description.aavso_id)
     earth_location = EarthLocation(lat=sitelat, lon=sitelong, height=sitealt*u.m)
     logging.debug("Starting aavso report with star:{}".format(star_description))
-
+    if chunk_size is None:
+        chunk_size = df_curve.shape[0]
     star_chunks = [df_curve[i:i+chunk_size] for i in range(0,df_curve.shape[0],chunk_size)]
     chunk_counters = 0
 
@@ -49,7 +49,8 @@ def report(star_description: StarDescription, target_dir, vastdir: str, sitelat,
 
     for chunk in star_chunks:
         chunk_counters += 1
-        with open(f"{target_dir}{title}_extended_{chunk_counters}.txt", 'w') as fp:
+        suffix = f"_{chunk_counters}.txt" if len(star_chunks) != 1 else ".txt"
+        with open(f"{target_dir}{title}_ext{suffix}", 'w') as fp:
             writer = aavso.ExtendedFormatWriter(fp, observer, software='munipack-automation', type='EXTENDED', obstype='CCD')
             # for _, row in tqdm.tqdm(chunk.iterrows(), desc=f"AAVSO reporting star {star_description.local_id}", total=len(chunk), unit="observations"):
             for _, row in chunk.iterrows():
