@@ -39,3 +39,8 @@ def get_hms_dms(coord):
     return "{:2.0f}h {:02.0f}m {:02.2f}s | {:2.0f}d {:02.0f}' {:02.2f}\"" \
         .format(coord.ra.hms.h, abs(coord.ra.hms.m), abs(coord.ra.hms.s),
                 coord.dec.dms.d, abs(coord.dec.dms.m), abs(coord.dec.dms.s))
+
+def get_lesve_coords(coord):
+    return "{:2.0f} {:02.0f} {:02.2f} {:2.0f} {:02.0f} {:02.2f}" \
+        .format(coord.ra.hms.h, abs(coord.ra.hms.m), abs(coord.ra.hms.s),
+                coord.dec.dms.d, abs(coord.dec.dms.m), abs(coord.dec.dms.s))

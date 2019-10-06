@@ -1,6 +1,7 @@
 from functools import partial
 from multiprocessing import cpu_count
 from init_loader import init, settings
+from comparison_stars import ComparisonStars
 import reading
 import matplotlib as mp
 
@@ -21,6 +22,7 @@ import argparse
 from star_description import StarDescription
 import logging
 import subprocess
+import math
 
 TITLE_PAD = 40
 
@@ -52,8 +54,8 @@ def plot_lightcurve(tuple, chartsdir):
         return
     # curve = curve.replace(to_replace=99.99999, value=np.nan, inplace=False) # we filter now
     used_curve = curve
-    used_curve_max = used_curve['Vrel'].max()
-    used_curve_min = used_curve['Vrel'].min()
+    used_curve_max = used_curve['realV'].max()
+    used_curve_min = used_curve['realV'].min()
     # print(f"used curve:{used_curve['V-C']}, used curve max:{used_curve_max}, used curve min:{used_curve_min}")
 
     # insert counting column
@@ -89,13 +91,66 @@ def plot_lightcurve(tuple, chartsdir):
 #        print("error", tuple)
 
 
+def plot_lightcurve_jd(tuple, chartsdir):
+    star_description = tuple[0]
+    curve = tuple[1]
+    star = star_description.local_id
+    logging.debug(f"Plotting lightcurve for {star}")
+    star_match, separation = star_description.get_match_string("VSX")
+    match_string = f"({star_match})" if not star_match == None else ''
+    star_name = '' if star_match == None else " ({} - dist:{:.4f})".format(star_match, separation)
+    start = timer()
+    upsilon_match = star_description.get_catalog('Upsilon')
+    upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
+    end = timer()
+    logging.debug(f"timing upsilon stuff {end - start}")
+    coord = star_description.coords
+    # print(f'Plotting lightcurve with star_description:{star_description}, curve length:{len(curve)}, star:{star}, curve:{curve}')
+    if (curve is None):
+        logging.info(f"Curve is None for star {star}")
+        return
+    # curve = curve.replace(to_replace=99.99999, value=np.nan, inplace=False) # we filter now
+    used_curve = curve
+    used_curve_max = used_curve['realV'].max()
+    used_curve_min = used_curve['realV'].min()
+    # print(f"used curve:{used_curve['V-C']}, used curve max:{used_curve_max}, used curve min:{used_curve_min}")
+
+    # insert counting column
+    used_curve.insert(0, 'Count', range(0, len(used_curve)))
+    g = sns.lmplot('JD', 'realV',
+                   data=used_curve, height=20, aspect=5, scatter_kws={"s": 15},
+                   fit_reg=False)
+
+    plt.xlabel('JD', labelpad=TITLE_PAD)
+    # plt.ylabel("Absolute Mag, comp star = {:2.2f}".format(comparison_stars[0].vmag), labelpad=TITLE_PAD)
+    plot_max = used_curve_max
+    plot_min = min(plot_max - 1, used_curve_min)
+    logging.debug(f'min {plot_min} max {plot_max} usedmin {used_curve_min} usedmax {used_curve_max}')
+    if np.isnan(plot_max) or np.isnan(plot_min):
+        logging.info(f"star is nan:{star}, plot_max:{plot_max}, plot_min:{plot_min}")
+        return
+    plt.ylim(plot_min, plot_max)
+    plt.xlim(0, len(used_curve))
+    plt.gca().invert_yaxis()
+    # g.map(plt.errorbar, 'Count', 'V-C', yerr='s1', fmt='o')
+    # plt.ticklabel_format(style='plain', axis='x')
+    plt.title("Star {0}{1}, position: {2}{3}".format(star, star_name, get_hms_dms(coord), upsilon_text), pad=TITLE_PAD)
+    start = timer()
+    figure = g.fig
+    figure.savefig(chartsdir + str(star).zfill(5) + '_plot')
+    # g.savefig(chartsdir+str(star).zfill(5)+'_plot')
+    end = timer()
+    logging.debug(f"timing saving fig {end - start}")
+    plt.close(g.fig)
+
+
 def plot_phase_diagram(tuple, fullphasedir, suffix='', period=None):
     star_description = tuple[0]
     coords = star_description.coords
     curve = tuple[1]
     star = star_description.local_id
     star_match, separation = star_description.get_match_string("VSX")
-    match_string = f" ({star_match})" if not star_match == None else ''
+    match_string = f"{star_match}\n" if not star_match == None else ''
     upsilon_match = star_description.get_catalog('Upsilon')
     upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
     # print("Calculating phase diagram for", star)
@@ -103,8 +158,8 @@ def plot_phase_diagram(tuple, fullphasedir, suffix='', period=None):
         logging.info("Curve of star {} is None".format(star))
         return
     t_np = curve['JD'].to_numpy()
-    y_np = curve['Vrel'].to_numpy()
-    dy_np = curve['err'].to_numpy()
+    y_np = curve['realV'].to_numpy()
+    dy_np = curve['realErr'].to_numpy()
     if period is None:
         period_max = np.max(t_np) - np.min(t_np)
         if period_max <= 0.01:
@@ -116,7 +171,7 @@ def plot_phase_diagram(tuple, fullphasedir, suffix='', period=None):
     fig = plt.figure(figsize=(18, 16), dpi=80, facecolor='w', edgecolor='k')
     plt.xlabel("Phase", labelpad=TITLE_PAD)
     plt.ylabel("Magnitude", labelpad=TITLE_PAD)
-    plt.title(f"Star {star}{match_string}, p: {period:.5f} d{upsilon_text}\n{get_hms_dms(coords)}", pad=TITLE_PAD)
+    plt.title(f"{match_string}Star {star}, p: {period:.5f} d{upsilon_text}\n{get_hms_dms(coords)}", pad=TITLE_PAD)
     # plt.title(f"Star {star} - {period}", pad=TITLE_PAD)
     plt.tight_layout()
     # plotting + calculation of 'double' phase diagram from -1 to 1
@@ -132,8 +187,8 @@ def plot_phase_diagram(tuple, fullphasedir, suffix='', period=None):
     plt.errorbar(phased_t_final, phased_lc_final, yerr=phased_err, linestyle='none', marker='o', ecolor='gray',
                  elinewidth=1)
     # save_location = phasedir+str(star).zfill(5)+'_phase'+suffix
-    save_location = f"{fullphasedir}{star:05}_phase{suffix}"
-    logging.debug(f"Saving phase plot to {save_location}")
+    save_location = f"{fullphasedir}{star_match}_phase{suffix}.png" if star_match is not None else f"{fullphasedir}{star:05}_phase{suffix}.png"
+    logging.info(f"Saving phase plot to {save_location}")
     fig.savefig(save_location)
     plt.close(fig)
 
@@ -149,8 +204,8 @@ def format_date(x, pos=None):
     return r.date[thisind].strftime('%Y-%m-%d')
 
 
-def read_vast_lightcurves(star_description: StarDescription, do_charts, do_phase, basedir: str,
-                          chartsdir: str, phasedir: str):
+def read_vast_lightcurves(star_description: StarDescription, comp_stars: ComparisonStars, do_charts, do_phase,
+                          basedir: str, chartsdir: str, phasedir: str):
     start = timer()
     if star_description.path is '':
         logging.debug(f"Path for {star_description.local_id} is empty")
@@ -172,12 +227,12 @@ def read_vast_lightcurves(star_description: StarDescription, do_charts, do_phase
         # TODO: this is wrong, should be composition of all comparison stars. To do error propagation use quadrature
         # rule: http://ipl.physics.harvard.edu/wp-uploads/2013/03/PS3_Error_Propagation_sp13.pdf
         # df['V-C'] = df['V-C'] + comparison_stars[0].vmag
-        df['realV'] = df['Vrel']
+        df['realV'], df['realErr'] = calculate_real_mag_and_err(df, comp_stars)
         tuple = star_description, df
         if do_charts:
             # start = timer()
             # logging.debug("NO LICGHTCRUVEGYET ")
-            plot_lightcurve(tuple, basedir + chartsdir)
+            plot_lightcurve_jd(tuple, basedir + chartsdir)
             # end = timer()
             # print("plotting lightcurve:", end-start)
         if do_phase:
@@ -199,32 +254,52 @@ def read_vast_lightcurves(star_description: StarDescription, do_charts, do_phase
     logging.debug(f"Full lightcurve/phase: {end - start}")
 
 
-def calculate_real_mag(df, comp_mags):
-    logging.debug(f"Start calculate_real with {df.shape[0]} rows")
+def calculate_real_mag_and_err(df, comp_stars: ComparisonStars):
+    logging.info(f"Start calculate_real with {df.shape[0]} rows")
 
-    cees = []
+    # self.ids = ids
+    # self.star_descriptions = star_descriptions
+    # self.observations = observations
+
+    # the average of the real magnitude of the comparison stars
+    meanreal = np.mean(comp_stars.comp_catalogmags)
+    logging.debug(f"meanreal is {meanreal}")
+    # error = sqrt((vsig**2+(1/n sum(sigi)**2)))
+    realV = []
+    realErr = []
     for index, row in df.iterrows():
-        logging.debug(f"row is {row}, comp_mags is {comp_mags}")
-        the_mask = [not bool(int(x)) for x in row['mask']]  # read and invert for masking
-        logging.debug(f"The mask is {the_mask}")
-        comp_mags_masked = np.ma.array(comp_mags, mask=the_mask)
-        logging.debug(f"The masked comps is {comp_mags_masked}")
-        mean = np.ma.mean(comp_mags_masked)
-        logging.debug(f"The mean is {mean}")
-        cees.append(mean)
-        logging.debug(f"print cees: {cees}")
+        logging.debug(f"row is {row}, comp_mags is {comp_stars.comp_catalogmags}")
+        comp_obs = []
+        comp_err = []
+        for compstar in comp_stars.observations:
+            jd = str(row['JD'])
+            if jd in compstar:
+                comp_obs.append(float(compstar[jd][0]))
+                comp_err.append(float(compstar[jd][1]))
+            else:
+                logging.debug(f"Key error for {row['JD']}, {comp_stars.ids}")
 
-    logging.debug(f"print cees: {cees}")
-    logging.debug(f"df V-C beforel: {df['V-C']}")
-    result = df['V-C'].add(cees)
-    logging.debug(f"df V-C after: {result}")
-    logging.debug(f"end calculate_real")
-    return result
+        meanobs = -1
+        meanerr = -1
+        if len(comp_obs) > 0 and len(comp_obs) == len(comp_err):
+            meanobs = np.mean(comp_obs)
+            # Vobs - Cobs + Creal = V
+            realV.append(row['Vrel']-meanobs+meanreal)
+            meanerr = math.sqrt(math.pow(row['err'], 2)+math.pow(np.mean(comp_err), 2))
+            realErr.append(meanerr)
+        else:  # error in the comparison stars
+            realV.append(row['Vrel'])
+            realErr.append(row['err'])
+        logging.info(f"vrel: {row['Vrel']}, meanobs: {meanobs}, compobs: {comp_obs},  meanreal: {meanreal}, "
+                     f"real {comp_stars.comp_catalogmags},  vrel: {row['Vrel'] - meanobs + meanreal}, meanerr: {meanerr},"
+                     f"nr of compstar observations={len(compstar)}, nr of variable observations={len(df)}")
+    return realV, realErr
 
 
 # reads lightcurves and passes them to lightcurve plot or phase plot
 # def run(star_descriptions, comparison_stars, do_charts, do_phase):
-def run(star_descriptions, basedir, phasedir, chartsdir, do_charts=False, do_phase=True, nr_threads=cpu_count()):
+def run(star_descriptions, basedir, comp_stars: ComparisonStars, phasedir, chartsdir, do_charts=False, do_phase=True,
+        nr_threads=cpu_count()):
     CHUNK = 2
     set_seaborn_style()
     pool = mp.Pool(nr_threads)
@@ -235,7 +310,7 @@ def run(star_descriptions, basedir, phasedir, chartsdir, do_charts=False, do_pha
         trash_and_recreate_dir(basedir + phasedir)
     if do_charts:
         trash_and_recreate_dir(basedir + chartsdir)
-    func = partial(read_vast_lightcurves, basedir=basedir, do_charts=do_charts, do_phase=do_phase,
+    func = partial(read_vast_lightcurves, basedir=basedir, comp_stars=comp_stars, do_charts=do_charts, do_phase=do_phase,
                    phasedir=phasedir, chartsdir=chartsdir)
     with tqdm.tqdm(total=len(star_descriptions), desc='Writing light curve charts/phase diagrams') as pbar:
         for _ in pool.imap_unordered(func, star_descriptions, chunksize=CHUNK):

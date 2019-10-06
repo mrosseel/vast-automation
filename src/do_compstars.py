@@ -19,7 +19,7 @@ def select_compstars(stddevs, apertureidx, counts):
     return compstars_1
 
 
-# reads ucac numbers from init, fetches ucac coords and compares them to world_position coords
+# receives ucac numbers, fetches ucac coords and compares them to world_position coords
 def get_fixed_compstars(star_descriptions: List[StarDescription], comparison_stars):
     logging.info(f"Using fixed compstars {comparison_stars}")
     star_ids_1 = []
@@ -33,13 +33,13 @@ def get_fixed_compstars(star_descriptions: List[StarDescription], comparison_sta
         star_ids_1.append(star_id_1)
         # adding info to star_description
         star = star_descriptions[star_id_1 - 1]
-        logging.info(f"matched {ucacsd} with {star}")
+        logging.info(f"Compstar match: {ucacsd.aavso_id} with {star.local_id}")
         do_calibration.add_info_to_star_description(star, ucacsd.vmag, ucacsd.e_vmag,
                                                     ucacsd.aavso_id,
                                                     "UCAC4", SkyCoord(ra, dec, unit='deg'))
         star_desc_result.append(star)
         logging.debug(f"Using fixed compstar '{ucac_id}' with Vmag: '{ucacsd.vmag}' and star id: {star_id_1}")
-    return star_ids_1, star_desc_result
+    return [x.local_id for x in star_desc_result], star_desc_result
 
 def get_calculated_compstars(apertureidx, photometry_blob: PhotometryBlob):
     stddevs = photometry_blob.stddevs

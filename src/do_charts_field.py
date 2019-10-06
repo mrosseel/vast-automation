@@ -110,7 +110,7 @@ def run_standard_field_charts(selected_star_descriptions: StarDescriptionList, w
 
     # TODO hand labeled stars
     # hand_candidates_descr = do_calibration.get_star_descriptions(init.wwcra_certain_candidates)
-    all_stars_descr = selected_star_descriptions[:10000]
+    all_stars_descr = selected_star_descriptions
 
     # if SHOW_UPSILON:
     #     big_green = set_custom_label(comparison_  star_descr, 'comp')
@@ -158,8 +158,8 @@ def run_standard_field_charts(selected_star_descriptions: StarDescriptionList, w
     fig, _ = get_plot_with_background(reference_fits_frame, 0, "Reference frame")
     save(fig, fieldchartsdirs + 'only_ref')
 
-    # field chart with all vsx stars
-    logging.info("Plotting field chart with all VSX variable stars + hand picked vars...")
+    # field chart with all vsx stars + candidates
+    logging.info("Plotting field chart with all VSX variable stars + candidate vars...")
     big_green = vsx_labeled
     small_red = hand_candidates_labeled
     fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "VSX variable stars + hand picked stars", PADDING)

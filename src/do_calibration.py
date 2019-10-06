@@ -415,7 +415,7 @@ def add_info_to_star_description(star, vmag, e_vmag, catalog_id, catalog_name, c
     mindist = star.coords.separation(coord_catalog)
     star.match.append(CatalogMatch(name_of_catalog=catalog_name, catalog_id=catalog_id,
                                    name=catalog_id, coords=coord_catalog, separation=mindist))
-    logging.info("Star {} has vmag={}, error={}, dist={}".format(star.local_id, star.vmag, star.e_vmag, mindist))
+    logging.info("Add info: Star {} has vmag={}, error={}, dist={}".format(star.local_id, star.vmag, star.e_vmag, mindist))
     return star
 
 

@@ -5,6 +5,7 @@ import logging
 import re
 import os.path
 import subprocess
+import numpy as np
 from functools import partial
 from collections import namedtuple
 import do_calibration
@@ -21,7 +22,8 @@ from photometry_blob import PhotometryBlob
 from init_loader import init, settings
 from astropy.coordinates import SkyCoord
 from typing import List, Dict, Tuple
-
+from comparison_stars import ComparisonStars
+from star_description import CatalogMatch
 vsx_catalog_name = "vsx_catalog.bin"
 vsxcatalogdir = '/home/jovyan/work/' + vsx_catalog_name
 
@@ -49,15 +51,32 @@ def run_do_rest(args):
     logging.info(f"Number of found lightcurves: {len(selected_files)}, number of identified stars: {len(all_stardict.keys())}")
     star_descriptions = construct_star_descriptions(vastdir, wcs, all_stardict, selected_files, args)
     stardict = get_star_description_cache(star_descriptions)
-    print("star descriptoios", star_descriptions[:10])
+    logging.debug("First 10 star descriptions", star_descriptions[:10])
     write_augmented_autocandidates(vastdir, stardict)
     write_augmented_all_stars(vastdir, stardict)
     do_charts = args.lightcurve
     if args.field:
         do_charts_field.run_standard_field_charts(star_descriptions, wcs, fieldchartsdir, wcs_file)
+
+    # load comparison stars
+    comparison_stars_1, comparison_stars_1_desc = do_compstars.get_fixed_compstars(star_descriptions, args.aavso)
+    comp_observations = []
+    logging.info(f"Using comparison star ids:{comparison_stars_1}")
+    for star in comparison_stars_1:
+        read_comp_magdict = read_magdict(vastdir, star)
+        # logging.info(f"Read comp magdict for {star}: {read_comp_magdict}")
+        comp_observations.append(read_comp_magdict)
+    comp_catalogmags = []
+    comp_catalogerr = []
+    for star in comparison_stars_1_desc:
+        comp_catalogmags.append(star.vmag)
+        comp_catalogerr.append(star.e_vmag)
+
+    comp_stars = ComparisonStars(comparison_stars_1, comparison_stars_1_desc, comp_observations, comp_catalogmags, comp_catalogerr)
+    logging.info(f"Comparison stars have {np.shape(comp_observations)}, {len(comp_observations[0])}, {len(comp_observations[1])} observations")
     selected_stars = []
     if args.allstars:
-        do_charts_vast.run(star_descriptions, vastdir, 'phase_all/', 'chart_all/', do_charts=do_charts,
+        do_charts_vast.run(star_descriptions, vastdir, comp_stars, 'phase_all/', 'chart_all/', do_charts=do_charts,
                            nr_threads=thread_count)
         selected_stars = star_descriptions
     else:
@@ -66,18 +85,21 @@ def run_do_rest(args):
             candidate_ids = get_autocandidates(vastdir)
             logging.info(f"Selecting {len(candidate_ids)} candidates to plot")
             selected_stars = do_calibration.select_star_descriptions(candidate_ids, star_descriptions)
-            do_charts_vast.run(selected_stars, vastdir, 'phase_candidates/', 'chart_candidates/', do_charts=do_charts,
+            for star in selected_stars:
+                star.match.append(CatalogMatch(name_of_catalog="SELECTED", catalog_id="",
+                                               name=star.local_id))
+        do_charts_vast.run(selected_stars, vastdir, comp_stars, 'phase_candidates/', 'chart_candidates/', do_charts=do_charts,
                                    nr_threads=thread_count)
         if args.vsx:
             vsx_stars = get_vsx_stars(star_descriptions)
             selected_stars = selected_stars + vsx_stars
             logging.info(f"Selecting {len(vsx_stars)} vsx stars to plot")
-            do_charts_vast.run(vsx_stars, vastdir, 'phase_vsx/', 'chart_vsx/', do_charts=do_charts,
+            do_charts_vast.run(vsx_stars, vastdir, comp_stars, 'phase_vsx/', 'chart_vsx/', do_charts=do_charts,
                                nr_threads=thread_count)
     if args.aavso:
         # star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
         logging.info(f"AAVSO Reporting with: {len(selected_stars)} stars and comparison stars {args.aavso}")
-        comparison_stars_1, comparison_stars_1_desc = do_compstars.get_fixed_compstars(star_descriptions, args.aavso)
+
         trash_and_recreate_dir(aavsodir)
         # TODO put this in settings.txt
         sitelat = '-22 57 10'
@@ -156,6 +178,19 @@ def read_stardict(vastdir):
         stardict[int(splitline[0])] = PixelPos(splitline[1], splitline[2], f"out{splitline[0]}.dat")
     return stardict
 
+# get all possible stars with dict: JD, (mag, error)
+def read_magdict(vastdir, star_id):
+    stardict = {}
+    starfile = f"{vastdir}{star_to_dat(star_id)}"
+    for line in open(starfile):
+        splitline = line.split()
+        # {JD, (mag, magerr)}
+        stardict[str(splitline[0])] = (splitline[1], splitline[2])
+    return stardict
+
+
+def star_to_dat(star: int):
+    return f"out{star:05}.dat"
 
 # Note: this file seems to give incorrect xy positions wrt reference frame
 # get all possible stars with their x/y position from a log file
@@ -183,7 +218,7 @@ def get_starid_from_outfile(outfile):
             star_id = get_starid_from_outfile(linetext)
             if star_id in stardict:
                 cacheentry = stardict[star_id]
-                outfile.write(f"{linetext}{'' if cacheentry.path is not '' else '*'}\t{cacheentry.aavso_id}\t{utils.get_hms_dms(cacheentry.coords)}\n")
+                outfile.write(f"{linetext}{'' if cacheentry.path is not '' else '*'}\t{cacheentry.aavso_id}\t{utils.get_lesve_coords(cacheentry.coords)}\n")
             else:
                 outfile.write(f"{linetext}*\t{'None'}\n")
 
