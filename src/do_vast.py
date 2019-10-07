@@ -11,6 +11,9 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--datadir',
                         help="The directory where the data can be found (usually the vast dir)",
                         nargs='?', required=True)
+    parser.add_argument('-r', '--resultdir',
+                        help="The directory where all results will be written",
+                        nargs='?', required=False)
     parser.add_argument('-v', '--vsx', help="Add vsx stars to field charts/reporting list", action="store_true")
     parser.add_argument('-p', '--allstars', help="Generate phase/lightcurve for all stars. WARNING: takes long",
                         action="store_true")

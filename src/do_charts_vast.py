@@ -115,8 +115,8 @@ def plot_lightcurve_jd(tuple, chartsdir):
     used_curve_min = used_curve['realV'].min()
     # print(f"used curve:{used_curve['V-C']}, used curve max:{used_curve_max}, used curve min:{used_curve_min}")
 
-    # insert counting column
-    used_curve.insert(0, 'Count', range(0, len(used_curve)))
+    # convert JD to float (descructive !!!)
+    used_curve['JD'] = used_curve['JD'].astype(np.float)
     g = sns.lmplot('JD', 'realV',
                    data=used_curve, height=20, aspect=5, scatter_kws={"s": 15},
                    fit_reg=False)
@@ -187,12 +187,13 @@ def plot_phase_diagram(tuple, fullphasedir, suffix='', period=None):
     plt.errorbar(phased_t_final, phased_lc_final, yerr=phased_err, linestyle='none', marker='o', ecolor='gray',
                  elinewidth=1)
     # save_location = phasedir+str(star).zfill(5)+'_phase'+suffix
-    save_location = f"{fullphasedir}{star_match}_phase{suffix}" if star_match is not None else f"{fullphasedir}{star:05}_phase{suffix}"
-    logging.info(f"Saving phase plot to {save_location}")
+    filename_no_ext = f"{star_match}_phase{suffix}" if star_match is not None else f"{star:05}_phase{suffix}"
+    save_location = f"{fullphasedir}{filename_no_ext}" if star_match is not None else f"{fullphasedir}{filename_no_ext}"
+    logging.debug(f"Saving phase plot to {save_location}")
     fig.savefig(f"{save_location}.png")
     plt.close(fig)
-    with open(save_location + '.txt', 'w') as f:
-        f.write('\n'.join([f"period={period}", f"range={np.min(y_np):.1f}-{np.max(y_np):.1f}", f"coords={coords}"]))
+    with open(f"{fullphasedir}/txt/{filename_no_ext}.txt", 'w') as f:
+        f.write('\n'.join([f"period={period}", f"range={np.min(y_np):.1f}-{np.max(y_np):.1f}", f"coords={coords.ra.deg} {coords.dec.deg}"]))
 
 def get_hms_dms(coord):
     return "{:2.0f}$^h$ {:02.0f}$^m$ {:02.2f}$^s$ | {:2.0f}$\degree$ {:02.0f}$'$ {:02.2f}$''$" \
@@ -233,7 +234,7 @@ def read_vast_lightcurves(star_description: StarDescription, comp_stars: Compari
         if do_charts:
             # start = timer()
             # logging.debug("NO LICGHTCRUVEGYET ")
-            plot_lightcurve_jd(tuple, basedir + chartsdir)
+            plot_lightcurve_jd(tuple, chartsdir)
             # end = timer()
             # print("plotting lightcurve:", end-start)
         if do_phase:
@@ -244,23 +245,22 @@ def read_vast_lightcurves(star_description: StarDescription, comp_stars: Compari
                 phase = None
 
             if phase is not None:
-                plot_phase_diagram(tuple, basedir + phasedir, period=float(phase.decode("utf-8")[:-2]))
-            plot_phase_diagram(tuple, basedir + phasedir, period=None, suffix="_orig")
+                plot_phase_diagram(tuple, phasedir, period=float(phase.decode("utf-8")[:-2]))
+            plot_phase_diagram(tuple, phasedir, period=None, suffix="")
             # end = timer()
             # print("plotting phase:", end-start)
-    except FileNotFoundError:
-        logging.error("File not found error in store and curve for star", star_description)
+    except Exception as ex:
+        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+        message = template.format(type(ex).__name__, ex.args)
+        logging.error(message)
+        logging.error("File not found error in store and curve for star", star_description.path)
 
     end = timer()
     logging.debug(f"Full lightcurve/phase: {end - start}")
 
 
 def calculate_real_mag_and_err(df, comp_stars: ComparisonStars):
-    logging.info(f"Start calculate_real with {df.shape[0]} rows and {len(comp_stars.observations)} comp stars.")
-
-    # self.ids = ids
-    # self.star_descriptions = star_descriptions
-    # self.observations = observations
+    logging.debug(f"Start calculate_real with {df.shape[0]} rows and {len(comp_stars.observations)} comp stars.")
 
     # the average of the real magnitude of the comparison stars
     meanreal = np.mean(comp_stars.comp_catalogmags)
@@ -296,23 +296,26 @@ def calculate_real_mag_and_err(df, comp_stars: ComparisonStars):
                          f"real {comp_stars.comp_catalogmags},  vrel: {row['Vrel'] - meanobs + meanreal}, meanerr: {meanerr},"
                          f"nr of compstar observations={len(compstar)}, nr of variable observations={len(df)}")
             logging.info(f"{len(comp_obs)}, {len(comp_obs)} == {len(comp_err)}")
+        logging.debug(f"Results of photometry: V diff: {df['Vrel'].mean()-np.mean(realV)}, err diff: {df['err'].mean()-np.mean(realErr)}")
     return realV, realErr
 
 
 # reads lightcurves and passes them to lightcurve plot or phase plot
 # def run(star_descriptions, comparison_stars, do_charts, do_phase):
-def run(star_descriptions, basedir, comp_stars: ComparisonStars, phasedir, chartsdir, do_charts=False, do_phase=True,
-        nr_threads=cpu_count()):
-    CHUNK = 2
+def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, phasedir: str, chartsdir: str,
+        do_charts=False, do_phase=True, nr_threads=cpu_count()):
+    CHUNK = 1
     set_seaborn_style()
     pool = mp.Pool(nr_threads)
     # pool = mp.Pool(1)
     logging.info(f"Using {nr_threads} threads for lightcurve and phase plotting.")
 
     if do_phase:
-        trash_and_recreate_dir(basedir + phasedir)
+        trash_and_recreate_dir(phasedir)
+        trash_and_recreate_dir(phasedir + '/txt')
     if do_charts:
-        trash_and_recreate_dir(basedir + chartsdir)
+        trash_and_recreate_dir(chartsdir)
+
     func = partial(read_vast_lightcurves, basedir=basedir, comp_stars=comp_stars, do_charts=do_charts, do_phase=do_phase,
                    phasedir=phasedir, chartsdir=chartsdir)
     with tqdm.tqdm(total=len(star_descriptions), desc='Writing light curve charts/phase diagrams') as pbar:
@@ -338,4 +341,4 @@ if __name__ == '__main__':
     stars = do_calibration.get_empty_star_descriptions(args.starlist)
     for star in stars:
         star.path = f"{vastdir}out{int(star.local_id):05}.dat"
-    run(stars, vastdir, 'phase_starlist/', 'chart_starlist/', nr_threads=cpu_count())
+    run(stars, "compstars", vastdir, 'phase_starlist/', 'chart_starlist/', nr_threads=cpu_count())

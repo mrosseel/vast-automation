@@ -1,4 +1,4 @@
-from init_loader import init, settings
+from typing import List
 import os
 import pandas as pd
 import numpy as np
@@ -132,7 +132,7 @@ def read_compstars():
     return comparison_stars_1, comparison_stars_1_desc
 
 # Select files conforming to the match_pattern using percentage which is between 0 and 1
-def file_selector(the_dir, match_pattern, percentage=1):
+def file_selector(the_dir, match_pattern, percentage=1) -> List[str]:
     matched_files = glob.glob(the_dir+match_pattern)
     desired_length = max(1, int(len(matched_files) * float(percentage)))
     logging.info(f"Reading.file_selector: {the_dir+match_pattern}, total:{len(matched_files)}, desired:{desired_length}")

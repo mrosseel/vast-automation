@@ -270,25 +270,15 @@ def get_vsx_in_field(star_descriptions, max_separation=0.01):
     logging.info("Found {} VSX stars in field: {}".format(len(result), [star.local_id for star in result]))
     return result
 
+################ CATALOG related functions #########################
 
-# tags a list of star id's with the 'selected' CatalogMatch for later filtering
-def add_selected_match_to_stars(stars: List[StarDescription], star_id_list_0, one_based = True, catalog_name="SELECTED"):
-    one_based = 1 if one_based else 0
-    cachedict = {}
+
+# tags a list of star descriptions a catalogfor later filtering
+def add_catalog_to_star_descriptions(stars: List[StarDescription], catalog_name="SELECTED"):
     for sd in stars:
-        cachedict[int(sd.local_id)] = sd
-    for star_id_0 in star_id_list_0:
-        if star_id_0 not in cachedict:
-            logging.info(f"Star {star_id_0} is selected but it's not a known star.")
-            continue
-        curr_sd = cachedict[star_id_0]
-        logging.debug(f"selected match {curr_sd.local_id}, {star_id_0}")
-        assert int(curr_sd.local_id) == int(star_id_0)+one_based
-        match = CatalogMatch(name_of_catalog=catalog_name, catalog_id=curr_sd.local_id)
-        logging.debug(f"Voor de append: {curr_sd.match}")
-        curr_sd.match.append(match)
-        logging.debug(f"Na de append: {curr_sd.match}")
-
+        match = CatalogMatch(name_of_catalog=catalog_name, catalog_id=sd.local_id)
+        sd.match.append(match)
+    return stars
 
 def _add_catalog_match_to_entry(catalog_name: str, matchedstardesc: StarDescription, vsx_dict, index_vsx, separation):
     assert matchedstardesc.match is not None
@@ -301,6 +291,17 @@ def _add_catalog_match_to_entry(catalog_name: str, matchedstardesc: StarDescript
     matchedstardesc.match.append(match)
     return match
 
+
+# Does this star have a catalog with catalog_name? Used in combination with filter()
+def catalog_filter(star: StarDescription, catalog_name):
+    return star.get_catalog(catalog_name) is not None
+
+
+# gets all stars which have a catalog of name catalog_name
+def get_catalog_stars(stars: List[StarDescription], catalog_name: str) -> List[StarDescription]:
+    return list(filter(partial(catalog_filter, catalog_name=catalog_name), stars))
+
+################ CATALOG related functions #########################
 
 # Takes in a list of known variables and maps them to the munipack-generated star numbers
 # usage:
