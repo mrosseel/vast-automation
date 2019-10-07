@@ -157,7 +157,7 @@ def plot_phase_diagram(tuple, fullphasedir, suffix='', period=None):
     if curve is None:
         logging.info("Curve of star {} is None".format(star))
         return
-    t_np = curve['JD'].to_numpy()
+    t_np = curve['JD'].astype(np.float)
     y_np = curve['realV'].to_numpy()
     dy_np = curve['realErr'].to_numpy()
     if period is None:
@@ -187,11 +187,12 @@ def plot_phase_diagram(tuple, fullphasedir, suffix='', period=None):
     plt.errorbar(phased_t_final, phased_lc_final, yerr=phased_err, linestyle='none', marker='o', ecolor='gray',
                  elinewidth=1)
     # save_location = phasedir+str(star).zfill(5)+'_phase'+suffix
-    save_location = f"{fullphasedir}{star_match}_phase{suffix}.png" if star_match is not None else f"{fullphasedir}{star:05}_phase{suffix}.png"
+    save_location = f"{fullphasedir}{star_match}_phase{suffix}" if star_match is not None else f"{fullphasedir}{star:05}_phase{suffix}"
     logging.info(f"Saving phase plot to {save_location}")
-    fig.savefig(save_location)
+    fig.savefig(f"{save_location}.png")
     plt.close(fig)
-
+    with open(save_location + '.txt', 'w') as f:
+        f.write('\n'.join([f"period={period}", f"range={np.min(y_np):.1f}-{np.max(y_np):.1f}", f"coords={coords}"]))
 
 def get_hms_dms(coord):
     return "{:2.0f}$^h$ {:02.0f}$^m$ {:02.2f}$^s$ | {:2.0f}$\degree$ {:02.0f}$'$ {:02.2f}$''$" \
@@ -217,7 +218,7 @@ def read_vast_lightcurves(star_description: StarDescription, comp_stars: Compari
     try:
         df = pd.read_csv(star_description.path, delim_whitespace=True,
                          names=['JD', 'Vrel', 'err', 'X', 'Y', 'file', 'vast1', 'vast2', 'vast3', 'vast4', 'vast5',
-                                'vast6', 'vast7', 'vast8', 'vast9', 'vast10', 'vast11'])
+                                'vast6', 'vast7', 'vast8', 'vast9', 'vast10', 'vast11'], dtype={'JD': str})
 
         if df is None or len(df) == 0:
             logging.info(f"No lightcurve found for {star_description.path}")
@@ -255,7 +256,7 @@ def read_vast_lightcurves(star_description: StarDescription, comp_stars: Compari
 
 
 def calculate_real_mag_and_err(df, comp_stars: ComparisonStars):
-    logging.info(f"Start calculate_real with {df.shape[0]} rows")
+    logging.info(f"Start calculate_real with {df.shape[0]} rows and {len(comp_stars.observations)} comp stars.")
 
     # self.ids = ids
     # self.star_descriptions = star_descriptions
@@ -272,12 +273,12 @@ def calculate_real_mag_and_err(df, comp_stars: ComparisonStars):
         comp_obs = []
         comp_err = []
         for compstar in comp_stars.observations:
-            jd = str(row['JD'])
+            jd = row['JD']
             if jd in compstar:
                 comp_obs.append(float(compstar[jd][0]))
                 comp_err.append(float(compstar[jd][1]))
             else:
-                logging.debug(f"Key error for {row['JD']}, {comp_stars.ids}")
+                logging.info(f"Key error for {row['JD']}, {comp_stars.ids}")
 
         meanobs = -1
         meanerr = -1
@@ -290,9 +291,11 @@ def calculate_real_mag_and_err(df, comp_stars: ComparisonStars):
         else:  # error in the comparison stars
             realV.append(row['Vrel'])
             realErr.append(row['err'])
-        logging.info(f"vrel: {row['Vrel']}, meanobs: {meanobs}, compobs: {comp_obs},  meanreal: {meanreal}, "
-                     f"real {comp_stars.comp_catalogmags},  vrel: {row['Vrel'] - meanobs + meanreal}, meanerr: {meanerr},"
-                     f"nr of compstar observations={len(compstar)}, nr of variable observations={len(df)}")
+        if meanobs == -1 or meanerr == -1:
+            logging.info(f"vrel: {row['Vrel']}, meanobs: {meanobs}, compobs: {comp_obs},  meanreal: {meanreal}, "
+                         f"real {comp_stars.comp_catalogmags},  vrel: {row['Vrel'] - meanobs + meanreal}, meanerr: {meanerr},"
+                         f"nr of compstar observations={len(compstar)}, nr of variable observations={len(df)}")
+            logging.info(f"{len(comp_obs)}, {len(comp_obs)} == {len(comp_err)}")
     return realV, realErr
 
 
