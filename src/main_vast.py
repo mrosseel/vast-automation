@@ -298,7 +298,7 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
         sd.coords = SkyCoord(world_coords[0], world_coords[1], unit='deg')
 
     # add line counts
-    pool = get_pool()
+    pool = get_pool(cpu_count()*2)  # lot's of small files, needs many threads to fill cpu
     stars = []
     for star in tqdm.tqdm(pool.imap_unordered(set_lines, star_descriptions, 5), total=len(star_descriptions),
                           desc="Counting obs per star", unit="files"):
@@ -344,8 +344,8 @@ def has_option(obj, attr_name):
     return hasattr(obj, attr_name) and obj[attr_name]
 
 
-def get_pool(maxtasksperchild=10):
-    return mp.Pool(cpu_count()-1, maxtasksperchild=maxtasksperchild)
+def get_pool(processes=cpu_count()-1, maxtasksperchild=10):
+    return mp.Pool(processes, maxtasksperchild=maxtasksperchild)
 
 def interact():
     import code
