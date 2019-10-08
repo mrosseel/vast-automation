@@ -82,33 +82,35 @@ def run_do_rest(args):
 
     comp_stars = ComparisonStars(comparison_stars_1, comparison_stars_1_desc, comp_observations, comp_catalogmags, comp_catalogerr)
     logging.info(f"Comparison stars have {np.shape(comp_observations)}, {len(comp_observations[0])}, {len(comp_observations[1])} observations")
-    candidate_stars = []
+    aavso_stars = []
     if args.allstars:
         do_charts_vast.run(star_descriptions, comp_stars, vastdir, resultdir+'phase_all/', resultdir+'chart_all/',
                            do_phase=do_phase, do_charts=do_charts, nr_threads=thread_count)
     else:
         if args.candidates:
             candidate_stars = do_calibration.get_catalog_stars(star_descriptions, "CANDIDATE")
+            aavso_stars = aavso_stars + candidate_stars
             logging.info(f"Plotting {len(candidate_stars)} candidates...")
             do_charts_vast.run(candidate_stars, comp_stars, vastdir, resultdir+'phase_candidates/',
                                resultdir+'chart_candidates/', do_phase=do_phase, do_charts=do_charts,
                                nr_threads=thread_count)
         if args.vsx:
             vsx_stars = do_calibration.get_catalog_stars(star_descriptions, "VSX")
+            aavso_stars = aavso_stars + vsx_stars
             do_calibration.add_catalog_to_star_descriptions(vsx_stars, "SELECTED")
             logging.info(f"Plotting {len(vsx_stars)} vsx stars...")
             do_charts_vast.run(vsx_stars, comp_stars, vastdir, resultdir+'phase_vsx/', resultdir+'chart_vsx/',
                                do_phase=do_phase, do_charts=do_charts, nr_threads=thread_count)
         if args.starfile:
-            selected_stars = do_calibration.get_catalog_stars(star_descriptions, "STARFILE")
-            print("Selected stars from starfile", selected_stars)
-            do_charts_vast.run(selected_stars, comp_stars, vastdir, resultdir+'phase_selected/',
+            starfile_stars = do_calibration.get_catalog_stars(star_descriptions, "STARFILE")
+            aavso_stars = aavso_stars + starfile_stars
+            do_charts_vast.run(starfile_stars, comp_stars, vastdir, resultdir+'phase_selected/',
                                resultdir+'chart_selected/', do_phase=do_phase, do_charts=do_charts,
                                nr_threads=thread_count)
 
     if args.aavso:
         # star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
-        logging.info(f"AAVSO Reporting with: {len(selected_stars)} stars and comparison stars {args.aavso}")
+        logging.info(f"AAVSO Reporting with: {len(aavso_stars)} stars and comparison stars {args.aavso}")
 
         trash_and_recreate_dir(aavsodir)
         # TODO put this in settings.txt
@@ -121,7 +123,7 @@ def run_do_rest(args):
         func = partial(do_aavso_report.report, target_dir=aavsodir, vastdir=vastdir,
                        sitelat=sitelat, sitelong=sitelong, sitealt=sitealt,
                        comparison_star=comparison_stars_1_desc[0], filter='V', observer=observer, chunk_size=args.aavsolimit)
-        for _ in tqdm.tqdm(pool.imap_unordered(func, selected_stars, 5), total=len(selected_stars), unit="files"):
+        for _ in tqdm.tqdm(pool.imap_unordered(func, aavso_stars, 5), total=len(starfile_stars), unit="files"):
             pass
 
 
@@ -311,10 +313,8 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
             logging.info(f"The list of stars read from the starfile is: {starlist} ")
             logging.info(f"Selecting {starlist} stars added by {args.starfile}")
             starfile_stars = list(filter(lambda x: x.local_id in starlist, star_descriptions))
-            print("starfile stars", starfile_stars)
             do_calibration.add_catalog_to_star_descriptions(starfile_stars, "SELECTED")
             do_calibration.add_catalog_to_star_descriptions(starfile_stars, "STARFILE")
-            print("starfile stars", starfile_stars)
     return star_descriptions
 
 
