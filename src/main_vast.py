@@ -327,10 +327,8 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
         with open(args.starfile, 'r') as fp:
             lines = fp.readlines()
             starlist = [x.rstrip() for x in lines]
-            logging.info(f"The list of stars read from the starfile is: {starlist} ")
             starlist = [int(x) for x in filter(str.isdigit, starlist)]
-            logging.info(f"The list of stars read from the starfile is: {starlist} ")
-            logging.info(f"Selecting {starlist} stars added by {args.starfile}")
+            logging.info(f"Selecting {len(starlist)} stars added by {args.starfile}")
             starfile_stars = list(filter(lambda x: x.local_id in starlist, star_descriptions))
             do_calibration.add_catalog_to_star_descriptions(starfile_stars, "SELECTED")
             do_calibration.add_catalog_to_star_descriptions(starfile_stars, "STARFILE")

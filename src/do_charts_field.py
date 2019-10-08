@@ -184,12 +184,21 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
     save(fig, fieldchartsdirs + 'vsx_{}_and_candidates_{}'.format(len(big_green), len(small_red)))
 
     # field chart with all vsx stars + starfile
-    logging.info("Plotting field chart with all VSX variable stars + candidate vars...")
+    logging.info("Plotting field chart with all VSX variable stars + selected vars...")
     big_green = vsx_labeled
     small_red = starfile_labeled
     fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "VSX stars + selected stars", PADDING,
                   random_red=True)
     save(fig, fieldchartsdirs + 'vsx_{}_and_selected_{}'.format(len(big_green), len(small_red)))
+
+    # field charts for each individually selected starfile star
+    big_green = vsx_labeled
+    small_red = starfile_labeled
+    for star in starfile_labeled:
+        logging.info(f"Plotting field chart with all VSX variable stars + star {star.local_id}...")
+        fig = plot_it(big_green, [star], reference_fits_frame, wcs, f"VSX stars + star {star.local_id}", PADDING,
+                      random_red=False)
+        save(fig, fieldchartsdirs + 'vsx_{}_and_selected_{}'.format(len(big_green), len(small_red)))
 
 
 if __name__ == '__main__':
