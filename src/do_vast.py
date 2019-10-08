@@ -17,9 +17,10 @@ if __name__ == '__main__':
                         help="The directory where all results will be written",
                         nargs='?', required=False)
     parser.add_argument('-v', '--vsx', help="Add vsx stars to field charts/reporting list", action="store_true")
-    parser.add_argument('-p', '--allstars', help="Generate phase/lightcurve for all stars. WARNING: takes long",
+    parser.add_argument('-!', '--allstars', help="Generate phase/lightcurve for all stars. WARNING: takes long",
                         action="store_true")
     parser.add_argument('-f', '--field', help="Generate field charts (finder charts)", action="store_true")
+    parser.add_argument('-i', '--phase', help="Generate phase charts", action="store_true")
     parser.add_argument('-i', '--lightcurve', help="Generate lightcurve charts", action="store_true")
     parser.add_argument('-c', '--candidates', help="Generate phase diagrams for autocandidates", action="store_true")
     parser.add_argument('-a', '--aavso', help="Generate aavso reports, add your UCAC4 comparison stars", nargs='+')

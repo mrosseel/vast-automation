@@ -13,6 +13,7 @@ import do_charts_vast
 import do_aavso_report
 import do_charts_field
 import do_compstars
+import reading
 import utils
 from utils import get_star_description_cache
 from reading import trash_and_recreate_dir
@@ -30,10 +31,11 @@ vsxcatalogdir = '/home/jovyan/work/' + vsx_catalog_name
 # star id -> xpos, ypos, filename
 StarPosDict = Dict[str, Tuple[float, float, str]]
 
+
 def run_do_rest(args):
     thread_count = cpu_count()-1
     vastdir = utils.add_trailing_slash(args.datadir)
-    resultdir = utils.add_trailing_slash(args.resultdir) if args.resultdir is not None else vastdir
+    resultdir = clean_and_create_resultdir(args.resultdir, vastdir)
     fieldchartsdir = resultdir + 'fieldcharts/'
     aavsodir = resultdir + 'aavso/'
     logging.info(f"Directory where all files will be read: '{vastdir}' and written: '{resultdir}'")
@@ -59,6 +61,7 @@ def run_do_rest(args):
     write_augmented_autocandidates(vastdir, resultdir, stardict)
     write_augmented_all_stars(vastdir, resultdir, stardict)
     do_charts = args.lightcurve
+    do_phase = args.phase
     if args.field:
         do_charts_field.run_standard_field_charts(star_descriptions, wcs, fieldchartsdir, wcs_file)
 
@@ -81,26 +84,27 @@ def run_do_rest(args):
     logging.info(f"Comparison stars have {np.shape(comp_observations)}, {len(comp_observations[0])}, {len(comp_observations[1])} observations")
     candidate_stars = []
     if args.allstars:
-        do_charts_vast.run(star_descriptions, comp_stars, vastdir, resultdir+'phase_all/', resultdir+'chart_all/', do_charts=do_charts,
-                           nr_threads=thread_count)
-        candidate_stars = star_descriptions
+        do_charts_vast.run(star_descriptions, comp_stars, vastdir, resultdir+'phase_all/', resultdir+'chart_all/',
+                           do_phase=do_phase, do_charts=do_charts, nr_threads=thread_count)
     else:
         if args.candidates:
             candidate_stars = do_calibration.get_catalog_stars(star_descriptions, "CANDIDATE")
             logging.info(f"Plotting {len(candidate_stars)} candidates...")
             do_charts_vast.run(candidate_stars, comp_stars, vastdir, resultdir+'phase_candidates/',
-                               resultdir+'chart_candidates/', do_charts=do_charts, nr_threads=thread_count)
+                               resultdir+'chart_candidates/', do_phase=do_phase, do_charts=do_charts,
+                               nr_threads=thread_count)
         if args.vsx:
             vsx_stars = do_calibration.get_catalog_stars(star_descriptions, "VSX")
             do_calibration.add_catalog_to_star_descriptions(vsx_stars, "SELECTED")
             logging.info(f"Plotting {len(vsx_stars)} vsx stars...")
-            do_charts_vast.run(vsx_stars, comp_stars, vastdir, resultdir+'phase_vsx/', resultdir+'chart_vsx/', do_charts=do_charts,
-                               nr_threads=thread_count)
+            do_charts_vast.run(vsx_stars, comp_stars, vastdir, resultdir+'phase_vsx/', resultdir+'chart_vsx/',
+                               do_phase=do_phase, do_charts=do_charts, nr_threads=thread_count)
         if args.starfile:
             selected_stars = do_calibration.get_catalog_stars(star_descriptions, "STARFILE")
             print("Selected stars from starfile", selected_stars)
             do_charts_vast.run(selected_stars, comp_stars, vastdir, resultdir+'phase_selected/',
-                               resultdir+'chart_selected/', do_charts=do_charts, nr_threads=thread_count)
+                               resultdir+'chart_selected/', do_phase=do_phase, do_charts=do_charts,
+                               nr_threads=thread_count)
 
     if args.aavso:
         # star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
@@ -120,6 +124,14 @@ def run_do_rest(args):
         for _ in tqdm.tqdm(pool.imap_unordered(func, selected_stars, 5), total=len(selected_stars), unit="files"):
             pass
 
+
+def clean_and_create_resultdir(argsdir: str, vastdir: str):
+    resultdir = utils.add_trailing_slash(argsdir) if argsdir is not None else vastdir
+    # if resultdir does not exist, create it
+    if not os.path.isdir(resultdir):
+        logging.info(f"The resultdir '{resultdir}' does not exist, creating it...")
+        reading.create_dir(resultdir)
+    return resultdir
 
 # quickly test a few xy2sky conversions using our wcs and astropy
 def wcs_test_pattern(wcs):
