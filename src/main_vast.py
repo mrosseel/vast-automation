@@ -122,6 +122,7 @@ def run_do_rest(args):
         sitealt = 2500
         observer = 'RMH'
 
+        pool = get_pool()
         # put filter to None for autodetect
         func = partial(do_aavso_report.report, target_dir=aavsodir, vastdir=vastdir,
                        sitelat=sitelat, sitelong=sitelong, sitealt=sitealt,
@@ -297,7 +298,7 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
         sd.coords = SkyCoord(world_coords[0], world_coords[1], unit='deg')
 
     # add line counts
-    pool = mp.Pool(cpu_count()-1, maxtasksperchild=10)
+    pool = get_pool()
     stars = []
     for star in tqdm.tqdm(pool.imap_unordered(set_lines, star_descriptions, 5), total=len(star_descriptions), unit="files"):
         stars.append(star)
@@ -343,6 +344,9 @@ def set_lines(star: StarDescription):
 def has_option(obj, attr_name):
     return hasattr(obj, attr_name) and obj[attr_name]
 
+
+def get_pool(maxtasksperchild=10):
+    return mp.Pool(cpu_count()-1, maxtasksperchild)
 
 def interact():
     import code

@@ -81,10 +81,9 @@ def plot_it(big_green: StarDescriptionList, small_red: StarDescriptionList, fits
                 ysignrand = random.choice([-1.0, 1.0])
                 offset1 = xsignrand*randoffset
                 offset2 = ysignrand*randoffset
-                print(f"using {offset1} and {offset2}")
-            plt.annotate('{}'.format(stardescr.label),
-                     xy=(round(xpos), round(ypos)), xycoords='data',
-                     xytext=(offset1, offset2), textcoords='offset points', size=size, arrowprops=dict(arrowstyle="->"))
+            plt.annotate('{}'.format(stardescr.label), xy=(round(xpos), round(ypos)), xycoords='data',
+                         xytext=(offset1, offset2), textcoords='offset points', size=size,
+                         arrowprops=dict(arrowstyle="->"))
     annotate_it(big_green, 0, -20, size=12)
     annotate_it(small_red, -10, 10, random_offset=random_red, size=10)
     return fig
@@ -145,7 +144,6 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
 
     # starfile stars get their local id label
     starfile_descr = do_calibration.get_catalog_stars(star_descriptions, "STARFILE", exclude=["VSX"])
-    print("oeutnohuntoe", starfile_descr)
     starfile_labeled = set_local_id_label(starfile_descr)
 
     # default fields
