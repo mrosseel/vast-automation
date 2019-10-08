@@ -42,6 +42,8 @@ def run_do_rest(args):
     wcs_file = vastdir+'new-image.fits'
     reference_frame = extract_reference_frame(vastdir)
     first_frame = extract_first_frame(vastdir)
+    frames_used = int(extract_images_used(vastdir))
+    logging.info(f"{frames_used} frames were used for photometry")
     logging.info(f"The reference frame is {reference_frame}")
     logging.info(f"The first frame is {first_frame}")
     logging.info(f"reference header is {wcs_file}")
@@ -55,7 +57,8 @@ def run_do_rest(args):
     all_stardict = read_stardict(vastdir)
     list_of_dat_files = file_selector(the_dir=vastdir, match_pattern="*.dat")
     logging.info(f"Number of found lightcurves: {len(list_of_dat_files)}, number of identified stars: {len(all_stardict.keys())}")
-    star_descriptions = construct_star_descriptions(vastdir, resultdir, wcs, all_stardict, list_of_dat_files, args)
+    star_descriptions = construct_star_descriptions(vastdir, resultdir, wcs, all_stardict, list_of_dat_files,
+                                                    frames_used, args)
     stardict = get_star_description_cache(star_descriptions)
     logging.debug("First 10 star descriptions", star_descriptions[:10])
     write_augmented_autocandidates(vastdir, resultdir, stardict)
@@ -118,7 +121,7 @@ def run_do_rest(args):
         sitelong = '-68 10 49'
         sitealt = 2500
         observer = 'RMH'
-        pool = mp.Pool(thread_count, maxtasksperchild=10)
+
         # put filter to None for autodetect
         func = partial(do_aavso_report.report, target_dir=aavsodir, vastdir=vastdir,
                        sitelat=sitelat, sitelong=sitelong, sitealt=sitealt,
@@ -146,14 +149,18 @@ def wcs_test_pattern(wcs):
 
 
 def extract_reference_frame(from_dir):
-    return extract_frame_helper(from_dir, "Ref.  image")
+    return extract_frame_from_summary_helper(from_dir, "Ref.  image")
 
 
 def extract_first_frame(from_dir):
-    return extract_frame_helper(from_dir, "First image")
+    return extract_frame_from_summary_helper(from_dir, "First image")
 
 
-def extract_frame_helper(from_dir, marker):
+def extract_images_used(from_dir):
+    result = [re.findall(r'Images used for photometry (.*)',line) for line in open(from_dir+'vast_summary.log')]
+    return [x for x in result if x != []][0][0]
+
+def extract_frame_from_summary_helper(from_dir, marker):
     # Ref.  image: 2458586.50154 13.04.2019 00:00:41   ../../inputfiles/TXCar/fits/TXCar#45V_000601040_FLAT.fit
     result = [re.findall(marker + r': (?:.*) (.*)',line) for line in open(from_dir+'vast_summary.log')]
     return [x for x in result if x != []][0][0]
@@ -265,7 +272,7 @@ def count_dat_entries(afile):
 
 
 # constructs a list of star descriptions with catalog matches according to args
-def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_stardict: StarPosDict, list_of_dat_files: List[str], args):
+def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_stardict: StarPosDict, list_of_dat_files: List[str], frames_used: int, args):
     # Start with the list of all measured stars
     stars_with_file_dict = {}
     list_of_dat_files.sort()
@@ -288,6 +295,16 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
         world_coords = wcs.all_pix2world(float(sd.xpos), float(sd.ypos), 0, ra_dec_order=True)
         logging.debug(f"world coords for star {sd.local_id}, {world_coords}")
         sd.coords = SkyCoord(world_coords[0], world_coords[1], unit='deg')
+
+    # add line counts
+    pool = mp.Pool(cpu_count()-1, maxtasksperchild=10)
+    stars = []
+    for star in tqdm.tqdm(pool.imap_unordered(set_lines, star_descriptions, 5), total=len(star_descriptions), unit="files"):
+        stars.append(star)
+    star_descriptions = stars
+    # only keep stars which are present on at least 10% of the images
+    star_descriptions = list(filter(lambda x: x.obs > frames_used*0.1, star_descriptions))
+    logging.info(f"Filtered star descriptions to {len(star_descriptions)} stars")
 
     # Add VSX information to SDs
     star_descriptions, results_ids = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions,
@@ -316,6 +333,11 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
             do_calibration.add_catalog_to_star_descriptions(starfile_stars, "SELECTED")
             do_calibration.add_catalog_to_star_descriptions(starfile_stars, "STARFILE")
     return star_descriptions
+
+
+def set_lines(star: StarDescription):
+    star.obs = sum(1 for line in open(star.path) if line.rstrip())
+    return star
 
 
 def has_option(obj, attr_name):

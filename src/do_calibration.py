@@ -300,7 +300,7 @@ def catalog_filter(star: StarDescription, catalog_name, exclude=[]):
 
 # gets all stars which have a catalog of name catalog_name
 def get_catalog_stars(stars: List[StarDescription], catalog_name: str, exclude=[]) -> List[StarDescription]:
-    return list(filter(partial(catalog_filter, catalog_name=catalog_name), stars))
+    return list(filter(partial(catalog_filter, catalog_name=catalog_name, exclude=exclude), stars))
 
 ################ CATALOG related functions #########################
 

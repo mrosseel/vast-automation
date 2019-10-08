@@ -9,6 +9,7 @@ from reading import trash_and_recreate_dir
 import argparse
 from typing import List, Tuple
 from star_description import StarDescription
+import random
 StarDescriptionList = List[StarDescription]
 
 PADDING = 200
@@ -39,14 +40,17 @@ def add_pixels(results, wcs, offset):
         star.ypos = y + offset
     return results
 
+
 def mirror_offset_transform(pos: int, shape: Tuple, shapeidx: int, offset: int = 0):
     return shape[shapeidx] - (pos+offset)
+
 
 def offset_transform(pos: int, shape: Tuple, shapeidx: int, offset: int = 0):
     return pos+offset
 
+
 def plot_it(big_green: StarDescriptionList, small_red: StarDescriptionList, fits_file: str, wcs, title,
-            padding: int = PADDING, plot_fits: bool = True, offset=0,
+            padding: int = PADDING, plot_fits: bool = True, random_red=False,
             xpos_transform=offset_transform, ypos_transform=offset_transform):
     fig, data = get_plot_with_background(fits_file, padding, title, plot_fits)
     datashape = data.shape
@@ -61,20 +65,28 @@ def plot_it(big_green: StarDescriptionList, small_red: StarDescriptionList, fits
     if len(small_red_positions) > 0:
         small_red_apps = CircularAperture(small_red_positions, r=5.)
         small_red_apps.plot(color='red', lw=1.5, alpha=0.5)
+    random.seed(42)
 
     # plot background fits image if one is provided
     # target_app.plot(color='blue', lw=1.5, alpha=0.5)
     #to_plot = results
-    def annotate_it(star_descriptions, offset1, offset2, size=16):
+    def annotate_it(star_descriptions, offset1, offset2, random_offset=False, size=16):
         for stardescr in star_descriptions:
             xpos = xpos_transform(stardescr.xpos, datashape, 0)
             ypos = ypos_transform(stardescr.ypos, datashape, 1)
             logging.debug(f"Plotting {stardescr.label} {xpos} {ypos}")
+            if random_offset:
+                randoffset = random.randint(10,20)
+                xsignrand = random.choice([-1.0, 1.0])
+                ysignrand = random.choice([-1.0, 1.0])
+                offset1 = xsignrand*randoffset
+                offset2 = ysignrand*randoffset
+                print(f"using {offset1} and {offset2}")
             plt.annotate('{}'.format(stardescr.label),
-                         xy=(round(xpos), round(ypos)), xycoords='data',
-                         xytext=(offset1, offset2), textcoords='offset points', size=size, arrowprops=dict(arrowstyle="->"))
-    annotate_it(big_green, -10, -20, size=10)
-    annotate_it(small_red, -10, 10, size=12)
+                     xy=(round(xpos), round(ypos)), xycoords='data',
+                     xytext=(offset1, offset2), textcoords='offset points', size=size, arrowprops=dict(arrowstyle="->"))
+    annotate_it(big_green, 0, -20, size=12)
+    annotate_it(small_red, -10, 10, random_offset=random_red, size=10)
     return fig
 
 
@@ -169,14 +181,16 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
     logging.info("Plotting field chart with all VSX variable stars + candidate vars...")
     big_green = vsx_labeled
     small_red = candidate_labeled
-    fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "VSX stars + candidate stars", PADDING)
+    fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "VSX stars + candidate stars", PADDING,
+                  random_red=True)
     save(fig, fieldchartsdirs + 'vsx_{}_and_candidates_{}'.format(len(big_green), len(small_red)))
 
     # field chart with all vsx stars + starfile
     logging.info("Plotting field chart with all VSX variable stars + candidate vars...")
     big_green = vsx_labeled
     small_red = starfile_labeled
-    fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "VSX stars + selected stars", PADDING)
+    fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "VSX stars + selected stars", PADDING,
+                  random_red=True)
     save(fig, fieldchartsdirs + 'vsx_{}_and_selected_{}'.format(len(big_green), len(small_red)))
 
 
