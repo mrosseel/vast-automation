@@ -97,7 +97,7 @@ def save(fig, path):
     plt.close(fig)
 
 
-def run_standard_field_charts(selected_star_descriptions: StarDescriptionList, wcs, fieldchartsdirs, reference_header):
+def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, fieldchartsdirs, reference_header):
     trash_and_recreate_dir(fieldchartsdirs)
 
     # setting the font size for titles/axes
@@ -110,7 +110,7 @@ def run_standard_field_charts(selected_star_descriptions: StarDescriptionList, w
 
     # TODO hand labeled stars
     # hand_candidates_descr = do_calibration.get_star_descriptions(init.wwcra_certain_candidates)
-    all_stars_descr = selected_star_descriptions
+    all_stars_descr = star_descriptions
 
     # if SHOW_UPSILON:
     #     big_green = set_custom_label(comparison_  star_descr, 'comp')
@@ -122,12 +122,19 @@ def run_standard_field_charts(selected_star_descriptions: StarDescriptionList, w
 
     # all stars get a blank label
     all_stars_labeled = set_custom_label(all_stars_descr, '')
+
     # vsx stars get their aavso id label
-    vsx_descr = [x for x in selected_star_descriptions if x.has_catalog('VSX')]
+    vsx_descr = do_calibration.get_catalog_stars(star_descriptions, "VSX")
     vsx_labeled = set_aavso_id_label(vsx_descr)
-    # other stars get their local id label
-    hand_candidates_descr = [x for x in selected_star_descriptions if (x.has_catalog('SELECTED') and not x.has_catalog('VSX'))]
-    hand_candidates_labeled = set_local_id_label(hand_candidates_descr)
+
+    # candidate stars get their local id label
+    candidate_descr = do_calibration.get_catalog_stars(star_descriptions, "CANDIDATE", exclude=["VSX"])
+    candidate_labeled = set_local_id_label(candidate_descr)
+
+    # starfile stars get their local id label
+    starfile_descr = do_calibration.get_catalog_stars(star_descriptions, "STARFILE", exclude=["VSX"])
+    print("oeutnohuntoe", starfile_descr)
+    starfile_labeled = set_local_id_label(starfile_descr)
 
     # default fields
     empty = []
@@ -137,21 +144,21 @@ def run_standard_field_charts(selected_star_descriptions: StarDescriptionList, w
     big_green = empty
     small_red = all_stars_labeled
     fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "All detected stars", PADDING)
-    save(fig, fieldchartsdirs + 'all_detections_for_{}_stars'.format(len(small_red)))
+    save(fig, fieldchartsdirs + 'all_detections_{}_stars'.format(len(small_red)))
 
     # field chart with all vsx stars
     logging.info("Plotting field chart with all VSX variable stars...")
     big_green = vsx_labeled
     small_red = empty
-    fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "All VSX variable stars", PADDING)
-    save(fig, fieldchartsdirs + 'all_vsx_stars_{}'.format(len(big_green)))
+    fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "All VSX stars", PADDING)
+    save(fig, fieldchartsdirs + 'vsx_stars_{}'.format(len(big_green)))
 
     # field chart with all vsx stars without the background
     logging.info("Plotting field chart with all VSX variable stars without reference field...")
     big_green = vsx_labeled
     small_red = empty
     fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "VSX without background", PADDING, plot_fits=False)
-    save(fig, fieldchartsdirs + 'all_vsx_stars_no_ref_{}'.format(len(big_green)))
+    save(fig, fieldchartsdirs + 'vsx_stars_no_ref_{}'.format(len(big_green)))
 
     # field chart with only the background
     logging.info("Plotting field chart with only the reference field...")
@@ -161,9 +168,16 @@ def run_standard_field_charts(selected_star_descriptions: StarDescriptionList, w
     # field chart with all vsx stars + candidates
     logging.info("Plotting field chart with all VSX variable stars + candidate vars...")
     big_green = vsx_labeled
-    small_red = hand_candidates_labeled
-    fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "VSX variable stars + hand picked stars", PADDING)
-    save(fig, fieldchartsdirs + 'all_vsx_stars_{}_hand_picked_{}'.format(len(big_green), len(small_red)))
+    small_red = candidate_labeled
+    fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "VSX stars + candidate stars", PADDING)
+    save(fig, fieldchartsdirs + 'vsx_{}_and_candidates_{}'.format(len(big_green), len(small_red)))
+
+    # field chart with all vsx stars + starfile
+    logging.info("Plotting field chart with all VSX variable stars + candidate vars...")
+    big_green = vsx_labeled
+    small_red = starfile_labeled
+    fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "VSX stars + selected stars", PADDING)
+    save(fig, fieldchartsdirs + 'vsx_{}_and_selected_{}'.format(len(big_green), len(small_red)))
 
 
 if __name__ == '__main__':

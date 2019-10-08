@@ -63,7 +63,8 @@ def run_do_rest(args):
         do_charts_field.run_standard_field_charts(star_descriptions, wcs, fieldchartsdir, wcs_file)
 
     # load comparison stars
-    comparison_stars_1, comparison_stars_1_desc = do_compstars.get_fixed_compstars(star_descriptions, args.aavso)
+    checkstars = read_checkstars(args.checkstars)
+    comparison_stars_1, comparison_stars_1_desc = do_compstars.get_fixed_compstars(star_descriptions, checkstars)
     comp_observations = []
     logging.info(f"Using comparison star ids:{comparison_stars_1}")
     for star in comparison_stars_1:
@@ -180,6 +181,11 @@ def read_data_m_sigma(vastdir) -> Dict[int, Tuple[int, int]]:
         stardict[star_id] = PixelPos(float(splitline[2]), float(splitline[3]), splitline[4])
     return stardict
 
+def read_checkstars(checkstar_file: str) -> List[str]:
+    result = []
+    for line in open(checkstar_file):
+        result.append(line.strip())
+    return result
 
 def get_starid_from_outfile(outfile):
     m = re.search('out(.*).dat', outfile)
@@ -278,14 +284,11 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
     results_ids.sort()
     write_vsx_stars(resultdir, results_ids, star_descriptions)
 
-    if args.candidates:
-        candidate_ids = get_autocandidates(vastdir)
-        logging.info(f"Tagging {len(candidate_ids)} candidates")
-        selected_stars = do_calibration.select_star_descriptions(candidate_ids, star_descriptions)
-        for star in selected_stars:
-            star.match.append(CatalogMatch(name_of_catalog="CANDIDATE", catalog_id=star.local_id,
-                                           name=star.local_id))
-        do_calibration.add_catalog_to_star_descriptions(selected_stars, "SELECTED")
+    candidate_ids = get_autocandidates(vastdir)
+    logging.info(f"Tagging {len(candidate_ids)} candidates")
+    selected_stars = do_calibration.select_star_descriptions(candidate_ids, star_descriptions)
+    do_calibration.add_catalog_to_star_descriptions(selected_stars, "SELECTED")
+    do_calibration.add_catalog_to_star_descriptions(selected_stars, "CANDIDATE")
 
     if args.starfile:
         with open(args.starfile, 'r') as fp:

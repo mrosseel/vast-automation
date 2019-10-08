@@ -20,7 +20,7 @@ def select_compstars(stddevs, apertureidx, counts):
 
 
 # receives ucac numbers, fetches ucac coords and compares them to world_position coords
-def get_fixed_compstars(star_descriptions: List[StarDescription], comparison_stars):
+def get_fixed_compstars(star_descriptions: List[StarDescription], comparison_stars: List[str]):
     logging.info(f"Using fixed compstars {comparison_stars}")
     star_ids_1 = []
     star_desc_result = []

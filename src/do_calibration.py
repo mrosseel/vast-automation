@@ -293,12 +293,13 @@ def _add_catalog_match_to_entry(catalog_name: str, matchedstardesc: StarDescript
 
 
 # Does this star have a catalog with catalog_name? Used in combination with filter()
-def catalog_filter(star: StarDescription, catalog_name):
-    return star.get_catalog(catalog_name) is not None
+def catalog_filter(star: StarDescription, catalog_name, exclude=[]):
+    catalogs = star.get_catalog_list()
+    return catalog_name in catalogs and len([x for x in exclude if x in catalogs]) == 0
 
 
 # gets all stars which have a catalog of name catalog_name
-def get_catalog_stars(stars: List[StarDescription], catalog_name: str) -> List[StarDescription]:
+def get_catalog_stars(stars: List[StarDescription], catalog_name: str, exclude=[]) -> List[StarDescription]:
     return list(filter(partial(catalog_filter, catalog_name=catalog_name), stars))
 
 ################ CATALOG related functions #########################

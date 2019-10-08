@@ -60,6 +60,8 @@ class StarDescription:
                 return catalog_match_list[0]
         return None
 
+    def get_catalog_list(self):
+        return [x.name_of_catalog for x in self.match]
 
     # extract matching strings from star_descr
     def get_match_string(self, catalog, strict=False):

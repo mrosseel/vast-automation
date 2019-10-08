@@ -11,6 +11,8 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--datadir',
                         help="The directory where the data can be found (usually the vast dir)",
                         nargs='?', required=True)
+    parser.add_argument('-k', '--checkstars', help="The bright and stable stars used to do ensemble photometry",
+                        nargs='?', required=True)
     parser.add_argument('-r', '--resultdir',
                         help="The directory where all results will be written",
                         nargs='?', required=False)
