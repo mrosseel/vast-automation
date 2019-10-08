@@ -198,7 +198,7 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
         logging.info(f"Plotting field chart with all VSX variable stars + star {star.local_id}...")
         fig = plot_it(big_green, [star], reference_fits_frame, wcs, f"VSX stars + star {star.local_id}", PADDING,
                       random_red=False)
-        save(fig, fieldchartsdirs + 'vsx_{}_and_selected_{}'.format(len(big_green), len(small_red)))
+        save(fig, f"{fieldchartsdirs}vsx_{len(big_green)}_and_star_{star.local_id}")
 
 
 if __name__ == '__main__':
