@@ -30,7 +30,7 @@ vsx_catalog_name = "vsx_catalog.bin"
 vsxcatalogdir = '/home/jovyan/work/' + vsx_catalog_name
 # star id -> xpos, ypos, filename
 StarPosDict = Dict[str, Tuple[float, float, str]]
-
+STAR_KEEPER_PERCENTAGE=0.1
 
 def run_do_rest(args):
     thread_count = cpu_count()-1
@@ -300,11 +300,12 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
     # add line counts
     pool = get_pool()
     stars = []
-    for star in tqdm.tqdm(pool.imap_unordered(set_lines, star_descriptions, 5), total=len(star_descriptions), unit="files"):
+    for star in tqdm.tqdm(pool.imap_unordered(set_lines, star_descriptions, 5), total=len(star_descriptions),
+                          desc="Counting obs per star", unit="files"):
         stars.append(star)
     star_descriptions = stars
     # only keep stars which are present on at least 10% of the images
-    star_descriptions = list(filter(lambda x: x.obs > frames_used*0.1, star_descriptions))
+    star_descriptions = list(filter(lambda x: x.obs > frames_used*STAR_KEEPER_PERCENTAGE, star_descriptions))
     logging.info(f"Filtered star descriptions to {len(star_descriptions)} stars")
 
     # Add VSX information to SDs
@@ -346,7 +347,7 @@ def has_option(obj, attr_name):
 
 
 def get_pool(maxtasksperchild=10):
-    return mp.Pool(cpu_count()-1, maxtasksperchild)
+    return mp.Pool(cpu_count()-1, maxtasksperchild=maxtasksperchild)
 
 def interact():
     import code
