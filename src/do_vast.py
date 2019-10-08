@@ -23,7 +23,8 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--phase', help="Generate phase charts", action="store_true")
     parser.add_argument('-i', '--lightcurve', help="Generate lightcurve charts", action="store_true")
     parser.add_argument('-c', '--candidates', help="Generate phase diagrams for autocandidates", action="store_true")
-    parser.add_argument('-a', '--aavso', help="Generate aavso reports, add your UCAC4 comparison stars", nargs='+')
+    parser.add_argument('-a', '--aavso', help="Generate aavso reports",
+                        action="store_true")
     parser.add_argument('-t', '--aavsolimit', help="Limits the number of lines per aavso file. -t 5000 splits the"
                                                    "observations in files of 5000 lines each.",
                         nargs='?', type=int, default=None, const=5000)
