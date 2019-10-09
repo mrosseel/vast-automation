@@ -1,4 +1,3 @@
-
 FROM jupyter/scipy-notebook:2662627f26e0
 
 MAINTAINER Mike Rosseel version: 0.1
@@ -10,11 +9,8 @@ RUN apt update && apt install -yq wcslib-dev libcfitsio-dev expat gtk2.0 gcc ope
 # gstreamer-1.0 needed by cmunipack, some things could probably be removed
     apt install -yq libgstreamer1.0-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-doc gstreamer1.0-tools gstreamer1.0-x gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-gtk3 gstreamer1.0-qt5 gstreamer1.0-pulseaudio  && \
     apt install -yq build-essential gfortran g++ libx11-dev libxi-dev libxmu-dev libpng-dev curl wget bc iputils-ping && \
-    wget https://sourceforge.net/projects/c-munipack/files/C-Munipack%202.1%20Stable/2.1.27/cmunipack-2.1.27.tar.gz/download -O cmunipack.tar.gz  && \
-    tar xvfz cmunipack.tar.gz && wget https://github.com/kirxkirx/vast/archive/vast-1.0rc84.tar.gz && tar xvfz vast-1.0rc84.tar.gz && \
+    wget https://github.com/kirxkirx/vast/archive/vast-1.0rc84.tar.gz && tar xvfz vast-1.0rc84.tar.gz && \
     mv vast-vast-1.0rc84 vast-1.0rc84
-WORKDIR /home/jovyan/cmunipack-2.1.27
-RUN chmod +x ./configure && ./configure && make && make install && ldconfig
 WORKDIR /home/jovyan/vast-1.0rc84
 RUN make
 USER $NB_USER

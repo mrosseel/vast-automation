@@ -1,4 +1,4 @@
-from init_loader import init, settings
+from typing import List
 import os
 import pandas as pd
 import numpy as np
@@ -24,7 +24,27 @@ def read_lightcurve(star,filter=True,preprocess=False, directory=None):
     except OSError as e:
         logging.error(f"OSError for star: {star}, {e}")
 
+# - 1st column - JD(TT) (default) or JD(UTC) (if VaST was started with "-u" flag)
+# - 2nd column - magnitude (with respect to the background level on the reference image if an absolute calibration was not done yet)
+# - 3rd column - estimated magnitude error
+# - 4th column - X position of the star on the current frame (in pixels)
+# - 5th column - Y position of the star on the current frame (in pixels)
+# - 6th column - diameter of the circular aperture used to measure the current frame (in pixels)
+# - 7th column - file path corresponding to the current frame
+def read_lightcurve_vast(star: int, vastdir:str, preprocess=False):
+    try:
+        df = pd.read_csv(vastdir + f"out{star:05}.dat", names=['JD', 'mag', 'mag_e', 'X', 'Y', 'aperture', 'file', 'c1', 'c1b', 'c2', 'c2b', 'c3', 'c3b', 'c4', 'c4b', 'c5', 'c5b'],
+                         header=None, delim_whitespace=True)
+        logging.debug(f"Read lightcurve of {star} with {df.shape[0]}")
+        if(preprocess):
+            df = preprocess_lightcurve(df)
+        return df
+    except OSError as e:
+        logging.error(f"OSError for star: {star}, {e}")
+
+
 def preprocess_lightcurve(df):
+    logging.error("not adapted for vast usage!!!!!!!!!!!!!")
     try:
         P = np.percentile(df['V-C'], [5, 95])
         df2 = df[(df['V-C'] > P[0]) & (df['V-C'] < P[1])]
@@ -112,7 +132,7 @@ def read_compstars():
     return comparison_stars_1, comparison_stars_1_desc
 
 # Select files conforming to the match_pattern using percentage which is between 0 and 1
-def file_selector(the_dir, match_pattern, percentage=1):
+def file_selector(the_dir, match_pattern, percentage=1) -> List[str]:
     matched_files = glob.glob(the_dir+match_pattern)
     desired_length = max(1, int(len(matched_files) * float(percentage)))
     logging.info(f"Reading.file_selector: {the_dir+match_pattern}, total:{len(matched_files)}, desired:{desired_length}")

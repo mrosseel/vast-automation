@@ -132,6 +132,9 @@ def get_star_descriptions(star_id_list=None):
                                           coords=SkyCoord(positions[key][0], positions[key][1], unit='deg')))
     return result
 
+def select_star_descriptions(star_id_list: List[int], stars: List[StarDescription]):
+    return [x for x in stars if x.local_id in star_id_list]
+
 # returns list of star descriptions
 def get_empty_star_descriptions(star_id_list=None):
     # returns {'name': [ra.deg, dec.deg ]}
@@ -202,12 +205,11 @@ def get_upsilon_candidates_raw(threshold_prob, check_flag):
 
 # returns {'star_id': [label, probability, flag, period, SkyCoord, match_name, match_skycoord,
 # match_type, separation_deg]}
-def add_vsx_names_to_star_descriptions(star_descriptions: List[StarDescription], max_separation=0.01):
+def add_vsx_names_to_star_descriptions(star_descriptions: List[StarDescription], vsxcatalogdir: str, max_separation=0.01):
     logging.info("Adding VSX names to star descriptions")
-    result = star_descriptions  # no deep copy for now
     result_ids = []
     # copy.deepcopy(star_descriptions)
-    vsx_catalog, vsx_dict = create_vsx_astropy_catalog()
+    vsx_catalog, vsx_dict = create_vsx_astropy_catalog(vsxcatalogdir)
     star_catalog = create_star_descriptions_catalog(star_descriptions)
     # vsx catalog is bigger in this case than star_catalog, but if we switch then different stars can be
     # matched with the same variable which is wrong.
@@ -225,17 +227,19 @@ def add_vsx_names_to_star_descriptions(star_descriptions: List[StarDescription],
         if entry.value < max_separation:
             index_vsx = idx[index_star_catalog]
             # if it's a new vsx star or a better match than the last match, write into dict
-            if index_vsx not in results_dict or results_dict[index_vsx][2] > entry.value:
-                index_vsx = idx[index_star_catalog]
-                results_dict[index_vsx] = VsxInfo(index_star_catalog, index_vsx, entry.value)
+            if index_vsx not in results_dict or results_dict[index_vsx].sep > entry.value:
+                star_id = star_descriptions[index_star_catalog].local_id
+                results_dict[index_vsx] = VsxInfo(star_id, index_vsx, entry.value)
+                logging.debug(f"Adding {results_dict[index_vsx]} to VSX results")
+    cachedict = utils.get_star_description_cache(star_descriptions)
     # loop over dict and add the new vsx matches to the star descriptions
     for keys, vsxinfo in results_dict.items():
-        _add_catalog_match_to_entry('VSX', result[vsxinfo.starid_0], vsx_dict,
+        logging.debug(f"len sd is {len(star_descriptions)}, vsxinfo.starid is {vsxinfo.starid_0}")
+        _add_catalog_match_to_entry('VSX', cachedict[vsxinfo.starid_0], vsx_dict,
                                     vsxinfo.vsx_id, vsxinfo.sep)
         result_ids.append(vsxinfo.starid_0)
-        logging.debug(f"Adding vsx match: {vsxinfo}, {result[vsxinfo.starid_0]}\n")
     logging.info(f"Added {len(results_dict)} vsx stars.")
-    return result, result_ids
+    return star_descriptions, result_ids
 
 
 # star_catalog = create_star_descriptions_catalog(star_descriptions)
@@ -250,7 +254,7 @@ def get_starid_1_for_radec(ra_deg, dec_deg, all_star_catalog, max_separation=0.0
 # returns StarDescription array
 def get_vsx_in_field(star_descriptions, max_separation=0.01):
     logging.info("Get VSX in field star descriptions")
-    vsx_catalog, vsx_dict = create_vsx_astropy_catalog()
+    vsx_catalog, vsx_dict = create_vsx_astropy_catalog(settings.vsxcatalogdir)
     star_catalog = create_star_descriptions_catalog(star_descriptions)
     idx, d2d, d3d = match_coordinates_sky(vsx_catalog, star_catalog)
     result = []
@@ -266,18 +270,15 @@ def get_vsx_in_field(star_descriptions, max_separation=0.01):
     logging.info("Found {} VSX stars in field: {}".format(len(result), [star.local_id for star in result]))
     return result
 
+################ CATALOG related functions #########################
 
-# tags a list of star id's with the 'selected' CatalogMatch for later filtering
-def add_selected_match_to_stars(stars: List[StarDescription], star_id_list_0):
-    catalog_name = "SELECTED"
-    for star_id_0 in star_id_list_0:
-        curr_sd = stars[star_id_0]
-        assert int(curr_sd.local_id) == int(star_id_0)+1
-        match = CatalogMatch(name_of_catalog=catalog_name, catalog_id=curr_sd.local_id)
-        logging.debug(f"Voor de append: {curr_sd.match}")
-        curr_sd.match.append(match)
-        logging.debug(f"Na de append: {curr_sd.match}")
 
+# tags a list of star descriptions a catalogfor later filtering
+def add_catalog_to_star_descriptions(stars: List[StarDescription], catalog_name="SELECTED"):
+    for sd in stars:
+        match = CatalogMatch(name_of_catalog=catalog_name, catalog_id=sd.local_id)
+        sd.match.append(match)
+    return stars
 
 def _add_catalog_match_to_entry(catalog_name: str, matchedstardesc: StarDescription, vsx_dict, index_vsx, separation):
     assert matchedstardesc.match is not None
@@ -290,6 +291,18 @@ def _add_catalog_match_to_entry(catalog_name: str, matchedstardesc: StarDescript
     matchedstardesc.match.append(match)
     return match
 
+
+# Does this star have a catalog with catalog_name? Used in combination with filter()
+def catalog_filter(star: StarDescription, catalog_name, exclude=[]):
+    catalogs = star.get_catalog_list()
+    return catalog_name in catalogs and len([x for x in exclude if x in catalogs]) == 0
+
+
+# gets all stars which have a catalog of name catalog_name
+def get_catalog_stars(stars: List[StarDescription], catalog_name: str, exclude=[]) -> List[StarDescription]:
+    return list(filter(partial(catalog_filter, catalog_name=catalog_name, exclude=exclude), stars))
+
+################ CATALOG related functions #########################
 
 # Takes in a list of known variables and maps them to the munipack-generated star numbers
 # usage:
@@ -315,9 +328,9 @@ def create_generic_astropy_catalog(ra_deg_np, dec_deg_np):
     return SkyCoord(ra=ra_deg_np, dec=dec_deg_np, unit='deg')
 
 
-def create_vsx_astropy_catalog():
+def create_vsx_astropy_catalog(vsx_catalog_location):
     logging.info("Creating vsx star catalog...")
-    vsx_dict = vsx_pickle.read(settings.vsxcatalogdir)
+    vsx_dict = vsx_pickle.read(vsx_catalog_location)
     return create_generic_astropy_catalog(vsx_dict['ra_deg_np'], vsx_dict['dec_deg_np']), vsx_dict
 
 
@@ -404,7 +417,7 @@ def add_info_to_star_description(star, vmag, e_vmag, catalog_id, catalog_name, c
     mindist = star.coords.separation(coord_catalog)
     star.match.append(CatalogMatch(name_of_catalog=catalog_name, catalog_id=catalog_id,
                                    name=catalog_id, coords=coord_catalog, separation=mindist))
-    logging.info("Star {} has vmag={}, error={}, dist={}".format(star.local_id, star.vmag, star.e_vmag, mindist))
+    logging.info("Add info: Star {} has vmag={}, error={}, dist={}".format(star.local_id, star.vmag, star.e_vmag, mindist))
     return star
 
 

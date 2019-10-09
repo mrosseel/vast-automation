@@ -3,7 +3,15 @@
 Docker is used to construct a light-weight virtual machine linux containing all necessary dependencies.
 Once you're in this VM, all python commands can be run.
 
-## Starting Docker
+## Preparation
+
+### Importing VSX star catalog
+
+* AAVSO VSX catalog can be downloaded here: http://cdsarc.u-strasbg.fr/viz-bin/Cat?cat=B%2Fvsx%2Fversions%2F2018-02-26&target=brief&
+* run 'python vsx_pickle.py vsx.dat' where vsx.dat is the unzipped versin of the downloaded vsx catalog
+* check that 'vsx_catalog.bin' has been written successfully
+
+### Starting Docker
 
 * have a working docker installation: https://www.docker.com/community-edition
 * cd docker
@@ -12,69 +20,68 @@ Once you're in this VM, all python commands can be run.
 * command: `./startJupyter.sh`
 * you are automatically logged into a root shell of the docker container
 
-## Command line usage
+## Run VAST on the fits files
 
-### Init settings
+`./vast -u -x 3 ../location/of/fits/*.fit`
 
-* copy init.py.example to init.py in your working dir (for example ./current) and fill in correct values.
+This uses UTC time, and ignores the 'blended' flag for stars which are close to each other.
+This will generate many vast files in the vast directory
 
-### Set reference frame (used during matching)
+## Process VAST results
 
-* take one reference frame and calculate a fits header using http://Astrometry.net
-* call `./set_reference_frame.py ./currrent/fits/my_reference_frame.fits ./current`
+### run the command
 
-### Find correct config files for muniphot and munimatch
+`./vast_process.sh --vsx --candidates -d support/vast-1.0rc84`
 
-* How to find the best config file (takes long): `python src/find_phot_config.py -d current 0.1` => this 
-uses 1 percent of the fits to calculate the optimal photometry config.
-* The resulting directory indicates the number of the best config file, e.g current/search/00001 means that 
-the best result is in ./current/search/conf/muniphot1.conf
+### plate solve the reference frame (first run only)
 
-### Run
+The software will stop and ask you to do this.
 
-* call `./run.sh -d ./current`
+* take the reference frame and calculate a fits header using http://Astrometry.net
+* store it in the vast directory as *new-image.fits*
 
-### File overview (partial)
+### look at the results
 
-* init.py : directory settings, processing settings
-* do_muniwin.py : start all
-* do_charts.py : plots of lightcurve and phase diagrams
-* do_field_charts.py : plot the reference frame + circles around stars of interest
-* do_upsilon.py : only do machine learning detection
-* do_aavso_report: write files in the AAVSO Extended Format
-* do_profile.py : do performance profiling on the app (not sure if working)
+This command line above will generate vsx information and create phase diagrams for 
+all vast autocandidates and vsx stars.
+Also a few extra files are generated:
 
-## Jupyter lab usage
+* vsx_stars.txt
+* vast_list_of_all_stars_pos.txt
+* vast_autocandidates_pos.txt
+
+## Other
+
+### Jupyter lab usage
 
 The docker image also exposes a Jupyter lab instance on port 8888.
 _Password is 'muni'_
 
-## Importing UCAC4 star catalog
+### Importing UCAC4 star catalog
 
-* Use a tool like filezilla and connect to this location: cdsarc.u-strasbg.fr/0/more/UCAC4
-* ... TODO
+Getting the 900 files (9Gb):
+- `wget ftp://cdsarc.u-strasbg.fr/0/more/UCAC4/u4b/*`
 
-## Importing VSX star catalog
-
-* AAVSO VSX catalog can be downloaded here: http://cdsarc.u-strasbg.fr/viz-bin/Cat?cat=B%2Fvsx%2Fversions%2F2018-02-26&target=brief&
-* run 'python vsx_pickle.py vsx.dat' where vsx.dat is the unzipped versin of the downloaded vsx catalog
-* check that 'vsx_catalog.bin' has been written successfully
+Checking that all 900 files were downloaded correctly:
+- `md5sum -c md5sum.txt`
 
 ## TODO
 
-- set_reference_frame doesn't work
-- don't start muniwin if reference frame is not defined
+- calculate correct realMag, realErr
+- for candidates, closest known vsx
+- for candidates_pos, no h/m/s but spaces (see get_lesve)
++ check that if no comparison stars are found 0 is used
+- make html page with selected candidates
+/ make lightcurves based on JD
++ hire kimsufi server for processing ks-11
+- file to give comparison stars -f bla.txt
+- check out https://public.lanl.gov/palmer/fastchi.html for period determination
+
 - AAVSO report should use instrumental magnitudes for comparison stars
 - other stars in command line
-+ all things use VSX
-+ move log to current dir
-- check out https://public.lanl.gov/palmer/fastchi.html for period determination
 - check out https://github.com/toros-astro/astroalign for aligning
 - new ensemble comparison star calculation?
-- check error column for any stars having error bars > 1%
 - stacking images to detect fainter stars+have better signal/noise ratio: https://github.com/fedhere/coaddfitim
-- write munifind_ intermediate files in a folder
-- detect less stars to do the aperture calculations (generate them in a separate folder, subset of images)
 
 ## References
 

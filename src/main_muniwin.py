@@ -230,7 +230,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
 
     if do_field_charting:
         logging.info("Starting field chart plotting...")
-        do_charts_field.run_standard_field_charts(selected_stars, wcs)
+        do_charts_field.run_standard_field_charts(selected_stars, wcs, settings.fieldchartsdirs, settings.reference_header)
 
     # import code
     # code.InteractiveConsole(locals=dict(globals(), **locals())).interact()
@@ -239,7 +239,7 @@ def run_do_rest(do_convert_fits, do_photometry, do_match, do_compstars_flag, do_
         logging.info(f"AAVSO Reporting with: {len(selected_stars)} stars")
         trash_and_recreate_dir(settings.aavsoreportsdir)
         for star in selected_stars:
-            do_aavso_report.report(settings.aavsoreportsdir, star, comparison_stars_1_desc[0], filter=None)
+            do_aavso_report.report(star, settings.aavsoreportsdir, comparison_stars_1_desc[0], filter=None)
 
 # make a list of star_descriptions containing all selected stars
 def construct_star_descriptions(args, do_compstars_flag, comparison_stars_1, comparison_stars_1_desc):
@@ -256,7 +256,7 @@ def construct_star_descriptions(args, do_compstars_flag, comparison_stars_1, com
             logging.info("Setting star_descriptions to upsilon candidates")
             star_descriptions = do_calibration.add_candidates_to_star_descriptions(star_descriptions, 0.1)
 
-        star_descriptions, results_ids_0 = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions, 0.01)
+        star_descriptions, results_ids_0 = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions, settings.vsxcatalogdir, 0.01)
         results_ids_0.sort()
 
         # write the vsx stars used into a file

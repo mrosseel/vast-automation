@@ -2,7 +2,7 @@ from astropy.coordinates import SkyCoord
 
 class StarDescription:
     def __init__(self, local_id=None, aavso_id=None, coords: SkyCoord=None, vmag=None, e_vmag=None, match=None, label=None,
-                 xpos=None, ypos=None, path=None):
+                 xpos=None, ypos=None, path=None, obs=None):
         # star id given by munipack
         self.local_id = local_id
         # id used to identify to aavso (could be real variable name or UCAC4?)
@@ -23,6 +23,8 @@ class StarDescription:
         self.label = self.local_id if label is None else label
         # the path where the star is defined
         self.path = path
+        # the number of observations for this star
+        self.obs = obs
 
 
     @property
@@ -58,6 +60,8 @@ class StarDescription:
                 return catalog_match_list[0]
         return None
 
+    def get_catalog_list(self):
+        return [x.name_of_catalog for x in self.match]
 
     # extract matching strings from star_descr
     def get_match_string(self, catalog, strict=False):
@@ -69,13 +73,14 @@ class StarDescription:
 
 
     def __repr__(self):
-        return "StarDescription({0},{1},{2},{3},{4})".format(
-            self.local_id, self.aavso_id, self.coords, self.vmag, self._match)
+        return "StarDescription({0},{1},{2},{3},{4},{5})".format(
+            self.local_id, self.aavso_id, self.coords, self.vmag, self._match, self.path)
 
 
     def __str__(self):
-        return "local_id: {0}, aavso_id: {1}, coords: {2}, vmag: {3}, nr matches: {4}, matches: {5}".format(
-            self.local_id, self.aavso_id, self.coords, self.vmag, len(self._match), self._match)
+        return f"local_id: {self.local_id}, aavso_id: {self.aavso_id}, coords: {self.coords}, xy: {self.xpos}, " \
+               f"{self.ypos}, vmag: {self.vmag}, nr matches: {len(self._match)}, " \
+               f"matches: {self._match}, path: {self.path}"
 
 
 class CatalogMatch():

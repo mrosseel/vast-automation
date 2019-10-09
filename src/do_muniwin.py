@@ -15,7 +15,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='munipack automation cli')
     parser.add_argument('-d', '--datadir',
                         help="The directory where the data can be found (fits in ./fits dir under the data dir",
-                        nargs='?', required=True)
+                        nargs='1', required=True)
     parser.add_argument('-c', '--chart', help="Only generate lightcurve, lightcurve plot and phase diagram plot", nargs='+')
     parser.add_argument('-n', '--nowait', help="Don't wait 10 secs before starting", action="store_true")
     parser.add_argument('-v', '--vsx', help="Add vsx stars to field charts/reporting list", action="store_true")

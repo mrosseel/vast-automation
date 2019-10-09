@@ -6,4 +6,4 @@ cmunipack*
 **/.ipynb_checkpoints/**/*
 transfer/
 secrets.py
-support/vast/**/*
+support/vast*/**/*

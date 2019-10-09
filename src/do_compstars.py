@@ -6,7 +6,9 @@ import do_aperture
 import numpy as np
 from astropy.coordinates import SkyCoord
 from photometry_blob import PhotometryBlob
-
+from typing import List, Tuple
+from star_description import StarDescription
+import ucac4
 
 # main entry
 def select_compstars(stddevs, apertureidx, counts):
@@ -17,31 +19,27 @@ def select_compstars(stddevs, apertureidx, counts):
     return compstars_1
 
 
-# reads ucac numbers from init, fetches ucac coords and compares them to world_position coords
-def get_fixed_compstars(star_descriptions=None):
-    logging.info(f"Using fixed compstars {init.comparison_stars}")
-    if star_descriptions is None:
-        star_descriptions = do_calibration.get_star_descriptions(init.star_list)
+# receives ucac numbers, fetches ucac coords and compares them to world_position coords
+def get_fixed_compstars(star_descriptions: List[StarDescription], comparison_stars: List[str]):
+    logging.info(f"Using fixed compstars {comparison_stars}")
     star_ids_1 = []
     star_desc_result = []
     star_catalog = do_calibration.create_star_descriptions_catalog(star_descriptions)
-    for ucac_id in init.comparison_stars:
+    for ucac_id in comparison_stars:
         # getting star_id_1
-        df = do_calibration.get_ucac4_id_as_dataframe(ucac_id)
-        star_id_1 = do_calibration.get_starid_1_for_radec(df['RAJ2000'], df['DEJ2000'], star_catalog)
+        ucacsd = ucac4.get_ucac4_star_description(ucac_id)
+        ra, dec = ucacsd.coords.ra, ucacsd.coords.dec
+        star_id_1 = do_calibration.get_starid_1_for_radec([ra], [dec], star_catalog)
         star_ids_1.append(star_id_1)
         # adding info to star_description
         star = star_descriptions[star_id_1 - 1]
-        coord_catalog = SkyCoord(df['RAJ2000'], df['DEJ2000'], unit='deg')
-        #logging.info(f"get fixed compstars: {df.info()}")
-        # df['e_Vmag'] is not present !!!
-        logging.info(df['UCAC4'].iloc(0)[0])
-        vmag = df['Vmag'].iloc(0)[0]
-        do_calibration.add_info_to_star_description(star, vmag, np.nan, df['UCAC4'].iloc(0)[0].decode("utf-8"),
-                                                    "UCAC4", coord_catalog)
+        logging.info(f"Compstar match: {ucacsd.aavso_id} with {star.local_id}")
+        do_calibration.add_info_to_star_description(star, ucacsd.vmag, ucacsd.e_vmag,
+                                                    ucacsd.aavso_id,
+                                                    "UCAC4", SkyCoord(ra, dec, unit='deg'))
         star_desc_result.append(star)
-        logging.debug(f"Using fixed compstar '{ucac_id}' with Vmag: '{vmag}' and star id: {star_id_1}")
-    return star_ids_1, star_desc_result
+        logging.debug(f"Using fixed compstar '{ucac_id}' with Vmag: '{ucacsd.vmag}' and star id: {star_id_1}")
+    return [x.local_id for x in star_desc_result], star_desc_result
 
 def get_calculated_compstars(apertureidx, photometry_blob: PhotometryBlob):
     stddevs = photometry_blob.stddevs
