@@ -8,4 +8,5 @@ transfer/
 secrets.py
 support/vast*/**/*
 site/vsx/static/**/*
+site/vsx/public/**/*
 support/**

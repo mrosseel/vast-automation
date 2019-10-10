@@ -1,0 +1,3 @@
+[submodule "site/vsx/themes/gohugo-theme-ananke"]
+	path = site/vsx/themes/gohugo-theme-ananke
+	url = https://github.com/mrosseel/gohugo-theme-ananke.git
