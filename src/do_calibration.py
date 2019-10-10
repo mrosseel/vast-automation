@@ -184,7 +184,6 @@ def get_upsilon_candidates_raw(threshold_prob, check_flag):
 # returns {'star_id': [label, probability, flag, period, SkyCoord, match_name, match_skycoord,
 # match_type, separation_deg]}
 def add_vsx_names_to_star_descriptions(star_descriptions: List[StarDescription], vsxcatalogdir: str, max_separation=0.01):
-    logging.info("Adding VSX names to star descriptions")
     result_ids = []
     # copy.deepcopy(star_descriptions)
     vsx_catalog, vsx_dict = create_vsx_astropy_catalog(vsxcatalogdir)
@@ -216,7 +215,7 @@ def add_vsx_names_to_star_descriptions(star_descriptions: List[StarDescription],
         _add_catalog_match_to_entry('VSX', cachedict[vsxinfo.starid_0], vsx_dict,
                                     vsxinfo.vsx_id, vsxinfo.sep)
         result_ids.append(vsxinfo.starid_0)
-    logging.info(f"Added {len(results_dict)} vsx stars.")
+    logging.debug(f"Added {len(results_dict)} vsx stars.")
     return star_descriptions, result_ids
 
 

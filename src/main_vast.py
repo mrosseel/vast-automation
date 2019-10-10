@@ -59,7 +59,8 @@ def run_do_rest(args):
     star_descriptions = construct_star_descriptions(vastdir, resultdir, wcs, all_stardict, list_of_dat_files,
                                                     frames_used, args)
     stardict = get_star_description_cache(star_descriptions)
-    logging.debug("First 10 star descriptions", star_descriptions[:10])
+    logging.debug("First (max) 10 star descriptions",
+                  star_descriptions[:10] if len(star_descriptions) >= 10 else star_descriptions)
     write_augmented_autocandidates(vastdir, resultdir, stardict)
     write_augmented_all_stars(vastdir, resultdir, stardict)
     do_charts = args.lightcurve
@@ -68,7 +69,7 @@ def run_do_rest(args):
         do_charts_field.run_standard_field_charts(star_descriptions, wcs, fieldchartsdir, wcs_file)
 
     # load comparison stars
-    checkstars = read_checkstars(args.checkstars)
+    checkstars = read_checkstars(args.checkstarfile)
     comparison_stars_1, comparison_stars_1_desc = do_compstars.get_fixed_compstars(star_descriptions, checkstars)
     comp_observations = []
     logging.info(f"Using comparison star ids:{comparison_stars_1}")
@@ -92,22 +93,24 @@ def run_do_rest(args):
 
     if args.allstars:
         do_charts_vast.run(star_descriptions, comp_stars, vastdir, resultdir+'phase_all/', resultdir+'chart_all/',
-                           do_phase=do_phase, do_charts=do_charts, nr_threads=thread_count)
+                           do_phase=do_phase, do_charts=do_charts, nr_threads=thread_count,
+                           desc="Phase/lightcurves of ALL stars")
     else:
         if args.candidates:
             logging.info(f"Plotting {len(candidate_stars)} candidates...")
             do_charts_vast.run(candidate_stars, comp_stars, vastdir, resultdir+'phase_candidates/',
                                resultdir+'chart_candidates/', do_phase=do_phase, do_charts=do_charts,
-                               nr_threads=thread_count)
+                               nr_threads=thread_count, desc="Phase/lightcurves of candidates")
         if args.vsx:
             do_calibration.add_catalog_to_star_descriptions(vsx_stars, "SELECTED")
             logging.info(f"Plotting {len(vsx_stars)} vsx stars...")
             do_charts_vast.run(vsx_stars, comp_stars, vastdir, resultdir+'phase_vsx/', resultdir+'chart_vsx/',
-                               do_phase=do_phase, do_charts=do_charts, nr_threads=thread_count)
-        if args.starfile:
+                               do_phase=do_phase, do_charts=do_charts, nr_threads=thread_count,
+                               desc="Phase/lightcurves of VSX stars")
+        if args.selectedstarfile:
             do_charts_vast.run(starfile_stars, comp_stars, vastdir, resultdir+'phase_selected/',
                                resultdir+'chart_selected/', do_phase=do_phase, do_charts=do_charts,
-                               nr_threads=thread_count)
+                               nr_threads=thread_count, desc="Phase/lightcurves of selected stars")
 
     if args.aavso:
         # star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
@@ -130,9 +133,8 @@ def run_do_rest(args):
 
     if args.site:
         ids = [x.local_id for x in starfile_stars]
-        print("wwcra is:", candidate_stars[1])
-        print("These are the candidates ()", len(starfile_stars), ids)
-        hugo_site.run(starfile_stars, args.resultdir)
+        logging.info(f"Creating site entry with these {len(starfile_stars)} candidates: {ids}")
+        hugo_site.run(args.site, starfile_stars, args.resultdir)
 
 
 def clean_and_create_resultdir(argsdir: str, vastdir: str):
@@ -298,7 +300,7 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
         sd.ypos = intersect_dict[int(sd.local_id)][1]
         sd.obs = -1
         world_coords = wcs.all_pix2world(float(sd.xpos), float(sd.ypos), 0, ra_dec_order=True)
-        logging.debug(f"world coords for star {sd.local_id}, {world_coords}")
+        # logging.debug(f"world coords for star {sd.local_id}, {world_coords}")
         sd.coords = SkyCoord(world_coords[0], world_coords[1], unit='deg')
 
     # add line counts
@@ -328,12 +330,12 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
     do_calibration.add_catalog_to_star_descriptions(selected_stars, "SELECTED")
     do_calibration.add_catalog_to_star_descriptions(selected_stars, "CANDIDATE")
 
-    if args.starfile:
-        with open(args.starfile, 'r') as fp:
+    if args.selectedstarfile:
+        with open(args.selectedstarfile, 'r') as fp:
             lines = fp.readlines()
             starlist = [x.rstrip() for x in lines]
             starlist = [int(x) for x in filter(str.isdigit, starlist)]
-            logging.info(f"Selecting {len(starlist)} stars added by {args.starfile}")
+            logging.info(f"Selecting {len(starlist)} stars added by {args.selectedstarfile}")
             starfile_stars = list(filter(lambda x: x.local_id in starlist, star_descriptions))
             do_calibration.add_catalog_to_star_descriptions(starfile_stars, "SELECTED")
             do_calibration.add_catalog_to_star_descriptions(starfile_stars, "STARFILE")

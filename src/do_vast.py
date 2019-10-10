@@ -11,7 +11,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--datadir',
                         help="The directory where the data can be found (usually the vast dir)",
                         nargs='?', required=True)
-    parser.add_argument('-k', '--checkstars', help="The bright and stable stars used to do ensemble photometry",
+    parser.add_argument('-k', '--checkstarfile', help="The bright and stable stars used to do ensemble photometry",
                         nargs='?', required=True)
     parser.add_argument('-r', '--resultdir',
                         help="The directory where all results will be written",
@@ -28,9 +28,9 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--aavsolimit', help="Limits the number of lines per aavso file. -t 5000 splits the"
                                                    "observations in files of 5000 lines each.",
                         nargs='?', type=int, default=None, const=5000)
-    parser.add_argument('-s', '--starfile',
+    parser.add_argument('-s', '--selectedstarfile',
                         help="Load a file with star ids, these ids will be used for field charts/reporting")
-    parser.add_argument('--site', help="Generate a hugo compatible page", action="store_true")
+    parser.add_argument('--site', help="Generate a hugo compatible page")
     parser.add_argument('-x', '--verbose', help="Set logging to debug mode", action="store_true")
     parser.add_argument('-l', '--laststars', help="Use the star descriptions of the previous run to do the charting",
                         action="store_true")

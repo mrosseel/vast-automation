@@ -135,7 +135,8 @@ def read_compstars():
 def file_selector(the_dir, match_pattern, percentage=1) -> List[str]:
     matched_files = glob.glob(the_dir+match_pattern)
     desired_length = max(1, int(len(matched_files) * float(percentage)))
-    logging.info(f"Reading.file_selector: {the_dir+match_pattern}, total:{len(matched_files)}, desired:{desired_length}")
+    logging.debug(f"Reading.file_selector: {the_dir+match_pattern}, "
+                  f"total:{len(matched_files)}, desired:{desired_length}")
     np.random.seed(42) # for the same percentage, we always get the same selection
     selected_files = np.random.choice(matched_files, size=desired_length, replace=False).tolist()
     return selected_files

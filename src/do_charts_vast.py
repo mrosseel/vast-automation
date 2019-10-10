@@ -144,6 +144,7 @@ def plot_lightcurve_jd(tuple, chartsdir):
 
 
 def plot_phase_diagram(tuple, fullphasedir, suffix='', period=None):
+    logging.debug(f"Starting plot phase diagram with {tuple} and {fullphasedir}")
     star_description = tuple[0]
     coords = star_description.coords
     curve = tuple[1]
@@ -213,6 +214,9 @@ def read_vast_lightcurves(star_description: StarDescription, comp_stars: Compari
     if star_description.path is '':
         logging.debug(f"Path for {star_description.local_id} is empty")
         return
+    if not do_charts and not do_phase:
+        logging.debug("Nothing to do, no charts or phase needed")
+
     logging.debug(
         f"Reading lightcurves for star {star_description.local_id} at path {star_description.path} for {star_description}...")
     # comp_mags = [x.vmag for x in comparison_stars]
@@ -270,7 +274,7 @@ def calculate_real_mag_and_err(df, comp_stars: ComparisonStars):
     realV = []
     realErr = []
     for index, row in df.iterrows():
-        logging.debug(f"row is {row}, comp_mags is {comp_stars.comp_catalogmags}")
+        # logging.debug(f"row is {row}, comp_mags is {comp_stars.comp_catalogmags}")
         comp_obs = []
         comp_err = []
         for compstar in comp_stars.observations:
@@ -297,14 +301,14 @@ def calculate_real_mag_and_err(df, comp_stars: ComparisonStars):
                          f"real {comp_stars.comp_catalogmags},  vrel: {row['Vrel'] - meanobs + meanreal}, meanerr: {meanerr},"
                          f"nr of compstar observations={len(compstar)}, nr of variable observations={len(df)}")
             logging.info(f"{len(comp_obs)}, {len(comp_obs)} == {len(comp_err)}")
-        logging.debug(f"Results of photometry: V diff: {df['Vrel'].mean()-np.mean(realV)}, err diff: {df['err'].mean()-np.mean(realErr)}")
+        # logging.debug(f"Results of photometry: V diff: {df['Vrel'].mean()-np.mean(realV)}, err diff: {df['err'].mean()-np.mean(realErr)}")
     return realV, realErr
 
 
 # reads lightcurves and passes them to lightcurve plot or phase plot
 # def run(star_descriptions, comparison_stars, do_charts, do_phase):
 def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, phasedir: str, chartsdir: str,
-        do_charts=False, do_phase=True, nr_threads=cpu_count()):
+        do_charts=False, do_phase=True, nr_threads=cpu_count(), desc="Writing light curve charts/phase diagrams"):
     CHUNK = 1
     set_seaborn_style()
     pool = mp.Pool(nr_threads)
@@ -319,7 +323,7 @@ def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, phasedir: 
 
     func = partial(read_vast_lightcurves, basedir=basedir, comp_stars=comp_stars, do_charts=do_charts, do_phase=do_phase,
                    phasedir=phasedir, chartsdir=chartsdir)
-    with tqdm.tqdm(total=len(star_descriptions), desc='Writing light curve charts/phase diagrams') as pbar:
+    with tqdm.tqdm(total=len(star_descriptions), desc=desc) as pbar:
         for _ in pool.imap_unordered(func, star_descriptions, chunksize=CHUNK):
             pbar.update(1)
             pass

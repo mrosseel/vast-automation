@@ -14,7 +14,7 @@ def main(args):
     # selected_files = [x for x in all_files where]
     all_stardict = main_vast.read_stardict(vastdir)
     logging.info(f"Number of found lightcurves: {len(file_targets)}, number of identified stars: {len(all_stardict.keys())}")
-    args.upsilon = args.vsx = args.starfile = False
+    args.upsilon = args.vsx = args.selectedstarfile = False
     sds = main_vast.construct_star_descriptions(vastdir, wcs, all_stardict, file_targets, args)
     for star in sds:
         print(star, '\n')
