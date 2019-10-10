@@ -19,18 +19,17 @@ from utils import get_star_description_cache
 from reading import trash_and_recreate_dir
 from reading import file_selector
 from star_description import StarDescription
-from photometry_blob import PhotometryBlob
-from init_loader import init, settings
 from astropy.coordinates import SkyCoord
 from astropy.wcs import WCS
 from typing import List, Dict, Tuple
 from comparison_stars import ComparisonStars
-from star_description import CatalogMatch
+import hugo_site
 vsx_catalog_name = "vsx_catalog.bin"
 vsxcatalogdir = '/home/jovyan/work/' + vsx_catalog_name
 # star id -> xpos, ypos, filename
 StarPosDict = Dict[str, Tuple[float, float, str]]
 STAR_KEEPER_PERCENTAGE=0.1
+
 
 def run_do_rest(args):
     thread_count = cpu_count()-1
@@ -86,34 +85,33 @@ def run_do_rest(args):
     comp_stars = ComparisonStars(comparison_stars_1, comparison_stars_1_desc, comp_observations, comp_catalogmags, comp_catalogerr)
     logging.info(f"Comparison stars have {np.shape(comp_observations)}, {len(comp_observations[0])}, {len(comp_observations[1])} observations")
     aavso_stars = []
+    candidate_stars = []
+    candidate_stars = do_calibration.get_catalog_stars(star_descriptions, "CANDIDATE", exclude="VSX")
+    vsx_stars = do_calibration.get_catalog_stars(star_descriptions, "VSX")
+    starfile_stars = do_calibration.get_catalog_stars(star_descriptions, "STARFILE")
+
     if args.allstars:
         do_charts_vast.run(star_descriptions, comp_stars, vastdir, resultdir+'phase_all/', resultdir+'chart_all/',
                            do_phase=do_phase, do_charts=do_charts, nr_threads=thread_count)
     else:
         if args.candidates:
-            candidate_stars = do_calibration.get_catalog_stars(star_descriptions, "CANDIDATE")
-            aavso_stars = aavso_stars + candidate_stars
             logging.info(f"Plotting {len(candidate_stars)} candidates...")
             do_charts_vast.run(candidate_stars, comp_stars, vastdir, resultdir+'phase_candidates/',
                                resultdir+'chart_candidates/', do_phase=do_phase, do_charts=do_charts,
                                nr_threads=thread_count)
         if args.vsx:
-            vsx_stars = do_calibration.get_catalog_stars(star_descriptions, "VSX")
-            aavso_stars = aavso_stars + vsx_stars
             do_calibration.add_catalog_to_star_descriptions(vsx_stars, "SELECTED")
             logging.info(f"Plotting {len(vsx_stars)} vsx stars...")
             do_charts_vast.run(vsx_stars, comp_stars, vastdir, resultdir+'phase_vsx/', resultdir+'chart_vsx/',
                                do_phase=do_phase, do_charts=do_charts, nr_threads=thread_count)
         if args.starfile:
-            starfile_stars = do_calibration.get_catalog_stars(star_descriptions, "STARFILE")
-            aavso_stars = aavso_stars + starfile_stars
             do_charts_vast.run(starfile_stars, comp_stars, vastdir, resultdir+'phase_selected/',
                                resultdir+'chart_selected/', do_phase=do_phase, do_charts=do_charts,
                                nr_threads=thread_count)
 
     if args.aavso:
         # star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
-        logging.info(f"AAVSO Reporting with: {len(aavso_stars)} stars and comparison stars {args.aavso}")
+        logging.info(f"AAVSO Reporting with: {len(aavso_stars)} stars and comparison stars {comparison_stars_1_desc}")
 
         trash_and_recreate_dir(aavsodir)
         # TODO put this in settings.txt
@@ -129,6 +127,12 @@ def run_do_rest(args):
                        comparison_star=comparison_stars_1_desc[0], filter='V', observer=observer, chunk_size=args.aavsolimit)
         for _ in tqdm.tqdm(pool.imap_unordered(func, aavso_stars, 5), total=len(starfile_stars), unit="files"):
             pass
+
+    if args.site:
+        ids = [x.local_id for x in starfile_stars]
+        print("wwcra is:", candidate_stars[1])
+        print("These are the candidates ()", len(starfile_stars), ids)
+        hugo_site.run(starfile_stars, args.resultdir)
 
 
 def clean_and_create_resultdir(argsdir: str, vastdir: str):
@@ -307,6 +311,7 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
     # only keep stars which are present on at least 10% of the images
     star_descriptions = list(filter(lambda x: x.obs > frames_used*STAR_KEEPER_PERCENTAGE, star_descriptions))
     logging.info(f"Filtered star descriptions to {len(star_descriptions)} stars")
+    stardict = get_star_description_cache(star_descriptions)
 
     # Add VSX information to SDs
     star_descriptions, results_ids = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions,

@@ -1,5 +1,3 @@
-from init_loader import init, settings
-import init_loader
 from astropy.io import fits
 from functools import partial
 import glob
@@ -34,12 +32,13 @@ def read_fits_header(file):
 
 
 if __name__ == '__main__':
-    init_loader.meta_init('./current/')
-    # global init
-    init = init_loader.init
-    settings = init_loader.settings
-    logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
-    logging.basicConfig(format="%(asctime)s %(name)s: %(levelname)s %(message)s")
-    result = read_filters()
+    print("not implemented yet")
+    # init_loader.meta_init('./current/')
+    # # global init
+    # init = init_loader.init
+    # settings = init_loader.settings
+    # logger = logging.getLogger()
+    # logger.setLevel(logging.DEBUG)
+    # logging.basicConfig(format="%(asctime)s %(name)s: %(levelname)s %(message)s")
+    # result = read_filters()
 

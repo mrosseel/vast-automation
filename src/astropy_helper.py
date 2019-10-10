@@ -5,14 +5,15 @@ from astropy import units as u
 import numpy as np
 import pandas as pd
 import logging
-from init_loader import init, settings
 import reading
+
 
 # not used
 def calculate_wcs_manual(reference_frame, xpos, ypos, arcsec_width, arcsec_height):
     object_ra, object_dec, naxis1, naxis2, jd= getDataFromFitsHeader(reference_frame)
     c = SkyCoord(object_ra, object_dec, unit="deg")
     return [setup_wcs(c, naxis1, naxis2, xpos, ypos, arcsec_width, arcsec_height), jd]
+
 
 def calculate_wcs_from_file(header, frame, xpos, ypos):
     object_ra, object_dec, naxis1, naxis2, jd= getDataFromFitsHeader(frame)
@@ -30,6 +31,7 @@ def setup_wcs(coord, naxis1, naxis2, xpos, ypos, arcsec_width, arcsec_height):
     w.wcs.ctype = ["RA---AIR", "DEC--AIR"]
     return w
 
+
 def setup_wcs_from_file(header, coord, xpos, ypos):
     header_fits = get_fits_header(header)
     w = wcs.WCS(header_fits)
@@ -38,6 +40,7 @@ def setup_wcs_from_file(header, coord, xpos, ypos):
     return w
 
 ### HELPER functions
+
 
 def getDataFromFitsHeader(reference_frame):
     fits_header = get_fits_header(reference_frame)
@@ -48,10 +51,12 @@ def getDataFromFitsHeader(reference_frame):
     jd = fits_header['JD']
     return [object_ra, object_dec, naxis1, naxis2, jd]
 
+
 def pixel_to_radec(wcs_config, xpix, ypix):
     pixcrd = np.array([[xpix, ypix]], np.float_)
     result = wcs_config.wcs_pix2world(pixcrd, 1)
     return SkyCoord(result[0][0], result[0][1], unit='deg')
+
 
 def star_to_radec(star, w, jd):
     jd, x, y, mag = reading.read_pos(star, jd)
@@ -59,11 +64,13 @@ def star_to_radec(star, w, jd):
     radec = pixel_to_radec(w, x, y)
     return [radec, mag]
 
+
 def get_fits_header(reference_file):
     hdulist = fits.open(reference_file)
     return hdulist[0].header
 
-### TEST code
+
+# TEST code
 
 def testing(w):
     # Some pixel coordinates of interest.
@@ -153,8 +160,8 @@ def test_code(reference_frame, xpos, ypos, arcsecond_width, arssecond_heigth):
     # hdu.writeto('test.fits')
 
 #w, jd = calculate_wcs('WWCrA#30V_000185980_FLAT.fit', 695, 671, 47*60, 47*60)
-w, jd = calculate_wcs_from_file(settings.reference_header, init.reference_dir+init.reference_frame, init.xpos, init.ypos)
-logging.info(f"Astropy helper main method calculated w:{w} and jd: {jd}")
-testing(w)
+# w, jd = calculate_wcs_from_file(settings.reference_header, init.reference_dir+init.reference_frame, init.xpos, init.ypos)
+# logging.info(f"Astropy helper main method calculated w:{w} and jd: {jd}")
+# testing(w)
 pd.set_option('precision', 10)
-logging.info(star_to_radec(1, w, jd))
+# logging.info(star_to_radec(1, w, jd))

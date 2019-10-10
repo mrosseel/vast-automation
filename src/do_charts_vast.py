@@ -1,6 +1,5 @@
 from functools import partial
 from multiprocessing import cpu_count
-from init_loader import init, settings
 from comparison_stars import ComparisonStars
 import reading
 import matplotlib as mp
@@ -193,7 +192,9 @@ def plot_phase_diagram(tuple, fullphasedir, suffix='', period=None):
     fig.savefig(f"{save_location}.png")
     plt.close(fig)
     with open(f"{fullphasedir}/txt/{filename_no_ext}.txt", 'w') as f:
-        f.write('\n'.join([f"period={period}", f"range={np.min(y_np):.1f}-{np.max(y_np):.1f}", f"coords={coords.ra.deg} {coords.dec.deg}"]))
+        f.write('\n'.join([f"period={period}", f'range="{np.min(y_np):.1f}-{np.max(y_np):.1f}"',
+                           f"coords=[{coords.ra.deg}, {coords.dec.deg}]"]))
+
 
 def get_hms_dms(coord):
     return "{:2.0f}$^h$ {:02.0f}$^m$ {:02.2f}$^s$ | {:2.0f}$\degree$ {:02.0f}$'$ {:02.2f}$''$" \

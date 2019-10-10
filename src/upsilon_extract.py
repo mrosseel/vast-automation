@@ -1,8 +1,7 @@
-from init_loader import init, settings
 import logging
 
-def getResults(number):
-    with open(settings.basedir+'upsilon_output.txt') as f:
+def getResults(number, basedir: str):
+    with open(basedir+'upsilon_output.txt') as f:
         result = []
         for i in range(0,number):
            line = f.readline().split(',')

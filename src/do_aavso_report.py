@@ -17,7 +17,8 @@ def calculate_airmass(coord, location, jd):
     return altazs.secz
 
 
-def report(star_description: StarDescription, target_dir, vastdir: str, sitelat, sitelong, sitealt, comparison_star: StarDescription, filter=None, observer='RMH', chunk_size=None):
+def report(star_description: StarDescription, target_dir, vastdir: str, sitelat, sitelong, sitealt,
+           comparison_star: StarDescription, filter=None, observer='RMH', chunk_size=None):
     df_curve = reading.read_lightcurve_vast(star_description.local_id, vastdir=vastdir, preprocess=False)
     star_match_ucac4, separation = star_description.get_match_string("UCAC4")
     star_match_vsx, separation = star_description.get_match_string("VSX", strict=False)
@@ -30,7 +31,7 @@ def report(star_description: StarDescription, target_dir, vastdir: str, sitelat,
     comparison_star_vmag = comparison_star.vmag
     # NO COMP STAR TODAY
     comparison_star_vmag = 0.0
-    title = str(star_description.local_id if star_description.aavso_id is None else star_description.aavso_id)
+    title = f"{star_description.local_id:05}" if star_description.aavso_id is None else star_description.aavso_id
     earth_location = EarthLocation(lat=sitelat, lon=sitelong, height=sitealt*u.m)
     logging.debug("Starting aavso report with star:{}".format(star_description))
     if chunk_size is None:
@@ -97,10 +98,6 @@ if __name__ == '__main__':
     fh.setLevel(logging.INFO)
     # add the handlers to the logger
     logger.addHandler(fh)
-    init_loader.meta_init(datadir)
-    # global init
-    init = init_loader.init
-    settings = init_loader.settings
     # print(dir(init))
     # print(dir(settings))pr
     import main_muniwin
@@ -111,7 +108,7 @@ if __name__ == '__main__':
         fh.setLevel(logging.DEBUG)
 
     # star_descriptions_ucac4 = do_calibration.add_ucac4_to_star_descriptions(star_descriptions)
-    logging.info(f"AAVSO Reporting with: {len(selected_stars)} stars")
-    trash_and_recreate_dir(settings.aavsoreportsdir)
-    for star in selected_stars:
-        do_aavso_report.report(settings.aavsoreportsdir, star, comparison_stars_1_desc[0])
+    # logging.info(f"AAVSO Reporting with: {len(selected_stars)} stars")
+    # trash_and_recreate_dir(settings.aavsoreportsdir)
+    # for star in selected_stars:
+    #     do_aavso_report.report(settings.aavsoreportsdir, star, comparison_stars_1_desc[0])

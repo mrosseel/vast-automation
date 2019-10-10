@@ -1,5 +1,4 @@
 import os
-from init_loader import init, settings
 import reading
 import logging
 from star_description import StarDescription
@@ -15,7 +14,6 @@ from astropy.coordinates import Angle
 from astroquery.vizier import Vizier
 import vsx_pickle
 import do_calibration
-import do_reference_frame
 import numpy as np
 import pandas as pd
 from functools import partial
@@ -80,26 +78,6 @@ def select_reference_frame_gzip(limit):
 
     sorted_by_value = sorted(result.items(), key=lambda kv: kv[1], reverse=True)
     return sorted_by_value[0][0]
-
-
-# returns the converted_fits file with the highest jpeg filesize, limited to 'limit'
-# if limit is higher than listdir length, no harm
-def select_reference_frame_jpeg(limit):
-    bestfile, bestsize, jpegfile = do_reference_frame.runit(settings.convfitsdir, limit)
-    return bestfile.rsplit('/', 1)[1]  # bestfile contains full path, split of the filename
-
-
-# returns 'path + phot????.pht', the photometry file matched with the reference frame
-def find_reference_photometry(reference_frame_index):
-    the_dir = os.listdir(settings.photometrydir)
-    the_dir.sort()
-    return settings.photometrydir + the_dir[reference_frame_index]
-
-
-def find_reference_matched(reference_frame_index):
-    the_dir = os.listdir(settings.matchedphotometrydir)
-    the_dir.sort()
-    return settings.matchedphotometrydir + the_dir[reference_frame_index]
 
 
 # not used atm

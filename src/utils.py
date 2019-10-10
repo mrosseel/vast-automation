@@ -2,7 +2,7 @@ import glob
 from os import listdir
 from os.path import isfile, join
 from star_description import StarDescription
-from typing import List
+from typing import List, Dict
 
 def find_index_of_file(the_dir, the_file, the_filter='*'):
     the_dir = glob.glob(the_dir + "*"+the_filter)
@@ -24,8 +24,9 @@ def add_trailing_slash(the_path):
 def get_files_in_dir(mypath):
     return [f for f in listdir(mypath) if isfile(join(mypath, f))]
 
+
 # returns a dict with the local_id as key
-def get_star_description_cache(stars: List[StarDescription]):
+def get_star_description_cache(stars: List[StarDescription]) -> Dict[int, StarDescription]:
     cachedict = {}
     for sd in stars:
         cachedict[sd.local_id] = sd

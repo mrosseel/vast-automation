@@ -30,6 +30,7 @@ if __name__ == '__main__':
                         nargs='?', type=int, default=None, const=5000)
     parser.add_argument('-s', '--starfile',
                         help="Load a file with star ids, these ids will be used for field charts/reporting")
+    parser.add_argument('--site', help="Generate a hugo compatible page", action="store_true")
     parser.add_argument('-x', '--verbose', help="Set logging to debug mode", action="store_true")
     parser.add_argument('-l', '--laststars', help="Use the star descriptions of the previous run to do the charting",
                         action="store_true")

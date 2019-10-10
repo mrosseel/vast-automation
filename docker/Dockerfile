@@ -17,7 +17,7 @@ USER $NB_USER
 WORKDIR /home/jovyan
 RUN pip install --upgrade pip && \
     pip install numpy && \
-    pip install astropy pyreadline pyfftw tqdm photutils gatspy astroquery hanging_threads # hanging_threads is for debugging
+    pip install astropy pyreadline pyfftw tqdm photutils gatspy astroquery toml hanging_threads # hanging_threads is for debugging
 # needs at least scikit 0.18.1
 RUN conda update -y scikit-learn matplotlib pandas && \
 #RUN git clone https://github.com/mrosseel/upsilon.git

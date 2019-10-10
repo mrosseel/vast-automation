@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import glob
-from init_loader import init, settings
 from tqdm import tqdm
 import logging
 import multiprocessing as mp
@@ -78,10 +77,10 @@ def plot_fwhm(fwhm):
     save(fig, settings.fieldchartsdirs + 'fwhm.png')
 
 
-def read_lightcurves():
-    files = glob.glob(settings.lightcurvedir + '*.txt')
+def read_lightcurves(lightcurvedir: str, nr_threads):
+    files = glob.glob(lightcurvedir + '*.txt')
     result = {}
-    pool = mp.Pool(init.nr_threads * 2, maxtasksperchild=None)
+    pool = mp.Pool(nr_threads * 2, maxtasksperchild=None)
 
     for file, partial_result in tqdm(pool.imap_unordered(read_lightcurve, files), total=len(files),
                                      desc='Reading all lightcurves'):

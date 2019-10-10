@@ -1,23 +1,12 @@
 import do_calibration
 import logging
-from init_loader import init, settings
 import argparse
-import do_aperture
 import numpy as np
 from astropy.coordinates import SkyCoord
 from photometry_blob import PhotometryBlob
 from typing import List, Tuple
 from star_description import StarDescription
 import ucac4
-
-# main entry
-def select_compstars(stddevs, apertureidx, counts):
-    if len(init.comparison_stars) == 0:  # if there are no given comparison stars
-        compstars_1 = get_calculated_compstars(apertureidx, stddevs, counts)
-    else:  # otherwise use them
-        compstars_1 = get_fixed_compstars()
-    return compstars_1
-
 
 # receives ucac numbers, fetches ucac coords and compares them to world_position coords
 def get_fixed_compstars(star_descriptions: List[StarDescription], comparison_stars: List[str]):
@@ -98,8 +87,8 @@ if __name__ == '__main__':
         result = get_fixed_compstars()
         logging.info(f"result: {result}")
     elif args.calculated:
-        stddevs, _, apertures, apertureidx, _, _, counts = do_aperture.main(the_dir=settings.matchedphotometrydir,
-                                                                            percentage=init.aperture_find_percentage)
+        # stddevs, _, apertures, apertureidx, _, _, counts = do_aperture.main(the_dir=settings.matchedphotometrydir,
+        #                                                                     percentage=init.aperture_find_percentage)
         result = get_calculated_compstars(apertureidx, stddevs, counts)
         logging.info(f"result: {result}")
     # if args.descriptions:
