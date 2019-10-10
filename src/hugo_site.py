@@ -48,7 +48,7 @@ def block(star: StarDescription, resultdir: str, post_name: str):
         star_match, separation = star.get_match_string("VSX")
         phase_file = f"{star_match}_phase.png" if star_match is not None else f"{star.local_id:05}_phase.png"
         parsed_toml = toml.load(f"{resultdir}/phase_candidates/txt/{phase_file[:-4]}.txt")
-        images_prefix = f"/munipack-automation/images/{post_name}/"
+        images_prefix = f"/images/{post_name}/"
         phase_url = f"{images_prefix}{phase_file}"
         result = f'''<div class="bb-l b--black-10 w-100">
         <div class="fl w-70 pa2 ba">
@@ -60,7 +60,7 @@ def block(star: StarDescription, resultdir: str, post_name: str):
             <li>range: {parsed_toml['range']}</li>
             <li>coords: {parsed_toml['coords'][0]} {parsed_toml['coords'][1]}</li>
             <li><a href="{images_prefix}vsx_and_star_{star.local_id:05}.png">finder chart</a></li>
-            <li><a href="{images_prefix}vsx_and_star_{star.local_id:05}.png">finder chart</a></li>
+            <li><a href="{images_prefix}{star.local_id}_ext.txt">aavso observations</a></li>
             </ul>
         </div>
     </div>

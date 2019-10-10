@@ -188,9 +188,9 @@ def plot_phase_diagram(tuple, fullphasedir, suffix='', period=None):
                  elinewidth=1)
     # save_location = phasedir+str(star).zfill(5)+'_phase'+suffix
     filename_no_ext = f"{star_match}_phase{suffix}" if star_match is not None else f"{star:05}_phase{suffix}"
-    save_location = f"{fullphasedir}{filename_no_ext}" if star_match is not None else f"{fullphasedir}{filename_no_ext}"
-    logging.debug(f"Saving phase plot to {save_location}")
-    fig.savefig(f"{save_location}.png")
+    save_location = f"{fullphasedir}{filename_no_ext}"
+    logging.info(f"Saving phase plot to {save_location}.png")
+    fig.savefig(save_location+'.png')
     plt.close(fig)
     with open(f"{fullphasedir}/txt/{filename_no_ext}.txt", 'w') as f:
         f.write('\n'.join([f"period={period}", f'range="{np.min(y_np):.1f}-{np.max(y_np):.1f}"',

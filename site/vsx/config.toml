@@ -1,5 +1,5 @@
 title = "RMH+HMB Variable star discoveries"
-baseURL = "http://mrosseel.github.io/munipack-automation"
+baseURL = "http://mrosseel.github.io/"
 languageCode = "en-us"
 theme = "gohugo-theme-ananke"
 
