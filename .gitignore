@@ -6,7 +6,11 @@ cmunipack*
 **/.ipynb_checkpoints/**/*
 transfer/
 secrets.py
-support/vast*/**/*
-site/vsx/static/**/*
-site/vsx/public/**/*
+support/vast*/**
+site/vsx/static/**
+!site/vsx/static/.gitkeep
+site/vsx/public/**
+!site/vsx/public/.gitkeep
+# exception to the rule
+!somefolder/.gitkeep
 support/**
