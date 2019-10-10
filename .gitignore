@@ -7,3 +7,4 @@ cmunipack*
 transfer/
 secrets.py
 support/vast*/**/*
+site/vsx/static/**/*
