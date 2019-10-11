@@ -85,7 +85,7 @@ def plot_it(big_green: StarDescriptionList, small_red: StarDescriptionList, fits
                          xytext=(offset1, offset2), textcoords='offset points', size=size,
                          arrowprops=dict(arrowstyle="->"))
     annotate_it(big_green, 0, -20, size=12)
-    annotate_it(small_red, -10, 10, random_offset=random_red, size=10)
+    annotate_it(small_red, -10, 15, random_offset=random_red, size=10)
     return fig
 
 
@@ -192,11 +192,10 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
     save(fig, fieldchartsdirs + 'vsx_{}_and_selected_{}'.format(len(big_green), len(small_red)))
 
     # field charts for each individually selected starfile star
-    big_green = vsx_labeled
-    small_red = starfile_labeled
+    small_red = vsx_labeled
     for star in starfile_labeled:
         logging.info(f"Plotting field chart with all VSX variable stars + star {star.local_id}...")
-        fig = plot_it(big_green, [star], reference_fits_frame, wcs, f"VSX stars + star {star.local_id}", PADDING,
+        fig = plot_it([star], small_red, reference_fits_frame, wcs, f"VSX stars + star {star.local_id}", PADDING,
                       random_red=False)
         save(fig, f"{fieldchartsdirs}vsx_and_star_{star.local_id:05}")
 

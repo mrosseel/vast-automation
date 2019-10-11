@@ -8,31 +8,23 @@ from shutil import copy
 import glob
 import logging
 
-header = """---
-title: "WW CrA new variables"
-date: 2019-10-09T11:10:29+02:00
-draft: true
----
-"""
-
 
 def run(post_name: str, selected_stars: List[StarDescription], resultdir: str):
     sitedir = f"{os.getcwd()}/site/vsx/"
     copy_files(post_name, resultdir, sitedir)
-    result = header
+    result = get_header(post_name)
     part_block = partial(block, resultdir=resultdir, post_name=post_name)
     for star in selected_stars:
         result += part_block(star)
     postdir = f"{sitedir}/content/posts/{post_name}/"
     trash_and_recreate_dir(postdir)
-    with open(f"{postdir}/output.md", 'w') as outfile:
+    with open(f"{postdir}/{post_name}.md", 'w') as outfile:
         outfile.write(result)
 
 
 def copy_files(post_name: str, resultdir: str, sitedir: str):
     imagesdir = f"{sitedir}static/images/{post_name}/"
     trash_and_recreate_dir(imagesdir)
-    logging.info("Copying selected phase diagrams...")
     selected_phase = f'{resultdir}phase_selected/*.png'
     selected_phase_glob = glob.glob(selected_phase)
     aavso = f'{resultdir}aavso/*.txt'
@@ -63,16 +55,22 @@ def block(star: StarDescription, resultdir: str, post_name: str):
         </div>
         <div class="fl w-30 pa2 ba">
             <ul>
-            <li>period: {parsed_toml['period']}</li>
-            <li>range: {parsed_toml['range']}</li>
+            <li>period (d): {parsed_toml['period']}</li>
+            <li>mag. range: {parsed_toml['range']}</li>
+            <li>type: </li>
             <li>coords: {parsed_toml['coords'][0]} {parsed_toml['coords'][1]}</li>
             <li><a href="{images_prefix}vsx_and_star_{star.local_id:05}.png">finder chart</a></li>
             <li><a href="{images_prefix}{star.local_id:05}_ext.txt">aavso observations</a></li>
+            
             </ul>
         </div>
     </div>
     '''
         return result
     except:
-        print("could not load", phase_file)
-        return ""
+        return f'<div class="fl w-100 pa2 ba">Could not load {phase_file}</div>'
+
+
+def get_header(title: str):
+    return f'---\ntitle: "{title}"\ndate: 2019-10-09T11:10:29+02:00\ndraft: false\n' \
+           f'summary: "Batch of new variable stars"\n---\n'
