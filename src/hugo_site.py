@@ -60,7 +60,7 @@ def block(star: StarDescription, resultdir: str, post_name: str):
             <li>range: {parsed_toml['range']}</li>
             <li>coords: {parsed_toml['coords'][0]} {parsed_toml['coords'][1]}</li>
             <li><a href="{images_prefix}vsx_and_star_{star.local_id:05}.png">finder chart</a></li>
-            <li><a href="{images_prefix}{star.local_id}_ext.txt">aavso observations</a></li>
+            <li><a href="{images_prefix}{star.local_id:05}_ext.txt">aavso observations</a></li>
             </ul>
         </div>
     </div>
