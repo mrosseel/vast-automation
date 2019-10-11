@@ -88,7 +88,7 @@ def run_do_rest(args):
     candidate_stars = do_calibration.get_catalog_stars(star_descriptions, "CANDIDATE", exclude="VSX")
     vsx_stars = do_calibration.get_catalog_stars(star_descriptions, "VSX")
     starfile_stars = do_calibration.get_catalog_stars(star_descriptions, "STARFILE")
-    aavso_stars = starfile_stars
+    aavso_stars = starfile_stars + vsx_stars + candidate_stars
 
     if args.allstars:
         do_charts_vast.run(star_descriptions, comp_stars, vastdir, resultdir+'phase_all/', resultdir+'chart_all/',
@@ -120,7 +120,7 @@ def run_do_rest(args):
         sitelat = '-22 57 10'
         sitelong = '-68 10 49'
         sitealt = 2500
-        observer = 'RMH'
+        observer = 'ZZZ'
 
         pool = get_pool()
         # put filter to None for autodetect
@@ -336,6 +336,7 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
             starlist = [int(x) for x in filter(str.isdigit, starlist)]
             logging.info(f"Selecting {len(starlist)} stars added by {args.selectedstarfile}")
             starfile_stars = list(filter(lambda x: x.local_id in starlist, star_descriptions))
+            starfile_stars = do_calibration.add_ucac4_to_star_descriptions(starfile_stars, nr_threads=cpu_count()*2)
             do_calibration.add_catalog_to_star_descriptions(starfile_stars, "SELECTED")
             do_calibration.add_catalog_to_star_descriptions(starfile_stars, "STARFILE")
     return star_descriptions

@@ -50,15 +50,15 @@ class StarDescription:
 
 
     def get_catalog(self, catalog: str, strict=False):
-        if self.match is not None:
-            catalog_match_list = [x for x in self.match if x.name_of_catalog == catalog]
-            if len(catalog_match_list) != 1:
-                if strict:
-                    raise AssertionError("star_description.py: Searching for {} in {}, received {} matches, expected 1"
-                                         .format(catalog, self, len(catalog_match_list)))
-            else:
-                return catalog_match_list[0]
-        return None
+        if self.match is None:
+            return None
+        catalog_match_list = [x for x in self.match if x.name_of_catalog == catalog]
+        if len(catalog_match_list) != 1:
+            if strict:
+                raise AssertionError("star_description.py: Searching for {} in {}, received {} matches, expected 1"
+                                     .format(catalog, self, len(catalog_match_list)))
+        else:
+            return catalog_match_list[0]
 
     def get_catalog_list(self):
         return [x.name_of_catalog for x in self.match]

@@ -3,7 +3,7 @@ from star_description import StarDescription
 from functools import partial
 import toml
 import os
-from reading import trash_and_recreate_dir
+from reading import trash_and_recreate_dir, create_dir
 from shutil import copy
 import glob
 import logging
@@ -17,7 +17,7 @@ def run(post_name: str, selected_stars: List[StarDescription], resultdir: str):
     for star in selected_stars:
         result += part_block(star)
     postdir = f"{sitedir}/content/posts/{post_name}/"
-    trash_and_recreate_dir(postdir)
+    create_dir(postdir)
     with open(f"{postdir}/{post_name}.md", 'w') as outfile:
         outfile.write(result)
 
@@ -47,6 +47,8 @@ def block(star: StarDescription, resultdir: str, post_name: str):
         star_match, separation = star.get_match_string("VSX")
         phase_file = f"{star_match}_phase.png" if star_match is not None else f"{star.local_id:05}_phase.png"
         parsed_toml = toml.load(f"{resultdir}/phase_candidates/txt/{phase_file[:-4]}.txt")
+        ucac4 = star.get_catalog("UCAC4", strict=True)
+        ucac4_name = ucac4 if not None else "unknown"
         images_prefix = f"/images/{post_name}/"
         phase_url = f"{images_prefix}{phase_file}"
         result = f'''<div class="bb-l b--black-10 w-100">
@@ -55,10 +57,11 @@ def block(star: StarDescription, resultdir: str, post_name: str):
         </div>
         <div class="fl w-30 pa2 ba">
             <ul>
-            <li>period (d): {parsed_toml['period']}</li>
+            <li>UCAC4: {ucac4_name}</li>
+            <li>period (d): {parsed_toml['period']:.5f}</li>
             <li>mag. range: {parsed_toml['range']}</li>
             <li>type: </li>
-            <li>coords: {parsed_toml['coords'][0]} {parsed_toml['coords'][1]}</li>
+            <li>coords: {parsed_toml['coords'][0]:.5f} {parsed_toml['coords'][1]:.5f}</li>
             <li><a href="{images_prefix}vsx_and_star_{star.local_id:05}.png">finder chart</a></li>
             <li><a href="{images_prefix}{star.local_id:05}_ext.txt">aavso observations</a></li>
             

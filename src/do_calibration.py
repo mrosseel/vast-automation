@@ -356,11 +356,11 @@ def add_apass_to_star_descriptions(star_descriptions, radius=0.01, row_limit=2):
     return star_descriptions
 
 
-def add_ucac4_to_star_descriptions(star_descriptions, radius=0.01):
+def add_ucac4_to_star_descriptions(star_descriptions, nr_threads, radius=0.01):
     logging.info("Retrieving ucac4 for {} star(s)".format(len(star_descriptions)))
     radius_angle = Angle(radius, unit=u.deg)
 
-    pool = Pool(init.nr_threads * 2)
+    pool = Pool(nr_threads * 2)
     func = partial(add_ucac4_to_star, radius_angle=radius_angle)
     result = []
     for entry in pool.imap(func, star_descriptions):

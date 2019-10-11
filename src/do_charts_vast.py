@@ -144,7 +144,7 @@ def plot_lightcurve_jd(tuple, chartsdir):
 
 
 def plot_phase_diagram(tuple, fullphasedir, suffix='', period=None):
-    logging.debug(f"Starting plot phase diagram with {tuple} and {fullphasedir}")
+    logging.info(f"Starting plot phase diagram with {tuple} and {fullphasedir}")
     star_description = tuple[0]
     coords = star_description.coords
     curve = tuple[1]
@@ -196,6 +196,13 @@ def plot_phase_diagram(tuple, fullphasedir, suffix='', period=None):
         f.write('\n'.join([f"period={period}", f'range="{np.min(y_np):.1f}-{np.max(y_np):.1f}"',
                            f"coords=[{coords.ra.deg}, {coords.dec.deg}]"]))
 
+
+    def reject_outliers_iqr(data, cut=5):
+        q1, q3 = np.percentile(data, [cut, 100-cut])
+        iqr = q3 - q1
+        lower_bound = q1 - (iqr * 1.5)
+        upper_bound = q3 + (iqr * 1.5)
+        return np.where((data > lower_bound) & (data < upper_bound))
 
 def get_hms_dms(coord):
     return "{:2.0f}$^h$ {:02.0f}$^m$ {:02.2f}$^s$ | {:2.0f}$\degree$ {:02.0f}$'$ {:02.2f}$''$" \
