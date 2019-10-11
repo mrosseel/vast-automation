@@ -133,7 +133,7 @@ def run_do_rest(args):
     if args.site:
         ids = [x.local_id for x in starfile_stars]
         logging.info(f"Creating site entry with these {len(starfile_stars)} candidates: {ids}")
-        hugo_site.run(args.site, starfile_stars, args.resultdir)
+        hugo_site.run(args.site, starfile_stars, resultdir)
 
 
 def clean_and_create_resultdir(argsdir: str, vastdir: str):
