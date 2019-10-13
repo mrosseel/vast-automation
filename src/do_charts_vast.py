@@ -1,9 +1,7 @@
-from functools import partial
 from multiprocessing import cpu_count
 from comparison_stars import ComparisonStars
-import reading
+from functools import partial
 import matplotlib as mp
-
 mp.use('Agg')  # needs no X server
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -22,6 +20,7 @@ from star_description import StarDescription
 import logging
 import subprocess
 import math
+from pathlib import PurePath
 
 TITLE_PAD = 40
 
@@ -36,11 +35,11 @@ def plot_lightcurve(tuple, chartsdir):
     #    try:
     star_description = tuple[0]
     curve = tuple[1]
-    star = star_description.local_id
-    logging.debug(f"Plotting lightcurve for {star}")
-    star_match, separation = star_description.get_match_string("VSX")
-    match_string = f"({star_match})" if not star_match == None else ''
-    star_name = '' if star_match == None else " ({} - dist:{:.4f})".format(star_match, separation)
+    star_id = star_description.local_id
+    logging.debug(f"Plotting light curve for {star_id}")
+    vsx_name, separation, filename_no_ext = get_star_or_vsx_name(star_description, suffix=f"_light")
+    vsx_title = '' if vsx_name is None else f" ({vsx_name} - dist:{separation:.4f})"
+    save_location = PurePath(chartsdir, filename_no_ext)
     start = timer()
     upsilon_match = star_description.get_catalog('Upsilon')
     upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
@@ -49,7 +48,7 @@ def plot_lightcurve(tuple, chartsdir):
     coord = star_description.coords
     # print(f'Plotting lightcurve with star_description:{star_description}, curve length:{len(curve)}, star:{star}, curve:{curve}')
     if (curve is None):
-        logging.info(f"Curve is None for star {star}")
+        logging.info(f"Curve is None for star {star_id}")
         return
     # curve = curve.replace(to_replace=99.99999, value=np.nan, inplace=False) # we filter now
     used_curve = curve
@@ -69,17 +68,17 @@ def plot_lightcurve(tuple, chartsdir):
     plot_min = min(plot_max - 1, used_curve_min)
     logging.debug(f'min {plot_min} max {plot_max} usedmin {used_curve_min} usedmax {used_curve_max}')
     if np.isnan(plot_max) or np.isnan(plot_min):
-        logging.info(f"star is nan:{star}, plot_max:{plot_max}, plot_min:{plot_min}")
+        logging.info(f"star is nan:{star_id}, plot_max:{plot_max}, plot_min:{plot_min}")
         return
     plt.ylim(plot_min, plot_max)
     plt.xlim(0, len(used_curve))
     plt.gca().invert_yaxis()
     # g.map(plt.errorbar, 'Count', 'V-C', yerr='s1', fmt='o')
     # plt.ticklabel_format(style='plain', axis='x')
-    plt.title("Star {0}{1}, position: {2}{3}".format(star, star_name, get_hms_dms(coord), upsilon_text), pad=TITLE_PAD)
+    plt.title(f"Star {star_id}{vsx_title}, position: {get_hms_dms(coord)}{upsilon_text}", pad=TITLE_PAD)
     start = timer()
     figure = g.fig
-    figure.savefig(chartsdir + str(star).zfill(5) + '_plot')
+    figure.savefig(save_location)
     # g.savefig(chartsdir+str(star).zfill(5)+'_plot')
     end = timer()
     logging.debug(f"timing saving fig {end - start}")
@@ -93,11 +92,11 @@ def plot_lightcurve(tuple, chartsdir):
 def plot_lightcurve_jd(tuple, chartsdir):
     star_description = tuple[0]
     curve = tuple[1]
-    star = star_description.local_id
-    logging.debug(f"Plotting lightcurve for {star}")
-    star_match, separation = star_description.get_match_string("VSX")
-    match_string = f"({star_match})" if not star_match == None else ''
-    star_name = '' if star_match == None else " ({} - dist:{:.4f})".format(star_match, separation)
+    star_id = star_description.local_id
+    logging.debug(f"Plotting lightcurve for {star_id}")
+    vsx_name, separation, filename_no_ext = get_star_or_vsx_name(star_description, suffix=f"_light")
+    vsx_title = '' if vsx_name is None else f" ({vsx_name} - dist:{separation:.4f})"
+    save_location = PurePath(chartsdir, filename_no_ext)
     start = timer()
     upsilon_match = star_description.get_catalog('Upsilon')
     upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
@@ -106,7 +105,7 @@ def plot_lightcurve_jd(tuple, chartsdir):
     coord = star_description.coords
     # print(f'Plotting lightcurve with star_description:{star_description}, curve length:{len(curve)}, star:{star}, curve:{curve}')
     if (curve is None):
-        logging.info(f"Curve is None for star {star}")
+        logging.info(f"Curve is None for star {star_id}")
         return
     # curve = curve.replace(to_replace=99.99999, value=np.nan, inplace=False) # we filter now
     used_curve = curve
@@ -126,17 +125,17 @@ def plot_lightcurve_jd(tuple, chartsdir):
     plot_min = min(plot_max - 1, used_curve_min)
     logging.debug(f'min {plot_min} max {plot_max} usedmin {used_curve_min} usedmax {used_curve_max}')
     if np.isnan(plot_max) or np.isnan(plot_min):
-        logging.info(f"star is nan:{star}, plot_max:{plot_max}, plot_min:{plot_min}")
+        logging.info(f"star is nan:{star_id}, plot_max:{plot_max}, plot_min:{plot_min}")
         return
     plt.ylim(plot_min, plot_max)
     plt.xlim(0, len(used_curve))
     plt.gca().invert_yaxis()
     # g.map(plt.errorbar, 'Count', 'V-C', yerr='s1', fmt='o')
     # plt.ticklabel_format(style='plain', axis='x')
-    plt.title("Star {0}{1}, position: {2}{3}".format(star, star_name, get_hms_dms(coord), upsilon_text), pad=TITLE_PAD)
+    plt.title(f"Star {star_id}{vsx_title}, position: {get_hms_dms(coord)}{upsilon_text}", pad=TITLE_PAD)
     start = timer()
     figure = g.fig
-    figure.savefig(chartsdir + str(star).zfill(5) + '_plot')
+    figure.savefig(save_location)
     # g.savefig(chartsdir+str(star).zfill(5)+'_plot')
     end = timer()
     logging.debug(f"timing saving fig {end - start}")
@@ -144,18 +143,19 @@ def plot_lightcurve_jd(tuple, chartsdir):
 
 
 def plot_phase_diagram(tuple, fullphasedir, suffix='', period=None):
-    logging.info(f"Starting plot phase diagram with {tuple} and {fullphasedir}")
+    logging.debug(f"Starting plot phase diagram with {tuple} and {fullphasedir}")
     star_description = tuple[0]
     coords = star_description.coords
     curve = tuple[1]
-    star = star_description.local_id
-    star_match, separation = star_description.get_match_string("VSX")
-    match_string = f"{star_match}\n" if not star_match == None else ''
+    star_id = star_description.local_id
+    vsx_name, _, filename_no_ext = get_star_or_vsx_name(star_description, suffix=f"_phase{suffix}")
+    vsx_title = f"{vsx_name}\n" if vsx_name is not None else ''
+    save_location = PurePath(fullphasedir, filename_no_ext)
     upsilon_match = star_description.get_catalog('Upsilon')
     upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
     # print("Calculating phase diagram for", star)
     if curve is None:
-        logging.info("Curve of star {} is None".format(star))
+        logging.info("Curve of star {} is None".format(star_id))
         return
     t_np = curve['JD'].astype(np.float)
     y_np = curve['realV'].to_numpy()
@@ -167,18 +167,16 @@ def plot_phase_diagram(tuple, fullphasedir, suffix='', period=None):
         ls = LombScargleFast(optimizer_kwds={'quiet': True, 'period_range': (0.01, period_max)}, silence_warnings=True) \
             .fit(t_np, y_np)
         period = ls.best_period
-    # print("Best period: " + str(period) + " days")
     fig = plt.figure(figsize=(18, 16), dpi=80, facecolor='w', edgecolor='k')
     plt.xlabel("Phase", labelpad=TITLE_PAD)
     plt.ylabel("Magnitude", labelpad=TITLE_PAD)
-    plt.title(f"{match_string}Star {star}, p: {period:.5f} d{upsilon_text}\n{get_hms_dms(coords)}", pad=TITLE_PAD)
+    plt.title(f"{vsx_title}Star {star_id}, p: {period:.5f} d{upsilon_text}\n{get_hms_dms(coords)}", pad=TITLE_PAD)
     # plt.title(f"Star {star} - {period}", pad=TITLE_PAD)
     plt.tight_layout()
     # plotting + calculation of 'double' phase diagram from -1 to 1
     phased_t = np.fmod(t_np / period, 1)
-    minus_one = lambda t: t - 1
-    minus_oner = np.vectorize(minus_one)
-    phased_t2 = minus_oner(phased_t)
+    minus_one = np.vectorize(lambda t: t - 1)
+    phased_t2 = minus_one(phased_t)
     phased_lc = y_np[:]
     phased_t_final = np.append(phased_t2, phased_t)
     phased_lc_final = np.append(phased_lc, phased_lc)
@@ -186,23 +184,27 @@ def plot_phase_diagram(tuple, fullphasedir, suffix='', period=None):
     plt.gca().invert_yaxis()
     plt.errorbar(phased_t_final, phased_lc_final, yerr=phased_err, linestyle='none', marker='o', ecolor='gray',
                  elinewidth=1)
-    # save_location = phasedir+str(star).zfill(5)+'_phase'+suffix
-    filename_no_ext = f"{star_match}_phase{suffix}" if star_match is not None else f"{star:05}_phase{suffix}"
-    save_location = f"{fullphasedir}{filename_no_ext}"
-    logging.info(f"Saving phase plot to {save_location}.png")
-    fig.savefig(save_location+'.png')
+    logging.debug(f"Saving phase plot to {save_location}.png")
+    fig.savefig(save_location, format='png')
     plt.close(fig)
     with open(f"{fullphasedir}/txt/{filename_no_ext}.txt", 'w') as f:
         f.write('\n'.join([f"period={period}", f'range="{np.min(y_np):.1f}-{np.max(y_np):.1f}"',
                            f"coords=[{coords.ra.deg}, {coords.dec.deg}]"]))
 
 
-    def reject_outliers_iqr(data, cut=5):
-        q1, q3 = np.percentile(data, [cut, 100-cut])
-        iqr = q3 - q1
-        lower_bound = q1 - (iqr * 1.5)
-        upper_bound = q3 + (iqr * 1.5)
-        return np.where((data > lower_bound) & (data < upper_bound))
+def get_star_or_vsx_name(star_description: StarDescription, suffix: str):
+    vsx_name, separation = star_description.get_match_string("VSX")
+    filename_no_ext = f"{vsx_name}{suffix}" if vsx_name is not None else f"{star:05}{suffix}"
+    return vsx_name, separation, filename_no_ext.replace(' ', '_')
+
+
+def reject_outliers_iqr(data, cut=5):
+    q1, q3 = np.percentile(data, [cut, 100 - cut])
+    iqr = q3 - q1
+    lower_bound = q1 - (iqr * 1.5)
+    upper_bound = q3 + (iqr * 1.5)
+    return np.where((data > lower_bound) & (data < upper_bound))
+
 
 def get_hms_dms(coord):
     return "{:2.0f}$^h$ {:02.0f}$^m$ {:02.2f}$^s$ | {:2.0f}$\degree$ {:02.0f}$'$ {:02.2f}$''$" \
@@ -297,8 +299,8 @@ def calculate_real_mag_and_err(df, comp_stars: ComparisonStars):
         if len(comp_obs) > 0 and len(comp_obs) == len(comp_err):
             meanobs = np.mean(comp_obs)
             # Vobs - Cobs + Creal = V
-            realV.append(row['Vrel']-meanobs+meanreal)
-            meanerr = math.sqrt(math.pow(row['err'], 2)+math.pow(np.mean(comp_err), 2))
+            realV.append(row['Vrel'] - meanobs + meanreal)
+            meanerr = math.sqrt(math.pow(row['err'], 2) + math.pow(np.mean(comp_err), 2))
             realErr.append(meanerr)
         else:  # error in the comparison stars
             realV.append(row['Vrel'])
@@ -328,7 +330,8 @@ def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, phasedir: 
     if do_charts:
         trash_and_recreate_dir(chartsdir)
 
-    func = partial(read_vast_lightcurves, basedir=basedir, comp_stars=comp_stars, do_charts=do_charts, do_phase=do_phase,
+    func = partial(read_vast_lightcurves, basedir=basedir, comp_stars=comp_stars, do_charts=do_charts,
+                   do_phase=do_phase,
                    phasedir=phasedir, chartsdir=chartsdir)
     with tqdm.tqdm(total=len(star_descriptions), desc=desc) as pbar:
         for _ in pool.imap_unordered(func, star_descriptions, chunksize=CHUNK):

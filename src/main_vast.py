@@ -132,7 +132,7 @@ def run_do_rest(args):
 
     if args.site:
         ids = [x.local_id for x in starfile_stars]
-        logging.info(f"Creating site entry with these {len(starfile_stars)} candidates: {ids}")
+        logging.info(f"Creating site entry with these {len(starfile_stars)} selected stars: {ids}")
         hugo_site.run(args.site, starfile_stars, resultdir)
 
 
@@ -318,6 +318,8 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
     star_descriptions, results_ids = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions,
                                                                                        vsxcatalogdir, 0.01)
     logging.info(f"Added {len(results_ids)} vsx names to star descriptions")
+    test = do_calibration.get_catalog_stars(star_descriptions, "VSX")
+    logging.info(f"Test Tagged {len(test)} stars as VSX.")
 
     # write the vsx stars used into a file
     results_ids.sort()
@@ -328,6 +330,8 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
     selected_stars = do_calibration.select_star_descriptions(candidate_ids, star_descriptions)
     do_calibration.add_catalog_to_star_descriptions(selected_stars, "SELECTED")
     do_calibration.add_catalog_to_star_descriptions(selected_stars, "CANDIDATE")
+    test = do_calibration.get_catalog_stars(star_descriptions, "CANDIDATE")
+    logging.info(f"TEST Tagged {len(test)} stars as candidate.")
 
     if args.selectedstarfile:
         with open(args.selectedstarfile, 'r') as fp:
@@ -339,6 +343,10 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
             starfile_stars = do_calibration.add_ucac4_to_star_descriptions(starfile_stars, nr_threads=cpu_count()*2)
             do_calibration.add_catalog_to_star_descriptions(starfile_stars, "SELECTED")
             do_calibration.add_catalog_to_star_descriptions(starfile_stars, "STARFILE")
+            logging.info(f"Tagged {len(starfile_stars)} stars as selected by file.")
+            test = do_calibration.get_catalog_stars(star_descriptions, "STARFILE")
+            logging.info(f"Test Tagged {len(test)} stars as selected by file.")
+
     return star_descriptions
 
 
