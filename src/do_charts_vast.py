@@ -188,7 +188,7 @@ def plot_phase_diagram(star_tuple: Tuple[StarDescription, DataFrame], fullphased
     plt.gca().invert_yaxis()
     plt.errorbar(phased_t_final, phased_lc_final, yerr=phased_err, linestyle='none', marker='o', ecolor='gray',
                  elinewidth=1)
-    logging.info(f"Saving phase plot to {save_location}")
+    logging.debug(f"Saving phase plot to {save_location}")
     fig.savefig(save_location, format='png')
     plt.close(fig)
     with open(f"{fullphasedir}/txt/{filename_no_ext}.txt", 'w') as f:
