@@ -57,13 +57,12 @@ class ExtendedFormatWriter(object):
         self.observer_code = observer_code
         self.date_format = date_format
         self.obstype = obstype
-        n__format = "#TYPE={}\n".format(type)
-        fp.write(n__format)
-        fp.write('#OBSCODE={}\n'.format(observer_code))
-        fp.write("#SOFTWARE={}\n".format(software))
-        fp.write("#DELIM={}\n".format(delimiter))
-        fp.write("#DATE={}\n".format(date_format.upper()))
-        fp.write("#OBSTYPE={}\n".format(obstype))
+        fp.write(f"#TYPE={type}\n")
+        fp.write(f'#OBSCODE={observer_code}\n')
+        fp.write(f"#SOFTWARE={software}\n")
+        fp.write(f"#DELIM={delimiter}\n")
+        fp.write(f"#DATE={date_format.upper()}\n")
+        fp.write(f"#OBSTYPE={obstype}\n")
         fp.write("#NAME,DATE,MAG,MERR,FILT,TRANS,MTYPE,CNAME,CMAG,KNAME,KMAG,AMASS,GROUP,CHART,NOTES\n")
         self.writer = csv.writer(fp, delimiter=delimiter)
 
@@ -95,20 +94,16 @@ class ExtendedFormatWriter(object):
         :param cls: current class
         :param observation_data: a single observation as a dictionary
         """
-        row = []
-        row.append("{:.30}".format(observation_data['name']))
-        row.append("{:.16}".format(observation_data['date']))
-        row.append("{:.8}".format(observation_data['magnitude']))
-        row.append("{:.6}".format(observation_data['magnitude_error']))
-        row.append("{:.5}".format(observation_data['filter']))
-        row.append("{:.3}".format(observation_data['transformed']))
-        row.append("{:.3}".format(observation_data['magnitude_type']))
-        row.append("{:.20}".format(observation_data.get('comparison_name', 'na')))
-        row.append("{:.8}".format(observation_data.get('comparison_magnitude', 'na')))
-        row.append("{:.20}".format(observation_data.get('check_name', 'na')))
-        row.append("{:.8}".format(observation_data.get('check_magnitude', 'na')))
-        row.append("{:.7}".format(observation_data.get('airmass', 'na')))
-        row.append("{:.5}".format(observation_data.get('group', 'na')))
-        row.append("{:.20}".format(observation_data.get('chart', 'na')))
-        row.append("{:.2000}".format(observation_data.get('notes', 'na')))
+        row = ["{:.30}".format(observation_data['name']), "{:.16}".format(observation_data['date']),
+               "{:.8}".format(observation_data['magnitude']), "{:.6}".format(observation_data['magnitude_error']),
+               "{:.5}".format(observation_data['filter']), "{:.3}".format(observation_data['transformed']),
+               "{:.3}".format(observation_data['magnitude_type']),
+               "{:.20}".format(observation_data.get('comparison_name', 'na')),
+               "{:.8}".format(observation_data.get('comparison_magnitude', 'na')),
+               "{:.20}".format(observation_data.get('check_name', 'na')),
+               "{:.8}".format(observation_data.get('check_magnitude', 'na')),
+               "{:.7}".format(observation_data.get('airmass', 'na')),
+               "{:.5}".format(observation_data.get('group', 'na')),
+               "{:.20}".format(observation_data.get('chart', 'na')),
+               "{:.2000}".format(observation_data.get('notes', 'na'))]
         return row

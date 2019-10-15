@@ -2,6 +2,7 @@ from multiprocessing import cpu_count
 from comparison_stars import ComparisonStars
 from functools import partial
 import matplotlib as mp
+
 mp.use('Agg')  # needs no X server
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -12,6 +13,7 @@ import pandas as pd
 from gatspy.periodic import LombScargleFast
 from reading import trash_and_recreate_dir
 from reading import file_selector
+import do_aavso_report
 import do_calibration
 from timeit import default_timer as timer
 import utils
@@ -21,6 +23,8 @@ import logging
 import subprocess
 import math
 from pathlib import PurePath
+from typing import Tuple
+from pandas import DataFrame
 
 TITLE_PAD = 40
 
@@ -31,10 +35,10 @@ def set_seaborn_style():
 
 
 # takes:  [ {'id': star_id, 'match': {'name': match_name, 'separation': separation_deg  } } ]
-def plot_lightcurve(tuple, chartsdir):
+def plot_lightcurve(star_tuple: Tuple[StarDescription, DataFrame], chartsdir):
     #    try:
-    star_description = tuple[0]
-    curve = tuple[1]
+    star_description = star_tuple[0]
+    curve = star_tuple[1]
     star_id = star_description.local_id
     logging.debug(f"Plotting light curve for {star_id}")
     vsx_name, separation, filename_no_ext = get_star_or_vsx_name(star_description, suffix=f"_light")
@@ -89,9 +93,9 @@ def plot_lightcurve(tuple, chartsdir):
 #        print("error", tuple)
 
 
-def plot_lightcurve_jd(tuple, chartsdir):
-    star_description = tuple[0]
-    curve = tuple[1]
+def plot_lightcurve_jd(star_tuple: Tuple[StarDescription, DataFrame], chartsdir):
+    star_description = star_tuple[0]
+    curve = star_tuple[1]
     star_id = star_description.local_id
     logging.debug(f"Plotting lightcurve for {star_id}")
     vsx_name, separation, filename_no_ext = get_star_or_vsx_name(star_description, suffix=f"_light")
@@ -142,15 +146,15 @@ def plot_lightcurve_jd(tuple, chartsdir):
     plt.close(g.fig)
 
 
-def plot_phase_diagram(tuple, fullphasedir, suffix='', period=None):
-    logging.debug(f"Starting plot phase diagram with {tuple} and {fullphasedir}")
-    star_description = tuple[0]
+def plot_phase_diagram(star_tuple: Tuple[StarDescription, DataFrame], fullphasedir, suffix='', period=None):
+    logging.debug(f"Starting plot phase diagram with {star_tuple} and {fullphasedir}")
+    star_description = star_tuple[0]
     coords = star_description.coords
-    curve = tuple[1]
+    curve = star_tuple[1]
     star_id = star_description.local_id
     vsx_name, _, filename_no_ext = get_star_or_vsx_name(star_description, suffix=f"_phase{suffix}")
     vsx_title = f"{vsx_name}\n" if vsx_name is not None else ''
-    save_location = PurePath(fullphasedir, filename_no_ext)
+    save_location = PurePath(fullphasedir, filename_no_ext+'.png')
     upsilon_match = star_description.get_catalog('Upsilon')
     upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
     # print("Calculating phase diagram for", star)
@@ -184,7 +188,7 @@ def plot_phase_diagram(tuple, fullphasedir, suffix='', period=None):
     plt.gca().invert_yaxis()
     plt.errorbar(phased_t_final, phased_lc_final, yerr=phased_err, linestyle='none', marker='o', ecolor='gray',
                  elinewidth=1)
-    logging.debug(f"Saving phase plot to {save_location}.png")
+    logging.info(f"Saving phase plot to {save_location}")
     fig.savefig(save_location, format='png')
     plt.close(fig)
     with open(f"{fullphasedir}/txt/{filename_no_ext}.txt", 'w') as f:
@@ -194,7 +198,7 @@ def plot_phase_diagram(tuple, fullphasedir, suffix='', period=None):
 
 def get_star_or_vsx_name(star_description: StarDescription, suffix: str):
     vsx_name, separation = star_description.get_match_string("VSX")
-    filename_no_ext = f"{vsx_name}{suffix}" if vsx_name is not None else f"{star:05}{suffix}"
+    filename_no_ext = f"{vsx_name}{suffix}" if vsx_name is not None else f"{star_description.local_id:05}{suffix}"
     return vsx_name, separation, filename_no_ext.replace(' ', '_')
 
 
@@ -217,8 +221,8 @@ def format_date(x, pos=None):
     return r.date[thisind].strftime('%Y-%m-%d')
 
 
-def read_vast_lightcurves(star_description: StarDescription, comp_stars: ComparisonStars, do_charts, do_phase,
-                          basedir: str, chartsdir: str, phasedir: str):
+def read_vast_lightcurves(star_description: StarDescription, comp_stars: ComparisonStars, do_charts, do_phase, do_aavso,
+                          aavso_limit, basedir: str, chartsdir: PurePath, phasedir: PurePath, aavsodir: PurePath):
     start = timer()
     if star_description.path is '':
         logging.debug(f"Path for {star_description.local_id} is empty")
@@ -263,6 +267,17 @@ def read_vast_lightcurves(star_description: StarDescription, comp_stars: Compari
             plot_phase_diagram(tuple, phasedir, period=None, suffix="")
             # end = timer()
             # print("plotting phase:", end-start)
+        if do_aavso:
+            # TODO put this in settings.txt
+            sitelat = '-22 57 10'
+            sitelong = '-68 10 49'
+            sitealt = 2500
+            observer = 'ZZZ'
+
+            do_aavso_report.report(tuple, target_dir=aavsodir, vastdir=basedir, sitelat=sitelat, sitelong=sitelong,
+                                   sitealt=sitealt, comparison_stars=comp_stars, filter='V',
+                                   observer=observer, chunk_size=aavso_limit)
+
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
@@ -315,28 +330,36 @@ def calculate_real_mag_and_err(df, comp_stars: ComparisonStars):
 
 
 # reads lightcurves and passes them to lightcurve plot or phase plot
-# def run(star_descriptions, comparison_stars, do_charts, do_phase):
-def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, phasedir: str, chartsdir: str,
-        do_charts=False, do_phase=True, nr_threads=cpu_count(), desc="Writing light curve charts/phase diagrams"):
+def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir: str, phasepart: str, chartspart: str,
+        aavso_part: str, do_charts=False, do_phase=True, do_aavso=False, aavsolimit=None, nr_threads=cpu_count(),
+        desc="Writing light curve charts/phase diagrams"):
     CHUNK = 1
     set_seaborn_style()
     pool = mp.Pool(nr_threads)
     # pool = mp.Pool(1)
-    logging.info(f"Using {nr_threads} threads for lightcurve and phase plotting.")
+    phasedir = PurePath(resultdir, phasepart)
+    chartsdir = PurePath(resultdir, chartspart)
+    aavsodir = PurePath(resultdir, aavso_part)
+    logging.info(f"Using {nr_threads} threads for lightcurve, phase plotting and aavso reporting.")
 
     if do_phase:
         trash_and_recreate_dir(phasedir)
-        trash_and_recreate_dir(phasedir + '/txt')
+        trash_and_recreate_dir(PurePath(phasedir, PurePath('txt')))
     if do_charts:
         trash_and_recreate_dir(chartsdir)
+    if do_aavso:
+        trash_and_recreate_dir(aavsodir)
 
     func = partial(read_vast_lightcurves, basedir=basedir, comp_stars=comp_stars, do_charts=do_charts,
-                   do_phase=do_phase,
-                   phasedir=phasedir, chartsdir=chartsdir)
+                   do_phase=do_phase, do_aavso=do_aavso, aavso_limit=aavsolimit,
+                   phasedir=phasedir, chartsdir=chartsdir, aavsodir=aavsodir)
     with tqdm.tqdm(total=len(star_descriptions), desc=desc) as pbar:
         for _ in pool.imap_unordered(func, star_descriptions, chunksize=CHUNK):
             pbar.update(1)
             pass
+
+
+# def run(star_descriptions, comparison_stars, do_charts, do_phase):
 
 
 # this is a unit test

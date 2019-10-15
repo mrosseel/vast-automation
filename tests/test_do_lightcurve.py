@@ -5,6 +5,7 @@ from star_description import StarDescription
 from astropy.coordinates import SkyCoord
 import logging
 
+
 class TestDoCalibration(unittest.TestCase):
 
     def test_synthetic_c(self):

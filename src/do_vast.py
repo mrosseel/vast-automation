@@ -17,7 +17,7 @@ if __name__ == '__main__':
                         help="The directory where all results will be written",
                         nargs='?', required=True)
     parser.add_argument('-v', '--vsx', help="Add vsx stars to field charts/reporting list", action="store_true")
-    parser.add_argument('-!', '--allstars', help="Generate phase/lightcurve for all stars. WARNING: takes long",
+    parser.add_argument('-!', '--allstars', help="Generate phase/light/aavso for all stars. WARNING: takes long",
                         action="store_true")
     parser.add_argument('-f', '--field', help="Generate field charts (finder charts)", action="store_true")
     parser.add_argument('-p', '--phase', help="Generate phase charts", action="store_true")

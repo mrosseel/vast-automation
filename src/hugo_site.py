@@ -7,7 +7,7 @@ from reading import trash_and_recreate_dir, create_dir
 from shutil import copy
 import glob
 import logging
-
+from pathlib import PurePath
 
 def run(post_name: str, selected_stars: List[StarDescription], resultdir: str):
     sitedir = f"{os.getcwd()}/site/vsx/"
@@ -40,13 +40,15 @@ def copy_files(post_name: str, resultdir: str, sitedir: str):
     logging.info(f"Copying {len(fieldcharts_glob)} field charts from {fieldcharts}...")
     for file in fieldcharts_glob:
         copy(file, imagesdir)
+    logging.info(f"Copying done.")
 
 
 def block(star: StarDescription, resultdir: str, post_name: str):
     try:
         star_match, separation = star.get_match_string("VSX")
         phase_file = f"{star_match}_phase.png" if star_match is not None else f"{star.local_id:05}_phase.png"
-        parsed_toml = toml.load(f"{resultdir}/phase_candidates/txt/{phase_file[:-4]}.txt")
+        txt_path = PurePath(resultdir, 'phase_candidates/txt', phase_file[:-4]+'.txt')
+        parsed_toml = toml.load(txt_path)
         ucac4 = star.get_catalog("UCAC4", strict=True)
         ucac4_name = ucac4 if not None else "unknown"
         images_prefix = f"/images/{post_name}/"
@@ -70,7 +72,11 @@ def block(star: StarDescription, resultdir: str, post_name: str):
     </div>
     '''
         return result
-    except:
+    except Exception as ex:
+        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+        message = template.format(type(ex).__name__, ex.args)
+        logging.error(message)
+        logging.error("File not found error in store and curve for star", star.path)
         return f'<div class="fl w-100 pa2 ba">Could not load {phase_file}</div>'
 
 

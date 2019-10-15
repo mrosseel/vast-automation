@@ -1,8 +1,9 @@
 from astropy.coordinates import SkyCoord
 
+
 class StarDescription:
-    def __init__(self, local_id=None, aavso_id=None, coords: SkyCoord=None, vmag=None, e_vmag=None, match=None, label=None,
-                 xpos=None, ypos=None, path=None, obs=None):
+    def __init__(self, local_id=None, aavso_id=None, coords: SkyCoord=None, vmag=None, e_vmag=None, match=None,
+                 label=None, xpos=None, ypos=None, path=None, obs=None):
         # star id given by munipack
         self.local_id = local_id
         # id used to identify to aavso (could be real variable name or UCAC4?)
@@ -38,8 +39,7 @@ class StarDescription:
         self._match.append(val)
         print(f"appending, is now {self._match}")
 
-
-    # does this star has a catalog with a certain name?
+    # does this star have a catalog with a certain name?
     def has_catalog(self, catalog: str) -> bool:
         if self.match is not None:
             catalog_match_list = [x for x in self.match if x.name_of_catalog == catalog]
@@ -112,7 +112,6 @@ class UpsilonMatch():
         self.probability = probability
         self.flag = flag
         self.period = period
-
 
     # extract upsilon strings from star_descr
     # might have to move outside of UpsilonMatch

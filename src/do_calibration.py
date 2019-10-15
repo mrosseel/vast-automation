@@ -110,6 +110,7 @@ def get_star_descriptions(star_id_list=None):
                                           coords=SkyCoord(positions[key][0], positions[key][1], unit='deg')))
     return result
 
+
 def select_star_descriptions(star_id_list: List[int], stars: List[StarDescription]):
     return [x for x in stars if x.local_id in star_id_list]
 
@@ -250,11 +251,14 @@ def get_vsx_in_field(star_descriptions, max_separation=0.01):
 ################ CATALOG related functions #########################
 
 
-# tags a list of star descriptions a catalogfor later filtering
-def add_catalog_to_star_descriptions(stars: List[StarDescription], catalog_name="SELECTED"):
+# tags a list of star descriptions a catalog for later filtering
+def add_catalog_to_star_descriptions(stars: List[StarDescription], catalog_name: List[str] = None):
+    if catalog_name is None:
+        catalog_name = ["SELECTED"]
     for sd in stars:
-        match = CatalogMatch(name_of_catalog=catalog_name, catalog_id=sd.local_id)
-        sd.match.append(match)
+        for catalog in catalog_name:
+            match = CatalogMatch(name_of_catalog=catalog, catalog_id=sd.local_id)
+            sd.match.append(match)
     return stars
 
 def _add_catalog_match_to_entry(catalog_name: str, matchedstardesc: StarDescription, vsx_dict, index_vsx, separation):
@@ -356,24 +360,23 @@ def add_apass_to_star_descriptions(star_descriptions, radius=0.01, row_limit=2):
     return star_descriptions
 
 
-def add_ucac4_to_star_descriptions(star_descriptions, nr_threads, radius=0.01):
+def add_ucac4_to_star_descriptions(star_descriptions: List[StarDescription], nr_threads: int, radius=0.01):
     logging.info("Retrieving ucac4 for {} star(s)".format(len(star_descriptions)))
     radius_angle = Angle(radius, unit=u.deg)
 
     pool = Pool(nr_threads * 2)
     func = partial(add_ucac4_to_star, radius_angle=radius_angle)
     result = []
-    for entry in pool.imap(func, star_descriptions):
+    for entry in pool.map(func, star_descriptions):
         result.append(entry)
     return result
 
 
-def add_ucac4_to_star(star, radius_angle):
+def add_ucac4_to_star(star: StarDescription, radius_angle):
     vizier_results = get_ucac4_field(star.coords, radius=radius_angle, row_limit=1)
     if vizier_results is None:
-        logging.info("More/less results received from UCAC4 than expected: {}".format(
-            vizier_results.shape[0] if not vizier_results is None and not vizier_results.shape is None else 0))
-        # print(vizier_results)
+        logging.warning("No vizier results for star", star.local_id)
+        return star
     else:
         # print('vizier results', vizier_results)
         logging.debug(f"Adding vmag: {vizier_results['Vmag'].iloc(0)[0]}")
@@ -394,7 +397,8 @@ def add_info_to_star_description(star, vmag, e_vmag, catalog_id, catalog_name, c
     mindist = star.coords.separation(coord_catalog)
     star.match.append(CatalogMatch(name_of_catalog=catalog_name, catalog_id=catalog_id,
                                    name=catalog_id, coords=coord_catalog, separation=mindist))
-    logging.info("Add info: Star {} has vmag={}, error={}, dist={}".format(star.local_id, star.vmag, star.e_vmag, mindist))
+    logging.debug("Add info: Star {} has vmag={}, error={}, dist={}".format(star.local_id, star.vmag, star.e_vmag,
+                                                                            mindist))
     return star
 
 
@@ -455,7 +459,6 @@ def get_vizier_field(center_coord, radius, catalog, row_limit=2):
     result = v.query_region(center_coord,
                             radius=radius,
                             catalog=[catalog])
-    logging.info(f"result of getting vizier field: {result}")
     try:
         df = result[0].to_pandas() if len(result) > 0 else None
     except:
