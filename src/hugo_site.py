@@ -49,7 +49,7 @@ def block(star: StarDescription, resultdir: str, post_name: str):
         phase_file = f"{star_match}_phase.png" if star_match is not None else f"{star.local_id:05}_phase.png"
         txt_path = PurePath(resultdir, 'phase_candidates/txt', phase_file[:-4]+'.txt')
         parsed_toml = toml.load(txt_path)
-        ucac4 = star.get_catalog("UCAC4", strict=True)
+        ucac4 = star.get_catalog("UCAC4", strict=False)
         ucac4_name = ucac4 if not None else "unknown"
         images_prefix = f"/images/{post_name}/"
         phase_url = f"{images_prefix}{phase_file}"
