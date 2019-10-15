@@ -1,5 +1,6 @@
 from typing import List
 from star_description import StarDescription
+import do_charts_vast
 from functools import partial
 import toml
 import os
@@ -45,14 +46,19 @@ def copy_files(post_name: str, resultdir: str, sitedir: str):
 
 def block(star: StarDescription, resultdir: str, post_name: str):
     try:
-        star_match, separation = star.get_match_string("VSX")
-        phase_file = f"{star_match}_phase.png" if star_match is not None else f"{star.local_id:05}_phase.png"
-        txt_path = PurePath(resultdir, 'phase_candidates/txt', phase_file[:-4]+'.txt')
-        parsed_toml = toml.load(txt_path)
+        vsx_name, separation, filename_no_ext = do_charts_vast.get_star_or_vsx_name(star, suffix="_phase")
+        txt_path = PurePath(resultdir, 'phase_candidates/txt', filename_no_ext+'.txt')
+        parsed_toml = None
+        try:
+            parsed_toml = toml.load(txt_path)
+        except FileNotFoundError:
+            # txt can be in candidates or selected.
+            txt_path = PurePath(resultdir, 'phase_selected/txt', filename_no_ext+'.txt')
+            parsed_toml = toml.load(txt_path)
         ucac4 = star.get_catalog("UCAC4", strict=False)
         ucac4_name = ucac4 if not None else "unknown"
         images_prefix = f"/images/{post_name}/"
-        phase_url = f"{images_prefix}{phase_file}"
+        phase_url = f"{images_prefix}{filename_no_ext}.png"
         result = f'''<div class="bb-l b--black-10 w-100">
         <div class="fl w-70 pa2 ba">
             <img class="special-img-class" src="{phase_url}" alt="{phase_url}"/>
