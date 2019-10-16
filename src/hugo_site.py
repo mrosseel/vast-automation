@@ -37,8 +37,8 @@ def copy_files(post_name: str, resultdir: str, sitedir: str):
     logging.info(f"Copying {len(selected_phase_glob)} phase files from {selected_phase}...")
     for file in selected_phase_glob:
         copy(file, imagesdir)
-    logging.info(f"Copying {len(fieldcharts_glob)} light charts from {fieldcharts}...")
-    for file in fieldcharts_glob:
+    logging.info(f"Copying {len(lightcharts_glob)} light charts from {lightcharts}...")
+    for file in lightcharts_glob:
         copy(file, imagesdir)
     logging.info(f"Copying {len(aavso_glob)} aavso files from {aavso}...")
     for file in aavso_glob:

@@ -119,10 +119,12 @@ def plot_lightcurve_jd(star_tuple: Tuple[StarDescription, DataFrame], chartsdir)
 
     # convert JD to int
     used_curve['realJD'] = used_curve['JD'].astype(np.float) #.astype(np.uint64)
-    g = sns.lmplot('realJD', 'realV',
-                   data=used_curve, height=30, aspect=5, scatter_kws={"s": 30},
-                   fit_reg=False)
-
+    # fig = plt.figure(dpi=80, facecolor='w', edgecolor='k')
+    fig = plt.figure(figsize=(20, 12), dpi=150, facecolor='w', edgecolor='k')
+    # g = sns.lmplot('realJD', 'realV',
+    #                data=used_curve, aspect=2, scatter_kws={"s": 30},
+    #                fit_reg=False)
+    plt.scatter(used_curve['realJD'], used_curve['realV'])
     plt.xlabel('JD', labelpad=TITLE_PAD)
     # plt.ylabel("Absolute Mag, comp star = {:2.2f}".format(comparison_stars[0].vmag), labelpad=TITLE_PAD)
     plot_max = used_curve_max
@@ -135,17 +137,19 @@ def plot_lightcurve_jd(star_tuple: Tuple[StarDescription, DataFrame], chartsdir)
     plt.xlim(used_curve['realJD'].min(), used_curve['realJD'].max())
     plt.gca().invert_yaxis()
     # g.map(plt.errorbar, 'Count', 'V-C', yerr='s1', fmt='o')
-    # plt.ticklabel_format(style='plain', axis='x')
-    # plt.title(f"Star {star_id}{vsx_title}, position: {get_hms_dms(coord)}{upsilon_text}", pad=TITLE_PAD)
-    g.fig.suptitle(f"Star {star_id}{vsx_title}, position: {get_hms_dms(coord)}{upsilon_text}", fontsize=100)
+    plt.ticklabel_format(style='plain', axis='x')
+    plt.title(f"Star {star_id}{vsx_title}, position: {get_hms_dms(coord)}{upsilon_text}", pad=TITLE_PAD)
+    plt.tight_layout()
+    # figure = g.fig
+    # figure.suptitle(f"Star {star_id}{vsx_title}, position: {get_hms_dms(coord)}{upsilon_text}")
     start = timer()
-    figure = g.fig
-    # plt.figure(dpi=80, facecolor='w', edgecolor='k')
-    figure.savefig(save_location)
+
+    fig.savefig(save_location)
     # g.savefig(chartsdir+str(star).zfill(5)+'_plot')
     end = timer()
     logging.debug(f"timing saving fig {end - start}")
-    plt.close(g.fig)
+    plt.close(fig)
+    plt.clf()
 
 
 def plot_phase_diagram(star_tuple: Tuple[StarDescription, DataFrame], fullphasedir, suffix='', period=None):
