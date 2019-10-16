@@ -25,6 +25,7 @@ import math
 from pathlib import PurePath
 from typing import Tuple
 from pandas import DataFrame
+import main_vast
 
 TITLE_PAD = 40
 
@@ -100,7 +101,7 @@ def plot_lightcurve_jd(star_tuple: Tuple[StarDescription, DataFrame], chartsdir)
     logging.debug(f"Plotting lightcurve for {star_id}")
     vsx_name, separation, filename_no_ext = get_star_or_vsx_name(star_description, suffix=f"_light")
     vsx_title = '' if vsx_name is None else f" ({vsx_name} - dist:{separation:.4f})"
-    save_location = PurePath(chartsdir, filename_no_ext)
+    save_location = PurePath(chartsdir, filename_no_ext+'.png')
     start = timer()
     upsilon_match = star_description.get_catalog('Upsilon')
     upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
@@ -115,30 +116,31 @@ def plot_lightcurve_jd(star_tuple: Tuple[StarDescription, DataFrame], chartsdir)
     used_curve = curve
     used_curve_max = used_curve['realV'].max()
     used_curve_min = used_curve['realV'].min()
-    # print(f"used curve:{used_curve['V-C']}, used curve max:{used_curve_max}, used curve min:{used_curve_min}")
 
-    # convert JD to float (descructive !!!)
-    used_curve['JD'] = used_curve['JD'].astype(np.float)
-    g = sns.lmplot('JD', 'realV',
-                   data=used_curve, height=20, aspect=5, scatter_kws={"s": 15},
+    # convert JD to int
+    used_curve['realJD'] = used_curve['JD'].astype(np.float) #.astype(np.uint64)
+    g = sns.lmplot('realJD', 'realV',
+                   data=used_curve, height=30, aspect=5, scatter_kws={"s": 30},
                    fit_reg=False)
 
     plt.xlabel('JD', labelpad=TITLE_PAD)
     # plt.ylabel("Absolute Mag, comp star = {:2.2f}".format(comparison_stars[0].vmag), labelpad=TITLE_PAD)
     plot_max = used_curve_max
-    plot_min = min(plot_max - 1, used_curve_min)
+    plot_min = min(plot_max - 1, used_curve_min - 0.2)
     logging.debug(f'min {plot_min} max {plot_max} usedmin {used_curve_min} usedmax {used_curve_max}')
     if np.isnan(plot_max) or np.isnan(plot_min):
         logging.info(f"star is nan:{star_id}, plot_max:{plot_max}, plot_min:{plot_min}")
         return
     plt.ylim(plot_min, plot_max)
-    plt.xlim(0, len(used_curve))
+    plt.xlim(used_curve['realJD'].min(), used_curve['realJD'].max())
     plt.gca().invert_yaxis()
     # g.map(plt.errorbar, 'Count', 'V-C', yerr='s1', fmt='o')
     # plt.ticklabel_format(style='plain', axis='x')
-    plt.title(f"Star {star_id}{vsx_title}, position: {get_hms_dms(coord)}{upsilon_text}", pad=TITLE_PAD)
+    # plt.title(f"Star {star_id}{vsx_title}, position: {get_hms_dms(coord)}{upsilon_text}", pad=TITLE_PAD)
+    g.fig.suptitle(f"Star {star_id}{vsx_title}, position: {get_hms_dms(coord)}{upsilon_text}", fontsize=100)
     start = timer()
     figure = g.fig
+    # plt.figure(dpi=80, facecolor='w', edgecolor='k')
     figure.savefig(save_location)
     # g.savefig(chartsdir+str(star).zfill(5)+'_plot')
     end = timer()
@@ -236,8 +238,8 @@ def read_vast_lightcurves(star_description: StarDescription, comp_stars: Compari
 
     try:
         df = pd.read_csv(star_description.path, delim_whitespace=True,
-                         names=['JD', 'Vrel', 'err', 'X', 'Y', 'file', 'vast1', 'vast2', 'vast3', 'vast4', 'vast5',
-                                'vast6', 'vast7', 'vast8', 'vast9', 'vast10', 'vast11'], dtype={'JD': str})
+                         names=['JD', 'Vrel', 'err', 'X', 'Y', 'unknown', 'file', 'vast1', 'vast2', 'vast3', 'vast4',
+                                'vast5', 'vast6', 'vast7', 'vast8', 'vast9', 'vast10'], dtype={'JD': str})
 
         if df is None or len(df) == 0:
             logging.info(f"No lightcurve found for {star_description.path}")
@@ -289,6 +291,7 @@ def read_vast_lightcurves(star_description: StarDescription, comp_stars: Compari
 
 
 def calculate_real_mag_and_err(df, comp_stars: ComparisonStars):
+    assert comp_stars is not None
     logging.debug(f"Start calculate_real with {df.shape[0]} rows and {len(comp_stars.observations)} comp stars.")
 
     # the average of the real magnitude of the comparison stars
@@ -365,18 +368,46 @@ def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir:
 # this is a unit test
 if __name__ == '__main__':
     logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     logging.basicConfig(format="%(asctime)s %(name)s: %(levelname)s %(message)s")
     parser = argparse.ArgumentParser(description='munipack automation cli')
     parser.add_argument('-d', '--datadir',
                         help="The directory where the data can be found (usually the vast dir)",
                         nargs='?', required=True)
-    parser.add_argument('-s', '--starlist', help="List of stars to generate", nargs='+')
+    parser.add_argument('-s', '--starlist', help="List of stars to generate", nargs='+', required=True)
+    parser.add_argument('-r', '--resultdir',
+                        help="The directory where all results will be written",
+                        nargs='?', required=True)
+    parser.add_argument('-p', '--phase', help="Generate phase charts", action="store_true")
+    parser.add_argument('-i', '--lightcurve', help="Generate lightcurve charts", action="store_true")
+    parser.add_argument('-a', '--aavso', help="Generate aavso reports",
+                        action="store_true")
+    parser.add_argument('-k', '--checkstarfile', help="The bright and stable stars used to do ensemble photometry",
+                        nargs='?', required=True)
     args = parser.parse_args()
     vastdir = utils.add_trailing_slash(args.datadir)
 
     # 7982
-    stars = do_calibration.get_empty_star_descriptions(args.starlist)
-    for star in stars:
+    # stars = do_calibration.get_empty_star_descriptions(args.starlist)
+    stars = do_calibration.get_random_star_descriptions(len(args.starlist))
+    for idx, star in enumerate(stars):
+        star.local_id = int(args.starlist[idx])
         star.path = f"{vastdir}out{int(star.local_id):05}.dat"
-    run(stars, "compstars", vastdir, 'phase_starlist/', 'chart_starlist/', nr_threads=cpu_count())
+
+    check_stars = main_vast.read_checkstars(args.checkstarfile)
+    import ucac4
+    from astropy.coordinates import SkyCoord
+    real_sd = [3174, 2620]
+    for idx, check_star in enumerate(check_stars):
+        ucacsd = ucac4.get_ucac4_star_description(check_star)
+        stars.append(StarDescription(local_id=real_sd[idx], coords=ucacsd.coords,
+                                     path=f"{vastdir}out{real_sd[idx]:05}.dat"))
+    comp_stars = main_vast.read_comparison_stars(stars, args.checkstarfile, vastdir)
+
+    # run(stars, comp_stars, vastdir, args.resultdir, 'phase_candidates/', 'light_candidates/',
+    run(stars[:-len(real_sd)], comp_stars, vastdir, args.resultdir, 'phase_candidates/', 'light_candidates/',
+        'aavso_candidates/', do_phase=args.phase, do_charts=args.light, do_aavso=args.aavso, nr_threads=1,
+        desc="Phase/light/aavso of candidates")
+# def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir: str, phasepart: str, chartspart: str,
+#         aavso_part: str, do_charts=False, do_phase=True, do_aavso=False, aavsolimit=None, nr_threads=cpu_count(),
+#         desc="Writing light curve charts/phase diagrams"):

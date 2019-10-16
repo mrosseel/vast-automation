@@ -1,9 +1,23 @@
 from astropy.coordinates import SkyCoord
+from typing import List
+
+
+class Match:
+    def __init__(self, name_of_catalog=None, catalog_id=None, name=None, coords: SkyCoord=None, separation=-1):
+        # the name of the catalog
+        self.name_of_catalog = name_of_catalog
+        # the id in the catalog
+        self.catalog_id = catalog_id
+        # the name of the object in this catalog
+        self.name = name
+        # the coords in the catalog
+        self.coords = coords
 
 
 class StarDescription:
-    def __init__(self, local_id=None, aavso_id=None, coords: SkyCoord=None, vmag=None, e_vmag=None, match=None,
-                 label=None, xpos=None, ypos=None, path=None, obs=None):
+    def __init__(self, local_id: int = None, aavso_id: str = None, coords: SkyCoord = None, vmag: float = None,
+                 e_vmag: float = None, match: List[Match] = None,
+                 label: str = None, xpos: float = None, ypos: float = None, path: str = None, obs: int = None):
         # star id given by munipack
         self.local_id = local_id
         # id used to identify to aavso (could be real variable name or UCAC4?)
@@ -83,7 +97,8 @@ class StarDescription:
                f"matches: {self._match}, path: {self.path}"
 
 
-class CatalogMatch():
+
+class CatalogMatch(Match):
     def __init__(self, name_of_catalog=None, catalog_id=None, name=None, coords: SkyCoord=None, separation=-1):
         # the name of the catalog
         self.name_of_catalog = name_of_catalog
@@ -105,7 +120,7 @@ class CatalogMatch():
         return f'Catalog:{self.name_of_catalog}, CatalogId:{self.catalog_id}, Name:{self.name}, Coords:{self.coords}, Separation:{self.separation}'
 
 
-class UpsilonMatch():
+class UpsilonMatch(Match):
     def __init__(self, name_of_catalog='Upsilon', var_type=None, probability=None, flag=None, period=None):
         self.name_of_catalog = name_of_catalog
         self.var_type = var_type

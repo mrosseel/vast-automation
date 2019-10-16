@@ -8,22 +8,6 @@ import glob
 import logging
 import pickle
 
-def read_lightcurve(star,filter=True,preprocess=False, directory=None):
-    if directory is None:
-        directory = settings.lightcurvedir
-    try:
-        #print("Reading lightcurve", star, init.lightcurve_dir + 'curve_' + str(star).zfill(5) + '.txt')
-        df = pd.read_csv(directory + 'curve_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ',
-                         dtype={'mask': np.unicode_})
-        logging.debug(f"Read lightcurve of {star} with {df.shape[0]}")
-        if(filter):
-            df = df[df['V-C'] < 99]
-        if(preprocess):
-            df = preprocess_lightcurve(df)
-        return df
-    except OSError as e:
-        logging.error(f"OSError for star: {star}, {e}")
-
 # - 1st column - JD(TT) (default) or JD(UTC) (if VaST was started with "-u" flag)
 # - 2nd column - magnitude (with respect to the background level on the reference image if an absolute calibration was not done yet)
 # - 3rd column - estimated magnitude error

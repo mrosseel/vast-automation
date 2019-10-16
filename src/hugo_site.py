@@ -32,8 +32,13 @@ def copy_files(post_name: str, resultdir: str, sitedir: str):
     aavso_glob = glob.glob(aavso)
     fieldcharts = f'{resultdir}fieldcharts/*.png'
     fieldcharts_glob = glob.glob(fieldcharts)
+    lightcharts = f'{resultdir}light_candidates/*.png'
+    lightcharts_glob = glob.glob(lightcharts)
     logging.info(f"Copying {len(selected_phase_glob)} phase files from {selected_phase}...")
     for file in selected_phase_glob:
+        copy(file, imagesdir)
+    logging.info(f"Copying {len(fieldcharts_glob)} light charts from {fieldcharts}...")
+    for file in fieldcharts_glob:
         copy(file, imagesdir)
     logging.info(f"Copying {len(aavso_glob)} aavso files from {aavso}...")
     for file in aavso_glob:
@@ -72,7 +77,7 @@ def block(star: StarDescription, resultdir: str, post_name: str):
             <li>coords: {parsed_toml['coords'][0]:.5f} {parsed_toml['coords'][1]:.5f}</li>
             <li><a href="{images_prefix}vsx_and_star_{star.local_id:05}.png">finder chart</a></li>
             <li><a href="{images_prefix}{star.local_id:05}_ext.txt">aavso observations</a></li>
-            
+            <li><a href="{images_prefix}{star.local_id:05}_light.png">light curve</a></li>
             </ul>
         </div>
     </div>

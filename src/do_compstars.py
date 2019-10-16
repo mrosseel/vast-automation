@@ -8,6 +8,7 @@ from typing import List, Tuple
 from star_description import StarDescription
 import ucac4
 
+
 # receives ucac numbers, fetches ucac coords and compares them to world_position coords
 def get_fixed_compstars(star_descriptions: List[StarDescription], comparison_stars: List[str]):
     logging.info(f"Using fixed compstars {comparison_stars}")
@@ -29,6 +30,7 @@ def get_fixed_compstars(star_descriptions: List[StarDescription], comparison_sta
         star_desc_result.append(star)
         logging.debug(f"Using fixed compstar '{ucac_id}' with Vmag: '{ucacsd.vmag}' and star id: {star_id_1}")
     return [x.local_id for x in star_desc_result], star_desc_result
+
 
 def get_calculated_compstars(apertureidx, photometry_blob: PhotometryBlob):
     stddevs = photometry_blob.stddevs

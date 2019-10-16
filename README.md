@@ -67,14 +67,13 @@ Checking that all 900 files were downloaded correctly:
 
 ## TODO
 
-- calculate correct realMag, realErr
++ calculate correct realMag, realErr
 - for candidates, closest known vsx
-- for candidates_pos, no h/m/s but spaces (see get_lesve)
-+ check that if no comparison stars are found 0 is used
-- make html page with selected candidates
++ for candidates_pos, no h/m/s but spaces (see get_lesve)
++ make html page with selected candidates
 / make lightcurves based on JD
 + hire kimsufi server for processing ks-11
-- file to give comparison stars -f bla.txt
++ file to give comparison stars -f bla.txt
 - check out https://public.lanl.gov/palmer/fastchi.html for period determination
 
 - AAVSO report should use instrumental magnitudes for comparison stars

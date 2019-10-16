@@ -140,6 +140,7 @@ def get_ucac4_details(ucac_id):
         logging.debug("read ucac4 star:", star)
         return star
 
+
 def get_ucac4_star_description(ucac4_id):
     star = get_ucac4_details(ucac4_id)
     sd = StarDescription(coords=SkyCoord(star.ra/1000/3600, (star.spd-324000000)/1000/3600, unit='deg'),

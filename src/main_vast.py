@@ -39,7 +39,7 @@ def run_do_rest(args):
     resultdir = clean_and_create_resultdir(args.resultdir, vastdir)
     fieldchartsdir = resultdir + 'fieldcharts/'
     aavsodir = resultdir + 'aavso/'
-    do_charts = args.lightcurve
+    do_charts = args.light
     do_phase = args.phase
     do_aavso = args.aavso
     logging.info(f"Directory where all files will be read: '{vastdir}' and written: '{resultdir}'")
@@ -73,8 +73,42 @@ def run_do_rest(args):
     if args.field:
         do_charts_field.run_standard_field_charts(star_descriptions, wcs, fieldchartsdir, wcs_file)
 
+    comp_stars = read_comparison_stars(star_descriptions, args.checkstarfile, vastdir)
+    candidate_stars = do_calibration.get_catalog_stars(star_descriptions, "CANDIDATE", exclude="VSX")
+    vsx_stars = do_calibration.get_catalog_stars(star_descriptions, "VSX")
+    starfile_stars = do_calibration.get_catalog_stars(star_descriptions, "STARFILE")
+    aavso_stars = starfile_stars + vsx_stars + candidate_stars
+
+    if args.allstars:
+        do_charts_vast.run(star_descriptions, comp_stars, vastdir, resultdir, 'phase_all/', 'light_all/', 'aavso_all/',
+                           do_phase=do_phase, do_charts=do_charts, do_aavso=do_aavso, nr_threads=thread_count,
+                           desc="Phase/light/aavso of ALL stars")
+    else:
+        if args.candidates:
+            logging.info(f"Plotting {len(candidate_stars)} candidates...")
+            do_charts_vast.run(candidate_stars, comp_stars, vastdir, resultdir, 'phase_candidates/',
+                               'light_candidates/', 'aavso_candidates/', do_phase=do_phase, do_charts=do_charts,
+                               do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of candidates")
+        if args.vsx:
+            do_calibration.add_catalog_to_star_descriptions(vsx_stars, ["SELECTED"])
+            logging.info(f"Plotting {len(vsx_stars)} vsx stars...")
+            do_charts_vast.run(vsx_stars, comp_stars, vastdir, resultdir, 'phase_vsx/', 'light_vsx/', 'aavso_vsx/',
+                               do_phase=do_phase, do_charts=do_charts, do_aavso=do_aavso, nr_threads=thread_count,
+                               desc="Phase/light/aavso of VSX stars")
+        if args.selectedstarfile:
+            do_charts_vast.run(starfile_stars, comp_stars, vastdir, resultdir, 'phase_selected/', 'light_selected/',
+                               'aavso_selected', do_phase=do_phase, do_charts=do_charts,
+                               do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of selected stars")
+
+    if args.site:
+        ids = [x.local_id for x in starfile_stars]
+        logging.info(f"Creating site entry with these {len(starfile_stars)} selected stars: {ids}")
+        hugo_site.run(args.site, starfile_stars, resultdir)
+
+
+def read_comparison_stars(star_descriptions: List[StarDescription], checkstarfile: str, vastdir: str):
     # load comparison stars
-    checkstars = read_checkstars(args.checkstarfile)
+    checkstars = read_checkstars(checkstarfile)
     comparison_stars_1, comparison_stars_1_desc = do_compstars.get_fixed_compstars(star_descriptions, checkstars)
     comp_observations = []
     logging.info(f"Using comparison star ids:{comparison_stars_1}")
@@ -87,41 +121,11 @@ def run_do_rest(args):
     for star in comparison_stars_1_desc:
         comp_catalogmags.append(star.vmag)
         comp_catalogerr.append(star.e_vmag)
-
     comp_stars = ComparisonStars(comparison_stars_1, comparison_stars_1_desc, comp_observations, comp_catalogmags,
                                  comp_catalogerr)
     logging.info(
         f"Comparison stars have {np.shape(comp_observations)}, {len(comp_observations[0])}, {len(comp_observations[1])} observations")
-    candidate_stars = do_calibration.get_catalog_stars(star_descriptions, "CANDIDATE", exclude="VSX")
-    vsx_stars = do_calibration.get_catalog_stars(star_descriptions, "VSX")
-    starfile_stars = do_calibration.get_catalog_stars(star_descriptions, "STARFILE")
-    aavso_stars = starfile_stars + vsx_stars + candidate_stars
-
-    if args.allstars:
-        do_charts_vast.run(star_descriptions, comp_stars, vastdir, resultdir, 'phase_all/', 'chart_all/', 'aavso_all/',
-                           do_phase=do_phase, do_charts=do_charts, do_aavso=do_aavso, nr_threads=thread_count,
-                           desc="Phase/light/aavso of ALL stars")
-    else:
-        if args.candidates:
-            logging.info(f"Plotting {len(candidate_stars)} candidates...")
-            do_charts_vast.run(candidate_stars, comp_stars, vastdir, resultdir, 'phase_candidates/',
-                               'chart_candidates/', 'aavso_candidates/', do_phase=do_phase, do_charts=do_charts,
-                               do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of candidates")
-        if args.vsx:
-            do_calibration.add_catalog_to_star_descriptions(vsx_stars, ["SELECTED"])
-            logging.info(f"Plotting {len(vsx_stars)} vsx stars...")
-            do_charts_vast.run(vsx_stars, comp_stars, vastdir, resultdir, 'phase_vsx/', 'chart_vsx/', 'aavso_vsx/',
-                               do_phase=do_phase, do_charts=do_charts, do_aavso=do_aavso, nr_threads=thread_count,
-                               desc="Phase/light/aavso of VSX stars")
-        if args.selectedstarfile:
-            do_charts_vast.run(starfile_stars, comp_stars, vastdir, resultdir, 'phase_selected/', 'chart_selected/',
-                               'aavso_selected', do_phase=do_phase, do_charts=do_charts,
-                               do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of selected stars")
-
-    if args.site:
-        ids = [x.local_id for x in starfile_stars]
-        logging.info(f"Creating site entry with these {len(starfile_stars)} selected stars: {ids}")
-        hugo_site.run(args.site, starfile_stars, resultdir)
+    return comp_stars
 
 
 def clean_and_create_resultdir(argsdir: str, vastdir: str):
