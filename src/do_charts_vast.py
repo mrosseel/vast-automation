@@ -26,6 +26,7 @@ from pathlib import PurePath
 from typing import Tuple
 from pandas import DataFrame
 import main_vast
+import co
 
 TITLE_PAD = 40
 
@@ -253,7 +254,7 @@ def read_vast_lightcurves(star_description: StarDescription, comp_stars: Compari
         # TODO: this is wrong, should be composition of all comparison stars. To do error propagation use quadrature
         # rule: http://ipl.physics.harvard.edu/wp-uploads/2013/03/PS3_Error_Propagation_sp13.pdf
         # df['V-C'] = df['V-C'] + comparison_stars[0].vmag
-        df['realV'], df['realErr'] = calculate_real_mag_and_err(df, comp_stars)
+        df['realV'], df['realErr'] = do_compstars.calculate_real_mag_and_err(df, comp_stars)
         tuple = star_description, df
         if do_charts:
             # start = timer()
@@ -294,56 +295,13 @@ def read_vast_lightcurves(star_description: StarDescription, comp_stars: Compari
     logging.debug(f"Full lightcurve/phase: {end - start}")
 
 
-def calculate_real_mag_and_err(df, comp_stars: ComparisonStars):
-    assert comp_stars is not None
-    logging.debug(f"Start calculate_real with {df.shape[0]} rows and {len(comp_stars.observations)} comp stars.")
-
-    # the average of the real magnitude of the comparison stars
-    meanreal = np.mean(comp_stars.comp_catalogmags)
-    logging.debug(f"meanreal is {meanreal}")
-    # error = sqrt((vsig**2+(1/n sum(sigi)**2)))
-    realV = []
-    realErr = []
-    for index, row in df.iterrows():
-        # logging.debug(f"row is {row}, comp_mags is {comp_stars.comp_catalogmags}")
-        comp_obs = []
-        comp_err = []
-        for compstar in comp_stars.observations:
-            jd = row['JD']
-            if jd in compstar:
-                comp_obs.append(float(compstar[jd][0]))
-                comp_err.append(float(compstar[jd][1]))
-            else:
-                logging.info(f"Key error for {row['JD']}, {comp_stars.ids}")
-
-        meanobs = -1
-        meanerr = -1
-        if len(comp_obs) > 0 and len(comp_obs) == len(comp_err):
-            meanobs = np.mean(comp_obs)
-            # Vobs - Cobs + Creal = V
-            realV.append(row['Vrel'] - meanobs + meanreal)
-            meanerr = math.sqrt(math.pow(row['err'], 2) + math.pow(np.mean(comp_err), 2))
-            realErr.append(meanerr)
-        else:  # error in the comparison stars
-            realV.append(row['Vrel'])
-            realErr.append(row['err'])
-        if meanobs == -1 or meanerr == -1:
-            logging.info(f"vrel: {row['Vrel']}, meanobs: {meanobs}, compobs: {comp_obs},  meanreal: {meanreal}, "
-                         f"real {comp_stars.comp_catalogmags},  vrel: {row['Vrel'] - meanobs + meanreal}, meanerr: {meanerr},"
-                         f"nr of compstar observations={len(compstar)}, nr of variable observations={len(df)}")
-            logging.info(f"{len(comp_obs)}, {len(comp_obs)} == {len(comp_err)}")
-        # logging.debug(f"Results of photometry: V diff: {df['Vrel'].mean()-np.mean(realV)}, err diff: {df['err'].mean()-np.mean(realErr)}")
-    return realV, realErr
-
-
 # reads lightcurves and passes them to lightcurve plot or phase plot
 def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir: str, phasepart: str, chartspart: str,
         aavso_part: str, do_charts=False, do_phase=True, do_aavso=False, aavsolimit=None, nr_threads=cpu_count(),
         desc="Writing light curve charts/phase diagrams"):
     CHUNK = 1
     set_seaborn_style()
-    pool = mp.Pool(nr_threads)
-    # pool = mp.Pool(1)
+    pool = mp.Pool(nr_threads, maxtasksperchild=10)
     phasedir = PurePath(resultdir, phasepart)
     chartsdir = PurePath(resultdir, chartspart)
     aavsodir = PurePath(resultdir, aavso_part)
@@ -364,7 +322,8 @@ def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir:
         for _ in pool.imap_unordered(func, star_descriptions, chunksize=CHUNK):
             pbar.update(1)
             pass
-
+    pool.close()
+    pool.join()
 
 # def run(star_descriptions, comparison_stars, do_charts, do_phase):
 

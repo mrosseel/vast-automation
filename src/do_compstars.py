@@ -7,6 +7,8 @@ from photometry_blob import PhotometryBlob
 from typing import List, Tuple
 from star_description import StarDescription
 import ucac4
+import math
+from comparison_stars import ComparisonStars
 
 
 # receives ucac numbers, fetches ucac coords and compares them to world_position coords
@@ -75,6 +77,48 @@ def get_comparison_star_descriptions(comparison_stars_1):
         logging.info("Comparison star has nan vmag, will screw up everything coming after")
         exit()
     return comparison_stars_1_desc
+
+
+def calculate_real_mag_and_err(df, comp_stars: ComparisonStars):
+    assert comp_stars is not None
+    logging.debug(f"Start calculate_real with {df.shape[0]} rows and {len(comp_stars.observations)} comp stars.")
+
+    # the average of the real magnitude of the comparison stars
+    meanreal = np.mean(comp_stars.comp_catalogmags)
+    logging.debug(f"meanreal is {meanreal}")
+    # error = sqrt((vsig**2+(1/n sum(sigi)**2)))
+    realV = []
+    realErr = []
+    for index, row in df.iterrows():
+        # logging.debug(f"row is {row}, comp_mags is {comp_stars.comp_catalogmags}")
+        comp_obs = []
+        comp_err = []
+        for compstar in comp_stars.observations:
+            jd = row['JD']
+            if jd in compstar:
+                comp_obs.append(float(compstar[jd][0]))
+                comp_err.append(float(compstar[jd][1]))
+            else:
+                logging.info(f"Key error for {row['JD']}, {comp_stars.ids}")
+
+        meanobs = -1
+        meanerr = -1
+        if len(comp_obs) > 0 and len(comp_obs) == len(comp_err):
+            meanobs = np.mean(comp_obs)
+            # Vobs - Cobs + Creal = V
+            realV.append(row['Vrel'] - meanobs + meanreal)
+            meanerr = math.sqrt(math.pow(row['err'], 2) + math.pow(np.mean(comp_err), 2))
+            realErr.append(meanerr)
+        else:  # error in the comparison stars
+            realV.append(row['Vrel'])
+            realErr.append(row['err'])
+        if meanobs == -1 or meanerr == -1:
+            logging.info(f"vrel: {row['Vrel']}, meanobs: {meanobs}, compobs: {comp_obs},  meanreal: {meanreal}, "
+                         f"real {comp_stars.comp_catalogmags},  vrel: {row['Vrel'] - meanobs + meanreal}, meanerr: {meanerr},"
+                         f"nr of compstar observations={len(compstar)}, nr of variable observations={len(df)}")
+            logging.info(f"{len(comp_obs)}, {len(comp_obs)} == {len(comp_err)}")
+        # logging.debug(f"Results of photometry: V diff: {df['Vrel'].mean()-np.mean(realV)}, err diff: {df['err'].mean()-np.mean(realErr)}")
+    return realV, realErr
 
 
 if __name__ == '__main__':
