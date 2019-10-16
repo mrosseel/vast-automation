@@ -13,7 +13,7 @@ import argparse
 import logging
 import subprocess
 import math
-import matplotlib as mp
+import matplotlib as mplotlib
 from multiprocessing import cpu_count
 from comparison_stars import ComparisonStars
 from functools import partial
@@ -26,7 +26,7 @@ from pathlib import PurePath
 from typing import Tuple
 from pandas import DataFrame
 
-mp.use('Agg')  # needs no X server
+mplotlib.use('Agg')  # needs no X server
 TITLE_PAD = 40
 
 
