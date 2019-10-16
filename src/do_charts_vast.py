@@ -1,33 +1,32 @@
-from multiprocessing import cpu_count
-from comparison_stars import ComparisonStars
-from functools import partial
-import matplotlib as mp
-
-mp.use('Agg')  # needs no X server
+import main_vast
+import do_compstars
 import matplotlib.pyplot as plt
 import seaborn as sns
 import multiprocessing as mp
 import tqdm
 import numpy as np
 import pandas as pd
-from gatspy.periodic import LombScargleFast
-from reading import trash_and_recreate_dir
-from reading import file_selector
 import do_aavso_report
 import do_calibration
-from timeit import default_timer as timer
 import utils
 import argparse
-from star_description import StarDescription
 import logging
 import subprocess
 import math
+import matplotlib as mp
+from multiprocessing import cpu_count
+from comparison_stars import ComparisonStars
+from functools import partial
+from gatspy.periodic import LombScargleFast
+from reading import trash_and_recreate_dir
+from reading import file_selector
+from timeit import default_timer as timer
+from star_description import StarDescription
 from pathlib import PurePath
 from typing import Tuple
 from pandas import DataFrame
-import main_vast
-import co
 
+mp.use('Agg')  # needs no X server
 TITLE_PAD = 40
 
 
