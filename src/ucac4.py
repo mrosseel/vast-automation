@@ -1,4 +1,3 @@
-
 # col byte item   fmt unit       explanation                            notes
 # ---------------------------------------------------------------------------
 # 1  1- 3 ra     I*4 mas        right ascension at  epoch J2000.0 (ICRS) (1)
@@ -107,63 +106,180 @@
 # NOTE !!!!!!!!!!!  The ra/dec and proper motion sigmas are now offset by 128; i.e.,  a value of -128 would indicate a zero sigma.
 import logging
 import struct
+import math
 from collections import namedtuple
-from typing import List
+from typing import List, Tuple
 from star_description import StarDescription
 from astropy.coordinates import SkyCoord
+from pathlib import PurePath
+from LRUCache import LRUCache
+
+StarTuple = namedtuple('Star', 'ra spd mag1 mag2 mag_sigma obj_type double_star_flag ra_sigma'
+                               ' dec_sigma n_ucac_total n_ucac_used n_cats_used epoch_ra epoch_dec pm_ra pm_dec'
+                               ' pm_ra_sigma pm_dec_sigma twomass_id mag_j mag_h mag_k icq_flag1 icq_flag2 icq_flag3'
+                               ' e2mpho1 e2mpho2 e2mpho3 apass_mag_B apass_mag_V apass_mag_g apass_mag_r apass_mag_i'
+                               ' apass_mag_sigma_B apass_mag_sigma_V apass_mag_sigma_g apass_mag_sigma_r apass_mag_sigma_i'
+                               ' yale_gc_flags catalog_flags leda_flag twomass_ext_flag id_number ucac2_zone ucac2_number')
 
 
-Star = namedtuple('Star', 'ra spd mag1 mag2 mag_sigma obj_type double_star_flag ra_sigma' 
-                          ' dec_sigma n_ucac_total n_ucac_used n_cats_used epoch_ra epoch_dec pm_ra pm_dec' 
-                          ' pm_ra_sigma pm_dec_sigma twomass_id mag_j mag_h mag_k icq_flag1 icq_flag2 icq_flag3'
-                          ' e2mpho1 e2mpho2 e2mpho3 apass_mag_B apass_mag_V apass_mag_g apass_mag_r apass_mag_i'
-                          ' apass_mag_sigma_B apass_mag_sigma_V apass_mag_sigma_g apass_mag_sigma_r apass_mag_sigma_i'
-                          ' yale_gc_flags catalog_flags leda_flag twomass_ext_flag id_number ucac2_zone ucac2_number')
+def get_line_nr(n0, nn, line):
+    return f"{n0[line * 900]}\t{nn[line * 900]}"
 
-def get_ucac4_details(ucac_id):
-    id = ucac_id[6:]
-    zone = id[:3]
-    run_nr = int(id[4:].lstrip("0"))
 
-    logging.debug("UCAC4 id", id, zone, run_nr)
-    with open(f"./support/ucac4/UCAC4/u4b/z{zone}" , mode='rb') as file:  # b is important -> binary
-        fileContent = file.read()
-        logging.debug("filecontent mod 78 is ", len(fileContent) % 78)
-        # print("filecontent", fileContent[:78])
+class UCAC4:
+    def __init__(self, ucac_path: PurePath = PurePath('./support/ucac4/UCAC4/u4b')):
+        # star id given by munipack
+        self.ucac_path = ucac_path
+        self.cache = LRUCache(capacity=5)
+
+
+    def get_ucac4_details(self, ucac_id) -> List[Tuple[Tuple, str, int]]:
+        full_id = ucac_id[6:]
+        zone = full_id[:3]
+        run_nr = int(full_id[4:].lstrip("0"))
+        logging.debug(f"UCAC4 id {full_id}, {zone}, {run_nr}")
+        return self.get_ucac4_details_raw(zone, [run_nr])
+
+
+    def get_zone_from_file(self, zone: str):
+        result = self.cache.get(zone)
+        if result != -1:
+            return result
+        with open(PurePath(self.ucac_path, f"z{zone}"), mode='rb') as file:  # b is important -> binary
+            result = file.read()
+            self.cache.set(zone, result)
+            return result
+
+
+    def get_ucac4_details_raw(self, zone: str, run_nr: List[int]) -> List[Tuple[Tuple, str, int]]:
+        stars = []
+        filecontent = self.get_zone_from_file(zone)
+        # logging.debug(f"filecontent mod 78 is {len(filecontent) % 78}")
         # starformat = "=iihhBBBBBBBBhhhhBBihhhBBBBBBhhhhhBBBBBBiBBihi"
         starformat = "=iiHHBBBbbBBBHHhhbbIHHHBBBBBBHHHHHbbbbbBIBBIHI"
         starlength = struct.calcsize(starformat)
-        logging.debug("starlength is", starlength)
+        # logging.debug(f"starlength is {starlength}")
         unpack_starformat = struct.Struct(starformat).unpack
-        result = unpack_starformat(fileContent[starlength*(run_nr-1):starlength*run_nr])
-        star = make_star(result)
-        logging.debug("read ucac4 star:", star)
+        for number in run_nr:
+            result = unpack_starformat(filecontent[starlength * (number - 1):starlength * number])
+            star = UCAC4.make_star(result)
+            stars.append((star, zone, number))
+        # logging.debug(f"read ucac4 star: {star}")
+        return stars
+
+        # INTEGER*4 n0(900,1440), nn(900,1440)
+        #
+        # OPEN (15,FILE=fnidxu,ACCESS='direct',RECL=5184000)  ! 900 * 1440 * 4
+        # READ (15,REC=1) n0
+        # READ (15,REC=2) nn
+
+
+    def get_ucac4_sd(self, ra: float, dec: float, tolerance_deg=0.01) -> StarDescription:
+        # don't want to bother with more than 2 zone overlappings
+        target = SkyCoord(ra, dec, unit='deg')
+        assert tolerance_deg < 0.2
+        with open(f"./support/ucac4/UCAC4/u4i/u4index.unf", mode='rb') as file:  # b is important -> binary
+            filecontent = file.read()
+            index_format = "1296000I"
+            index_length = struct.calcsize(index_format)
+            logging.debug(f"index length  is {index_length}")
+            unpack_starformat = struct.Struct(index_format).unpack
+            result_n0 = unpack_starformat(filecontent[0:index_length])
+            result_nn = unpack_starformat(filecontent[index_length:])
+            zone1 = self.get_zone_for_dec(dec - tolerance_deg / 2)
+            zone2 = self.get_zone_for_dec(dec + tolerance_deg / 2)
+            # check for zone overlap
+            zones = [zone1]
+            if zone1 != zone2:
+                zones.append(zone2)
+            logging.debug(f"Zone range is {zones}")
+            bucket1 = self.get_ra_bucket(ra - tolerance_deg / 2)
+            bucket2 = self.get_ra_bucket(ra + tolerance_deg / 2)
+            buckets = range(bucket1, bucket2 + 1)
+            logging.debug(f"Bucket range is from {bucket1} to {bucket2}")
+            smallest_dist = 1000
+            best = None
+            for zone in zones:
+                for bucket in buckets:
+                    logging.debug(f"Processing {zone}:{bucket}")
+                    index = (bucket - 1) * 900 + zone - 1
+                    star_run_nr = result_n0[index]
+                    star_count_in_bucket = result_nn[index]
+                    the_range = list(range(star_run_nr, star_run_nr + star_count_in_bucket))
+                    sd_list = self.get_ucac4_star_descriptions(self.get_ucac4_details_raw(zone, the_range))
+                    for sd in sd_list:
+                        if target.separation(sd.coords).hour < smallest_dist:
+                            smallest_dist = target.separation(sd.coords).hour
+                            best = sd
+        return best
+
+
+    @staticmethod
+    def get_zone_for_dec(dec: float):
+        dec_0 = dec + 90
+        index = round(dec_0 / 0.2, 1)
+        return math.ceil(index) if index != 0 else 1
+
+
+    @staticmethod
+    def get_ra_bucket(ra: float):
+        index = math.ceil(ra * 4)  # 1440/360
+        return index if index != 0 else 1
+
+
+    @staticmethod
+    def name_to_zone_and_run_nr(ucac_id: str):
+        full_id = ucac_id[6:]
+        zone = full_id[:3]
+        run_nr = int(full_id[4:].lstrip("0"))
+        return zone, run_nr
+
+
+    @staticmethod
+    def zone_and_run_nr_to_name(zone: str, run_nr: int):
+        return f"UCAC4 {zone}-{run_nr:06}"
+
+
+    def get_ucac4_star_description_fromid(self, ucac4_id) -> StarDescription:
+        return UCAC4.get_ucac4_star_descriptions(self.get_ucac4_details(ucac4_id))[0]
+
+
+    @staticmethod
+    def get_ucac4_star_descriptions(startuples: List[Tuple[StarTuple, str, int]]) -> List[StarDescription]:
+        result = []
+        for startuple in startuples:
+            star, zone, run_nr = startuple
+            result.append(UCAC4.get_ucac4_star_description_fromtuple(star, zone, run_nr))
+        return result
+
+
+    @staticmethod
+    def get_ucac4_star_description_fromtuple(star: StarTuple, zone: str, run_nr: int):
+        sd = StarDescription(coords=SkyCoord(star.ra / 1000 / 3600, (star.spd - 324000000) / 1000 / 3600, unit='deg'),
+                             vmag=star.apass_mag_V / 1000, e_vmag=star.apass_mag_sigma_V / 100,
+                             aavso_id=UCAC4.zone_and_run_nr_to_name(zone, run_nr))
+        return sd
+
+
+    @staticmethod
+    def make_star(result: List):
+        star = StarTuple._make(result)
+        star = star._replace(ra_sigma=star.ra_sigma + 128)
+        star = star._replace(dec_sigma=star.dec_sigma + 128)
+        star = star._replace(pm_ra_sigma=star.pm_ra_sigma + 128)
+        star = star._replace(pm_dec_sigma=star.pm_dec_sigma + 128)
         return star
 
+    # >>> ra=140361
+    # >>> ra/1000/60/60
+    # 0.038989166666666665
+    # >>> dec=324005500
+    # >>> (dec-324000000)/1000/60/60
+    # 0.0015277777777777776
+    # >>>
 
-def get_ucac4_star_description(ucac4_id):
-    star = get_ucac4_details(ucac4_id)
-    sd = StarDescription(coords=SkyCoord(star.ra/1000/3600, (star.spd-324000000)/1000/3600, unit='deg'),
-                           vmag=star.apass_mag_V/1000, e_vmag=star.apass_mag_sigma_V/100, aavso_id=ucac4_id)
-    return sd
-
-
-def make_star(result: List):
-    star = Star._make(result)
-    star = star._replace(ra_sigma=star.ra_sigma+128)
-    star = star._replace(dec_sigma=star.dec_sigma+128)
-    star = star._replace(pm_ra_sigma=star.pm_ra_sigma+128)
-    star = star._replace(pm_dec_sigma=star.pm_dec_sigma+128)
-    return star
-
-# >>> ra=140361
-# >>> ra/1000/60/60
-# 0.038989166666666665
-# >>> dec=324005500
-# >>> (dec-324000000)/1000/60/60
-# 0.0015277777777777776
-# >>>
 
 if __name__ == '__main__':
     # run('UCAC4 003-000419')
-    print(get_ucac4_star_description('UCAC4 001-000003'))
+    ucac4 = UCAC4()
+    print(ucac4.get_ucac4_star_description('UCAC4 001-000003'))

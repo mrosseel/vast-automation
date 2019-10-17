@@ -10,13 +10,13 @@ import reading
 
 # not used
 def calculate_wcs_manual(reference_frame, xpos, ypos, arcsec_width, arcsec_height):
-    object_ra, object_dec, naxis1, naxis2, jd= getDataFromFitsHeader(reference_frame)
+    object_ra, object_dec, naxis1, naxis2, jd= get_data_from_fits_header(reference_frame)
     c = SkyCoord(object_ra, object_dec, unit="deg")
     return [setup_wcs(c, naxis1, naxis2, xpos, ypos, arcsec_width, arcsec_height), jd]
 
 
 def calculate_wcs_from_file(header, frame, xpos, ypos):
-    object_ra, object_dec, naxis1, naxis2, jd= getDataFromFitsHeader(frame)
+    object_ra, object_dec, naxis1, naxis2, jd= get_data_from_fits_header(frame)
     c = SkyCoord(object_ra, object_dec, unit="deg")
     return [setup_wcs_from_file(header, c, xpos, ypos), jd]
 
@@ -42,7 +42,7 @@ def setup_wcs_from_file(header, coord, xpos, ypos):
 ### HELPER functions
 
 
-def getDataFromFitsHeader(reference_frame):
+def get_data_from_fits_header(reference_frame):
     fits_header = get_fits_header(reference_frame)
     object_ra = fits_header['OBJCTRA']
     object_dec = fits_header['OBJCTDEC']

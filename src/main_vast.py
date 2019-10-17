@@ -24,6 +24,7 @@ from astropy.wcs import WCS
 from typing import List, Dict, Tuple
 from comparison_stars import ComparisonStars
 from pathlib import PurePath
+from ucac4 import UCAC4
 import hugo_site
 
 vsx_catalog_name = "vsx_catalog.bin"
@@ -334,6 +335,13 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
     if args.selectedstarfile:
         tag_starfile(args.selectedstarfile, star_descriptions)
 
+    # add ucac4 id's
+    starfile_stars = do_calibration.get_catalog_stars(star_descriptions, "STARFILE")
+    ucac4 = UCAC4()
+    logging.info(f"Adding UCAC4 id's to {len(starfile_stars)} selected stars")
+    for star in starfile_stars:
+        sd = ucac4.get_ucac4_sd(star.coords.ra.deg, star.coords.dec.deg)
+        do_calibration.add_info_to_star_description(star, sd.vmag, sd.e_vmag, sd.aavso_id, "UCAC4", sd.coords)
     return star_descriptions
 
 
@@ -354,8 +362,6 @@ def tag_starfile(selectedstarfile: str, star_descriptions: List[StarDescription]
         do_calibration.add_ucac4_to_star_descriptions(starfile_stars, nr_threads=cpu_count() * 2)
         do_calibration.add_catalog_to_star_descriptions(starfile_stars, ["SELECTED", "STARFILE"])
         logging.info(f"Tagged {len(starfile_stars)} stars as selected by file.")
-    test = do_calibration.get_catalog_stars(starfile_stars, "STARFILE")
-    logging.info(f"Test Tagged {len(test)} stars as selected by file.")
 
 
 def tag_starids(star_ids: List[int], tags: List[str]):
