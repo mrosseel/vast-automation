@@ -71,7 +71,7 @@ def block(star: StarDescription, resultdir: str, post_name: str):
         </div>
         <div class="fl w-30 pa2 ba">
             <ul>
-            <li>UCAC4: {ucac4_name}</li>
+            <li>{ucac4_name}</li>
             <li>period (d): {parsed_toml['period']:.5f}</li>
             <li>mag. range: {parsed_toml['range']}</li>
             <li>type: </li>
