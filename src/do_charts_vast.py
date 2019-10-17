@@ -138,7 +138,7 @@ def plot_lightcurve_jd(star_tuple: Tuple[StarDescription, DataFrame], chartsdir)
     plt.gca().invert_yaxis()
     # g.map(plt.errorbar, 'Count', 'V-C', yerr='s1', fmt='o')
     plt.ticklabel_format(style='plain', axis='x')
-    plt.title(f"Star {star_id}{vsx_title}, position: {get_hms_dms(coord)}{upsilon_text}", pad=TITLE_PAD)
+    plt.title(f"Star {star_id}{vsx_title}\nposition: {get_hms_dms(coord)}{upsilon_text}", pad=TITLE_PAD)
     plt.tight_layout()
     # figure = g.fig
     # figure.suptitle(f"Star {star_id}{vsx_title}, position: {get_hms_dms(coord)}{upsilon_text}")
