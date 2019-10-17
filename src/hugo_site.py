@@ -10,6 +10,7 @@ import glob
 import logging
 from pathlib import PurePath
 
+
 def run(post_name: str, selected_stars: List[StarDescription], resultdir: str):
     sitedir = f"{os.getcwd()}/site/vsx/"
     copy_files(post_name, resultdir, sitedir)
@@ -52,16 +53,16 @@ def copy_files(post_name: str, resultdir: str, sitedir: str):
 def block(star: StarDescription, resultdir: str, post_name: str):
     try:
         vsx_name, separation, filename_no_ext = do_charts_vast.get_star_or_vsx_name(star, suffix="_phase")
-        txt_path = PurePath(resultdir, 'phase_candidates/txt', filename_no_ext+'.txt')
+        txt_path = PurePath(resultdir, 'phase_candidates/txt', filename_no_ext + '.txt')
         parsed_toml = None
         try:
             parsed_toml = toml.load(txt_path)
         except FileNotFoundError:
             # txt can be in candidates or selected.
-            txt_path = PurePath(resultdir, 'phase_selected/txt', filename_no_ext+'.txt')
+            txt_path = PurePath(resultdir, 'phase_selected/txt', filename_no_ext + '.txt')
             parsed_toml = toml.load(txt_path)
         ucac4 = star.get_catalog("UCAC4", strict=False)
-        ucac4_name = ucac4 if not None else "unknown"
+        ucac4_name = ucac4.catalog_id if not None else "unknown"
         images_prefix = f"/images/{post_name}/"
         phase_url = f"{images_prefix}{filename_no_ext}.png"
         result = f'''<div class="bb-l b--black-10 w-100">
