@@ -70,10 +70,11 @@ def run_do_rest(args):
                   star_descriptions[:10] if len(star_descriptions) >= 10 else star_descriptions)
     write_augmented_autocandidates(vastdir, resultdir, stardict)
     write_augmented_all_stars(vastdir, resultdir, stardict)
-    if args.field:
-        do_charts_field.run_standard_field_charts(star_descriptions, wcs, fieldchartsdir, wcs_file)
-
     comp_stars = read_comparison_stars(star_descriptions, args.checkstarfile, vastdir, stardict)
+
+    if args.field:
+        do_charts_field.run_standard_field_charts(star_descriptions, wcs, fieldchartsdir, wcs_file, comp_stars)
+
     candidate_stars = do_calibration.get_catalog_stars(star_descriptions, "CANDIDATE", exclude="VSX")
     vsx_stars = do_calibration.get_catalog_stars(star_descriptions, "VSX")
     starfile_stars = do_calibration.get_catalog_stars(star_descriptions, "STARFILE")

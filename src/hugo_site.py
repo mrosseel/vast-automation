@@ -62,7 +62,10 @@ def block(star: StarDescription, resultdir: str, post_name: str):
             txt_path = PurePath(resultdir, 'phase_selected/txt', filename_no_ext + '.txt')
             parsed_toml = toml.load(txt_path)
         ucac4 = star.get_catalog("UCAC4", strict=False)
-        ucac4_name = ucac4.catalog_id if not None else "unknown"
+        if ucac4 is None:
+            ucac4_name = f"{star.coords}"
+        else:
+            ucac4_name = ucac4.catalog_id if not None else "unknown"
         images_prefix = f"/images/{post_name}/"
         phase_url = f"{images_prefix}{filename_no_ext}.png"
         result = f'''<div class="bb-l b--black-10 w-100">

@@ -4,31 +4,37 @@ import matplotlib.pyplot as plt
 from photutils import aperture_photometry, CircularAperture
 import numpy as np
 import do_calibration
+from comparison_stars import ComparisonStars
 import logging
 from reading import trash_and_recreate_dir
 import argparse
 from typing import List, Tuple
 from star_description import StarDescription
 import random
+
 StarDescriptionList = List[StarDescription]
 
 PADDING = 200
 Shape = Tuple[int, int]
+
 
 def set_local_id_label(star_descriptions):
     for star_descr in star_descriptions:
         star_descr.label = star_descr.local_id
     return star_descriptions
 
+
 def set_aavso_id_label(star_descriptions):
     for star_descr in star_descriptions:
         star_descr.label = star_descr.aavso_id
     return star_descriptions
 
+
 def set_custom_label(star_descriptions, label):
     for index, star_descr in enumerate(star_descriptions):
         star_descr.label = label if not isinstance(label, list) else label[index]
     return star_descriptions
+
 
 def add_pixels(results, wcs, offset):
     for star in results:
@@ -42,56 +48,63 @@ def add_pixels(results, wcs, offset):
 
 
 def mirror_offset_transform(pos: int, shape: Tuple, shapeidx: int, offset: int = 0):
-    return shape[shapeidx] - (pos+offset)
+    return shape[shapeidx] - (pos + offset)
 
 
 def offset_transform(pos: int, shape: Tuple, shapeidx: int, offset: int = 0):
-    return pos+offset
+    return pos + offset
 
 
-def plot_it(big_green: StarDescriptionList, small_red: StarDescriptionList, fits_file: str, wcs, title,
-            padding: int = PADDING, plot_fits: bool = True, random_red=False,
-            xpos_transform=offset_transform, ypos_transform=offset_transform):
+def annotate_it(star_descriptions, offset1, offset2, random_offset=False, size=16):
+    for stardescr in star_descriptions:
+        xpos = stardescr.xpos
+        ypos = stardescr.ypos
+        logging.debug(f"Plotting {stardescr.label} {xpos} {ypos}")
+        if random_offset:
+            randoffset = random.randint(10, 20)
+            xsignrand = random.choice([-1.0, 1.0])
+            ysignrand = random.choice([-1.0, 1.0])
+            offset1 = xsignrand * randoffset
+            offset2 = ysignrand * randoffset
+        plt.annotate(f'{stardescr.label}', xy=(round(xpos), round(ypos)), xycoords='data',
+                     xytext=(offset1, offset2), textcoords='offset points', size=size,
+                     arrowprops=dict(arrowstyle="->"))
+
+
+'''Returns a function that maps each index in 0, 1, ..., n-1 to a distinct
+RGB color; the keyword argument name must be a standard mpl colormap name.'''
+
+
+def get_cmap(n, name='hsv'):
+    return plt.cm.get_cmap(name, n)
+
+
+def plot_it(star_lists: List[StarDescriptionList], sizes: List[float], random_offset: List[bool], fits_file: str, wcs, title,
+            padding: int = PADDING, plot_fits: bool = True):
     fig, data = get_plot_with_background(fits_file, padding, title, plot_fits)
-    datashape = data.shape
-    logging.info("plotting {} green and {} red circles.".format(len(big_green), len(small_red)))
-    big_green = add_pixels(big_green, wcs, PADDING)
-    small_red = add_pixels(small_red, wcs, PADDING)
-    big_green_positions = [(o.xpos, o.ypos) for o in big_green]
-    small_red_positions = [(o.xpos, o.ypos) for o in small_red]
-    if len(big_green_positions) > 0:
-        big_green_apps = CircularAperture(big_green_positions, r=10.)
-        big_green_apps.plot(color='green', lw=1.5, alpha=0.5)
-    if len(small_red_positions) > 0:
-        small_red_apps = CircularAperture(small_red_positions, r=5.)
-        small_red_apps.plot(color='red', lw=1.5, alpha=0.5)
+    logging.info(f"plotting {[len(x) for x in star_lists]} stars per color")
+    positions = []
+    for stars in star_lists:
+        stars = add_pixels(stars, wcs, PADDING)
+        positions.append([(o.xpos, o.ypos) for o in stars])
+    from itertools import cycle
+    cycol = cycle('rgbcmk')
+
+    for idx, pos in enumerate(positions):
+        if len(pos) > 0:
+            apps = CircularAperture(pos, r=sizes[idx])
+            apps.plot(color=next(cycol), lw=1.5, alpha=0.5)
     random.seed(42)
 
-    # plot background fits image if one is provided
-    # target_app.plot(color='blue', lw=1.5, alpha=0.5)
-    #to_plot = results
-    def annotate_it(star_descriptions, offset1, offset2, random_offset=False, size=16):
-        for stardescr in star_descriptions:
-            xpos = xpos_transform(stardescr.xpos, datashape, 0)
-            ypos = ypos_transform(stardescr.ypos, datashape, 1)
-            logging.debug(f"Plotting {stardescr.label} {xpos} {ypos}")
-            if random_offset:
-                randoffset = random.randint(10,20)
-                xsignrand = random.choice([-1.0, 1.0])
-                ysignrand = random.choice([-1.0, 1.0])
-                offset1 = xsignrand*randoffset
-                offset2 = ysignrand*randoffset
-            plt.annotate('{}'.format(stardescr.label), xy=(round(xpos), round(ypos)), xycoords='data',
-                         xytext=(offset1, offset2), textcoords='offset points', size=size,
-                         arrowprops=dict(arrowstyle="->"))
-    annotate_it(big_green, 0, -20, size=12)
-    annotate_it(small_red, -10, 15, random_offset=random_red, size=10)
+    for idx, star in enumerate(star_lists):
+        # annotate_it(big_green, 0, -20, size=12)
+        annotate_it(star, -10, 15, random_offset=random_offset[idx], size=10)
     return fig
 
 
 #  plot_fits is false if no background needs to be plotted, in that case all zeros are used as data
 def get_plot_with_background(fits_file: str, padding: int, title: str, plot_fits: bool = True):
-    fig=plt.figure(figsize=(36, 32), dpi= 80, facecolor='w', edgecolor='k')
+    fig = plt.figure(figsize=(36, 32), dpi=80, facecolor='w', edgecolor='k')
     plt.title(title, fontsize=40)
     hdulist = fits.open(fits_file)
     data = hdulist[0].data.astype(float)
@@ -108,12 +121,13 @@ def save(fig, path):
     plt.close(fig)
 
 
-def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, fieldchartsdirs, reference_header):
+def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, fieldchartsdirs, reference_header,
+                              comp_stars: ComparisonStars):
     trash_and_recreate_dir(fieldchartsdirs)
 
     # setting the font size for titles/axes
     plt.rcParams.update({'axes.titlesize': 'large', 'axes.labelsize': 'large'})
-    reference_fits_frame=reference_header
+    reference_fits_frame = reference_header
     SHOW_UPSILON = False
 
     # if SHOW_UPSILON:
@@ -132,7 +146,7 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
     #     small_red = set_local_id_label(hand_candidates_descr)
 
     # all stars get a blank label
-    all_stars_labeled = set_custom_label(all_stars_descr, '')
+    all_stars_no_label = set_custom_label(all_stars_descr, '')
 
     # vsx stars get their aavso id label
     vsx_descr = do_calibration.get_catalog_stars(star_descriptions, "VSX")
@@ -146,29 +160,25 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
     starfile_descr = do_calibration.get_catalog_stars(star_descriptions, "STARFILE", exclude=["VSX"])
     starfile_labeled = set_local_id_label(starfile_descr)
 
-    # default fields
-    empty = []
+    # compstars get their vmag as label
+    comp_stars_descr = comp_stars.star_descriptions
+    comp_stars_labeled = set_custom_label(comp_stars_descr, [x.vmag for x in comp_stars_descr])
+
 
     # field chart with all detections
     logging.info("Plotting field chart with all detected stars...")
-    big_green = empty
-    small_red = all_stars_labeled
-    fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "All detected stars", PADDING)
-    save(fig, fieldchartsdirs + 'all_detections_{}_stars'.format(len(small_red)))
+    fig = plot_it([all_stars_no_label], [5.], [False], reference_fits_frame, wcs, "All detected stars", PADDING)
+    save(fig, fieldchartsdirs + 'all_detections_{}_stars'.format(len(all_stars_no_label)))
 
     # field chart with all vsx stars
     logging.info("Plotting field chart with all VSX variable stars...")
-    big_green = vsx_labeled
-    small_red = empty
-    fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "All VSX stars", PADDING)
-    save(fig, fieldchartsdirs + 'vsx_stars_{}'.format(len(big_green)))
+    fig = plot_it([vsx_labeled], [10.], [False], reference_fits_frame, wcs, "All VSX stars", PADDING)
+    save(fig, fieldchartsdirs + 'vsx_stars_{}'.format(len(vsx_labeled)))
 
     # field chart with all vsx stars without the background
     logging.info("Plotting field chart with all VSX variable stars without reference field...")
-    big_green = vsx_labeled
-    small_red = empty
-    fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "VSX without background", PADDING, plot_fits=False)
-    save(fig, fieldchartsdirs + 'vsx_stars_no_ref_{}'.format(len(big_green)))
+    fig = plot_it([vsx_labeled], [10.], [False], reference_fits_frame, wcs, "VSX without background", PADDING, plot_fits=False)
+    save(fig, fieldchartsdirs + 'vsx_stars_no_ref_{}'.format(len(vsx_labeled)))
 
     # field chart with only the background
     logging.info("Plotting field chart with only the reference field...")
@@ -177,26 +187,21 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
 
     # field chart with all vsx stars + candidates
     logging.info("Plotting field chart with all VSX variable stars + candidate vars...")
-    big_green = vsx_labeled
-    small_red = candidate_labeled
-    fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "VSX stars + candidate stars", PADDING,
-                  random_red=True)
-    save(fig, fieldchartsdirs + 'vsx_{}_and_candidates_{}'.format(len(big_green), len(small_red)))
+    fig = plot_it([vsx_labeled, candidate_labeled], [10., 5.], [False, True], reference_fits_frame, wcs,
+                  "VSX stars + candidate stars", PADDING)
+    save(fig, fieldchartsdirs + f'vsx_{len(vsx_labeled)}_and_candidates_{len(candidate_labeled)}')
 
     # field chart with all vsx stars + starfile
     logging.info("Plotting field chart with all VSX variable stars + selected vars...")
-    big_green = vsx_labeled
-    small_red = starfile_labeled
-    fig = plot_it(big_green, small_red, reference_fits_frame, wcs, "VSX stars + selected stars", PADDING,
-                  random_red=True)
-    save(fig, fieldchartsdirs + 'vsx_{}_and_selected_{}'.format(len(big_green), len(small_red)))
+    fig = plot_it([vsx_labeled, starfile_labeled], [10., 5.], [False, True], reference_fits_frame, wcs,
+                  "VSX stars + selected stars", PADDING)
+    save(fig, fieldchartsdirs + 'vsx_{}_and_selected_{}'.format(len(vsx_labeled), len(starfile_labeled)))
 
     # field charts for each individually selected starfile star
-    small_red = vsx_labeled
     for star in starfile_labeled:
         logging.info(f"Plotting field chart with all VSX variable stars + star {star.local_id}...")
-        fig = plot_it([star], small_red, reference_fits_frame, wcs, f"VSX stars + star {star.local_id}", PADDING,
-                      random_red=False)
+        fig = plot_it([[star], vsx_labeled, comp_stars_labeled], [10., 5., 3.], [True, False, True],
+                      reference_fits_frame, wcs, f"VSX stars + star {star.local_id}", PADDING)
         save(fig, f"{fieldchartsdirs}vsx_and_star_{star.local_id:05}")
 
 
