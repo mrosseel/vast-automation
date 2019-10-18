@@ -22,6 +22,7 @@ from typing import List
 import utils
 from collections import namedtuple
 
+
 def get_wcs(wcs_file):
     hdulist = fits.open(wcs_file)
     data = hdulist[0].data.astype(float)
@@ -49,17 +50,18 @@ def get_reference_frame(file_limit, reference_method):
     try:
         reference_file, reference_frame_fits, reference_frame_index = reading.read_reference_frame()
         reference_frame = utils.find_file_for_index(settings.convfitsdir, reference_frame_index, '*.fts')
-        logging.info(f"Loaded existing reference file '{reference_file}, found fits reference: {reference_frame_fits} == converted fits:{reference_frame}")
+        logging.info(
+            f"Loaded existing reference file '{reference_file}, found fits reference: {reference_frame_fits} == converted fits:{reference_frame}")
     except:
         reference_frame = reference_method(file_limit)
         reference_frame_index = utils.find_index_of_file(settings.convfitsdir, reference_frame, '*.fts')
         lines = [reference_frame, str(reference_frame_index)]
         with open(settings.basedir + 'reference_frame.txt', 'w') as f:
             f.write('\n'.join(lines))
-        logging.info(f"Loaded reference file: '{reference_file}', found reference frame: {reference_frame}, index: {reference_frame_index}")
+        logging.info(
+            f"Loaded reference file: '{reference_file}', found reference frame: {reference_frame}, index: {reference_frame_index}")
     assert reference_frame_index == utils.find_index_of_file(settings.convfitsdir, reference_frame, '*.fts')
     return [reference_frame, settings.convfitsdir + reference_frame, reference_frame_index]
-
 
 
 # returns the converted_fits file with the highest compressed filesize, limited to 'limit'
@@ -91,6 +93,7 @@ def find_target_star(target_ra_deg, target_dec_deg, nr_results):
     df.sort_values(by='deg_separation', inplace=True)
     return df[:nr_results]
 
+
 ############# star description utils #################
 
 # returns list of star descriptions
@@ -114,6 +117,7 @@ def get_star_descriptions(star_id_list=None):
 def select_star_descriptions(star_id_list: List[int], stars: List[StarDescription]):
     return [x for x in stars if x.local_id in star_id_list]
 
+
 # returns list of star descriptions
 def get_empty_star_descriptions(star_id_list=None):
     # returns {'name': [ra.deg, dec.deg ]}
@@ -121,6 +125,7 @@ def get_empty_star_descriptions(star_id_list=None):
     for star in star_id_list:
         result.append(StarDescription(local_id=star))
     return result
+
 
 # for testinsg
 def get_random_star_descriptions(nr=10):
@@ -130,11 +135,13 @@ def get_random_star_descriptions(nr=10):
                                       coords=SkyCoord(idx, idx, unit='deg')))
     return result
 
+
 # given a list of SD's and a list of star id's, output the matching SD's in log.debug
 def log_star_descriptions(star_descriptions: StarDescription, star_id_list):
     logging.debug(f"Logging {len(star_id_list)} star  descriptions:")
     for star_id in star_id_list:
         logging.debug(star_descriptions[star_id])
+
 
 ############# star description utils #################
 
@@ -184,7 +191,8 @@ def get_upsilon_candidates_raw(threshold_prob, check_flag):
 
 # returns {'star_id': [label, probability, flag, period, SkyCoord, match_name, match_skycoord,
 # match_type, separation_deg]}
-def add_vsx_names_to_star_descriptions(star_descriptions: List[StarDescription], vsxcatalogdir: str, max_separation=0.01):
+def add_vsx_names_to_star_descriptions(star_descriptions: List[StarDescription], vsxcatalogdir: str,
+                                       max_separation=0.01):
     result_ids = []
     # copy.deepcopy(star_descriptions)
     vsx_catalog, vsx_dict = create_vsx_astropy_catalog(vsxcatalogdir)
@@ -199,7 +207,7 @@ def add_vsx_names_to_star_descriptions(star_descriptions: List[StarDescription],
     # The on-sky separation between the closest match for each matchcoord and the matchcoord. Shape matches matchcoord.
     idx, d2d, _ = match_coordinates_sky(star_catalog, vsx_catalog)
     logging.debug(f"length of idx: {len(idx)}")
-    results_dict = {} # have temp results_dict so we can remove duplicates
+    results_dict = {}  # have temp results_dict so we can remove duplicates
     VsxInfo = namedtuple('VsxInfo', 'starid_0 vsx_id sep')
     for index_star_catalog, entry in enumerate(d2d):
         if entry.value < max_separation:
@@ -213,8 +221,8 @@ def add_vsx_names_to_star_descriptions(star_descriptions: List[StarDescription],
     # loop over dict and add the new vsx matches to the star descriptions
     for keys, vsxinfo in results_dict.items():
         logging.debug(f"len sd is {len(star_descriptions)}, vsxinfo.starid is {vsxinfo.starid_0}")
-        _add_catalog_match_to_entry('VSX', cachedict[vsxinfo.starid_0], vsx_dict,
-                                    vsxinfo.vsx_id, vsxinfo.sep)
+        _add_catalog_match_to_star_description('VSX', cachedict[vsxinfo.starid_0], vsx_dict,
+                                               vsxinfo.vsx_id, vsxinfo.sep)
         result_ids.append(vsxinfo.starid_0)
     logging.debug(f"Added {len(results_dict)} vsx stars.")
     return star_descriptions, result_ids
@@ -224,8 +232,9 @@ def add_vsx_names_to_star_descriptions(star_descriptions: List[StarDescription],
 def get_starid_1_for_radec(ra_deg, dec_deg, all_star_catalog, max_separation=0.01):
     star_catalog = create_generic_astropy_catalog(ra_deg, dec_deg)
     idx, d2d, d3d = match_coordinates_sky(star_catalog, all_star_catalog)
-    logging.debug(f"get_starid_1_for_radec: len(idx):{len(idx)}, min(idx): {np.min(idx)}, max(idx): {np.max(idx)}, min(d2d): {np.min(d2d)}, "
-                  f"max(d2d): {np.max(d2d)}, star_id: {idx[0] + 1}, index in all_star_catalog: {all_star_catalog[idx[0]]}")
+    logging.debug(
+        f"get_starid_1_for_radec: len(idx):{len(idx)}, min(idx): {np.min(idx)}, max(idx): {np.max(idx)}, min(d2d): {np.min(d2d)}, "
+        f"max(d2d): {np.max(d2d)}, star_id: {idx[0] + 1}, index in all_star_catalog: {all_star_catalog[idx[0]]}")
     return idx[0] + 1
 
 
@@ -243,10 +252,11 @@ def get_vsx_in_field(star_descriptions, max_separation=0.01):
             result_entry = StarDescription()
             result_entry.local_id = star_local_id
             result_entry.coords = star_coords
-            _add_catalog_match_to_entry('VSX', result_entry, vsx_dict, index_vsx, entry.value)
+            _add_catalog_match_to_star_description('VSX', result_entry, vsx_dict, index_vsx, entry.value)
             result.append(result_entry)
     logging.info("Found {} VSX stars in field: {}".format(len(result), [star.local_id for star in result]))
     return result
+
 
 ################ CATALOG related functions #########################
 
@@ -261,15 +271,17 @@ def add_catalog_to_star_descriptions(stars: List[StarDescription], catalog_name:
             sd.match.append(match)
     return stars
 
-def _add_catalog_match_to_entry(catalog_name: str, matchedstardesc: StarDescription, vsx_dict, index_vsx, separation):
-    assert matchedstardesc.match is not None
+
+def _add_catalog_match_to_star_description(catalog_name: str, star_description: StarDescription, vsx_dict, index_vsx,
+                                           separation):
+    assert star_description.match is not None
     vsx_name = vsx_dict['metadata'][index_vsx]['Name']
-    matchedstardesc.aavso_id = vsx_name
+    star_description.aavso_id = vsx_name
     match = CatalogMatch(name_of_catalog=catalog_name, catalog_id=vsx_name,
                          name=vsx_name, separation=separation,
                          coords=SkyCoord(vsx_dict['ra_deg_np'][index_vsx], vsx_dict['dec_deg_np'][index_vsx],
                                          unit='deg'))
-    matchedstardesc.match.append(match)
+    star_description.match.append(match)
     return match
 
 
@@ -282,6 +294,7 @@ def catalog_filter(star: StarDescription, catalog_name, exclude=[]):
 # gets all stars which have a catalog of name catalog_name
 def get_catalog_stars(stars: List[StarDescription], catalog_name: str, exclude=[]) -> List[StarDescription]:
     return list(filter(partial(catalog_filter, catalog_name=catalog_name, exclude=exclude), stars))
+
 
 ################ CATALOG related functions #########################
 
@@ -355,8 +368,9 @@ def add_apass_to_star_descriptions(star_descriptions, radius=0.01, row_limit=2):
             mindist = star.coords.separation(SkyCoord(apass['RAJ2000'], apass['DEJ2000'], unit='deg'))
             star.match.append(CatalogMatch(name_of_catalog="APASS", catalog_id=catalog_id,
                                            name=catalog_id, coords=coord_catalog, separation=mindist))
-            logging.info("APASS: Star {} has vmag={}, error={:.5f}, dist={}".format(star.local_id, star.vmag, star.e_vmag,
-                                                                             mindist))
+            logging.info(
+                "APASS: Star {} has vmag={}, error={:.5f}, dist={}".format(star.local_id, star.vmag, star.e_vmag,
+                                                                           mindist))
     return star_descriptions
 
 

@@ -1,9 +1,9 @@
 from astropy.coordinates import SkyCoord
 from typing import List
-
+from comparison_stars import ComparisonStars
 
 class Match:
-    def __init__(self, name_of_catalog=None, catalog_id=None, name=None, coords: SkyCoord=None, separation=-1):
+    def __init__(self, name_of_catalog=None, catalog_id=None, name=None, coords: SkyCoord=None):
         # the name of the catalog
         self.name_of_catalog = name_of_catalog
         # the id in the catalog
@@ -97,6 +97,9 @@ class StarDescription:
                f"matches: {self._match}, path: {self.path}"
 
 
+def add_compstar_match(star_description: StarDescription, compstars: ComparisonStars) -> StarDescription:
+    return star_description.match.append(CompStarMatch(compstar_ids=compstars))
+
 
 class CatalogMatch(Match):
     def __init__(self, name_of_catalog=None, catalog_id=None, name=None, coords: SkyCoord=None, separation=-1):
@@ -140,3 +143,16 @@ class UpsilonMatch(Match):
 
     def __str__(self):
         return f'Catalog:{self.name_of_catalog}, Var Type:{self.var_type}, Probability:{self.probability}, flag:{self.flag}, Period:{self.period}'
+
+
+class CompStarMatch(Match):
+    def __init__(self, name_of_catalog='COMPSTARS', compstars=ComparisonStars):
+        self.name_of_catalog = name_of_catalog
+        self.compstars = compstars
+
+    def __repr__(self):
+        return f'Catalog:{self.name_of_catalog}, Compstars: {self.compstar_ids}'
+
+
+    def __str__(self):
+        return f'Catalog:{self.name_of_catalog}, Compstars: {self.compstar_ids}'

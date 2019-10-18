@@ -71,10 +71,6 @@ def run_do_rest(args):
     write_augmented_autocandidates(vastdir, resultdir, stardict)
     write_augmented_all_stars(vastdir, resultdir, stardict)
     comp_stars = read_comparison_stars(star_descriptions, args.checkstarfile, vastdir, stardict)
-
-    if args.field:
-        do_charts_field.run_standard_field_charts(star_descriptions, wcs, fieldchartsdir, wcs_file, comp_stars)
-
     candidate_stars = do_calibration.get_catalog_stars(star_descriptions, "CANDIDATE", exclude="VSX")
     vsx_stars = do_calibration.get_catalog_stars(star_descriptions, "VSX")
     starfile_stars = do_calibration.get_catalog_stars(star_descriptions, "STARFILE")
@@ -87,19 +83,25 @@ def run_do_rest(args):
     else:
         if args.candidates:
             logging.info(f"Plotting {len(candidate_stars)} candidates...")
+            do_compstars.add_closest_compstars(candidate_stars, comp_stars)
             do_charts_vast.run(candidate_stars, comp_stars, vastdir, resultdir, 'phase_candidates/',
                                'light_candidates/', 'aavso_candidates/', do_phase=do_phase, do_charts=do_charts,
                                do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of candidates")
         if args.vsx:
             do_calibration.add_catalog_to_star_descriptions(vsx_stars, ["SELECTED"])
             logging.info(f"Plotting {len(vsx_stars)} vsx stars...")
+            do_compstars.add_closest_compstars(vsx_stars, comp_stars)
             do_charts_vast.run(vsx_stars, comp_stars, vastdir, resultdir, 'phase_vsx/', 'light_vsx/', 'aavso_vsx/',
                                do_phase=do_phase, do_charts=do_charts, do_aavso=do_aavso, nr_threads=thread_count,
                                desc="Phase/light/aavso of VSX stars")
         if args.selectedstarfile:
+            do_compstars.add_closest_compstars(starfile_stars, comp_stars)
             do_charts_vast.run(starfile_stars, comp_stars, vastdir, resultdir, 'phase_selected/', 'light_selected/',
                                'aavso_selected', do_phase=do_phase, do_charts=do_charts,
                                do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of selected stars")
+
+    if args.field:
+        do_charts_field.run_standard_field_charts(star_descriptions, wcs, fieldchartsdir, wcs_file, comp_stars)
 
     if args.site:
         ids = [x.local_id for x in starfile_stars]
@@ -306,7 +308,8 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
         sd.coords = SkyCoord(world_coords[0], world_coords[1], unit='deg')
 
     # add line counts
-    pool = utils.get_pool(cpu_count() * 2, maxtasksperchild=1000)  # lot's of small files, needs many threads to fill cpu
+    pool = utils.get_pool(cpu_count() * 2,
+                          maxtasksperchild=1000)  # lot's of small files, needs many threads to fill cpu
     stars = []
     for star in tqdm.tqdm(pool.imap_unordered(set_lines, star_descriptions, 5), total=len(star_descriptions),
                           desc="Counting obs per star", unit="files"):

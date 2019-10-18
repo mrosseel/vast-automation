@@ -6,6 +6,7 @@ import utils
 from astropy.coordinates import SkyCoord
 from photometry_blob import PhotometryBlob
 from typing import List, Tuple, Dict
+import star_description
 from star_description import StarDescription
 from ucac4 import UCAC4
 import math
@@ -133,6 +134,11 @@ def calculate_mean_value_ensemble_photometry(df, comp_stars: ComparisonStars):
             logging.info(f"{len(comp_obs)}, {len(comp_obs)} == {len(comp_err)}")
         # logging.debug(f"Results of photometry: V diff: {df['Vrel'].mean()-np.mean(realV)}, err diff: {df['err'].mean()-np.mean(realErr)}")
     return realV, realErr
+
+
+def add_closest_compstars(stars: List[StarDescription], comp_stars: ComparisonStars):
+    for star in stars:
+        star_description.add_compstar_match(star, closest_compstars(star, comp_stars))
 
 
 def closest_compstars(star: StarDescription, comp_stars: ComparisonStars, limit=10):

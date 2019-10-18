@@ -277,7 +277,7 @@ class UCAC4:
         return sd
 
     @staticmethod
-    def get_real_ra_dec(ra, spd):
+    def get_real_ra_dec(ra, spd) -> Tuple[float, float]:
         return ra / 1000 / 3600, (spd - 324000000) / 1000 / 3600
 
     @staticmethod

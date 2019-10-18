@@ -197,6 +197,7 @@ def plot_phase_diagram(star_tuple: Tuple[StarDescription, DataFrame], fullphased
     logging.debug(f"Saving phase plot to {save_location}")
     fig.savefig(save_location, format='png')
     plt.close(fig)
+    plt.clf()
     with open(f"{fullphasedir}/txt/{filename_no_ext}.txt", 'w') as f:
         f.write('\n'.join([f"period={period}", f'range="{np.min(y_np):.1f}-{np.max(y_np):.1f}"',
                            f"coords=[{coords.ra.deg}, {coords.dec.deg}]"]))
