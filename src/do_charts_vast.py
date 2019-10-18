@@ -254,8 +254,7 @@ def read_vast_lightcurves(star_description: StarDescription, comp_stars: Compari
         # rule: http://ipl.physics.harvard.edu/wp-uploads/2013/03/PS3_Error_Propagation_sp13.pdf
         # df['V-C'] = df['V-C'] + comparison_stars[0].vmag
         close_comp_stars = do_compstars.closest_compstars(star_description, comp_stars, 10)
-        logging.error()
-        df['realV'], df['realErr'] = do_compstars.calculate_mean_value_ensemble_photometry(df, comp_stars)
+        df['realV'], df['realErr'] = do_compstars.calculate_mean_value_ensemble_photometry(df, close_comp_stars)
         tuple = star_description, df
         if do_charts:
             # start = timer()

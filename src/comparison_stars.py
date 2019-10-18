@@ -13,7 +13,8 @@ class ComparisonStars:
 
     def get_filtered_comparison_stars(self, ids: List[int]):
         mask = np.isin(self.ids, ids)
-        return ComparisonStars(self.ids[mask], self.star_descriptions[mask], self.observations[mask],
-                               self.comp_catalogmags[mask], self.comp_catalogerr[mask])
+        return ComparisonStars(np.array(self.ids)[mask], np.array(self.star_descriptions)[mask],
+                               np.array(self.observations)[mask],
+                               np.array(self.comp_catalogmags)[mask], np.array(self.comp_catalogerr)[mask])
 
 
