@@ -1,14 +1,18 @@
-import do_calibration
 import logging
 import argparse
 import numpy as np
+import do_calibration
+import utils
 from astropy.coordinates import SkyCoord
 from photometry_blob import PhotometryBlob
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from star_description import StarDescription
 from ucac4 import UCAC4
 import math
 from comparison_stars import ComparisonStars
+from pathlib import PurePath
+import operator
+import tqdm
 
 
 # receives ucac numbers, fetches ucac coords and compares them to world_position coords
@@ -35,36 +39,39 @@ def get_fixed_compstars(star_descriptions: List[StarDescription], comparison_sta
     return [x.local_id for x in star_desc_result], star_desc_result
 
 
-def get_calculated_compstars(apertureidx, photometry_blob: PhotometryBlob):
-    stddevs = photometry_blob.stddevs
-    counts = photometry_blob.counts
-    selectedcounts = counts[apertureidx]
+def get_calculated_compstars(vastdir, stardict: Dict[int, StarDescription]):
+    likely = _get_list_of_likely_constant_stars(vastdir)
+    stars = [stardict[x] for x in likely if x in stardict]
+    ucac4 = UCAC4()
 
-    # winners = np.argwhere(np.amax(selectedcounts)).flatten()
-    logging.info(f"Before selection on counts: {len(selectedcounts)}")
-    logging.info(f"counts threshold {np.max(selectedcounts) * 0.9}")
-    count_mask = selectedcounts < np.max(selectedcounts) * 0.9
-    logging.info(f"Count mask: {count_mask}")
-    logging.info(f"After selection on counts: {np.sum(count_mask)}")
-    #    logging.info(f"Counts: {sorted(selectedcounts)}")
+    with tqdm.tqdm(total=len(stars), desc='Adding ucac4') as pbar:
+        for star in stars:
+            sd = ucac4.get_ucac4_sd(star.coords.ra.deg, star.coords.dec.deg)
+            do_calibration.add_info_to_star_description(star, sd.vmag, sd.e_vmag, sd.aavso_id, "UCAC4", sd.coords)
+            pbar.update(1)
+    sorted_stars = sorted(stars, key=operator.attrgetter('e_vmag'))
 
-    masked_std = np.ma.masked_array(stddevs[apertureidx], count_mask)
-    logging.info(f"Masked std: {masked_std}")
-    logging.info(f"masked std len: {masked_std.count()}")
 
-    nrtopstars = min(10, len(masked_std))
-    compstars_0 = masked_std.argsort(fill_value=99999)[:nrtopstars]
-    logging.info(f"compstars: {compstars_0}, len: {len(compstars_0)}")
+    def limit(array, max_size):
+        return min(len(array), max_size)
 
-    # compstar_0 = np.argmin(stddevs[apertureidx], axis=0)
-    logging.info(f"Compstars_0 with minimum stdev in the chosen aperture: {compstars_0}")
-    logging.info(f"Compstars stddev: {stddevs[apertureidx][compstars_0]}")
-    logging.info(f"Compstars counts: {selectedcounts[compstars_0]}")
-    # for star in compstars_0:
-    #     logging.info(f"Error for compstar_0:{star} is \t {errors[star].median()}")
-    comparison_stars_1 = (compstars_0 + 1).tolist()
-    comparison_stars_1_desc = do_calibration.get_star_descriptions(comparison_stars_1)
-    return comparison_stars_1, comparison_stars_1_desc
+
+    # limit to 100 stars
+    clipped_stars = sorted_stars[:limit(sorted_stars, 100)]
+    # limit to 10 closest stars
+    # target = SkyCoord(target_ra_deg, target_dec_deg, unit='deg')
+    # closest_stars = sorted(clipped_stars, key=lambda sd:
+    logging.info(f"Using {len(clipped_stars)} calculated comparison stars: {clipped_stars[:3]}")
+    return [x.local_id for x in clipped_stars], clipped_stars
+
+
+def _get_list_of_likely_constant_stars(vastdir):
+    result = []
+    with open(PurePath(vastdir, 'vast_list_of_likely_constant_stars.log'), 'r') as infile:
+        for line in infile:
+            if line is not None:
+                result.append(utils.get_starid_from_outfile(line.strip()))
+    return result
 
 
 # get star_descriptions and ucuc4 info
@@ -101,7 +108,7 @@ def calculate_mean_value_ensemble_photometry(df, comp_stars: ComparisonStars):
                 comp_obs.append(float(compstar[jd][0]))
                 comp_err.append(float(compstar[jd][1]))
             else:
-                logging.info(f"Key error for {row['JD']}, {comp_stars.ids}")
+                logging.debug(f"Key error for {row['JD']}, {comp_stars.ids}")
 
         meanobs = -1
         meanerr = -1

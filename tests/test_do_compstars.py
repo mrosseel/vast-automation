@@ -10,6 +10,7 @@ import os
 from pathlib import PurePath
 import logging
 from pandas import DataFrame
+import utils
 
 logging.getLogger().setLevel(logging.DEBUG)
 logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
@@ -20,7 +21,7 @@ test_file_path = PurePath(os.getcwd(), 'tests', 'data')
 class TestDoCompstars(unittest.TestCase):
 
     def test_calculate_mean_value_ensemble_photometry(self):
-        data = {'JD':  ['1'],
+        data = {'JD': ['1'],
                 'Vrel': [15.414],
                 'err': [0.012]
                 }
@@ -36,6 +37,27 @@ class TestDoCompstars(unittest.TestCase):
         realV, realErr = do_compstars.calculate_mean_value_ensemble_photometry(df, comp_stars)
         self.assertEqual(15.411, realV[0])
         self.assertEqual(0.0121, round(realErr[0], 4))
+
+
+    def test_get_calculated_compstars(self):
+        stars = [self.stardesc(1, 1, 1, 10, 0.01),
+                 self.stardesc(4283, 3, 3, 12, 0.02),
+                 self.stardesc(132, 10.24496, 9.96736, 13, 0.02),
+                 self.stardesc(2, 10.24490, 9.96730, 12, 0.01),
+                 self.stardesc(3, 10.24490, 9.96730, 12, 0.01)]  # not there
+        stardict = utils.get_star_description_cache(stars)
+        ids, sds = do_compstars.get_calculated_compstars(test_file_path, stardict)
+        self.assertEqual(4, len(ids))
+
+
+    def test_get_list_of_likely_constant_stars(self):
+        result = do_compstars._get_list_of_likely_constant_stars(test_file_path)
+        self.assertEqual(6609, len(result))
+
+
+    def stardesc(self, id, ra, dec, vmag, e_vmag):
+        return StarDescription(local_id=id,
+                               coords=SkyCoord(ra, dec, unit='deg'), vmag=vmag, e_vmag=e_vmag)
 
 
 if __name__ == '__main__':

@@ -1,5 +1,4 @@
 from multiprocessing import cpu_count
-import multiprocessing as mp
 import tqdm
 import logging
 import re
@@ -74,7 +73,7 @@ def run_do_rest(args):
     if args.field:
         do_charts_field.run_standard_field_charts(star_descriptions, wcs, fieldchartsdir, wcs_file)
 
-    comp_stars = read_comparison_stars(star_descriptions, args.checkstarfile, vastdir)
+    comp_stars = read_comparison_stars(star_descriptions, args.checkstarfile, vastdir, stardict)
     candidate_stars = do_calibration.get_catalog_stars(star_descriptions, "CANDIDATE", exclude="VSX")
     vsx_stars = do_calibration.get_catalog_stars(star_descriptions, "VSX")
     starfile_stars = do_calibration.get_catalog_stars(star_descriptions, "STARFILE")
@@ -107,10 +106,14 @@ def run_do_rest(args):
         hugo_site.run(args.site, starfile_stars, resultdir)
 
 
-def read_comparison_stars(star_descriptions: List[StarDescription], checkstarfile: str, vastdir: str):
-    # load comparison stars
-    checkstars = read_checkstars(checkstarfile)
-    comparison_stars_1, comparison_stars_1_desc = do_compstars.get_fixed_compstars(star_descriptions, checkstars)
+def read_comparison_stars(star_descriptions: List[StarDescription], checkstarfile: str, vastdir: str,
+                          stardict: Dict[int, StarDescription]):
+    if checkstarfile:
+        # load comparison stars
+        checkstars = read_checkstars(checkstarfile)
+        comparison_stars_1, comparison_stars_1_desc = do_compstars.get_fixed_compstars(star_descriptions, checkstars)
+    else:
+        comparison_stars_1, comparison_stars_1_desc = do_compstars.get_calculated_compstars(vastdir, stardict)
     comp_observations = []
     logging.info(f"Using comparison star ids:{comparison_stars_1}")
     for star in comparison_stars_1:
@@ -200,7 +203,7 @@ def read_data_m_sigma(vastdir) -> Dict[int, Tuple[int, int]]:
     PixelPos = namedtuple('PixelPos', 'x y afile')
     for line in open(vastdir + 'data.m_sigma'):
         splitline = line.split()
-        star_id = get_starid_from_outfile(splitline[4])
+        star_id = utils.get_starid_from_outfile(splitline[4])
         stardict[star_id] = PixelPos(float(splitline[2]), float(splitline[3]), splitline[4])
     return stardict
 
@@ -212,18 +215,13 @@ def read_checkstars(checkstar_file: str) -> List[str]:
     return result
 
 
-def get_starid_from_outfile(outfile):
-    m = re.search('out(.*).dat', outfile)
-    return int(m.group(1).lstrip('0'))
-
-
 def get_autocandidates(dir: str) -> List[int]:
     origname = 'vast_autocandidates.log'
     result = []
     with open(PurePath(dir, origname), 'r', encoding='utf-8') as infile:
         for line in infile:
             linetext = line.rstrip()
-            star_id = get_starid_from_outfile(linetext)
+            star_id = utils.get_starid_from_outfile(linetext)
             result.append(star_id)
     return result
 
@@ -235,7 +233,7 @@ def write_augmented_autocandidates(readdir: str, writedir: str, stardict: Dict[i
     with open(origname, 'r', encoding='utf-8') as infile, open(newname, 'w') as outfile:
         for line in infile:
             linetext = line.rstrip()
-            star_id = get_starid_from_outfile(linetext)
+            star_id = utils.get_starid_from_outfile(linetext)
             if star_id in stardict:
                 cacheentry = stardict[star_id]
                 outfile.write(
@@ -286,7 +284,7 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
     stars_with_file_dict = {}
     list_of_dat_files.sort()
     for afile in list_of_dat_files:
-        star_id = get_starid_from_outfile(afile)
+        star_id = utils.get_starid_from_outfile(afile)
         stars_with_file_dict[star_id] = afile
 
     # intersect dict, results in starid -> (xpos, ypos, shortfile, longfile),
@@ -307,7 +305,7 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
         sd.coords = SkyCoord(world_coords[0], world_coords[1], unit='deg')
 
     # add line counts
-    pool = get_pool(cpu_count() * 2, maxtasksperchild=1000)  # lot's of small files, needs many threads to fill cpu
+    pool = utils.get_pool(cpu_count() * 2, maxtasksperchild=1000)  # lot's of small files, needs many threads to fill cpu
     stars = []
     for star in tqdm.tqdm(pool.imap_unordered(set_lines, star_descriptions, 5), total=len(star_descriptions),
                           desc="Counting obs per star", unit="files"):
@@ -375,10 +373,6 @@ def set_lines(star: StarDescription):
 
 def has_option(obj, attr_name):
     return hasattr(obj, attr_name) and obj[attr_name]
-
-
-def get_pool(processes=cpu_count() - 1, maxtasksperchild=10):
-    return mp.Pool(processes, maxtasksperchild=maxtasksperchild)
 
 
 def interact():

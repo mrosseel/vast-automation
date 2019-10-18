@@ -1,4 +1,5 @@
 import collections
+import logging
 
 
 class LRUCache:
@@ -19,5 +20,6 @@ class LRUCache:
             self.cache.pop(key)
         except KeyError:
             if len(self.cache) >= self.capacity:
+                logging.info(f"CACHE IS AT CAPACITY !!!!!!!!!!!!, key: {key}")
                 self.cache.popitem(last=False)
         self.cache[key] = value

@@ -107,6 +107,7 @@
 import logging
 import struct
 import math
+import numpy as np
 from collections import namedtuple
 from typing import List, Tuple
 from star_description import StarDescription
@@ -127,10 +128,19 @@ def get_line_nr(n0, nn, line):
 
 
 class UCAC4:
-    def __init__(self, ucac_path: PurePath = PurePath('./support/ucac4/UCAC4/u4b')):
+    def __init__(self, ucac_path: PurePath = PurePath('./support/ucac4/UCAC4/')):
         # star id given by munipack
         self.ucac_path = ucac_path
-        self.cache = LRUCache(capacity=5)
+        self.zones_cache = LRUCache(capacity=5)
+        self.bucket_cache = LRUCache(capacity=100000)
+        self.zone_bucket_cache = LRUCache(capacity=10000)
+        self.index_cache = None
+        with open(str(PurePath(ucac_path, 'u4i', 'u4index.unf')), mode='rb') as file:  # b is important -> binary
+            self.index_cache = file.read()
+        self.zone_starformat = "=iiHHBBBbbBBBHHhhbbIHHHBBBBBBHHHHHbbbbbBIBBIHI"
+        self.zone_star_length = struct.calcsize(self.zone_starformat)
+        self.unpack_zone_fileformat = struct.Struct(self.zone_starformat).unpack
+        self.result_n0, self.result_nn = UCAC4._get_n0_and_nn(self.index_cache)
 
 
     def get_ucac4_details(self, ucac_id) -> List[Tuple[Tuple, str, int]]:
@@ -142,76 +152,81 @@ class UCAC4:
 
 
     def get_zone_from_file(self, zone: str):
-        result = self.cache.get(zone)
+        result = self.zones_cache.get(zone)
         if result != -1:
             return result
-        with open(PurePath(self.ucac_path, f"z{zone}"), mode='rb') as file:  # b is important -> binary
+        with open(str(PurePath(self.ucac_path, f"u4b/z{zone}")), mode='rb') as file:  # b is important -> binary
             result = file.read()
-            self.cache.set(zone, result)
+            self.zones_cache.set(zone, result)
             return result
 
 
-    def get_ucac4_details_raw(self, zone: str, run_nr: List[int]) -> List[Tuple[Tuple, str, int]]:
+    def get_ucac4_details_raw(self, zone: str, run_nr: List[int]) -> List[Tuple[StarTuple, str, int]]:
         stars = []
         filecontent = self.get_zone_from_file(zone)
-        # logging.debug(f"filecontent mod 78 is {len(filecontent) % 78}")
-        # starformat = "=iihhBBBBBBBBhhhhBBihhhBBBBBBhhhhhBBBBBBiBBihi"
-        starformat = "=iiHHBBBbbBBBHHhhbbIHHHBBBBBBHHHHHbbbbbBIBBIHI"
-        starlength = struct.calcsize(starformat)
-        # logging.debug(f"starlength is {starlength}")
-        unpack_starformat = struct.Struct(starformat).unpack
         for number in run_nr:
-            result = unpack_starformat(filecontent[starlength * (number - 1):starlength * number])
-            star = UCAC4.make_star(result)
+            key = (zone, number)
+            bucketcache = self.bucket_cache.get(key)
+            if bucketcache != -1:
+                star = bucketcache
+            else:
+                result = self.unpack_zone_fileformat(
+                    filecontent[self.zone_star_length * (number - 1):self.zone_star_length * number])
+                star = UCAC4.make_star(result)
+                self.bucket_cache.set(key, star)
             stars.append((star, zone, number))
         # logging.debug(f"read ucac4 star: {star}")
         return stars
 
-        # INTEGER*4 n0(900,1440), nn(900,1440)
-        #
-        # OPEN (15,FILE=fnidxu,ACCESS='direct',RECL=5184000)  ! 900 * 1440 * 4
-        # READ (15,REC=1) n0
-        # READ (15,REC=2) nn
+    @staticmethod
+    def _get_n0_and_nn(index_cache):
+        index_format = "1296000I"
+        index_length = struct.calcsize(index_format)
+        logging.debug(f"index length  is {index_length}")
+        unpack_starformat = struct.Struct(index_format).unpack
+        result_n0 = unpack_starformat(index_cache[0:index_length])
+        result_nn = unpack_starformat(index_cache[index_length:])
+        return result_n0, result_nn
 
 
     def get_ucac4_sd(self, ra: float, dec: float, tolerance_deg=0.01) -> StarDescription:
         # don't want to bother with more than 2 zone overlappings
-        target = SkyCoord(ra, dec, unit='deg')
+        target_np = np.array((ra, dec))
         assert tolerance_deg < 0.2
-        with open(f"./support/ucac4/UCAC4/u4i/u4index.unf", mode='rb') as file:  # b is important -> binary
-            filecontent = file.read()
-            index_format = "1296000I"
-            index_length = struct.calcsize(index_format)
-            logging.debug(f"index length  is {index_length}")
-            unpack_starformat = struct.Struct(index_format).unpack
-            result_n0 = unpack_starformat(filecontent[0:index_length])
-            result_nn = unpack_starformat(filecontent[index_length:])
-            zone1 = self.get_zone_for_dec(dec - tolerance_deg / 2)
-            zone2 = self.get_zone_for_dec(dec + tolerance_deg / 2)
-            # check for zone overlap
-            zones = [zone1]
-            if zone1 != zone2:
-                zones.append(zone2)
-            logging.debug(f"Zone range is {zones}")
-            bucket1 = self.get_ra_bucket(ra - tolerance_deg / 2)
-            bucket2 = self.get_ra_bucket(ra + tolerance_deg / 2)
-            buckets = range(bucket1, bucket2 + 1)
-            logging.debug(f"Bucket range is from {bucket1} to {bucket2}")
-            smallest_dist = 1000
-            best = None
-            for zone in zones:
-                for bucket in buckets:
+
+        zone1 = self.get_zone_for_dec(dec - tolerance_deg / 2)
+        zone2 = self.get_zone_for_dec(dec + tolerance_deg / 2)
+        # check for zone overlap
+        zones = [zone1]
+        if zone1 != zone2:
+            zones.append(zone2)
+        logging.debug(f"Zone range is {zones}")
+        bucket1 = self.get_ra_bucket(ra - tolerance_deg / 2)
+        bucket2 = self.get_ra_bucket(ra + tolerance_deg / 2)
+        buckets = range(bucket1, bucket2 + 1)
+        logging.debug(f"Bucket range is from {bucket1} to {bucket2}")
+        smallest_dist = 1000
+        best = None
+        for zone in zones:
+            for bucket in buckets:
+                cache_key = (zone, bucket)
+                cache = self.zone_bucket_cache.get(cache_key)
+                if cache != -1:
+                    the_stars = cache
+                else:
                     logging.debug(f"Processing {zone}:{bucket}")
                     index = (bucket - 1) * 900 + zone - 1
-                    star_run_nr = result_n0[index]
-                    star_count_in_bucket = result_nn[index]
+                    star_run_nr = self.result_n0[index]
+                    star_count_in_bucket = self.result_nn[index]
                     the_range = list(range(star_run_nr, star_run_nr + star_count_in_bucket))
-                    sd_list = self.get_ucac4_star_descriptions(self.get_ucac4_details_raw(zone, the_range))
-                    for sd in sd_list:
-                        if target.separation(sd.coords).hour < smallest_dist:
-                            smallest_dist = target.separation(sd.coords).hour
-                            best = sd
-        return best
+                    the_stars = self.get_ucac4_details_raw(zone, the_range)
+                    self.zone_bucket_cache.set(cache_key, the_stars)
+                for sd in the_stars:
+                    dist = np.linalg.norm(np.array((UCAC4.get_real_ra_dec(sd[0].ra, sd[0].spd))-target_np))
+                    if dist < smallest_dist:
+                        smallest_dist = dist
+                        best = sd
+        return self.get_ucac4_star_description_fromtuple(*best)
 
 
     @staticmethod
@@ -255,11 +270,15 @@ class UCAC4:
 
     @staticmethod
     def get_ucac4_star_description_fromtuple(star: StarTuple, zone: str, run_nr: int):
-        sd = StarDescription(coords=SkyCoord(star.ra / 1000 / 3600, (star.spd - 324000000) / 1000 / 3600, unit='deg'),
+        ra, dec = UCAC4.get_real_ra_dec(star.ra, star.spd)
+        sd = StarDescription(coords=SkyCoord(ra, dec, unit='deg'),
                              vmag=star.apass_mag_V / 1000, e_vmag=star.apass_mag_sigma_V / 100,
                              aavso_id=UCAC4.zone_and_run_nr_to_name(zone, run_nr))
         return sd
 
+    @staticmethod
+    def get_real_ra_dec(ra, spd):
+        return ra / 1000 / 3600, (spd - 324000000) / 1000 / 3600
 
     @staticmethod
     def make_star(result: List):
