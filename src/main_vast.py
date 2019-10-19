@@ -83,19 +83,22 @@ def run_do_rest(args):
     else:
         if args.candidates:
             logging.info(f"Plotting {len(candidate_stars)} candidates...")
-            do_compstars.add_closest_compstars(candidate_stars, comp_stars)
+            if not args.checkstarfile:
+                do_compstars.add_closest_compstars(candidate_stars, comp_stars)
             do_charts_vast.run(candidate_stars, comp_stars, vastdir, resultdir, 'phase_candidates/',
                                'light_candidates/', 'aavso_candidates/', do_phase=do_phase, do_charts=do_charts,
                                do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of candidates")
         if args.vsx:
             do_calibration.add_catalog_to_star_descriptions(vsx_stars, ["SELECTED"])
             logging.info(f"Plotting {len(vsx_stars)} vsx stars...")
-            do_compstars.add_closest_compstars(vsx_stars, comp_stars)
+            if not args.checkstarfile:
+                do_compstars.add_closest_compstars(vsx_stars, comp_stars)
             do_charts_vast.run(vsx_stars, comp_stars, vastdir, resultdir, 'phase_vsx/', 'light_vsx/', 'aavso_vsx/',
                                do_phase=do_phase, do_charts=do_charts, do_aavso=do_aavso, nr_threads=thread_count,
                                desc="Phase/light/aavso of VSX stars")
         if args.selectedstarfile:
-            do_compstars.add_closest_compstars(starfile_stars, comp_stars)
+            if not args.checkstarfile:
+                do_compstars.add_closest_compstars(starfile_stars, comp_stars)
             do_charts_vast.run(starfile_stars, comp_stars, vastdir, resultdir, 'phase_selected/', 'light_selected/',
                                'aavso_selected', do_phase=do_phase, do_charts=do_charts,
                                do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of selected stars")
@@ -339,11 +342,6 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
 
     # add ucac4 id's
     starfile_stars = do_calibration.get_catalog_stars(star_descriptions, "STARFILE")
-    ucac4 = UCAC4()
-    logging.info(f"Adding UCAC4 id's to {len(starfile_stars)} selected stars")
-    for star in starfile_stars:
-        sd = ucac4.get_ucac4_sd(star.coords.ra.deg, star.coords.dec.deg)
-        do_calibration.add_info_to_star_description(star, sd.vmag, sd.e_vmag, sd.aavso_id, "UCAC4", sd.coords)
     return star_descriptions
 
 

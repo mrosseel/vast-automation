@@ -181,6 +181,7 @@ def plot_phase_diagram(star_tuple: Tuple[StarDescription, DataFrame], fullphased
     plt.xlabel("Phase", labelpad=TITLE_PAD)
     plt.ylabel("Magnitude", labelpad=TITLE_PAD)
     plt.title(f"{vsx_title}Star {star_id}, p: {period:.5f} d{upsilon_text}\n{get_hms_dms(coords)}", pad=TITLE_PAD)
+    plt.ticklabel_format(style='plain', axis='x')
     # plt.title(f"Star {star} - {period}", pad=TITLE_PAD)
     plt.tight_layout()
     # plotting + calculation of 'double' phase diagram from -1 to 1

@@ -45,28 +45,23 @@ def get_calculated_compstars(vastdir, stardict: Dict[int, StarDescription]):
     stars = [stardict[x] for x in likely if x in stardict]
     ucac4 = UCAC4()
 
-    # only want the best stars
-    max_obs = np.max([x.obs for x in stars])
-    max_obs_stars = [x for x in stars if x.obs == max_obs]
-    logging.info(f"Stars with maximum of observations: {len(max_obs_stars)}")
-
     with tqdm.tqdm(total=len(stars), desc='Adding ucac4') as pbar:
         for star in stars:
             sd = ucac4.get_ucac4_sd(star.coords.ra.deg, star.coords.dec.deg)
             do_calibration.add_info_to_star_description(star, sd.vmag, sd.e_vmag, sd.aavso_id, "UCAC4", sd.coords)
             pbar.update(1)
 
+    # only want the best stars
+    max_obs = np.max([x.obs for x in stars])
+    max_obs_stars = [x for x in stars if x.obs == max_obs]
+    logging.info(f"Stars with maximum of observations: {len(max_obs_stars)}")
 
     def limit(array, max_size):
         return min(len(array), max_size)
 
 
-    min_err_stars = sorted(stars, key=operator.attrgetter('e_vmag'))
+    min_err_stars = sorted(max_obs_stars, key=operator.attrgetter('e_vmag'))
     min_err_stars_clipped = min_err_stars[:limit(min_err_stars, 100)]
-
-    # limit to 10 closest stars
-    # target = SkyCoord(target_ra_deg, target_dec_deg, unit='deg')
-    # closest_stars = sorted(clipped_stars, key=lambda sd:
     logging.info(f"Using {len(min_err_stars_clipped)} calculated comparison stars: {min_err_stars_clipped[:3]}")
     return [x.local_id for x in min_err_stars_clipped], min_err_stars_clipped
 
