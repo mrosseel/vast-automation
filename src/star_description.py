@@ -1,6 +1,5 @@
 from astropy.coordinates import SkyCoord
 from typing import List
-from comparison_stars import ComparisonStars
 
 class Match:
     def __init__(self, name_of_catalog=None, catalog_id=None, name=None, coords: SkyCoord=None):

@@ -40,14 +40,26 @@ class TestDoCompstars(unittest.TestCase):
 
 
     def test_get_calculated_compstars(self):
-        stars = [self.stardesc(1, 1, 1, 10, 0.01),
-                 self.stardesc(4283, 3, 3, 12, 0.02),
-                 self.stardesc(132, 10.24496, 9.96736, 13, 0.02),
-                 self.stardesc(2, 10.24490, 9.96730, 12, 0.01),
-                 self.stardesc(3, 10.24490, 9.96730, 12, 0.01)]  # not there
+        stars = [self.stardesc(1, 1, 1, 10, 0.01, 10),
+                 self.stardesc(4283, 3, 3, 12, 0.02, 10),
+                 self.stardesc(132, 10.24496, 9.96736, 13, 0.02, 10),
+                 self.stardesc(2, 10.24490, 9.96730, 12, 0.01, 10),
+                 self.stardesc(3, 10.24490, 9.96730, 12, 0.01, 10)]  # not there
         stardict = utils.get_star_description_cache(stars)
         ids, sds = do_compstars.get_calculated_compstars(test_file_path, stardict)
         self.assertEqual(4, len(ids))
+
+
+    def test_closest_compstar_ids(self):
+        stars = [self.stardesc(1, 1, 1, 10, 0.01, 10),
+                 self.stardesc(4283, 3, 3, 12, 0.02, 10),
+                 self.stardesc(132, 10.24496, 9.96736, 13, 0.02, 10),
+                 self.stardesc(2, 10.24490, 9.96730, 12, 0.01, 10),
+                 self.stardesc(3, 10.24490, 9.96730, 12, 0.01, 10)]  # not there
+        result = do_compstars.closest_compstar_ids(stars[0],
+                                                   ComparisonStars([x.local_id for x in stars[1:]],
+                                                                   [x for x in stars[1:]], None, None, None))
+        self.assertEqual([4283, 2, 3, 132], result)
 
 
     def test_get_list_of_likely_constant_stars(self):
@@ -55,9 +67,9 @@ class TestDoCompstars(unittest.TestCase):
         self.assertEqual(6609, len(result))
 
 
-    def stardesc(self, id, ra, dec, vmag, e_vmag):
+    def stardesc(self, id, ra, dec, vmag, e_vmag, obs):
         return StarDescription(local_id=id,
-                               coords=SkyCoord(ra, dec, unit='deg'), vmag=vmag, e_vmag=e_vmag)
+                               coords=SkyCoord(ra, dec, unit='deg'), vmag=vmag, e_vmag=e_vmag, obs=obs)
 
 
 if __name__ == '__main__':
