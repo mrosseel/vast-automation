@@ -43,18 +43,16 @@ def get_fixed_compstars(star_descriptions: List[StarDescription], comparison_sta
 def get_calculated_compstars(vastdir, stardict: Dict[int, StarDescription]):
     likely = _get_list_of_likely_constant_stars(vastdir)
     stars = [stardict[x] for x in likely if x in stardict]
-    ucac4 = UCAC4()
 
-    with tqdm.tqdm(total=len(stars), desc='Adding ucac4') as pbar:
-        for star in stars:
-            sd = ucac4.get_ucac4_sd(star.coords.ra.deg, star.coords.dec.deg)
-            do_calibration.add_info_to_star_description(star, sd.vmag, sd.e_vmag, sd.aavso_id, "UCAC4", sd.coords)
-            pbar.update(1)
+    # set ucac4 stars for everything
+    ucac4 = UCAC4()
+    ucac4.add_ucac4_to_sd(stars)
 
     # only want the best stars
     max_obs = np.max([x.obs for x in stars])
     max_obs_stars = [x for x in stars if x.obs == max_obs]
     logging.info(f"Stars with maximum of observations: {len(max_obs_stars)}")
+
 
     def limit(array, max_size):
         return min(len(array), max_size)
@@ -153,6 +151,7 @@ def get_star_compstars(star: StarDescription, comp_stars: ComparisonStars):
     filtered_compstars = comp_stars.get_filtered_comparison_stars(sd_ids)
     return filtered_compstars
 
+
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
     logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
@@ -171,5 +170,3 @@ if __name__ == '__main__':
         logging.info(f"result: {result}")
     # if args.descriptions:
     #     get_comparison_star_descriptions(result)
-
-

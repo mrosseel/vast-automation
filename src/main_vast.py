@@ -87,6 +87,10 @@ def run_do_rest(args):
     starfile_stars = do_calibration.get_catalog_stars(star_descriptions, "STARFILE")
     aavso_stars = starfile_stars + vsx_stars + candidate_stars
 
+    # set ucac4 stars selected
+    ucac4 = UCAC4()
+    ucac4.add_ucac4_to_sd(starfile_stars)
+
     if args.allstars:
         do_charts_vast.run(star_descriptions, comp_stars, vastdir, resultdir, 'phase_all/', 'light_all/', 'aavso_all/',
                            do_phase=do_phase, do_charts=do_charts, do_aavso=do_aavso, nr_threads=thread_count,

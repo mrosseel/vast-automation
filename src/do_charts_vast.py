@@ -80,7 +80,7 @@ def plot_lightcurve(star_tuple: Tuple[StarDescription, DataFrame], chartsdir):
     plt.gca().invert_yaxis()
     # g.map(plt.errorbar, 'Count', 'V-C', yerr='s1', fmt='o')
     # plt.ticklabel_format(style='plain', axis='x')
-    plt.title(f"Star {star_id}{vsx_title}, position: {get_hms_dms(coord)}{upsilon_text}", pad=TITLE_PAD)
+    plt.title(f"Star {star_id}{vsx_title}, position: {utils.get_hms_dms_matplotlib(coord)}{upsilon_text}", pad=TITLE_PAD)
     start = timer()
     figure = g.fig
     figure.savefig(save_location)
@@ -138,7 +138,7 @@ def plot_lightcurve_jd(star_tuple: Tuple[StarDescription, DataFrame], chartsdir)
     plt.gca().invert_yaxis()
     # g.map(plt.errorbar, 'Count', 'V-C', yerr='s1', fmt='o')
     plt.ticklabel_format(style='plain', axis='x')
-    plt.title(f"Star {star_id}{vsx_title}\nposition: {get_hms_dms(coord)}{upsilon_text}", pad=TITLE_PAD)
+    plt.title(f"Star {star_id}{vsx_title}\nposition: {utils.get_hms_dms_matplotlib(coord)}{upsilon_text}", pad=TITLE_PAD)
     plt.tight_layout()
     # figure = g.fig
     # figure.suptitle(f"Star {star_id}{vsx_title}, position: {get_hms_dms(coord)}{upsilon_text}")
@@ -174,13 +174,14 @@ def plot_phase_diagram(star_tuple: Tuple[StarDescription, DataFrame], fullphased
         period_max = np.max(t_np) - np.min(t_np)
         if period_max <= 0.01:
             return
-        ls = LombScargleFast(optimizer_kwds={'quiet': True, 'period_range': (0.01, period_max)}, silence_warnings=True) \
-            .fit(t_np, y_np)
+        ls = LombScargleFast(optimizer_kwds={'quiet': True, 'period_range': (0.01, period_max)},
+                             silence_warnings=True).fit(t_np, y_np)
         period = ls.best_period
     fig = plt.figure(figsize=(18, 16), dpi=80, facecolor='w', edgecolor='k')
     plt.xlabel("Phase", labelpad=TITLE_PAD)
     plt.ylabel("Magnitude", labelpad=TITLE_PAD)
-    plt.title(f"{vsx_title}Star {star_id}, p: {period:.5f} d{upsilon_text}\n{get_hms_dms(coords)}", pad=TITLE_PAD)
+    plt.title(f"{vsx_title}Star {star_id}, p: {period:.5f} d{upsilon_text}\n{utils.get_hms_dms_matplotlib(coords)}",
+              pad=TITLE_PAD)
     plt.ticklabel_format(style='plain', axis='x')
     # plt.title(f"Star {star} - {period}", pad=TITLE_PAD)
     plt.tight_layout()
@@ -216,12 +217,6 @@ def reject_outliers_iqr(data, cut=5):
     lower_bound = q1 - (iqr * 1.5)
     upper_bound = q3 + (iqr * 1.5)
     return np.where((data > lower_bound) & (data < upper_bound))
-
-
-def get_hms_dms(coord):
-    return "{:2.0f}$^h$ {:02.0f}$^m$ {:02.2f}$^s$ | {:2.0f}$\degree$ {:02.0f}$'$ {:02.2f}$''$" \
-        .format(coord.ra.hms.h, abs(coord.ra.hms.m), abs(coord.ra.hms.s),
-                coord.dec.dms.d, abs(coord.dec.dms.m), abs(coord.dec.dms.s))
 
 
 def format_date(x, pos=None):

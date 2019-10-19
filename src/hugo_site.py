@@ -11,6 +11,7 @@ import logging
 from pathlib import PurePath
 import pytz
 from datetime import datetime
+import utils
 
 
 def run(post_name: str, selected_stars: List[StarDescription], resultdir: str):
@@ -80,7 +81,7 @@ def block(star: StarDescription, resultdir: str, post_name: str):
             <li>period (d): {parsed_toml['period']:.5f}</li>
             <li>mag. range: {parsed_toml['range']}</li>
             <li>type: </li>
-            <li>coords: {parsed_toml['coords'][0]:.5f} {parsed_toml['coords'][1]:.5f}</li>
+            <li>coords: {utils.get_hms_dms(star.coords)}</li>
             <li><a href="{images_prefix}vsx_and_star_{star.local_id:05}.png">finder chart</a></li>
             <li><a href="{images_prefix}{star.local_id:05}_ext.txt">aavso observations</a></li>
             <li><a href="{images_prefix}{star.local_id:05}_light.png">light curve</a></li>

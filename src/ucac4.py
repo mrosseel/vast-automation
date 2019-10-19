@@ -114,6 +114,9 @@ from star_description import StarDescription
 from astropy.coordinates import SkyCoord
 from pathlib import PurePath
 from LRUCache import LRUCache
+# remove this, would be cleaner in ucac4_utils or something
+import do_calibration
+import tqdm
 
 StarTuple = namedtuple('Star', 'ra spd mag1 mag2 mag_sigma obj_type double_star_flag ra_sigma'
                                ' dec_sigma n_ucac_total n_ucac_used n_cats_used epoch_ra epoch_dec pm_ra pm_dec'
@@ -289,6 +292,13 @@ class UCAC4:
         star = star._replace(pm_dec_sigma=star.pm_dec_sigma + 128)
         return star
 
+    def add_ucac4_to_sd(self, stars: List[StarDescription]):
+        with tqdm.tqdm(total=len(stars), desc='Adding ucac4') as pbar:
+            for star in stars:
+                sd = self.get_ucac4_sd(star.coords.ra.deg, star.coords.dec.deg)
+                do_calibration.add_info_to_star_description(star, sd.vmag, sd.e_vmag, sd.aavso_id, "UCAC4", sd.coords)
+                pbar.update(1)
+
     # >>> ra=140361
     # >>> ra/1000/60/60
     # 0.038989166666666665
@@ -296,6 +306,8 @@ class UCAC4:
     # >>> (dec-324000000)/1000/60/60
     # 0.0015277777777777776
     # >>>
+
+
 
 
 if __name__ == '__main__':
