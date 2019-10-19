@@ -198,8 +198,8 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
 
     # field charts for each individually selected starfile star
     for star in starfile_labeled:
-        filtered_compstars = do_compstars.get_star_compstars(star, comp_stars)
-        compstars_labeled = set_custom_label(filtered_compstars, [x.vmag for x in filtered_compstars.star_descriptions])
+        filtered_compstars_sds = do_compstars.get_star_compstars(star, comp_stars).star_descriptions
+        compstars_labeled = set_custom_label(filtered_compstars_sds, [x.vmag for x in filtered_compstars_sds])
         logging.info(f"Plotting field chart with all VSX variable stars + star {star.local_id}...")
         fig = plot_it([[star], vsx_labeled, compstars_labeled], [10., 5., 3.], [True, False, True],
                       reference_fits_frame, wcs, f"VSX stars + star {star.local_id}", PADDING)

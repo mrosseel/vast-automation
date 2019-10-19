@@ -315,7 +315,7 @@ def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir:
     func = partial(read_vast_lightcurves, basedir=basedir, comp_stars=comp_stars, do_charts=do_charts,
                    do_phase=do_phase, do_aavso=do_aavso, aavso_limit=aavsolimit,
                    phasedir=phasedir, chartsdir=chartsdir, aavsodir=aavsodir)
-    with tqdm.tqdm(total=len(star_descriptions), desc=desc) as pbar:
+    with tqdm.tqdm(total=len(star_descriptions), desc=desc, unit='stars') as pbar:
         for _ in pool.imap_unordered(func, star_descriptions, chunksize=CHUNK):
             pbar.update(1)
             pass
