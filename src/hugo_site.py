@@ -9,6 +9,8 @@ from shutil import copy
 import glob
 import logging
 from pathlib import PurePath
+import pytz
+from datetime import datetime
 
 
 def run(post_name: str, selected_stars: List[StarDescription], resultdir: str):
@@ -96,5 +98,5 @@ def block(star: StarDescription, resultdir: str, post_name: str):
 
 
 def get_header(title: str):
-    return f'---\ntitle: "{title}"\ndate: 2019-10-09T11:10:29+02:00\ndraft: false\n' \
+    return f'---\ntitle: "{title}"\ndate: {pytz.utc.localize(datetime.utcnow()).isoformat()}\ndraft: false\n' \
            f'summary: "Batch of new variable stars"\n---\n'

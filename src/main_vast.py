@@ -14,6 +14,7 @@ import do_charts_field
 import do_compstars
 import reading
 import utils
+import star_description
 from utils import get_star_description_cache
 from reading import trash_and_recreate_dir
 from reading import file_selector
@@ -71,6 +72,16 @@ def run_do_rest(args):
     write_augmented_autocandidates(vastdir, resultdir, stardict)
     write_augmented_all_stars(vastdir, resultdir, stardict)
     comp_stars = read_comparison_stars(star_descriptions, args.checkstarfile, vastdir, stardict)
+
+    # Set comp stars for every star
+    logging.info("Setting per star comparison stars...")
+    for star in star_descriptions:
+        if args.checkstarfile:
+            star_description.add_compstar_match(star, comp_stars.ids)
+        else:
+            closest_comp_stars_ids = do_compstars.closest_compstar_ids(star_description, comp_stars, 10)
+            star_description.add_compstar_match(star, closest_comp_stars_ids)
+
     candidate_stars = do_calibration.get_catalog_stars(star_descriptions, "CANDIDATE", exclude="VSX")
     vsx_stars = do_calibration.get_catalog_stars(star_descriptions, "VSX")
     starfile_stars = do_calibration.get_catalog_stars(star_descriptions, "STARFILE")
@@ -113,7 +124,7 @@ def run_do_rest(args):
 
 
 def read_comparison_stars(star_descriptions: List[StarDescription], checkstarfile: str, vastdir: str,
-                          stardict: Dict[int, StarDescription]):
+                          stardict: Dict[int, StarDescription]) -> ComparisonStars:
     if checkstarfile:
         # load comparison stars
         checkstars = read_checkstars(checkstarfile)

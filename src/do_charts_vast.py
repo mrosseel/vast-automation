@@ -255,8 +255,8 @@ def read_vast_lightcurves(star_description: StarDescription, comp_stars: Compari
         # TODO: this is wrong, should be composition of all comparison stars. To do error propagation use quadrature
         # rule: http://ipl.physics.harvard.edu/wp-uploads/2013/03/PS3_Error_Propagation_sp13.pdf
         # df['V-C'] = df['V-C'] + comparison_stars[0].vmag
-        close_comp_stars = do_compstars.closest_compstars(star_description, comp_stars, 10)
-        df['realV'], df['realErr'] = do_compstars.calculate_mean_value_ensemble_photometry(df, close_comp_stars)
+        filtered_compstars = do_compstars.get_star_compstars(star_description, comp_stars)
+        df['realV'], df['realErr'] = do_compstars.calculate_mean_value_ensemble_photometry(df, filtered_compstars)
         tuple = star_description, df
         if do_charts:
             # start = timer()

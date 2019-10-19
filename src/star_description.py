@@ -97,8 +97,8 @@ class StarDescription:
                f"matches: {self._match}, path: {self.path}"
 
 
-def add_compstar_match(star_description: StarDescription, compstars: ComparisonStars) -> StarDescription:
-    return star_description.match.append(CompStarMatch(compstar_ids=compstars))
+def add_compstar_match(star_description: StarDescription, compstar_ids: List[int]) -> StarDescription:
+    return star_description.match.append(CompStarMatch(compstar_ids=compstar_ids))
 
 
 class CatalogMatch(Match):
@@ -146,9 +146,9 @@ class UpsilonMatch(Match):
 
 
 class CompStarMatch(Match):
-    def __init__(self, name_of_catalog='COMPSTARS', compstars=ComparisonStars):
+    def __init__(self, name_of_catalog='COMPSTARS', compstar_ids=List[int]):
         self.name_of_catalog = name_of_catalog
-        self.compstars = compstars
+        self.compstar_ids = compstar_ids
 
     def __repr__(self):
         return f'Catalog:{self.name_of_catalog}, Compstars: {self.compstar_ids}'

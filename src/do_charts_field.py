@@ -11,7 +11,7 @@ import argparse
 from typing import List, Tuple
 from star_description import StarDescription, CompStarMatch
 import random
-
+import do_compstars
 StarDescriptionList = List[StarDescription]
 
 PADDING = 200
@@ -192,11 +192,14 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
                   "VSX stars + selected stars", PADDING)
     save(fig, fieldchartsdirs + 'vsx_{}_and_selected_{}'.format(len(vsx_labeled), len(starfile_labeled)))
 
+    # compstars get their vmag as label
+    # comp_stars_descr = comp_stars.star_descriptions
+    # comp_stars_labeled = set_custom_label(comp_stars_descr, [x.vmag for x in comp_stars_descr])
+
     # field charts for each individually selected starfile star
     for star in starfile_labeled:
-        compstar_match: CompStarMatch = star.get_catalog("COMPSTARS")
-        sds = compstar_match.compstars.star_descriptions
-        compstars_labeled = set_custom_label(sds, [x.vmag for x in sds])
+        filtered_compstars = do_compstars.get_star_compstars(star, comp_stars)
+        compstars_labeled = set_custom_label(filtered_compstars, [x.vmag for x in filtered_compstars])
         logging.info(f"Plotting field chart with all VSX variable stars + star {star.local_id}...")
         fig = plot_it([[star], vsx_labeled, compstars_labeled], [10., 5., 3.], [True, False, True],
                       reference_fits_frame, wcs, f"VSX stars + star {star.local_id}", PADDING)

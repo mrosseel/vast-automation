@@ -133,15 +133,25 @@ def calculate_mean_value_ensemble_photometry(df, comp_stars: ComparisonStars):
 
 def add_closest_compstars(stars: List[StarDescription], comp_stars: ComparisonStars):
     for star in stars:
-        star_description.add_compstar_match(star, closest_compstars(star, comp_stars))
+        star_description.add_compstar_match(star, closest_compstar_ids(star, comp_stars))
 
 
-def closest_compstars(star: StarDescription, comp_stars: ComparisonStars, limit=10):
+def closest_compstar_ids(star: StarDescription, comp_stars: ComparisonStars, limit=10) -> List[int]:
     sorted_closest = sorted(comp_stars.star_descriptions, key=lambda x: x.coords.separation(star.coords))
     sorted_clipped = sorted_closest[:min(len(sorted_closest), limit)]
     sorted_ids = [x.local_id for x in sorted_clipped]
-    return comp_stars.get_filtered_comparison_stars(sorted_ids)
+    return sorted_ids
+    # return comp_stars.get_filtered_comparison_stars(sorted_ids)
 
+
+def get_star_compstars(star: StarDescription, comp_stars: ComparisonStars):
+    compstar_match: star_description.CompStarMatch = star.get_catalog("COMPSTARS")
+    sd_ids = compstar_match.compstar_ids
+    # skip part of the work if the list is equal
+    if len(set(sd_ids).difference(comp_stars.ids)) == 0:
+        return comp_stars
+    filtered_compstars = comp_stars.get_filtered_comparison_stars(sd_ids)
+    return filtered_compstars
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
