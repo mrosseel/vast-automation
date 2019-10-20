@@ -23,26 +23,23 @@ def calculate_airmass(coord, location, jd):
     return alt_azs.secz
 
 
-def report(star_tuple: Tuple[StarDescription, DataFrame], target_dir: PurePath, vastdir: str, sitelat, sitelong,
-           sitealt,
-           comparison_stars: ComparisonStars, filter=None, observer='RMH', chunk_size=None):
-    df_curve = star_tuple[1]
-    star_description = star_tuple[0]
+def report(star: StarDescription, df_curve: DataFrame, target_dir: PurePath, vastdir: str, sitelat, sitelong,
+           sitealt, comparison_stars: ComparisonStars, filter=None, observer='RMH', chunk_size=None):
     comparison_star = comparison_stars.star_descriptions[0]
-    star_match_ucac4, separation = star_description.get_match_string("UCAC4")
-    star_match_vsx, separation = star_description.get_match_string("VSX", strict=False)
+    star_match_ucac4, separation = star.get_match_string("UCAC4")
+    star_match_vsx, separation = star.get_match_string("VSX", strict=False)
     comp_ucac4 = comparison_star.get_match_string("UCAC4", strict=True)
     var_display_name = star_match_ucac4 if star_match_vsx is None else star_match_vsx
-    var_display_name = var_display_name if var_display_name is not None else f"Star_{star_description.local_id}"
+    var_display_name = var_display_name if var_display_name is not None else f"Star_{star.local_id}"
     check_display_name = comparison_star.aavso_id if comparison_star.aavso_id is not None else comp_ucac4[0]
 
     # logging.info(" Star match:{}, comparison_star:{}".format(var_display_name, comparison_star))
     comparison_star_vmag = comparison_star.vmag
     # NO COMP STAR TODAY
     comparison_star_vmag = 0.0
-    title = f"{star_description.local_id:05}" if star_description.aavso_id is None else star_description.aavso_id
+    title = f"{star.local_id:05}" if star.aavso_id is None else star.aavso_id
     earth_location = EarthLocation(lat=sitelat, lon=sitelong, height=sitealt * u.m)
-    logging.debug(f"Starting aavso report with star:{star_description}")
+    logging.debug(f"Starting aavso report with star:{star}")
     if chunk_size is None:
         chunk_size = df_curve.shape[0]
     star_chunks = [df_curve[i:i + chunk_size] for i in range(0, df_curve.shape[0], chunk_size)]
@@ -77,7 +74,7 @@ def report(star_tuple: Tuple[StarDescription, DataFrame], target_dir: PurePath, 
                     'comparison_magnitude': 'na',
                     'check_name': check_display_name,
                     'check_magnitude': comparison_star_vmag,
-                    'airmass': calculate_airmass(star_description.coords, earth_location, row['floatJD']),
+                    'airmass': calculate_airmass(star.coords, earth_location, row['floatJD']),
                     'group': 'na',
                     'chart': 'na',
                     'notes': 'na'
