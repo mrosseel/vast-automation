@@ -82,7 +82,7 @@ def run_do_rest(args):
     logging.info("Setting per star comparison stars...")
     for star in star_descriptions:
         if args.checkstarfile:
-            star.add_compstar_match(star, comp_stars.ids)
+            star_description.add_compstar_match(star, comp_stars.ids)
         else:
             closest_comp_stars_ids = do_compstars.closest_compstar_ids(star, comp_stars, 10)
             star_description.add_compstar_match(star, closest_comp_stars_ids)
