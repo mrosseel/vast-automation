@@ -127,8 +127,8 @@ def plot_lightcurve_jd(star_tuple: Tuple[StarDescription, DataFrame], chartsdir)
     plt.scatter(used_curve['realJD'], used_curve['realV'])
     plt.xlabel('JD', labelpad=TITLE_PAD)
     # plt.ylabel("Absolute Mag, comp star = {:2.2f}".format(comparison_stars[0].vmag), labelpad=TITLE_PAD)
-    plot_max = used_curve_max
-    plot_min = min(plot_max - 1, used_curve_min - 0.2)
+    plot_max = used_curve_max + 0.1
+    plot_min = used_curve_min - 0.1
     logging.debug(f'min {plot_min} max {plot_max} usedmin {used_curve_min} usedmax {used_curve_max}')
     if np.isnan(plot_max) or np.isnan(plot_min):
         logging.info(f"star is nan:{star_id}, plot_max:{plot_max}, plot_min:{plot_min}")
@@ -250,7 +250,7 @@ def read_vast_lightcurves(star_description: StarDescription, comp_stars: Compari
         # TODO: this is wrong, should be composition of all comparison stars. To do error propagation use quadrature
         # rule: http://ipl.physics.harvard.edu/wp-uploads/2013/03/PS3_Error_Propagation_sp13.pdf
         # df['V-C'] = df['V-C'] + comparison_stars[0].vmag
-        filtered_compstars = do_compstars.get_star_compstars(star_description, comp_stars)
+        filtered_compstars = do_compstars.get_star_compstars_from_catalog(star_description, comp_stars)
         df['realV'], df['realErr'] = do_compstars.calculate_mean_value_ensemble_photometry(df, filtered_compstars)
         tuple = star_description, df
         if do_charts:

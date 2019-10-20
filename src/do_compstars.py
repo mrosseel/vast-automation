@@ -44,10 +44,6 @@ def get_calculated_compstars(vastdir, stardict: Dict[int, StarDescription]):
     likely = _get_list_of_likely_constant_stars(vastdir)
     stars = [stardict[x] for x in likely if x in stardict]
 
-    # set ucac4 stars for everything
-    ucac4 = UCAC4()
-    ucac4.add_ucac4_to_sd(stars)
-
     # only want the best stars
     max_obs = np.max([x.obs for x in stars])
     max_obs_stars = [x for x in stars if x.obs == max_obs]
@@ -71,19 +67,6 @@ def _get_list_of_likely_constant_stars(vastdir):
             if line is not None:
                 result.append(utils.get_starid_from_outfile(line.strip()))
     return result
-
-
-# get star_descriptions and ucuc4 info
-def get_comparison_star_descriptions(comparison_stars_1):
-    logging.info(f'Getting star description of comparison star: {comparison_stars_1}')
-    comp_star_description = do_calibration.get_star_descriptions(comparison_stars_1)
-    comparison_stars_1_desc = do_calibration.add_ucac4_to_star_descriptions(comp_star_description)
-    logging.info(f'Added apass info to comparison stars: {comparison_stars_1_desc}')
-
-    if np.isnan(comparison_stars_1_desc[0].vmag):
-        logging.info("Comparison star has nan vmag, will screw up everything coming after")
-        exit()
-    return comparison_stars_1_desc
 
 
 # DF should have JD, Vrel, err
@@ -142,7 +125,7 @@ def closest_compstar_ids(star: StarDescription, comp_stars: ComparisonStars, lim
     # return comp_stars.get_filtered_comparison_stars(sorted_ids)
 
 
-def get_star_compstars(star: StarDescription, comp_stars: ComparisonStars):
+def get_star_compstars_from_catalog(star: StarDescription, comp_stars: ComparisonStars):
     compstar_match: star_description.CompStarMatch = star.get_catalog("COMPSTARS")
     sd_ids = compstar_match.compstar_ids
     # skip part of the work if the list is equal

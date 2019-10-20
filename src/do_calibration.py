@@ -374,19 +374,19 @@ def add_apass_to_star_descriptions(star_descriptions, radius=0.01, row_limit=2):
     return star_descriptions
 
 
-def add_ucac4_to_star_descriptions(star_descriptions: List[StarDescription], nr_threads: int, radius=0.01):
+def add_vizier_ucac4_to_star_descriptions(star_descriptions: List[StarDescription], nr_threads: int, radius=0.01):
     logging.info("Retrieving ucac4 for {} star(s)".format(len(star_descriptions)))
     radius_angle = Angle(radius, unit=u.deg)
 
     pool = Pool(nr_threads * 2)
-    func = partial(add_ucac4_to_star, radius_angle=radius_angle)
+    func = partial(add_vizier_ucac4_to_star, radius_angle=radius_angle)
     result = []
     for entry in pool.map(func, star_descriptions):
         result.append(entry)
     return result
 
 
-def add_ucac4_to_star(star: StarDescription, radius_angle):
+def add_vizier_ucac4_to_star(star: StarDescription, radius_angle):
     vizier_results = get_ucac4_field(star.coords, radius=radius_angle, row_limit=1)
     if vizier_results is None:
         logging.warning("No vizier results for star", star.local_id)

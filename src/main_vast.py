@@ -71,6 +71,11 @@ def run_do_rest(args):
                   star_descriptions[:10] if len(star_descriptions) >= 10 else star_descriptions)
     write_augmented_autocandidates(vastdir, resultdir, stardict)
     write_augmented_all_stars(vastdir, resultdir, stardict)
+    candidate_stars = do_calibration.get_catalog_stars(star_descriptions, "CANDIDATE", exclude="VSX")
+    vsx_stars = do_calibration.get_catalog_stars(star_descriptions, "VSX")
+    starfile_stars = do_calibration.get_catalog_stars(star_descriptions, "STARFILE")
+    aavso_stars = starfile_stars + vsx_stars + candidate_stars
+
     comp_stars = read_comparison_stars(star_descriptions, args.checkstarfile, vastdir, stardict)
 
     # Set comp stars for every star
@@ -81,11 +86,6 @@ def run_do_rest(args):
         else:
             closest_comp_stars_ids = do_compstars.closest_compstar_ids(star, comp_stars, 10)
             star_description.add_compstar_match(star, closest_comp_stars_ids)
-
-    candidate_stars = do_calibration.get_catalog_stars(star_descriptions, "CANDIDATE", exclude="VSX")
-    vsx_stars = do_calibration.get_catalog_stars(star_descriptions, "VSX")
-    starfile_stars = do_calibration.get_catalog_stars(star_descriptions, "STARFILE")
-    aavso_stars = starfile_stars + vsx_stars + candidate_stars
 
     # set ucac4 stars selected
     ucac4 = UCAC4()
@@ -374,7 +374,6 @@ def tag_starfile(selectedstarfile: str, star_descriptions: List[StarDescription]
         star_list = [int(x) for x in filter(str.isdigit, star_list)]
         logging.info(f"Selecting {len(star_list)} stars added by {selectedstarfile}, {star_list}")
         starfile_stars = do_calibration.select_star_descriptions(star_list, star_descriptions)
-        do_calibration.add_ucac4_to_star_descriptions(starfile_stars, nr_threads=cpu_count() * 2)
         do_calibration.add_catalog_to_star_descriptions(starfile_stars, ["SELECTED", "STARFILE"])
         logging.info(f"Tagged {len(starfile_stars)} stars as selected by file.")
 
