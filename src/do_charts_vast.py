@@ -18,6 +18,7 @@ from multiprocessing import cpu_count
 from comparison_stars import ComparisonStars
 from functools import partial
 from gatspy.periodic import LombScargleFast
+from gatspy.periodic import TrendedLombScargle
 from reading import trash_and_recreate_dir
 from reading import file_selector
 from timeit import default_timer as timer
@@ -94,80 +95,62 @@ def plot_lightcurve(star_tuple: Tuple[StarDescription, DataFrame], chartsdir):
 #        print("error", tuple)
 
 
-def plot_lightcurve_jd(star_tuple: Tuple[StarDescription, DataFrame], chartsdir):
-    star_description = star_tuple[0]
-    curve = star_tuple[1]
-    star_id = star_description.local_id
+def plot_lightcurve_jd(star: StarDescription, curve: DataFrame, chartsdir):
+    star_id = star.local_id
     logging.debug(f"Plotting lightcurve for {star_id}")
-    vsx_name, separation, filename_no_ext = get_star_or_vsx_name(star_description, suffix=f"_light")
+    vsx_name, separation, filename_no_ext = get_star_or_vsx_name(star, suffix=f"_light")
     vsx_title = '' if vsx_name is None else f" ({vsx_name} - dist:{separation:.4f})"
     save_location = PurePath(chartsdir, filename_no_ext+'.png')
     start = timer()
-    upsilon_match = star_description.get_catalog('Upsilon')
+    upsilon_match = star.get_catalog('Upsilon')
     upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
     end = timer()
     logging.debug(f"timing upsilon stuff {end - start}")
-    coord = star_description.coords
+    coord = star.coords
     # print(f'Plotting lightcurve with star_description:{star_description}, curve length:{len(curve)}, star:{star}, curve:{curve}')
     if (curve is None):
         logging.info(f"Curve is None for star {star_id}")
         return
-    # curve = curve.replace(to_replace=99.99999, value=np.nan, inplace=False) # we filter now
-    used_curve = curve
-    used_curve_max = used_curve['realV'].max()
-    used_curve_min = used_curve['realV'].min()
 
-    # convert JD to int
-    used_curve['realJD'] = used_curve['JD'].astype(np.float) #.astype(np.uint64)
-    # fig = plt.figure(dpi=80, facecolor='w', edgecolor='k')
+    curve_max = curve['realV'].max()
+    curve_min = curve['realV'].min()
     fig = plt.figure(figsize=(20, 12), dpi=150, facecolor='w', edgecolor='k')
-    # g = sns.lmplot('realJD', 'realV',
-    #                data=used_curve, aspect=2, scatter_kws={"s": 30},
-    #                fit_reg=False)
-    plt.scatter(used_curve['realJD'], used_curve['realV'])
+    # plt.scatter(curve['floatJD'], curve['realV'])
+    plt.errorbar(curve['floatJD'], curve['realV'], yerr=curve['realErr'], linestyle='none', marker='o', ecolor='gray',
+                 elinewidth=1)
+
     plt.xlabel('JD', labelpad=TITLE_PAD)
     # plt.ylabel("Absolute Mag, comp star = {:2.2f}".format(comparison_stars[0].vmag), labelpad=TITLE_PAD)
-    plot_max = used_curve_max + 0.1
-    plot_min = used_curve_min - 0.1
-    logging.debug(f'min {plot_min} max {plot_max} usedmin {used_curve_min} usedmax {used_curve_max}')
-    if np.isnan(plot_max) or np.isnan(plot_min):
-        logging.info(f"star is nan:{star_id}, plot_max:{plot_max}, plot_min:{plot_min}")
-        return
+    plot_max = curve_max + 0.1
+    plot_min = curve_min - 0.1
     plt.ylim(plot_min, plot_max)
-    plt.xlim(used_curve['realJD'].min(), used_curve['realJD'].max())
+    plt.xlim(curve['floatJD'].min(), curve['floatJD'].max())
     plt.gca().invert_yaxis()
-    # g.map(plt.errorbar, 'Count', 'V-C', yerr='s1', fmt='o')
     plt.ticklabel_format(style='plain', axis='x')
     plt.title(f"Star {star_id}{vsx_title}\nposition: {utils.get_hms_dms_matplotlib(coord)}{upsilon_text}", pad=TITLE_PAD)
     plt.tight_layout()
-    # figure = g.fig
-    # figure.suptitle(f"Star {star_id}{vsx_title}, position: {get_hms_dms(coord)}{upsilon_text}")
     start = timer()
-
     fig.savefig(save_location)
-    # g.savefig(chartsdir+str(star).zfill(5)+'_plot')
     end = timer()
     logging.debug(f"timing saving fig {end - start}")
     plt.close(fig)
     plt.clf()
 
 
-def plot_phase_diagram(star_tuple: Tuple[StarDescription, DataFrame], fullphasedir, suffix='', period=None):
-    logging.debug(f"Starting plot phase diagram with {star_tuple} and {fullphasedir}")
-    star_description = star_tuple[0]
-    coords = star_description.coords
-    curve = star_tuple[1]
-    star_id = star_description.local_id
-    vsx_name, _, filename_no_ext = get_star_or_vsx_name(star_description, suffix=f"_phase{suffix}")
+def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, suffix='', period=None):
+    logging.debug(f"Starting plot phase diagram with {star} and {fullphasedir}")
+    coords = star.coords
+    star_id = star.local_id
+    vsx_name, _, filename_no_ext = get_star_or_vsx_name(star, suffix=f"_phase{suffix}")
     vsx_title = f"{vsx_name}\n" if vsx_name is not None else ''
     save_location = PurePath(fullphasedir, filename_no_ext+'.png')
-    upsilon_match = star_description.get_catalog('Upsilon')
+    upsilon_match = star.get_catalog('Upsilon')
     upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
     # print("Calculating phase diagram for", star)
     if curve is None:
         logging.info("Curve of star {} is None".format(star_id))
         return
-    t_np = curve['JD'].astype(np.float)
+    t_np = curve['floatJD']
     y_np = curve['realV'].to_numpy()
     dy_np = curve['realErr'].to_numpy()
     if period is None:
@@ -177,6 +160,10 @@ def plot_phase_diagram(star_tuple: Tuple[StarDescription, DataFrame], fullphased
         ls = LombScargleFast(optimizer_kwds={'quiet': True, 'period_range': (0.01, period_max)},
                              silence_warnings=True).fit(t_np, y_np)
         period = ls.best_period
+        # TODO test this trended lombscargle !
+        # tmodel = TrendedLombScargle(optimizer_kwds={'quiet': True, 'period_range': (0.01, period_max)},
+        #                             silence_warnings=True).fit(t_np, y_np)
+        # period = tmodel.best_period
     fig = plt.figure(figsize=(18, 16), dpi=80, facecolor='w', edgecolor='k')
     plt.xlabel("Phase", labelpad=TITLE_PAD)
     plt.ylabel("Magnitude", labelpad=TITLE_PAD)
@@ -252,23 +239,24 @@ def read_vast_lightcurves(star_description: StarDescription, comp_stars: Compari
         # df['V-C'] = df['V-C'] + comparison_stars[0].vmag
         filtered_compstars = do_compstars.get_star_compstars_from_catalog(star_description, comp_stars)
         df['realV'], df['realErr'] = do_compstars.calculate_mean_value_ensemble_photometry(df, filtered_compstars)
-        tuple = star_description, df
+        df['floatJD'] = df['JD'].astype(np.float)
         if do_charts:
             # start = timer()
             # logging.debug("NO LICGHTCRUVEGYET ")
-            plot_lightcurve_jd(tuple, chartsdir)
+            plot_lightcurve_jd(star_description, df.copy(), chartsdir)
             # end = timer()
             # print("plotting lightcurve:", end-start)
         if do_phase:
             # start = timer()
-            try:
-                phase = subprocess.check_output([f"{basedir}lib/BLS/bls", star_description.path])
-            except:
-                phase = None
+            # try:
+            #     phase = subprocess.check_output([f"{basedir}lib/BLS/bls", star_description.path])
+            # except:
+            phase = None
 
             if phase is not None:
-                plot_phase_diagram(tuple, phasedir, period=float(phase.decode("utf-8")[:-2]))
-            plot_phase_diagram(tuple, phasedir, period=None, suffix="")
+                plot_phase_diagram(star_description, df.copy(), phasedir, period=float(phase.decode("utf-8")[:-2]))
+            else:
+                plot_phase_diagram(star_description, df.copy(), phasedir, period=None, suffix="")
             # end = timer()
             # print("plotting phase:", end-start)
         if do_aavso:
@@ -277,9 +265,8 @@ def read_vast_lightcurves(star_description: StarDescription, comp_stars: Compari
             sitelong = '-68 10 49'
             sitealt = 2500
             observer = 'ZZZ'
-
-            do_aavso_report.report(tuple, target_dir=aavsodir, vastdir=basedir, sitelat=sitelat, sitelong=sitelong,
-                                   sitealt=sitealt, comparison_stars=comp_stars, filter='V',
+            do_aavso_report.report(star_description, df.copy(), target_dir=aavsodir, vastdir=basedir, sitelat=sitelat,
+                                   sitelong=sitelong, sitealt=sitealt, comparison_stars=comp_stars, filter='V',
                                    observer=observer, chunk_size=aavso_limit)
 
     except Exception as ex:

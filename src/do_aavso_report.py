@@ -4,9 +4,10 @@ import logging
 from astropy import units as u
 from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz
-#supress the warning about vector transforms so as not to clutter the doc build log
+# supress the warning about vector transforms so as not to clutter the doc build log
 import warnings
-warnings.filterwarnings('ignore',module='astropy.coordinates.baseframe')
+
+warnings.filterwarnings('ignore', module='astropy.coordinates.baseframe')
 from star_description import StarDescription
 import argparse
 import read_camera_filters
@@ -15,13 +16,15 @@ from pandas import DataFrame
 from comparison_stars import ComparisonStars
 from pathlib import PurePath
 
+
 def calculate_airmass(coord, location, jd):
     time = Time(jd, format='jd')
     alt_azs = coord.transform_to(AltAz(obstime=time, location=location))
     return alt_azs.secz
 
 
-def report(star_tuple: Tuple[StarDescription, DataFrame], target_dir: PurePath, vastdir: str, sitelat, sitelong, sitealt,
+def report(star_tuple: Tuple[StarDescription, DataFrame], target_dir: PurePath, vastdir: str, sitelat, sitelong,
+           sitealt,
            comparison_stars: ComparisonStars, filter=None, observer='RMH', chunk_size=None):
     df_curve = star_tuple[1]
     star_description = star_tuple[0]
@@ -38,11 +41,11 @@ def report(star_tuple: Tuple[StarDescription, DataFrame], target_dir: PurePath, 
     # NO COMP STAR TODAY
     comparison_star_vmag = 0.0
     title = f"{star_description.local_id:05}" if star_description.aavso_id is None else star_description.aavso_id
-    earth_location = EarthLocation(lat=sitelat, lon=sitelong, height=sitealt*u.m)
+    earth_location = EarthLocation(lat=sitelat, lon=sitelong, height=sitealt * u.m)
     logging.debug(f"Starting aavso report with star:{star_description}")
     if chunk_size is None:
         chunk_size = df_curve.shape[0]
-    star_chunks = [df_curve[i:i+chunk_size] for i in range(0, df_curve.shape[0],chunk_size)]
+    star_chunks = [df_curve[i:i + chunk_size] for i in range(0, df_curve.shape[0], chunk_size)]
     chunk_counters = 0
 
     filterdict = None
@@ -58,7 +61,8 @@ def report(star_tuple: Tuple[StarDescription, DataFrame], target_dir: PurePath, 
         chunk_counters += 1
         suffix = f"_{chunk_counters}.txt" if len(star_chunks) != 1 else ".txt"
         with open(PurePath(target_dir, f"{title}_ext{suffix}"), 'w') as fp:
-            writer = aavso.ExtendedFormatWriter(fp, observer, software='munipack-automation', type='EXTENDED', obstype='CCD')
+            writer = aavso.ExtendedFormatWriter(fp, observer, software='munipack-automation', type='EXTENDED',
+                                                obstype='CCD')
             for _, row in chunk.iterrows():
                 # logging.info(row, type(row))
                 writer.writerow({
@@ -73,7 +77,7 @@ def report(star_tuple: Tuple[StarDescription, DataFrame], target_dir: PurePath, 
                     'comparison_magnitude': 'na',
                     'check_name': check_display_name,
                     'check_magnitude': comparison_star_vmag,
-                    'airmass': calculate_airmass(star_description.coords, earth_location, float(row['JD'])),
+                    'airmass': calculate_airmass(star_description.coords, earth_location, row['floatJD']),
                     'group': 'na',
                     'chart': 'na',
                     'notes': 'na'
@@ -88,10 +92,12 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--datadir',
                         help="The directory where the data can be found (fits in ./fits dir under the data dir",
                         nargs='?', required=True)
-    parser.add_argument('-c', '--chart', help="Only generate lightcurve, lightcurve plot and phase diagram plot", nargs='+')
+    parser.add_argument('-c', '--chart', help="Only generate lightcurve, lightcurve plot and phase diagram plot",
+                        nargs='+')
     parser.add_argument('-n', '--nowait', help="Don't wait 10 secs before starting", action="store_true")
     parser.add_argument('-v', '--vsx', help="Add vsx stars to field charts/reporting list", action="store_true")
-    parser.add_argument('-s', '--starfile', help="Load a file with star ids, these ids will be used for field charts/reporting")
+    parser.add_argument('-s', '--starfile',
+                        help="Load a file with star ids, these ids will be used for field charts/reporting")
     parser.add_argument('-x', '--verbose', help="Set logging to debug mode", action="store_true")
     parser.add_argument('-l', '--laststars', help="Use the star descriptions of the previous run to do the charting",
                         action="store_true")
@@ -108,7 +114,7 @@ if __name__ == '__main__':
     # print(dir(settings))pr
     import main_muniwin
 
-    #monitoring_thread = start_monitoring(seconds_frozen=15, test_interval=1000)
+    # monitoring_thread = start_monitoring(seconds_frozen=15, test_interval=1000)
     if args.verbose:
         logger.setLevel(logging.DEBUG)
         fh.setLevel(logging.DEBUG)

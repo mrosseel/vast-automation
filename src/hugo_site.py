@@ -83,7 +83,7 @@ def block(star: StarDescription, resultdir: str, post_name: str):
             <li>type: </li>
             <li>coords: {utils.get_hms_dms(star.coords)}</li>
             <li><a href="{images_prefix}vsx_and_star_{star.local_id:05}.png">finder chart</a></li>
-            <li><a href="{images_prefix}{star.local_id:05}_ext.txt">observations (AAVSO format)</a></li>
+            <li><a href="{images_prefix}{star.local_id:05}_ext.txt">observations</a></li>
             <li><a href="{images_prefix}{star.local_id:05}_light.png">light curve</a></li>
             </ul>
         </div>
