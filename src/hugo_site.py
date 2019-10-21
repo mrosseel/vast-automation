@@ -32,11 +32,11 @@ def copy_files(post_name: str, resultdir: str, sitedir: str):
     trash_and_recreate_dir(imagesdir)
     selected_phase = f'{resultdir}phase_selected/*.png'
     selected_phase_glob = glob.glob(selected_phase)
-    aavso = f'{resultdir}aavso/*.txt'
+    aavso = f'{resultdir}aavso*/*.txt'
     aavso_glob = glob.glob(aavso)
     fieldcharts = f'{resultdir}fieldcharts/*.png'
     fieldcharts_glob = glob.glob(fieldcharts)
-    lightcharts = f'{resultdir}light_candidates/*.png'
+    lightcharts = f'{resultdir}light*/*.png'
     lightcharts_glob = glob.glob(lightcharts)
     logging.info(f"Copying {len(selected_phase_glob)} phase files from {selected_phase}...")
     for file in selected_phase_glob:
