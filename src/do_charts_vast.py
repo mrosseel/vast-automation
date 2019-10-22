@@ -47,7 +47,7 @@ def plot_lightcurve(star_tuple: Tuple[StarDescription, DataFrame], chartsdir):
     vsx_title = '' if vsx_name is None else f" ({vsx_name} - dist:{separation:.4f})"
     save_location = PurePath(chartsdir, filename_no_ext)
     start = timer()
-    upsilon_match = star_description.get_catalog('Upsilon')
+    upsilon_match = star_description.get_metadata('Upsilon')
     upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
     end = timer()
     logging.debug(f"timing upsilon stuff {end - start}")
@@ -102,7 +102,7 @@ def plot_lightcurve_jd(star: StarDescription, curve: DataFrame, chartsdir):
     vsx_title = '' if vsx_name is None else f" ({vsx_name} - dist:{separation:.4f})"
     save_location = PurePath(chartsdir, filename_no_ext+'.png')
     start = timer()
-    upsilon_match = star.get_catalog('Upsilon')
+    upsilon_match = star.get_metadata('Upsilon')
     upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
     end = timer()
     logging.debug(f"timing upsilon stuff {end - start}")
@@ -144,7 +144,7 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
     vsx_name, _, filename_no_ext = get_star_or_vsx_name(star, suffix=f"_phase{suffix}")
     vsx_title = f"{vsx_name}\n" if vsx_name is not None else ''
     save_location = PurePath(fullphasedir, filename_no_ext+'.png')
-    upsilon_match = star.get_catalog('Upsilon')
+    upsilon_match = star.get_metadata('Upsilon')
     upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
     # print("Calculating phase diagram for", star)
     if curve is None:
@@ -193,7 +193,7 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
 
 
 def get_star_or_vsx_name(star_description: StarDescription, suffix: str):
-    vsx_name, separation = star_description.get_match_string("VSX")
+    vsx_name, separation = star_description.get_metadata_string("VSX")
     filename_no_ext = f"{vsx_name}{suffix}" if vsx_name is not None else f"{star_description.local_id:05}{suffix}"
     return vsx_name, separation, filename_no_ext.replace(' ', '_')
 
@@ -211,61 +211,55 @@ def format_date(x, pos=None):
     return r.date[thisind].strftime('%Y-%m-%d')
 
 
-def read_vast_lightcurves(star_description: StarDescription, comp_stars: ComparisonStars, do_charts, do_phase, do_aavso,
+def read_vast_lightcurves(star: StarDescription, comp_stars: ComparisonStars, do_charts, do_phase, do_aavso,
                           aavso_limit, basedir: str, chartsdir: PurePath, phasedir: PurePath, aavsodir: PurePath):
     start = timer()
-    if star_description.path is '':
-        logging.debug(f"Path for {star_description.local_id} is empty")
+    if star.path is '':
+        logging.debug(f"Path for {star.local_id} is empty")
         return
     if not do_charts and not do_phase:
         logging.debug("Nothing to do, no charts or phase needed")
 
     logging.debug(
-        f"Reading lightcurves for star {star_description.local_id} at path {star_description.path} for {star_description}...")
+        f"Reading lightcurves for star {star.local_id} at path {star.path} for {star}...")
     # comp_mags = [x.vmag for x in comparison_stars]
 
     try:
-        df = pd.read_csv(star_description.path, delim_whitespace=True,
+        df = pd.read_csv(star.path, delim_whitespace=True,
                          names=['JD', 'Vrel', 'err', 'X', 'Y', 'unknown', 'file', 'vast1', 'vast2', 'vast3', 'vast4',
                                 'vast5', 'vast6', 'vast7', 'vast8', 'vast9', 'vast10'], dtype={'JD': str})
 
         if df is None or len(df) == 0:
-            logging.info(f"No lightcurve found for {star_description.path}")
+            logging.info(f"No lightcurve found for {star.path}")
             return
 
         # adding vmag of comparison star to all diff mags
         # TODO: this is wrong, should be composition of all comparison stars. To do error propagation use quadrature
         # rule: http://ipl.physics.harvard.edu/wp-uploads/2013/03/PS3_Error_Propagation_sp13.pdf
         # df['V-C'] = df['V-C'] + comparison_stars[0].vmag
-        filtered_compstars = do_compstars.get_star_compstars_from_catalog(star_description, comp_stars)
+        filtered_compstars = do_compstars.get_star_compstars_from_catalog(star, comp_stars)
         df['realV'], df['realErr'] = do_compstars.calculate_mean_value_ensemble_photometry(df, filtered_compstars)
         df['floatJD'] = df['JD'].astype(np.float)
         if do_charts:
             # start = timer()
             # logging.debug("NO LICGHTCRUVEGYET ")
-            plot_lightcurve_jd(star_description, df.copy(), chartsdir)
+            plot_lightcurve_jd(star, df.copy(), chartsdir)
             # end = timer()
             # print("plotting lightcurve:", end-start)
         if do_phase:
-            # start = timer()
-            # try:
-            #     phase = subprocess.check_output([f"{basedir}lib/BLS/bls", star_description.path])
-            # except:
-            phase = None
-
-            if phase is not None:
-                plot_phase_diagram(star_description, df.copy(), phasedir, period=float(phase.decode("utf-8")[:-2]))
+            if star.has_metadata("STARFILE") and star.get_metadata("STARFILE").period is not None:
+                period = star.get_metadata("STARFILE").period
+                logging.debug(f"Using provided period for star {star.local_id}: {period}")
+                plot_phase_diagram(star, df.copy(), phasedir, period=period)
             else:
-                plot_phase_diagram(star_description, df.copy(), phasedir, period=None, suffix="")
-            # end = timer()
-            # print("plotting phase:", end-start)
+                plot_phase_diagram(star, df.copy(), phasedir, period=None, suffix="")
         if do_aavso:
             # TODO put this in settings.txt
             sitelat = '-22 57 10'
             sitelong = '-68 10 49'
             sitealt = 2500
             observer = 'ZZZ'
-            do_aavso_report.report(star_description, df.copy(), target_dir=aavsodir, vastdir=basedir, sitelat=sitelat,
+            do_aavso_report.report(star, df.copy(), target_dir=aavsodir, vastdir=basedir, sitelat=sitelat,
                                    sitelong=sitelong, sitealt=sitealt, comparison_stars=comp_stars, filter='V',
                                    observer=observer, chunk_size=aavso_limit)
 
@@ -273,7 +267,7 @@ def read_vast_lightcurves(star_description: StarDescription, comp_stars: Compari
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
         logging.error(message)
-        logging.error("File not found error in store and curve for star", star_description.path)
+        logging.error("File not found error in store and curve for star", star.path)
 
     end = timer()
     logging.debug(f"Full lightcurve/phase: {end - start}")

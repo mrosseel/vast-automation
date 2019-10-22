@@ -1,21 +1,24 @@
-from astropy.coordinates import SkyCoord
 from typing import List
+from astropy.coordinates import SkyCoord
 
-class Match:
-    def __init__(self, name_of_catalog=None, catalog_id=None, name=None, coords: SkyCoord=None):
+
+class StarMetaData:
+    def __init__(self, metadata_id=None):
         # the name of the catalog
-        self.name_of_catalog = name_of_catalog
-        # the id in the catalog
-        self.catalog_id = catalog_id
-        # the name of the object in this catalog
-        self.name = name
-        # the coords in the catalog
-        self.coords = coords
+        self.metadata_id = metadata_id
+
+
+    def __repr__(self):
+        return f'metadata_id:{self.metadata_id}'
+
+
+    def __str__(self):
+        return self.__repr__()
 
 
 class StarDescription:
     def __init__(self, local_id: int = None, aavso_id: str = None, coords: SkyCoord = None, vmag: float = None,
-                 e_vmag: float = None, match: List[Match] = None,
+                 e_vmag: float = None, metadata: List[StarMetaData] = None,
                  label: str = None, xpos: float = None, ypos: float = None, path: str = None, obs: int = None):
         # star id given by munipack
         self.local_id = local_id
@@ -28,7 +31,7 @@ class StarDescription:
         # error on vmag as provided by one of the matching catalogs
         self.e_vmag = e_vmag
         # arrray of catalogs matching this star
-        self._match = match if match is not None else []
+        self._metadata = metadata if metadata is not None else []
         # x position on the reference frame
         self.xpos = xpos
         # y position on the reference frame
@@ -42,30 +45,29 @@ class StarDescription:
 
 
     @property
-    def match(self):
-        return self._match
+    def metadata(self):
+        return self._metadata
 
 
-    # val is a CatalogMatch object
-    @match.setter
-    def match(self, val):
-        self._match.append(val)
-        print(f"appending, is now {self._match}")
+    @metadata.setter
+    def metadata(self, val: StarMetaData):
+        self._metadata.append(val)
 
-    # does this star have a catalog with a certain name?
-    def has_catalog(self, catalog: str) -> bool:
-        if self.match is not None:
-            catalog_match_list = [x for x in self.match if x.name_of_catalog == catalog]
+
+    def has_metadata(self, metadata_id: str) -> bool:
+        """ does this star have a catalog with a certain name? """
+        if self.metadata is not None:
+            catalog_match_list = [x for x in self.metadata if x.metadata_id == metadata_id]
             if len(catalog_match_list) >= 1:
                 return True
         else:
             return False
 
 
-    def get_catalog(self, catalog: str, strict=False):
-        if self.match is None:
+    def get_metadata(self, catalog: str, strict=False):
+        if self.metadata is None:
             return None
-        catalog_match_list = [x for x in self.match if x.name_of_catalog == catalog]
+        catalog_match_list = [x for x in self.metadata if x.metadata_id == catalog]
         if len(catalog_match_list) != 1:
             if strict:
                 raise AssertionError("star_description.py: Searching for {} in {}, received {} matches, expected 1"
@@ -73,13 +75,15 @@ class StarDescription:
         else:
             return catalog_match_list[0]
 
-    def get_catalog_list(self):
-        return [x.name_of_catalog for x in self.match]
 
-    # extract matching strings from star_descr
-    def get_match_string(self, catalog, strict=False):
+    def get_metadata_list(self):
+        return [x.metadata_id for x in self.metadata]
+
+
+    def get_metadata_string(self, catalog, strict=False):
+        # extract matching strings from star_descr
         # will give an assertion error if the catalog match is not unique
-        result = self.get_catalog(catalog, strict)
+        result = self.get_metadata(catalog, strict)
         if result is None:
             return None, None
         return result.catalog_id, result.separation
@@ -87,71 +91,10 @@ class StarDescription:
 
     def __repr__(self):
         return "StarDescription({0},{1},{2},{3},{4},{5})".format(
-            self.local_id, self.aavso_id, self.coords, self.vmag, self._match, self.path)
+            self.local_id, self.aavso_id, self.coords, self.vmag, self._metadata, self.path)
 
 
     def __str__(self):
         return f"local_id: {self.local_id}, aavso_id: {self.aavso_id}, coords: {self.coords}, xy: {self.xpos}, " \
-               f"{self.ypos}, vmag: {self.vmag}, nr matches: {len(self._match)}, " \
-               f"matches: {self._match}, path: {self.path}"
-
-
-def add_compstar_match(star_description: StarDescription, compstar_ids: List[int]) -> StarDescription:
-    return star_description.match.append(CompStarMatch(compstar_ids=compstar_ids))
-
-
-class CatalogMatch(Match):
-    def __init__(self, name_of_catalog=None, catalog_id=None, name=None, coords: SkyCoord=None, separation=-1):
-        # the name of the catalog
-        self.name_of_catalog = name_of_catalog
-        # the id in the catalog
-        self.catalog_id = catalog_id
-        # the name of the object in this catalog
-        self.name = name
-        # the coords in the catalog
-        self.coords = coords
-        # the separation between the munipack-found coords and the catalog coords
-        self.separation = separation
-
-
-    def __repr__(self):
-        return f'Catalog:{self.name_of_catalog}, CatalogId:{self.catalog_id}, Name:{self.name}, Coords:{self.coords}, Separation:{self.separation}'
-
-
-    def __str__(self):
-        return f'Catalog:{self.name_of_catalog}, CatalogId:{self.catalog_id}, Name:{self.name}, Coords:{self.coords}, Separation:{self.separation}'
-
-
-class UpsilonMatch(Match):
-    def __init__(self, name_of_catalog='Upsilon', var_type=None, probability=None, flag=None, period=None):
-        self.name_of_catalog = name_of_catalog
-        self.var_type = var_type
-        self.probability = probability
-        self.flag = flag
-        self.period = period
-
-    # extract upsilon strings from star_descr
-    # might have to move outside of UpsilonMatch
-    def get_upsilon_string(self):
-        return "\nVar: prob={0:.2f}({1}),type={2}".format(self.probability, self.flag, self.var_type)
-
-
-    def __repr__(self):
-        return f'Catalog:{self.name_of_catalog}, Var Type:{self.var_type}, Probability:{self.probability}, flag:{self.flag}, Period:{self.period}'
-
-
-    def __str__(self):
-        return f'Catalog:{self.name_of_catalog}, Var Type:{self.var_type}, Probability:{self.probability}, flag:{self.flag}, Period:{self.period}'
-
-
-class CompStarMatch(Match):
-    def __init__(self, name_of_catalog='COMPSTARS', compstar_ids=List[int]):
-        self.name_of_catalog = name_of_catalog
-        self.compstar_ids = compstar_ids
-
-    def __repr__(self):
-        return f'Catalog:{self.name_of_catalog}, Compstars: {self.compstar_ids}'
-
-
-    def __str__(self):
-        return f'Catalog:{self.name_of_catalog}, Compstars: {self.compstar_ids}'
+               f"{self.ypos}, vmag: {self.vmag}, nr matches: {len(self._metadata)}, " \
+               f"matches: {self._metadata}, path: {self.path}"

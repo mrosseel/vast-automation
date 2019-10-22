@@ -1,15 +1,16 @@
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 import matplotlib.pyplot as plt
-from photutils import aperture_photometry, CircularAperture
+from photutils import CircularAperture
 import numpy as np
-import do_calibration
+import star_metadata
+import utils
 from comparison_stars import ComparisonStars
 import logging
 from reading import trash_and_recreate_dir
 import argparse
 from typing import List, Tuple
-from star_description import StarDescription, CompStarMatch
+from star_description import StarDescription
 import random
 import do_compstars
 StarDescriptionList = List[StarDescription]
@@ -149,15 +150,15 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
     all_stars_no_label = set_custom_label(all_stars_descr, '')
 
     # vsx stars get their aavso id label
-    vsx_descr = do_calibration.get_catalog_stars(star_descriptions, "VSX")
+    vsx_descr = utils.get_stars_with_metadata(star_descriptions, "VSX")
     vsx_labeled = set_aavso_id_label(vsx_descr)
 
     # candidate stars get their local id label
-    candidate_descr = do_calibration.get_catalog_stars(star_descriptions, "CANDIDATE", exclude=["VSX"])
+    candidate_descr = utils.get_stars_with_metadata(star_descriptions, "CANDIDATE", exclude=["VSX"])
     candidate_labeled = set_local_id_label(candidate_descr)
 
     # starfile stars get their local id label
-    starfile_descr = do_calibration.get_catalog_stars(star_descriptions, "STARFILE", exclude=["VSX"])
+    starfile_descr = utils.get_stars_with_metadata(star_descriptions, "STARFILE", exclude=["VSX"])
     starfile_labeled = set_local_id_label(starfile_descr)
 
     # field chart with all detections

@@ -13,6 +13,7 @@ import do_charts_vast
 import do_charts_field
 import do_compstars
 import reading
+import star_metadata
 import utils
 import star_description
 from utils import get_star_description_cache
@@ -26,11 +27,14 @@ from comparison_stars import ComparisonStars
 from pathlib import PurePath
 from ucac4 import UCAC4
 import hugo_site
+import pandas as pd
+from star_metadata import SelectedStarData, StarMetaData, StarFileData, CompStarData
 
 vsx_catalog_name = "vsx_catalog.bin"
 vsxcatalogdir = PurePath(os.getcwd(), vsx_catalog_name)
 # star id -> xpos, ypos, filename
 StarPosDict = Dict[str, Tuple[float, float, str]]
+StarDict = Dict[int, StarDescription]
 STAR_KEEPER_PERCENTAGE = 0.1
 
 
@@ -71,21 +75,19 @@ def run_do_rest(args):
                   star_descriptions[:10] if len(star_descriptions) >= 10 else star_descriptions)
     write_augmented_autocandidates(vastdir, resultdir, stardict)
     write_augmented_all_stars(vastdir, resultdir, stardict)
-    candidate_stars = do_calibration.get_catalog_stars(star_descriptions, "CANDIDATE", exclude="VSX")
-    vsx_stars = do_calibration.get_catalog_stars(star_descriptions, "VSX")
-    starfile_stars = do_calibration.get_catalog_stars(star_descriptions, "STARFILE")
-    aavso_stars = starfile_stars + vsx_stars + candidate_stars
+    candidate_stars = utils.get_stars_with_metadata(star_descriptions, "CANDIDATE", exclude="VSX")
+    vsx_stars = utils.get_stars_with_metadata(star_descriptions, "VSX")
+    starfile_stars = utils.get_stars_with_metadata(star_descriptions, "STARFILE")
+    interesting_stars = starfile_stars + vsx_stars + candidate_stars
 
     comp_stars = read_comparison_stars(star_descriptions, args.checkstarfile, vastdir, stardict)
 
     # Set comp stars for every star
     logging.info("Setting per star comparison stars...")
-    for star in star_descriptions:
-        if args.checkstarfile:
-            star_description.add_compstar_match(star, comp_stars.ids)
-        else:
-            closest_comp_stars_ids = do_compstars.closest_compstar_ids(star, comp_stars, 10)
-            star_description.add_compstar_match(star, closest_comp_stars_ids)
+    if args.checkstarfile:
+        utils.add_metadata(star_descriptions, CompStarData(compstar_ids=comp_stars.ids))
+    else:
+        do_compstars.add_closest_compstars(interesting_stars, comp_stars, 10)
 
     # set ucac4 stars selected
     ucac4 = UCAC4()
@@ -98,22 +100,16 @@ def run_do_rest(args):
     else:
         if args.candidates:
             logging.info(f"Plotting {len(candidate_stars)} candidates...")
-            if not args.checkstarfile:
-                do_compstars.add_closest_compstars(candidate_stars, comp_stars)
             do_charts_vast.run(candidate_stars, comp_stars, vastdir, resultdir, 'phase_candidates/',
                                'light_candidates/', 'aavso_candidates/', do_phase=do_phase, do_charts=do_charts,
                                do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of candidates")
         if args.vsx:
-            do_calibration.add_catalog_to_star_descriptions(vsx_stars, ["SELECTED"])
+            do_calibration.add_metadata_to_star_descriptions(vsx_stars, ["SELECTED"])
             logging.info(f"Plotting {len(vsx_stars)} vsx stars...")
-            if not args.checkstarfile:
-                do_compstars.add_closest_compstars(vsx_stars, comp_stars)
             do_charts_vast.run(vsx_stars, comp_stars, vastdir, resultdir, 'phase_vsx/', 'light_vsx/', 'aavso_vsx/',
                                do_phase=do_phase, do_charts=do_charts, do_aavso=do_aavso, nr_threads=thread_count,
                                desc="Phase/light/aavso of VSX stars")
         if args.selectedstarfile:
-            if not args.checkstarfile:
-                do_compstars.add_closest_compstars(starfile_stars, comp_stars)
             do_charts_vast.run(starfile_stars, comp_stars, vastdir, resultdir, 'phase_selected/', 'light_selected/',
                                'aavso_selected', do_phase=do_phase, do_charts=do_charts,
                                do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of selected stars")
@@ -128,7 +124,7 @@ def run_do_rest(args):
 
 
 def read_comparison_stars(star_descriptions: List[StarDescription], checkstarfile: str, vastdir: str,
-                          stardict: Dict[int, StarDescription]) -> ComparisonStars:
+                          stardict: StarDict) -> ComparisonStars:
     if checkstarfile:
         # load comparison stars
         checkstars = read_checkstars(checkstarfile)
@@ -247,7 +243,7 @@ def get_autocandidates(dir: str) -> List[int]:
     return result
 
 
-def write_augmented_autocandidates(readdir: str, writedir: str, stardict: Dict[int, StarDescription]):
+def write_augmented_autocandidates(readdir: str, writedir: str, stardict: StarDict):
     origname = f"{readdir}vast_autocandidates.log"
     newname = f"{writedir}vast_autocandidates_pos.txt"
     logging.info(f"Writing {newname}...")
@@ -263,7 +259,7 @@ def write_augmented_autocandidates(readdir: str, writedir: str, stardict: Dict[i
                 outfile.write(f"{linetext}*\t{'None'}\n")
 
 
-def write_augmented_all_stars(readdir: str, writedir: str, stardict: Dict[int, StarDescription]):
+def write_augmented_all_stars(readdir: str, writedir: str, stardict: StarDict):
     origname = f"{readdir}vast_list_of_all_stars.log"
     newname = f"{writedir}vast_list_of_all_stars_pos.txt"
     logging.info(f"Writing {newname}...")
@@ -342,7 +338,7 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
     star_descriptions, results_ids = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions,
                                                                                        vsxcatalogdir, 0.01)
     logging.info(f"Added {len(results_ids)} vsx names to star descriptions")
-    test = do_calibration.get_catalog_stars(star_descriptions, "VSX")
+    test = utils.get_stars_with_metadata(star_descriptions, "VSX")
     logging.info(f"Test Tagged {len(test)} stars as VSX.")
 
     # write the vsx stars used into a file
@@ -353,29 +349,31 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
     tag_candidates(vastdir, star_descriptions)
 
     if args.selectedstarfile:
-        tag_starfile(args.selectedstarfile, star_descriptions)
+        tag_starfile(args.selectedstarfile, stardict)
 
     # add ucac4 id's
-    starfile_stars = do_calibration.get_catalog_stars(star_descriptions, "STARFILE")
+    starfile_stars = utils.get_stars_with_metadata(star_descriptions, "STARFILE")
     return star_descriptions
 
 
 def tag_candidates(vastdir: str, star_descriptions: List[StarDescription]):
     candidate_ids = get_autocandidates(vastdir)
     selected_stars = do_calibration.select_star_descriptions(candidate_ids, star_descriptions)
-    do_calibration.add_catalog_to_star_descriptions(selected_stars, ["SELECTED", "CANDIDATE"])
+    do_calibration.add_metadata_to_star_descriptions(selected_stars, ["SELECTED", "CANDIDATE"])
 
 
-def tag_starfile(selectedstarfile: str, star_descriptions: List[StarDescription]):
-    starfile_stars = []
-    with open(selectedstarfile, 'r') as fp:
-        lines = fp.readlines()
-        star_list = [x.rstrip() for x in lines]
-        star_list = [int(x) for x in filter(str.isdigit, star_list)]
-        logging.info(f"Selecting {len(star_list)} stars added by {selectedstarfile}, {star_list}")
-        starfile_stars = do_calibration.select_star_descriptions(star_list, star_descriptions)
-        do_calibration.add_catalog_to_star_descriptions(starfile_stars, ["SELECTED", "STARFILE"])
-        logging.info(f"Tagged {len(starfile_stars)} stars as selected by file.")
+def tag_starfile(selectedstarfile: str, stardict: StarDict):
+    df = pd.read_csv(selectedstarfile, delimiter=',', comment='#',
+                     names=['local_id', 'var_type', 'our_name', 'period', 'period_err', 'epoch'],
+                     dtype={'local_id': int, 'period': float, 'period_err': float}, skipinitialspace=True)
+    df = df.replace({np.nan: None})
+    logging.info(f"Selecting {len(df)} stars added by {selectedstarfile}, {df['local_id'].to_numpy()}")
+    for idx, row in df.iterrows():
+        the_star = stardict.get(row['local_id'])
+        the_star.metadata = StarFileData(row['local_id'], row['var_type'], row['our_name'], row['period'],
+                                         row['period_err'], row['epoch'])
+        the_star.metadata = SelectedStarData()
+    logging.info(f"Tagged {len(df)} stars as selected by file.")
 
 
 def tag_starids(star_ids: List[int], tags: List[str]):

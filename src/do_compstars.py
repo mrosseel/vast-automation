@@ -4,16 +4,16 @@ import numpy as np
 import do_calibration
 import utils
 from astropy.coordinates import SkyCoord
-from photometry_blob import PhotometryBlob
 from typing import List, Tuple, Dict
 import star_description
 from star_description import StarDescription
+from star_metadata import CompStarData
 from ucac4 import UCAC4
 import math
 from comparison_stars import ComparisonStars
 from pathlib import PurePath
 import operator
-import tqdm
+StarDict = Dict[int, StarDescription]
 
 
 # receives ucac numbers, fetches ucac coords and compares them to world_position coords
@@ -40,7 +40,7 @@ def get_fixed_compstars(star_descriptions: List[StarDescription], comparison_sta
     return [x.local_id for x in star_desc_result], star_desc_result
 
 
-def get_calculated_compstars(vastdir, stardict: Dict[int, StarDescription]):
+def get_calculated_compstars(vastdir, stardict: StarDict):
     likely = _get_list_of_likely_constant_stars(vastdir)
     stars = [stardict[x] for x in likely if x in stardict]
 
@@ -112,21 +112,20 @@ def calculate_mean_value_ensemble_photometry(df, comp_stars: ComparisonStars):
     return realV, realErr
 
 
-def add_closest_compstars(stars: List[StarDescription], comp_stars: ComparisonStars):
+def add_closest_compstars(stars: List[StarDescription], comp_stars: ComparisonStars, limit=10):
     for star in stars:
-        star_description.add_compstar_match(star, closest_compstar_ids(star, comp_stars))
+        star.metadata = CompStarData(compstar_ids=_closest_compstar_ids(star, comp_stars, limit))
 
 
-def closest_compstar_ids(star: StarDescription, comp_stars: ComparisonStars, limit=10) -> List[int]:
+def _closest_compstar_ids(star: StarDescription, comp_stars: ComparisonStars, limit=10) -> List[int]:
     sorted_closest = sorted(comp_stars.star_descriptions, key=lambda x: x.coords.separation(star.coords))
     sorted_clipped = sorted_closest[:min(len(sorted_closest), limit)]
     sorted_ids = [x.local_id for x in sorted_clipped]
     return sorted_ids
-    # return comp_stars.get_filtered_comparison_stars(sorted_ids)
 
 
 def get_star_compstars_from_catalog(star: StarDescription, comp_stars: ComparisonStars):
-    compstar_match: star_description.CompStarMatch = star.get_catalog("COMPSTARS")
+    compstar_match: star_description.CompStarData = star.get_metadata("COMPSTARS")
     sd_ids = compstar_match.compstar_ids
     # skip part of the work if the list is equal
     if len(set(sd_ids).difference(comp_stars.ids)) == 0:

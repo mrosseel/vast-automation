@@ -1,7 +1,10 @@
 import glob
+from functools import partial
 from os import listdir
 from os.path import isfile, join
-from star_description import StarDescription
+
+import star_description
+from star_description import StarDescription, StarMetaData
 from typing import List, Dict
 import multiprocessing as mp
 from multiprocessing import cpu_count
@@ -45,7 +48,7 @@ def get_star_description_cache(stars: List[StarDescription]) -> Dict[int, StarDe
 
 # filter a list of star descriptions on the presence of a catalog
 def catalog_filter(star: StarDescription, catalog_name):
-    return star.has_catalog(catalog_name)
+    return star.has_metadata(catalog_name)
 
 
 def get_hms_dms(coord):
@@ -68,3 +71,25 @@ def get_lesve_coords(coord):
 
 def get_pool(processes=cpu_count() - 1, maxtasksperchild=10):
     return mp.Pool(processes, maxtasksperchild=maxtasksperchild)
+
+
+def add_metadata(stars: List[star_description.StarDescription], metadata: StarMetaData):
+    """
+    Add a static StarMetaData (or children) object to all stars in the list
+    :param stars:
+    :param metadata:
+    :return:
+    """
+    for star in stars:
+        star.metadata = metadata
+
+
+def get_stars_with_metadata(stars: List[star_description.StarMetaData], catalog_name: str,
+                            exclude=[]) -> List[star_description.StarDescription]:
+    # gets all stars which have a catalog of name catalog_name
+    return list(filter(partial(metadata_filter, catalog_name=catalog_name, exclude=exclude), stars))
+
+# Does this star have a catalog with catalog_name? Used in combination with filter()
+def metadata_filter(star: StarDescription, catalog_name, exclude=[]):
+    catalogs = star.get_metadata_list()
+    return catalog_name in catalogs and len([x for x in exclude if x in catalogs]) == 0

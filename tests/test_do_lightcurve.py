@@ -19,7 +19,7 @@ class TestDoCalibration(unittest.TestCase):
             print(entry, '\n')
         total = 0
         for entry in result:
-            if entry.match:
+            if entry.metadata:
                 total += 1
         self.assertEqual(1, total)
 

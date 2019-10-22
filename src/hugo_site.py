@@ -12,6 +12,7 @@ from pathlib import PurePath
 import pytz
 from datetime import datetime
 import utils
+from star_metadata import StarFileData
 
 
 def run(post_name: str, selected_stars: List[StarDescription], resultdir: str):
@@ -57,18 +58,20 @@ def block(star: StarDescription, resultdir: str, post_name: str):
     try:
         vsx_name, separation, filename_no_ext = do_charts_vast.get_star_or_vsx_name(star, suffix="_phase")
         txt_path = PurePath(resultdir, 'phase_candidates/txt', filename_no_ext + '.txt')
-        parsed_toml = None
+        metadata: StarFileData = star.get_metadata("STARFILE")
         try:
             parsed_toml = toml.load(txt_path)
         except FileNotFoundError:
             # txt can be in candidates or selected.
             txt_path = PurePath(resultdir, 'phase_selected/txt', filename_no_ext + '.txt')
             parsed_toml = toml.load(txt_path)
-        ucac4 = star.get_catalog("UCAC4", strict=False)
+        ucac4 = star.get_metadata("UCAC4", strict=False)
         if ucac4 is None:
             ucac4_name = f"{star.coords}"
         else:
             ucac4_name = ucac4.catalog_id if not None else "unknown"
+        period = parsed_toml['period'] if metadata.period is None \
+            else f"{metadata.period:.5f} +/- {metadata.period_err:.5f}"
         images_prefix = f"/images/{post_name}/"
         phase_url = f"{images_prefix}{filename_no_ext}.png"
         result = f'''<div class="bb-l b--black-10 w-100">
@@ -78,9 +81,11 @@ def block(star: StarDescription, resultdir: str, post_name: str):
         <div class="fl w-30 pa2 ba">
             <ul>
             <li>{ucac4_name}</li>
-            <li>period (d): {parsed_toml['period']:.5f}</li>
+            <li>Our name: {metadata.our_name}</li>
+            <li>period (d): {period:.5f}</li>
             <li>mag. range: {parsed_toml['range']}</li>
-            <li>type: </li>
+            <li>type: {metadata.var_type}</li>
+            <li>epoch: {metadata.epoch}</li>
             <li>coords: {utils.get_hms_dms(star.coords)}</li>
             <li><a href="{images_prefix}vsx_and_star_{star.local_id:05}.png">finder chart</a></li>
             <li><a href="{images_prefix}{star.local_id:05}_ext.txt">observations</a></li>

@@ -1,6 +1,8 @@
 # from .context import src
 import unittest
 import do_calibration
+import star_metadata
+import utils
 from star_description import StarDescription
 from astropy.coordinates import SkyCoord
 import logging
@@ -20,7 +22,7 @@ class TestDoVast(unittest.TestCase):
         stars = [self.stardesc(1, 1, 1), self.stardesc(2, 3, 3), self.stardesc(3129, 10.24496, 9.96736),
                  self.stardesc(5711, 10.24490, 9.96730)]
         main_vast.tag_candidates(test_file_path, stars)
-        test = do_calibration.get_catalog_stars(stars, "CANDIDATE")
+        test = utils.get_stars_with_metadata(stars, "CANDIDATE")
         self.assertEqual(2, len(test))
 
     def test_tag_starfile(self):
@@ -29,7 +31,7 @@ class TestDoVast(unittest.TestCase):
                  self.stardesc(3154, 12.1520503, 12.0935881),
                  self.stardesc(2635, 10.24490, 9.96730), self.stardesc(1, 10, 9)]
         main_vast.tag_starfile(PurePath(test_file_path, "wwcra2015_starlist.txt"), stars)
-        test = do_calibration.get_catalog_stars(stars, "STARFILE")
+        test = utils.get_stars_with_metadata(stars, "STARFILE")
         self.assertEqual(4, len(test))
 
     def stardesc(self, id, ra, dec):

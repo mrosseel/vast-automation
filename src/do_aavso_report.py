@@ -26,9 +26,9 @@ def calculate_airmass(coord, location, jd):
 def report(star: StarDescription, df_curve: DataFrame, target_dir: PurePath, vastdir: str, sitelat, sitelong,
            sitealt, comparison_stars: ComparisonStars, filter=None, observer='RMH', chunk_size=None):
     comparison_star = comparison_stars.star_descriptions[0]
-    star_match_ucac4, separation = star.get_match_string("UCAC4")
-    star_match_vsx, separation = star.get_match_string("VSX", strict=False)
-    comp_ucac4 = comparison_star.get_match_string("UCAC4", strict=True)
+    star_match_ucac4, separation = star.get_metadata_string("UCAC4")
+    star_match_vsx, separation = star.get_metadata_string("VSX", strict=False)
+    comp_ucac4 = comparison_star.get_metadata_string("UCAC4", strict=True)
     var_display_name = star_match_ucac4 if star_match_vsx is None else star_match_vsx
     var_display_name = var_display_name if var_display_name is not None else f"Star_{star.local_id}"
     check_display_name = comparison_star.aavso_id if comparison_star.aavso_id is not None else comp_ucac4[0]

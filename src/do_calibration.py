@@ -2,8 +2,8 @@ import os
 import reading
 import logging
 from star_description import StarDescription
-from star_description import CatalogMatch
-from star_description import UpsilonMatch
+from star_metadata import CatalogData
+from star_metadata import UpsilonData
 from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
@@ -21,6 +21,8 @@ from multiprocessing import Pool
 from typing import List
 import utils
 from collections import namedtuple
+
+from star_metadata import StarMetaData
 
 
 def get_wcs(wcs_file):
@@ -154,10 +156,10 @@ def get_candidates(threshold_prob=0.5, check_flag=False):
         return result
     positions = reading.read_world_positions(settings.worldposdir)
     for index, row in df.iterrows():
-        upsilon_match = UpsilonMatch(name_of_catalog='Upsilon', var_type=row['label'], probability=row['probability'],
-                                     flag=row['flag'], period=row['period'])
+        upsilon_match = UpsilonData(metadata_id='Upsilon', var_type=row['label'], probability=row['probability'],
+                                    flag=row['flag'], period=row['period'])
         result.append(
-            StarDescription(local_id=index, match=upsilon_match,
+            StarDescription(local_id=index, metadata=upsilon_match,
                             coords=SkyCoord(positions[int(index)][0], positions[int(index)][1], unit='deg')))
     return result
 
@@ -168,9 +170,9 @@ def add_candidates_to_star_descriptions(stars: List[StarDescription], threshold_
     if df is None:
         return stars
     for index, row in df.iterrows():
-        upsilon_match = UpsilonMatch(name_of_catalog='Upsilon', var_type=row['label'], probability=row['probability'],
-                                     flag=row['flag'], period=row['period'])
-        stars[index].match.append(upsilon_match)
+        upsilon_match = UpsilonData(metadata_id='Upsilon', var_type=row['label'], probability=row['probability'],
+                                    flag=row['flag'], period=row['period'])
+        stars[index].metadata.append(upsilon_match)
     return stars
 
 
@@ -221,8 +223,8 @@ def add_vsx_names_to_star_descriptions(star_descriptions: List[StarDescription],
     # loop over dict and add the new vsx matches to the star descriptions
     for keys, vsxinfo in results_dict.items():
         logging.debug(f"len sd is {len(star_descriptions)}, vsxinfo.starid is {vsxinfo.starid_0}")
-        _add_catalog_match_to_star_description('VSX', cachedict[vsxinfo.starid_0], vsx_dict,
-                                               vsxinfo.vsx_id, vsxinfo.sep)
+        _add_vsx_metadata_to_star_description('VSX', cachedict[vsxinfo.starid_0], vsx_dict,
+                                              vsxinfo.vsx_id, vsxinfo.sep)
         result_ids.append(vsxinfo.starid_0)
     logging.debug(f"Added {len(results_dict)} vsx stars.")
     return star_descriptions, result_ids
@@ -252,7 +254,7 @@ def get_vsx_in_field(star_descriptions, max_separation=0.01):
             result_entry = StarDescription()
             result_entry.local_id = star_local_id
             result_entry.coords = star_coords
-            _add_catalog_match_to_star_description('VSX', result_entry, vsx_dict, index_vsx, entry.value)
+            _add_vsx_metadata_to_star_description('VSX', result_entry, vsx_dict, index_vsx, entry.value)
             result.append(result_entry)
     logging.info("Found {} VSX stars in field: {}".format(len(result), [star.local_id for star in result]))
     return result
@@ -260,40 +262,36 @@ def get_vsx_in_field(star_descriptions, max_separation=0.01):
 
 ################ CATALOG related functions #########################
 
-
-# tags a list of star descriptions a catalog for later filtering
-def add_catalog_to_star_descriptions(stars: List[StarDescription], catalog_name: List[str] = None):
-    if catalog_name is None:
-        catalog_name = ["SELECTED"]
+def add_metadata_to_star_descriptions(stars: List[StarDescription],
+                                      metadata: List[object] = None) -> List[StarDescription]:
+    """
+    Adds metadata to a list of star descriptions for later filtering
+    :param stars:
+    :param metadata: list of strings and StarMetaData objects
+    :return: the list of stars, augmented with metadata
+    """
+    if metadata is None:
+        metadata = ["SELECTED"]
     for sd in stars:
-        for catalog in catalog_name:
-            match = CatalogMatch(name_of_catalog=catalog, catalog_id=sd.local_id)
-            sd.match.append(match)
+        for entry in metadata:
+            if isinstance(entry, str):
+                sd.metadata = StarMetaData(metadata_id=entry)
+            else:
+                sd.metadata.append(entry)
     return stars
 
 
-def _add_catalog_match_to_star_description(catalog_name: str, star_description: StarDescription, vsx_dict, index_vsx,
-                                           separation):
-    assert star_description.match is not None
+def _add_vsx_metadata_to_star_description(catalog_name: str, star: StarDescription, vsx_dict, index_vsx,
+                                          separation):
+    assert star.metadata is not None
     vsx_name = vsx_dict['metadata'][index_vsx]['Name']
-    star_description.aavso_id = vsx_name
-    match = CatalogMatch(name_of_catalog=catalog_name, catalog_id=vsx_name,
-                         name=vsx_name, separation=separation,
-                         coords=SkyCoord(vsx_dict['ra_deg_np'][index_vsx], vsx_dict['dec_deg_np'][index_vsx],
-                                         unit='deg'))
-    star_description.match.append(match)
+    star.aavso_id = vsx_name
+    match = CatalogData(metadata_id=catalog_name, catalog_id=vsx_name,
+                        name=vsx_name, separation=separation,
+                        coords=SkyCoord(vsx_dict['ra_deg_np'][index_vsx], vsx_dict['dec_deg_np'][index_vsx],
+                                        unit='deg'))
+    star.metadata = match
     return match
-
-
-# Does this star have a catalog with catalog_name? Used in combination with filter()
-def catalog_filter(star: StarDescription, catalog_name, exclude=[]):
-    catalogs = star.get_catalog_list()
-    return catalog_name in catalogs and len([x for x in exclude if x in catalogs]) == 0
-
-
-# gets all stars which have a catalog of name catalog_name
-def get_catalog_stars(stars: List[StarDescription], catalog_name: str, exclude=[]) -> List[StarDescription]:
-    return list(filter(partial(catalog_filter, catalog_name=catalog_name, exclude=exclude), stars))
 
 
 ################ CATALOG related functions #########################
@@ -366,8 +364,8 @@ def add_apass_to_star_descriptions(star_descriptions, radius=0.01, row_limit=2):
             catalog_id = 'TODO'  # apass['recno'][0].decode("utf-8")
             coord_catalog = SkyCoord(apass['RAJ2000'], apass['DEJ2000'], unit='deg')
             mindist = star.coords.separation(SkyCoord(apass['RAJ2000'], apass['DEJ2000'], unit='deg'))
-            star.match.append(CatalogMatch(name_of_catalog="APASS", catalog_id=catalog_id,
-                                           name=catalog_id, coords=coord_catalog, separation=mindist))
+            star.metadata = CatalogData(metadata_id="APASS", catalog_id=catalog_id,
+                                        name=catalog_id, coords=coord_catalog, separation=mindist)
             logging.info(
                 "APASS: Star {} has vmag={}, error={:.5f}, dist={}".format(star.local_id, star.vmag, star.e_vmag,
                                                                            mindist))
@@ -409,8 +407,8 @@ def add_info_to_star_description(star, vmag, e_vmag, catalog_id, catalog_name, c
     star.vmag = vmag
     star.e_vmag = e_vmag
     mindist = star.coords.separation(coord_catalog)
-    star.match.append(CatalogMatch(name_of_catalog=catalog_name, catalog_id=catalog_id,
-                                   name=catalog_id, coords=coord_catalog, separation=mindist))
+    star.metadata = CatalogData(metadata_id=catalog_name, catalog_id=catalog_id,
+                                name=catalog_id, coords=coord_catalog, separation=mindist)
     logging.debug("Add info: Star {} has vmag={}, error={}, dist={}".format(star.local_id, star.vmag, star.e_vmag,
                                                                             mindist))
     return star
