@@ -247,7 +247,13 @@ def read_vast_lightcurves(star: StarDescription, comp_stars: ComparisonStars, do
             # end = timer()
             # print("plotting lightcurve:", end-start)
         if do_phase:
-            if star.has_metadata("STARFILE") and star.get_metadata("STARFILE").period is not None:
+            if star.has_metadata("STARFILE") and star.get_metadata("STARFILE") is None:
+                # This should not happen!!!
+                logging.warning(f"This should not happen !!!!!!!!!!!!!!!!!!!! "
+                                f"{star.local_id}, {star.get_metadata_list()}, {star.has_metadata('STARFILE')}, "
+                                f"{[star.get_metadata(x) for x in star.get_metadata_list()]}")
+
+            if star.get_metadata("STARFILE") is not None:
                 period = star.get_metadata("STARFILE").period
                 logging.debug(f"Using provided period for star {star.local_id}: {period}")
                 plot_phase_diagram(star, df.copy(), phasedir, period=period)

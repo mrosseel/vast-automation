@@ -64,16 +64,16 @@ class StarDescription:
             return False
 
 
-    def get_metadata(self, catalog: str, strict=False):
+    def get_metadata(self, metadata_id: str, strict=False):
         if self.metadata is None:
             return None
-        catalog_match_list = [x for x in self.metadata if x.metadata_id == catalog]
-        if len(catalog_match_list) != 1:
+        metadata_match_list = [x for x in self.metadata if x.metadata_id == metadata_id]
+        if len(metadata_match_list) != 1:
             if strict:
                 raise AssertionError("star_description.py: Searching for {} in {}, received {} matches, expected 1"
-                                     .format(catalog, self, len(catalog_match_list)))
+                                     .format(metadata_id, self, len(metadata_match_list)))
         else:
-            return catalog_match_list[0]
+            return metadata_match_list[0]
 
 
     def get_metadata_list(self):
