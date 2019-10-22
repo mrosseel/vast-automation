@@ -363,17 +363,21 @@ def tag_candidates(vastdir: str, star_descriptions: List[StarDescription]):
 
 
 def tag_starfile(selectedstarfile: str, stardict: StarDict):
-    df = pd.read_csv(selectedstarfile, delimiter=',', comment='#',
-                     names=['local_id', 'var_type', 'our_name', 'period', 'period_err', 'epoch'],
-                     dtype={'local_id': int, 'period': float, 'period_err': float}, skipinitialspace=True)
-    df = df.replace({np.nan: None})
-    logging.info(f"Selecting {len(df)} stars added by {selectedstarfile}, {df['local_id'].to_numpy()}")
-    for idx, row in df.iterrows():
-        the_star = stardict.get(row['local_id'])
-        the_star.metadata = StarFileData(row['local_id'], row['var_type'], row['our_name'], row['period'],
-                                         row['period_err'], row['epoch'])
-        the_star.metadata = SelectedStarData()
-    logging.info(f"Tagged {len(df)} stars as selected by file.")
+    try:
+        df = pd.read_csv(selectedstarfile, delimiter=',', comment='#',
+                         names=['local_id', 'minmax', 'var_type', 'our_name', 'period', 'period_err', 'epoch'],
+                         dtype={'local_id': int, 'minmax': str, 'period': float, 'period_err': float},
+                         skipinitialspace=True)
+        df = df.replace({np.nan: None})
+        logging.info(f"Selecting {len(df)} stars added by {selectedstarfile}, {df['local_id'].to_numpy()}")
+        for idx, row in df.iterrows():
+            the_star = stardict.get(row['local_id'])
+            the_star.metadata = StarFileData(row['local_id'], row['minmax'], row['var_type'], row['our_name'],
+                                             row['period'], row['period_err'], row['epoch'])
+            the_star.metadata = SelectedStarData()
+        logging.info(f"Tagged {len(df)} stars as selected by file.")
+    except Exception as ex:
+        logging.error(f"Could not read {selectedstarfile}")
 
 
 def tag_starids(star_ids: List[int], tags: List[str]):

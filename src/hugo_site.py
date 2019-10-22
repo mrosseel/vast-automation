@@ -74,6 +74,9 @@ def block(star: StarDescription, resultdir: str, post_name: str):
             else f"{metadata.period:.5f} +/- {metadata.period_err:.5f}"
         images_prefix = f"/images/{post_name}/"
         phase_url = f"{images_prefix}{filename_no_ext}.png"
+        minmax = f"<li>min or max: {metadata.minmax}</li>" if metadata.minmax is not None else ""
+        epoch = f"<li>epoch: {metadata.epoch}</li>" if metadata.epoch is not None else ""
+        var_type = metadata.var_type if metadata.var_type else "Unknown"
         result = f'''<div class="bb-l b--black-10 w-100">
         <div class="fl w-70 pa2 ba">
             <img class="special-img-class" src="{phase_url}" alt="{phase_url}"/>
@@ -83,9 +86,10 @@ def block(star: StarDescription, resultdir: str, post_name: str):
             <li>{ucac4_name}</li>
             <li>Our name: {metadata.our_name}</li>
             <li>period (d): {period:.5f}</li>
+            {minmax}
             <li>mag. range: {parsed_toml['range']}</li>
-            <li>type: {metadata.var_type}</li>
-            <li>epoch: {metadata.epoch}</li>
+            <li>type: {var_type}</li>
+            {epoch}
             <li>coords: {utils.get_hms_dms(star.coords)}</li>
             <li><a href="{images_prefix}vsx_and_star_{star.local_id:05}.png">finder chart</a></li>
             <li><a href="{images_prefix}{star.local_id:05}_ext.txt">observations</a></li>

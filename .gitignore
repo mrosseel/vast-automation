@@ -2,6 +2,7 @@ inputfiles
 current
 cmunipack*
 *.pyc
+*.log
 .idea/**/*
 **/.ipynb_checkpoints/**/*
 transfer/
@@ -17,3 +18,4 @@ support/**
 venv
 /support/vast-dev/
 /results/
+
