@@ -74,7 +74,7 @@ def block(star: StarDescription, resultdir: str, post_name: str):
             else f"{metadata.period:.5f} +/- {metadata.period_err:.5f}"
         images_prefix = f"/images/{post_name}/"
         phase_url = f"{images_prefix}{filename_no_ext}.png"
-        minmax = f"<li>min or max: {metadata.minmax}</li>" if metadata.minmax is not None else ""
+        minmax = f"<li>{metadata.minmax}</li>" if metadata.minmax is not None else ""
         epoch = f"<li>epoch: {metadata.epoch}</li>" if metadata.epoch is not None else ""
         var_type = metadata.var_type if metadata.var_type else "Unknown"
         result = f'''<div class="bb-l b--black-10 w-100">
@@ -84,8 +84,8 @@ def block(star: StarDescription, resultdir: str, post_name: str):
         <div class="fl w-30 pa2 ba">
             <ul>
             <li>{ucac4_name}</li>
-            <li>Our name: {metadata.our_name}</li>
-            <li>period (d): {period:.5f}</li>
+            <li>name: {metadata.our_name}</li>
+            <li>period (d): {period}</li>
             {minmax}
             <li>mag. range: {parsed_toml['range']}</li>
             <li>type: {var_type}</li>
@@ -104,7 +104,7 @@ def block(star: StarDescription, resultdir: str, post_name: str):
         message = template.format(type(ex).__name__, ex.args)
         logging.error(message)
         logging.error("File not found error in store and curve for star", star.path)
-        return f'<div class="fl w-100 pa2 ba">Could not load {phase_file}</div>'
+        return f'<div class="fl w-100 pa2 ba">Could not load {txt_path}</div>'
 
 
 def get_header(title: str):
