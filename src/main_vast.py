@@ -377,6 +377,9 @@ def tag_starfile(selectedstarfile: str, stardict: StarDict):
             the_star.metadata = SelectedStarData()
         logging.info(f"Tagged {len(df)} stars as selected by file.")
     except Exception as ex:
+        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+        message = template.format(type(ex).__name__, ex.args)
+        logging.error(message)
         logging.error(f"Could not read {selectedstarfile}")
 
 
