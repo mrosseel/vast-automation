@@ -70,7 +70,7 @@ def block(star: StarDescription, resultdir: str, post_name: str):
             ucac4_name = f"{star.coords}"
         else:
             ucac4_name = ucac4.catalog_id if not None else "unknown"
-        period = parsed_toml['period'] if metadata.period is None \
+        period = f"{parsed_toml['period']:.5f}" if metadata.period is None \
             else f"{metadata.period:.5f} +/- {metadata.period_err:.5f}"
         images_prefix = f"/images/{post_name}/"
         phase_url = f"{images_prefix}{filename_no_ext}.png"
