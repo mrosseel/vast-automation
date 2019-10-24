@@ -380,7 +380,7 @@ def tag_starfile(selectedstarfile: str, stardict: StarDict):
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
         logging.error(message)
-        logging.error(f"Could not read {selectedstarfile}")
+        logging.error(f"Could not read {selectedstarfile}, star {row['local_id']}")
 
 
 def tag_starids(star_ids: List[int], tags: List[str]):
