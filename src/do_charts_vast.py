@@ -47,7 +47,7 @@ def plot_lightcurve(star_tuple: Tuple[StarDescription, DataFrame], chartsdir):
     vsx_title = '' if vsx_name is None else f" ({vsx_name} - dist:{separation:.4f})"
     save_location = PurePath(chartsdir, filename_no_ext)
     start = timer()
-    upsilon_match = star_description.get_metadata('Upsilon')
+    upsilon_match = star_description.get_metadata('UPSILON')
     upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
     end = timer()
     logging.debug(f"timing upsilon stuff {end - start}")
@@ -102,7 +102,7 @@ def plot_lightcurve_jd(star: StarDescription, curve: DataFrame, chartsdir):
     vsx_title = '' if vsx_name is None else f" ({vsx_name} - dist:{separation:.4f})"
     save_location = PurePath(chartsdir, filename_no_ext+'.png')
     start = timer()
-    upsilon_match = star.get_metadata('Upsilon')
+    upsilon_match = star.get_metadata('UPSILON') if star.has_metadata('UPSILON') else None
     upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
     end = timer()
     logging.debug(f"timing upsilon stuff {end - start}")
@@ -144,7 +144,7 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
     vsx_name, _, filename_no_ext = get_star_or_vsx_name(star, suffix=f"_phase{suffix}")
     vsx_title = f"{vsx_name}\n" if vsx_name is not None else ''
     save_location = PurePath(fullphasedir, filename_no_ext+'.png')
-    upsilon_match = star.get_metadata('Upsilon')
+    upsilon_match = star.get_metadata('UPSILON')
     upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
     # print("Calculating phase diagram for", star)
     if curve is None:
@@ -192,9 +192,10 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
                            f"coords=[{coords.ra.deg}, {coords.dec.deg}]"]))
 
 
-def get_star_or_vsx_name(star_description: StarDescription, suffix: str):
-    vsx_name, separation = star_description.get_metadata_string("VSX")
-    filename_no_ext = f"{vsx_name}{suffix}" if vsx_name is not None else f"{star_description.local_id:05}{suffix}"
+def get_star_or_vsx_name(star: StarDescription, suffix: str):
+    vsx_name, separation = star.get_metadata("VSX")\
+        .get_name_and_separation() if star.has_metadata("VSX") else (None, None)
+    filename_no_ext = f"{vsx_name}{suffix}" if vsx_name is not None else f"{star.local_id:05}{suffix}"
     return vsx_name, separation, filename_no_ext.replace(' ', '_')
 
 
@@ -224,56 +225,56 @@ def read_vast_lightcurves(star: StarDescription, comp_stars: ComparisonStars, do
         f"Reading lightcurves for star {star.local_id} at path {star.path} for {star}...")
     # comp_mags = [x.vmag for x in comparison_stars]
 
-    try:
-        df = pd.read_csv(star.path, delim_whitespace=True,
-                         names=['JD', 'Vrel', 'err', 'X', 'Y', 'unknown', 'file', 'vast1', 'vast2', 'vast3', 'vast4',
-                                'vast5', 'vast6', 'vast7', 'vast8', 'vast9', 'vast10'], dtype={'JD': str})
+    # try:
+    df = pd.read_csv(star.path, delim_whitespace=True,
+                     names=['JD', 'Vrel', 'err', 'X', 'Y', 'unknown', 'file', 'vast1', 'vast2', 'vast3', 'vast4',
+                            'vast5', 'vast6', 'vast7', 'vast8', 'vast9', 'vast10'], dtype={'JD': str})
 
-        if df is None or len(df) == 0:
-            logging.info(f"No lightcurve found for {star.path}")
-            return
+    if df is None or len(df) == 0:
+        logging.info(f"No lightcurve found for {star.path}")
+        return
 
-        # adding vmag of comparison star to all diff mags
-        # TODO: this is wrong, should be composition of all comparison stars. To do error propagation use quadrature
-        # rule: http://ipl.physics.harvard.edu/wp-uploads/2013/03/PS3_Error_Propagation_sp13.pdf
-        # df['V-C'] = df['V-C'] + comparison_stars[0].vmag
-        filtered_compstars = do_compstars.get_star_compstars_from_catalog(star, comp_stars)
-        df['realV'], df['realErr'] = do_compstars.calculate_mean_value_ensemble_photometry(df, filtered_compstars)
-        df['floatJD'] = df['JD'].astype(np.float)
-        if do_charts:
-            # start = timer()
-            # logging.debug("NO LICGHTCRUVEGYET ")
-            plot_lightcurve_jd(star, df.copy(), chartsdir)
-            # end = timer()
-            # print("plotting lightcurve:", end-start)
-        if do_phase:
-            if star.has_metadata("STARFILE") and star.get_metadata("STARFILE") is None:
-                # This should not happen!!!
-                logging.warning(f"This should not happen !!!!!!!!!!!!!!!!!!!! "
-                                f"{star.local_id}, {star.get_metadata_list()}, {star.has_metadata('STARFILE')}, "
-                                f"{[star.get_metadata(x) for x in star.get_metadata_list()]}")
+    # adding vmag of comparison star to all diff mags
+    # TODO: this is wrong, should be composition of all comparison stars. To do error propagation use quadrature
+    # rule: http://ipl.physics.harvard.edu/wp-uploads/2013/03/PS3_Error_Propagation_sp13.pdf
+    # df['V-C'] = df['V-C'] + comparison_stars[0].vmag
+    filtered_compstars = do_compstars.get_star_compstars_from_catalog(star, comp_stars)
+    df['realV'], df['realErr'] = do_compstars.calculate_mean_value_ensemble_photometry(df, filtered_compstars)
+    df['floatJD'] = df['JD'].astype(np.float)
+    if do_charts:
+        # start = timer()
+        # logging.debug("NO LICGHTCRUVEGYET ")
+        plot_lightcurve_jd(star, df.copy(), chartsdir)
+        # end = timer()
+        # print("plotting lightcurve:", end-start)
+    if do_phase:
+        if star.has_metadata("STARFILE") and star.get_metadata("STARFILE") is None:
+            # This should not happen!!!
+            logging.warning(f"This should not happen !!!!!!!!!!!!!!!!!!!! "
+                            f"{star.local_id}, {star.get_metadata_list()}, {star.has_metadata('STARFILE')}, "
+                            f"{[star.get_metadata(x) for x in star.get_metadata_list()]}")
 
-            if star.get_metadata("STARFILE") is not None:
-                period = star.get_metadata("STARFILE").period
-                logging.debug(f"Using provided period for star {star.local_id}: {period}")
-                plot_phase_diagram(star, df.copy(), phasedir, period=period)
-            else:
-                plot_phase_diagram(star, df.copy(), phasedir, period=None, suffix="")
-        if do_aavso:
-            # TODO put this in settings.txt
-            sitelat = '-22 57 10'
-            sitelong = '-68 10 49'
-            sitealt = 2500
-            observer = 'ZZZ'
-            do_aavso_report.report(star, df.copy(), target_dir=aavsodir, vastdir=basedir, sitelat=sitelat,
-                                   sitelong=sitelong, sitealt=sitealt, comparison_stars=comp_stars, filter='V',
-                                   observer=observer, chunk_size=aavso_limit)
+        if star.get_metadata("STARFILE") is not None:
+            period = star.get_metadata("STARFILE").period
+            logging.debug(f"Using provided period for star {star.local_id}: {period}")
+            plot_phase_diagram(star, df.copy(), phasedir, period=period)
+        else:
+            plot_phase_diagram(star, df.copy(), phasedir, period=None, suffix="")
+    if do_aavso:
+        # TODO put this in settings.txt
+        sitelat = '-22 57 10'
+        sitelong = '-68 10 49'
+        sitealt = 2500
+        observer = 'ZZZ'
+        do_aavso_report.report(star, df.copy(), target_dir=aavsodir, vastdir=basedir, sitelat=sitelat,
+                               sitelong=sitelong, sitealt=sitealt, comparison_stars=comp_stars, filter='V',
+                               observer=observer, chunk_size=aavso_limit)
 
-    except Exception as ex:
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-        message = template.format(type(ex).__name__, ex.args)
-        logging.error(message)
-        logging.error("File not found error in store and curve for star", star.path)
+    # except Exception as ex:
+    #     template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+    #     message = template.format(type(ex).__name__, ex.args)
+    #     logging.error(message)
+    #     logging.error(f"Exception during read_lightcurve for {star.path}")
 
     end = timer()
     logging.debug(f"Full lightcurve/phase: {end - start}")

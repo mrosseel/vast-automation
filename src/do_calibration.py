@@ -156,10 +156,10 @@ def get_candidates(threshold_prob=0.5, check_flag=False):
         return result
     positions = reading.read_world_positions(settings.worldposdir)
     for index, row in df.iterrows():
-        upsilon_match = UpsilonData(metadata_id='Upsilon', var_type=row['label'], probability=row['probability'],
+        upsilon_match = UpsilonData(var_type=row['label'], probability=row['probability'],
                                     flag=row['flag'], period=row['period'])
         result.append(
-            StarDescription(local_id=index, metadata=upsilon_match,
+            StarDescription(local_id=index, metadata={'UPSILON': upsilon_match},
                             coords=SkyCoord(positions[int(index)][0], positions[int(index)][1], unit='deg')))
     return result
 
@@ -170,7 +170,7 @@ def add_candidates_to_star_descriptions(stars: List[StarDescription], threshold_
     if df is None:
         return stars
     for index, row in df.iterrows():
-        upsilon_match = UpsilonData(metadata_id='Upsilon', var_type=row['label'], probability=row['probability'],
+        upsilon_match = UpsilonData(var_type=row['label'], probability=row['probability'],
                                     flag=row['flag'], period=row['period'])
         stars[index].metadata.append(upsilon_match)
     return stars
@@ -263,20 +263,25 @@ def get_vsx_in_field(star_descriptions, max_separation=0.01):
 ################ CATALOG related functions #########################
 
 def add_metadata_to_star_descriptions(stars: List[StarDescription],
-                                      metadata: List[object] = None) -> List[StarDescription]:
+                                      metadata: List[object],  strict: True) -> List[StarDescription]:
     """
     Adds metadata to a list of star descriptions for later filtering
+    :param strict:
     :param stars:
     :param metadata: list of strings and StarMetaData objects
     :return: the list of stars, augmented with metadata
     """
     if metadata is None:
-        metadata = ["SELECTED"]
+        raise ValueError("Fill in the metadata list please.")
     for sd in stars:
         for entry in metadata:
             if isinstance(entry, str):
-                sd.metadata = StarMetaData(metadata_id=entry)
+                if strict and sd.has_metadata(entry):
+                    raise ValueError(f"Trying to add metadata {entry} but it already exists")
+                sd.metadata = StarMetaData(key=entry)
             else:
+                if strict and sd.has_metadata(entry.key):
+                    raise ValueError(f"Trying to add metadata {entry} but it already exists")
                 sd.metadata.append(entry)
     return stars
 
@@ -286,7 +291,7 @@ def _add_vsx_metadata_to_star_description(catalog_name: str, star: StarDescripti
     assert star.metadata is not None
     vsx_name = vsx_dict['metadata'][index_vsx]['Name']
     star.aavso_id = vsx_name
-    match = CatalogData(metadata_id=catalog_name, catalog_id=vsx_name,
+    match = CatalogData(key=catalog_name, catalog_id=vsx_name,
                         name=vsx_name, separation=separation,
                         coords=SkyCoord(vsx_dict['ra_deg_np'][index_vsx], vsx_dict['dec_deg_np'][index_vsx],
                                         unit='deg'))
@@ -364,7 +369,7 @@ def add_apass_to_star_descriptions(star_descriptions, radius=0.01, row_limit=2):
             catalog_id = 'TODO'  # apass['recno'][0].decode("utf-8")
             coord_catalog = SkyCoord(apass['RAJ2000'], apass['DEJ2000'], unit='deg')
             mindist = star.coords.separation(SkyCoord(apass['RAJ2000'], apass['DEJ2000'], unit='deg'))
-            star.metadata = CatalogData(metadata_id="APASS", catalog_id=catalog_id,
+            star.metadata = CatalogData(key="APASS", catalog_id=catalog_id,
                                         name=catalog_id, coords=coord_catalog, separation=mindist)
             logging.info(
                 "APASS: Star {} has vmag={}, error={:.5f}, dist={}".format(star.local_id, star.vmag, star.e_vmag,
@@ -407,7 +412,7 @@ def add_info_to_star_description(star, vmag, e_vmag, catalog_id, catalog_name, c
     star.vmag = vmag
     star.e_vmag = e_vmag
     mindist = star.coords.separation(coord_catalog)
-    star.metadata = CatalogData(metadata_id=catalog_name, catalog_id=catalog_id,
+    star.metadata = CatalogData(key=catalog_name, catalog_id=catalog_id,
                                 name=catalog_id, coords=coord_catalog, separation=mindist)
     logging.debug("Add info: Star {} has vmag={}, error={}, dist={}".format(star.local_id, star.vmag, star.e_vmag,
                                                                             mindist))

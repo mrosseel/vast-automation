@@ -1,15 +1,17 @@
-from typing import List
+from typing import List, Dict
 from astropy.coordinates import SkyCoord
+import logging
+import traceback
 
 
 class StarMetaData:
-    def __init__(self, metadata_id=None):
+    def __init__(self, key: str = None):
         # the name of the catalog
-        self.metadata_id = metadata_id
+        self.key = key
 
 
     def __repr__(self):
-        return f'metadata_id:{self.metadata_id}'
+        return f'key:{self.key}'
 
 
     def __str__(self):
@@ -18,7 +20,7 @@ class StarMetaData:
 
 class StarDescription:
     def __init__(self, local_id: int = None, aavso_id: str = None, coords: SkyCoord = None, vmag: float = None,
-                 e_vmag: float = None, metadata: List[StarMetaData] = None,
+                 e_vmag: float = None, metadata: Dict[str, StarMetaData] = None,
                  label: str = None, xpos: float = None, ypos: float = None, path: str = None, obs: int = None):
         # star id given by munipack
         self.local_id = local_id
@@ -31,7 +33,7 @@ class StarDescription:
         # error on vmag as provided by one of the matching catalogs
         self.e_vmag = e_vmag
         # arrray of catalogs matching this star
-        self._metadata = metadata if metadata is not None else []
+        self._metadata = metadata if metadata is not None else {}
         # x position on the reference frame
         self.xpos = xpos
         # y position on the reference frame
@@ -51,42 +53,31 @@ class StarDescription:
 
     @metadata.setter
     def metadata(self, val: StarMetaData):
-        self._metadata.append(val)
+        self.set_metadata(val, strict=False)
 
 
-    def has_metadata(self, metadata_id: str) -> bool:
+    def set_metadata(self, val: StarMetaData, strict=True):
+        if strict and val.key in self._metadata:
+            error = f"Tried to add metadata with key {val.key} but this is already present."
+            print(traceback.print_exc())
+            logging.error(error)
+            raise ValueError(error)
+        self._metadata[val.key] = val
+
+
+    def has_metadata(self, key: str) -> bool:
         """ does this star have a catalog with a certain name? """
-        if self.metadata is not None:
-            catalog_match_list = [x for x in self.metadata if x.metadata_id == metadata_id]
-            if len(catalog_match_list) >= 1:
-                return True
-        else:
-            return False
+        return key in self._metadata
 
 
-    def get_metadata(self, metadata_id: str, strict=False):
-        if self.metadata is None:
+    def get_metadata(self, key: str):
+        if self._metadata is None or not self.has_metadata(key):
             return None
-        metadata_match_list = [x for x in self.metadata if x.metadata_id == metadata_id]
-        if len(metadata_match_list) != 1:
-            if strict:
-                raise AssertionError("star_description.py: Searching for {} in {}, received {} matches, expected 1"
-                                     .format(metadata_id, self, len(metadata_match_list)))
-        else:
-            return metadata_match_list[0]
+        return self._metadata[key]
 
 
     def get_metadata_list(self):
-        return [x.metadata_id for x in self.metadata]
-
-
-    def get_metadata_string(self, catalog, strict=False):
-        # extract matching strings from star_descr
-        # will give an assertion error if the catalog match is not unique
-        result = self.get_metadata(catalog, strict)
-        if result is None:
-            return None, None
-        return result.catalog_id, result.separation
+        return list(self.metadata.keys())
 
 
     def __repr__(self):

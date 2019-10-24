@@ -65,7 +65,7 @@ def block(star: StarDescription, resultdir: str, post_name: str):
             # txt can be in candidates or selected.
             txt_path = PurePath(resultdir, 'phase_selected/txt', filename_no_ext + '.txt')
             parsed_toml = toml.load(txt_path)
-        ucac4 = star.get_metadata("UCAC4", strict=False)
+        ucac4 = star.get_metadata("UCAC4")
         if ucac4 is None:
             ucac4_name = f"{star.coords}"
         else:

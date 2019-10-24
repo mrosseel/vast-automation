@@ -104,7 +104,7 @@ def run_do_rest(args):
                                'light_candidates/', 'aavso_candidates/', do_phase=do_phase, do_charts=do_charts,
                                do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of candidates")
         if args.vsx:
-            do_calibration.add_metadata_to_star_descriptions(vsx_stars, ["SELECTED"])
+            do_calibration.add_metadata_to_star_descriptions(vsx_stars, ["SELECTED"], strict=False)
             logging.info(f"Plotting {len(vsx_stars)} vsx stars...")
             do_charts_vast.run(vsx_stars, comp_stars, vastdir, resultdir, 'phase_vsx/', 'light_vsx/', 'aavso_vsx/',
                                do_phase=do_phase, do_charts=do_charts, do_aavso=do_aavso, nr_threads=thread_count,
@@ -359,7 +359,7 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
 def tag_candidates(vastdir: str, star_descriptions: List[StarDescription]):
     candidate_ids = get_autocandidates(vastdir)
     selected_stars = do_calibration.select_star_descriptions(candidate_ids, star_descriptions)
-    do_calibration.add_metadata_to_star_descriptions(selected_stars, ["SELECTED", "CANDIDATE"])
+    do_calibration.add_metadata_to_star_descriptions(selected_stars, ["SELECTED", "CANDIDATE"], strict=False)
 
 
 def tag_starfile(selectedstarfile: str, stardict: StarDict):
