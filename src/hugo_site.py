@@ -19,8 +19,9 @@ def run(post_name: str, selected_stars: List[StarDescription], resultdir: str):
     sitedir = f"{os.getcwd()}/site/vsx/"
     copy_files(post_name, resultdir, sitedir)
     result = get_header(post_name)
+    sorted_stars = sorted(selected_stars, key=lambda x: x.get_metadata('STARFILE').our_name)
     part_block = partial(block, resultdir=resultdir, post_name=post_name)
-    for star in selected_stars:
+    for star in sorted_stars:
         result += part_block(star)
     postdir = f"{sitedir}/content/posts/{post_name}/"
     create_dir(postdir)
