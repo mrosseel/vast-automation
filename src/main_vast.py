@@ -350,7 +350,7 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
 
     if args.selectedstarfile:
         tag_starfile(args.selectedstarfile, stardict)
-        logging.info(f"Succesfully read {filter(lambda x: x.has_metadata('STARFILE'), star_descriptions)} "
+        logging.info(f"Succesfully read {len(list(filter(lambda x: x.has_metadata('STARFILE'), star_descriptions)))} "
                      f"stars from file")
 
     # add ucac4 id's
@@ -376,7 +376,7 @@ def tag_starfile(selectedstarfile: str, stardict: StarDict):
             the_star = stardict.get(row['local_id'])
             if the_star is None:
                 logging.error(f"Could not find star {row['local_id']}, consider removing it from your txt file")
-                pass
+                continue
             the_star.metadata = StarFileData(row['local_id'], row['minmax'], row['var_type'], row['our_name'],
                                              row['period'], row['period_err'], row['epoch'])
             the_star.metadata = SelectedStarData()
