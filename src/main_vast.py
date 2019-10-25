@@ -376,7 +376,6 @@ def tag_starfile(selectedstarfile: str, stardict: StarDict):
             the_star = stardict.get(row['local_id'])
             if the_star is None:
                 logging.error(f"Could not find star {row['local_id']}, consider removing it from your txt file")
-                pass
             the_star.metadata = StarFileData(row['local_id'], row['minmax'], row['var_type'], row['our_name'],
                                              row['period'], row['period_err'], row['epoch'])
             the_star.metadata = SelectedStarData()
