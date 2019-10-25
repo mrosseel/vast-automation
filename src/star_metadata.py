@@ -59,6 +59,13 @@ class StarFileData(StarMetaData):
         self.period_err = period_err
         self.epoch = epoch
 
+    def __repr__(self):
+        return f'Key:{self.key}, {self.local_id} {self.minmax} {self.var_type} {self.our_name} {self.period}' \
+               f' {self.period_err} {self.epoch}'
+
+    def __str__(self):
+        return self.__repr__()
+
 
 class CatalogData(StarMetaData):
     def __init__(self, key=None, catalog_id=None, name=None, coords: SkyCoord = None, separation=-1):
