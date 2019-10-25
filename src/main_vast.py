@@ -351,7 +351,8 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
     if args.selectedstarfile:
         tag_starfile(args.selectedstarfile, stardict)
         logging.info(f"Succesfully read {len(list(filter(lambda x: x.has_metadata('STARFILE'), star_descriptions)))} "
-                     f"stars from file")
+                     f"stars from file:"
+                     f" {[x.local_id for x in list(filter(lambda x: x.has_metadata('STARFILE'), star_descriptions))]}")
 
     # add ucac4 id's
     starfile_stars = utils.get_stars_with_metadata(star_descriptions, "STARFILE")
