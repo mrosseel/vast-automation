@@ -34,8 +34,28 @@ class TestDoCompstars(unittest.TestCase):
         catalogmags = [11.8, 12.2, 13.1]
         comp_stars = ComparisonStars(None, None, observations, catalogmags, None)
 
-        realV, realErr = do_compstars.calculate_mean_value_ensemble_photometry(df, comp_stars)
+        realV, realErr = do_compstars.calculate_ensemble_photometry(df, comp_stars,
+                                                                    do_compstars.mean_value_ensemble_method)
         self.assertEqual(15.411, realV[0])
+        self.assertEqual(0.0121, round(realErr[0], 4))
+
+    def test_calculate_weighted_value_ensemble_photometry(self):
+        data = {'JD': ['1'],
+                'Vrel': [15.414],
+                'err': [0.012]
+                }
+        df = DataFrame(data, columns=['JD', 'Vrel', 'err'])
+        # {JD, (mag, magerr)}
+        observations_1 = {'1': (11.775, 0.001)}
+        observations_2 = {'1': (12.220, 0.0012)}
+        observations_3 = {'1': (13.114, 0.0021)}
+        observations = [observations_1, observations_2, observations_3]
+        catalogmags = [11.8, 12.2, 13.1]
+        comp_stars = ComparisonStars(None, None, observations, catalogmags, None)
+
+        realV, realErr = do_compstars.calculate_ensemble_photometry(df, comp_stars,
+                                                                    do_compstars.weighted_value_ensemble_method)
+        self.assertEqual(15.415, round(realV[0], 3))
         self.assertEqual(0.0121, round(realErr[0], 4))
 
 

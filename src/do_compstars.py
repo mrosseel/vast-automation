@@ -13,6 +13,7 @@ import math
 from comparison_stars import ComparisonStars
 from pathlib import PurePath
 import operator
+
 StarDict = Dict[int, StarDescription]
 
 
@@ -69,14 +70,10 @@ def _get_list_of_likely_constant_stars(vastdir):
     return result
 
 
-# DF should have JD, Vrel, err
-def calculate_mean_value_ensemble_photometry(df, comp_stars: ComparisonStars):
+def calculate_ensemble_photometry(df, comp_stars, ensemble_method):
     assert comp_stars is not None
     logging.debug(f"Start calculate_real with {df.shape[0]} rows and {len(comp_stars.observations)} comp stars.")
 
-    # the average of the real magnitude of the comparison stars
-    meanreal = np.mean(comp_stars.comp_catalogmags)
-    logging.debug(f"meanreal is {meanreal}")
     # error = sqrt((vsig**2+(1/n sum(sigi)**2)))
     realV = []
     realErr = []
@@ -84,35 +81,44 @@ def calculate_mean_value_ensemble_photometry(df, comp_stars: ComparisonStars):
         # logging.debug(f"row is {row}, comp_mags is {comp_stars.comp_catalogmags}")
         comp_obs = []
         comp_err = []
-        for compstar in comp_stars.observations:
+        comp_real = []
+        for idx, compstar in enumerate(comp_stars.observations):
             jd = row['JD']
             if jd in compstar:
                 comp_obs.append(float(compstar[jd][0]))
                 comp_err.append(float(compstar[jd][1]))
+                comp_real.append(float(comp_stars.comp_catalogmags[idx]))
             else:
                 logging.debug(f"Key error for {row['JD']}, {comp_stars.ids}")
 
-        meanobs = -1
-        meanerr = -1
         if len(comp_obs) > 0 and len(comp_obs) == len(comp_err):
-            meanobs = np.mean(comp_obs)
-            # Vobs - Cobs + Creal = V
-            realV.append(row['Vrel'] - meanobs + meanreal)
-            meanerr = math.sqrt(math.pow(row['err'], 2) + math.pow(np.mean(comp_err), 2))
-            realErr.append(meanerr)
+            v = ensemble_method(row['Vrel'],  comp_obs, comp_err, comp_real)
+            err = math.sqrt(math.pow(row['err'], 2) + math.pow(np.mean(comp_err), 2))
+            realV.append(v)
+            realErr.append(err)
         else:  # error in the comparison stars
             realV.append(row['Vrel'])
             realErr.append(row['err'])
-        if meanobs == -1 or meanerr == -1:
-            logging.info(f"vrel: {row['Vrel']}, meanobs: {meanobs}, compobs: {comp_obs},  meanreal: {meanreal}, "
-                         f"real {comp_stars.comp_catalogmags},  vrel: {row['Vrel'] - meanobs + meanreal}, meanerr: {meanerr},"
-                         f"nr of compstar observations={len(compstar)}, nr of variable observations={len(df)}")
-            logging.info(f"{len(comp_obs)}, {len(comp_obs)} == {len(comp_err)}")
-        # logging.debug(f"Results of photometry: V diff: {df['Vrel'].mean()-np.mean(realV)}, err diff: {df['err'].mean()-np.mean(realErr)}")
     return realV, realErr
 
 
+# DF should have JD, Vrel, err
+def mean_value_ensemble_method(vrel, comp_obs, comp_err, comp_real):
+    # Vobs - Cobs + Creal = V
+    return np.mean(np.add(np.subtract(np.repeat(vrel, len(comp_obs)), comp_obs), comp_real))
+
+
+def weighted_value_ensemble_method(vrel, comp_obs, comp_err, comp_real):
+    vx = np.add(np.subtract(np.repeat(vrel, len(comp_obs)), comp_obs), comp_real)
+    sum_vx_divided_by_errors = np.sum(np.divide(vx, comp_err))
+    sum_inverse_errors = np.sum(np.divide(np.ones(len(comp_err)), comp_err))
+    logging.debug(f"summags: {sum_vx_divided_by_errors}, sum inverse: {sum_inverse_errors}")
+    vw = np.divide(sum_vx_divided_by_errors, sum_inverse_errors)  # eq 6
+    return vw
+
+
 def add_closest_compstars(stars: List[StarDescription], comp_stars: ComparisonStars, limit=10):
+    logging.info("Setting closest compstars")
     for star in stars:
         star.metadata = CompStarData(compstar_ids=_closest_compstar_ids(star, comp_stars, limit))
 
@@ -127,10 +133,11 @@ def _closest_compstar_ids(star: StarDescription, comp_stars: ComparisonStars, li
 def get_star_compstars_from_catalog(star: StarDescription, comp_stars: ComparisonStars):
     compstar_match: star_description.CompStarData = star.get_metadata("COMPSTARS")
     sd_ids = compstar_match.compstar_ids
-    # skip part of the work if the list is equal
-    if len(set(sd_ids).difference(comp_stars.ids)) == 0:
+    # skip part of the work if the list is equal. Biggest set first otherwise diff is always empty
+    if len(set(comp_stars.ids).difference(set(sd_ids))) == 0:
         return comp_stars
     filtered_compstars = comp_stars.get_filtered_comparison_stars(sd_ids)
+    logging.debug(f"get star compstars from catalog: {len(filtered_compstars.ids)}, {filtered_compstars.ids}")
     return filtered_compstars
 
 

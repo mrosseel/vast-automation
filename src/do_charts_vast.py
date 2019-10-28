@@ -239,7 +239,7 @@ def read_vast_lightcurves(star: StarDescription, comp_stars: ComparisonStars, do
     # rule: http://ipl.physics.harvard.edu/wp-uploads/2013/03/PS3_Error_Propagation_sp13.pdf
     # df['V-C'] = df['V-C'] + comparison_stars[0].vmag
     filtered_compstars = do_compstars.get_star_compstars_from_catalog(star, comp_stars)
-    df['realV'], df['realErr'] = do_compstars.calculate_mean_value_ensemble_photometry(df, filtered_compstars)
+    df['realV'], df['realErr'] = do_compstars.calculate_weighted_value_ensemble_photometry(df, filtered_compstars)
     df['floatJD'] = df['JD'].astype(np.float)
     if do_charts:
         # start = timer()

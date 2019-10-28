@@ -80,7 +80,11 @@ def run_do_rest(args):
     starfile_stars = utils.get_stars_with_metadata(star_descriptions, "STARFILE")
     interesting_stars = starfile_stars + vsx_stars + candidate_stars
 
-    comp_stars = read_comparison_stars(star_descriptions, args.checkstarfile, vastdir, stardict)
+    # set ucac4 stars selected
+    ucac4 = UCAC4()
+    ucac4.add_ucac4_to_sd(starfile_stars)
+
+    comp_stars = read_comparison_stars(star_descriptions, args.checkstarfile, vastdir, stardict, ucac4)
 
     # Set comp stars for every star
     logging.info("Setting per star comparison stars...")
@@ -88,10 +92,6 @@ def run_do_rest(args):
         utils.add_metadata(star_descriptions, CompStarData(compstar_ids=comp_stars.ids))
     else:
         do_compstars.add_closest_compstars(interesting_stars, comp_stars, 10)
-
-    # set ucac4 stars selected
-    ucac4 = UCAC4()
-    ucac4.add_ucac4_to_sd(starfile_stars)
 
     if args.allstars:
         do_charts_vast.run(star_descriptions, comp_stars, vastdir, resultdir, 'phase_all/', 'light_all/', 'aavso_all/',
@@ -124,12 +124,13 @@ def run_do_rest(args):
 
 
 def read_comparison_stars(star_descriptions: List[StarDescription], checkstarfile: str, vastdir: str,
-                          stardict: StarDict) -> ComparisonStars:
+                          stardict: StarDict, ucac4: UCAC4) -> ComparisonStars:
     if checkstarfile:
         # load comparison stars
         checkstars = read_checkstars(checkstarfile)
         comparison_stars_1, comparison_stars_1_desc = do_compstars.get_fixed_compstars(star_descriptions, checkstars)
     else:
+        ucac4.add_ucac4_to_sd(star_descriptions)
         comparison_stars_1, comparison_stars_1_desc = do_compstars.get_calculated_compstars(vastdir, stardict)
     comp_observations = []
     logging.info(f"Using comparison star ids:{comparison_stars_1}")
