@@ -78,6 +78,7 @@ def run_do_rest(args):
     candidate_stars = utils.get_stars_with_metadata(star_descriptions, "CANDIDATE", exclude="VSX")
     vsx_stars = utils.get_stars_with_metadata(star_descriptions, "VSX")
     starfile_stars = utils.get_stars_with_metadata(star_descriptions, "STARFILE")
+    write_augmented_starfile(resultdir, starfile_stars)
     interesting_stars = starfile_stars + vsx_stars + candidate_stars
 
     # set ucac4 stars selected
@@ -273,6 +274,19 @@ def write_augmented_all_stars(readdir: str, writedir: str, stardict: StarDict):
                     f"{star_id}\t{cacheentry.aavso_id}\t{utils.get_hms_dms(cacheentry.coords)}\t{cacheentry.coords.ra} {cacheentry.coords.dec}\n")
 
 
+# naam, ra, dec, max, min, type, periode, epoch?
+def write_augmented_starfile(writedir: str, starfile_stars: List[StarDescription]):
+    newname = f"{writedir}starfile.txt"
+    logging.info(f"Writing {newname}...")
+    with open(newname, 'w') as outfile:
+        outfile.write(f"# our_name,ra,dec,minmax,var_type,period,epoch\n")
+        for star in starfile_stars:
+            metadata: StarFileData = star.get_metadata("STARFILE")
+            outfile.write(
+                f"{metadata.our_name},{star.coords.ra.deg:.5f},{star.coords.dec.deg:.5f},{metadata.minmax},"
+                f"{metadata.var_type},{metadata.period},{metadata.epoch}\n")
+
+
 def write_vsx_stars(resultdir, results_ids, stars: List[StarDescription]):
     newname = f"{resultdir}vsx_stars.txt"
     logging.info(f"Writing {newname}...")
@@ -355,6 +369,9 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
                      f"stars from file:"
                      f" {[x.local_id for x in list(filter(lambda x: x.has_metadata('STARFILE'), star_descriptions))]}")
 
+    if args.owncatalog:
+        tag_owncatalog(args.owncatalog, stardict)
+
     # add ucac4 id's
     starfile_stars = utils.get_stars_with_metadata(star_descriptions, "STARFILE")
     return star_descriptions
@@ -392,6 +409,15 @@ def tag_starfile(selectedstarfile: str, stardict: StarDict):
         logging.error(message)
         logging.error(f"Could not read {selectedstarfile}, star {row['local_id']}")
 
+
+def tag_owncatalog(owncatalog: str, stardict: StarDict):
+    # outfile.write(f"# our_name,ra,dec,minmax,var_type,period,epoch\n")
+    df = pd.read_csv(owncatalog, delimiter=',', comment='#',
+                     names=['our_name', 'ra', 'dec', 'minmax', 'var_type', 'period', 'epoch'],
+                     dtype={'ra': float, 'dec': float, 'minmax': str, 'period': float, 'period_err': float},
+                     skipinitialspace=True)
+    df = df.replace({np.nan: None})
+    # TODO create catalog and match
 
 def tag_starids(star_ids: List[int], tags: List[str]):
     print()

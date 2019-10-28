@@ -45,7 +45,7 @@ def get_calculated_compstars(vastdir, stardict: StarDict):
     likely = _get_list_of_likely_constant_stars(vastdir)
     stars = [stardict[x] for x in likely if x in stardict]
 
-    # only want the best stars
+    # only want the best stars with max possible observations
     max_obs = np.max([x.obs for x in stars])
     max_obs_stars = [x for x in stars if x.obs == max_obs]
     logging.info(f"Stars with maximum of observations: {len(max_obs_stars)}")
@@ -55,7 +55,9 @@ def get_calculated_compstars(vastdir, stardict: StarDict):
         return min(len(array), max_size)
 
 
+    # stars are sorted according to their magnitude errors
     min_err_stars = sorted(max_obs_stars, key=operator.attrgetter('e_vmag'))
+    # only first 100 are kept
     min_err_stars_clipped = min_err_stars[:limit(min_err_stars, 100)]
     logging.info(f"Using {len(min_err_stars_clipped)} calculated comparison stars: {min_err_stars_clipped[:3]}")
     return [x.local_id for x in min_err_stars_clipped], min_err_stars_clipped

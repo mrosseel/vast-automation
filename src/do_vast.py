@@ -16,6 +16,8 @@ if __name__ == '__main__':
                         nargs='?', required=True)
     parser.add_argument('-k', '--checkstarfile', help="The bright and stable stars used to do ensemble photometry",
                         nargs='?', required=False)
+    parser.add_argument('-o', '--owncatalog', help="Supply a file to identify stars known to you",
+                        nargs='?', required=False)
     parser.add_argument('-v', '--vsx', help="Add vsx stars to field charts/reporting list", action="store_true")
     parser.add_argument('-!', '--allstars', help="Generate phase/light/aavso for all stars. WARNING: takes long",
                         action="store_true")
