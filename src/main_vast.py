@@ -77,6 +77,8 @@ def run_do_rest(args):
     write_augmented_autocandidates(vastdir, resultdir, stardict)
     write_augmented_all_stars(vastdir, resultdir, stardict)
     candidate_stars = utils.get_stars_with_metadata(star_descriptions, "CANDIDATE", exclude="VSX")
+    rmhhmb_stars = utils.get_stars_with_metadata(star_descriptions, "RMH+HMB")
+    candidate_stars = utils.add_star_lists(candidate_stars, rmhhmb_stars)
     vsx_stars = utils.get_stars_with_metadata(star_descriptions, "VSX")
     starfile_stars = utils.get_stars_with_metadata(star_descriptions, "STARFILE")
     write_augmented_starfile(resultdir, starfile_stars)

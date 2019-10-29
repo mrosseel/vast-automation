@@ -98,3 +98,9 @@ def metadata_filter(star: StarDescription, catalog_name, exclude=[]):
 
 def sort_rmh_hmb(stars: List[StarDescription]):
     return sorted(stars, key=lambda x: int(x.get_metadata('STARFILE').our_name[8:]))
+
+
+def add_star_lists(list1: List[StarDescription], list2: List[StarDescription]):
+    ids = [x.local_id for x in list1]
+    list2_filtered = [x for x in list2 if x.local_id not in ids]
+    return list1 + list2_filtered
