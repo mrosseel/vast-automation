@@ -14,7 +14,7 @@ import logging
 import subprocess
 import math
 import matplotlib as mplotlib
-from multiprocessing import cpu_count
+from multiprocessing import cpu_count, Manager
 from comparison_stars import ComparisonStars
 from functools import partial
 from gatspy.periodic import LombScargleFast
@@ -216,8 +216,9 @@ def format_date(x, pos=None):
     return r.date[thisind].strftime('%Y-%m-%d')
 
 
-def read_vast_lightcurves(star: StarDescription, comp_stars: ComparisonStars, do_charts, do_phase, do_aavso,
+def read_vast_lightcurves(star: StarDescription, ns, do_charts, do_phase, do_aavso,
                           aavso_limit, basedir: str, chartsdir: PurePath, phasedir: PurePath, aavsodir: PurePath):
+    comp_stars: ComparisonStars = ns.comp_stars
     start = timer()
     if star.path is '':
         logging.debug(f"Path for {star.local_id} is empty")
@@ -238,10 +239,6 @@ def read_vast_lightcurves(star: StarDescription, comp_stars: ComparisonStars, do
         logging.info(f"No lightcurve found for {star.path}")
         return
 
-    # adding vmag of comparison star to all diff mags
-    # TODO: this is wrong, should be composition of all comparison stars. To do error propagation use quadrature
-    # rule: http://ipl.physics.harvard.edu/wp-uploads/2013/03/PS3_Error_Propagation_sp13.pdf
-    # df['V-C'] = df['V-C'] + comparison_stars[0].vmag
     filtered_compstars = do_compstars.get_star_compstars_from_catalog(star, comp_stars)
     df['realV'], df['realErr'] = do_compstars.calculate_ensemble_photometry(df, filtered_compstars,
                                                                             do_compstars.weighted_value_ensemble_method)
@@ -304,8 +301,10 @@ def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir:
         trash_and_recreate_dir(chartsdir)
     if do_aavso:
         trash_and_recreate_dir(aavsodir)
+    ns = Manager().Namespace()
+    ns.comp_stars = comp_stars
 
-    func = partial(read_vast_lightcurves, basedir=basedir, comp_stars=comp_stars, do_charts=do_charts,
+    func = partial(read_vast_lightcurves, basedir=basedir, ns=ns, do_charts=do_charts,
                    do_phase=do_phase, do_aavso=do_aavso, aavso_limit=aavsolimit,
                    phasedir=phasedir, chartsdir=chartsdir, aavsodir=aavsodir)
     with tqdm.tqdm(total=len(star_descriptions), desc=desc, unit='stars') as pbar:
