@@ -41,14 +41,18 @@ def get_fixed_compstars(star_descriptions: List[StarDescription], comparison_sta
     return [x.local_id for x in star_desc_result], star_desc_result
 
 
-def get_calculated_compstars(vastdir, stardict: StarDict):
+def get_calculated_compstars(vastdir, stardict: StarDict, maglimit=15):
     likely = _get_list_of_likely_constant_stars(vastdir)
-    stars = [stardict[x] for x in likely if x in stardict]
+    stars: List[StarDescription] = [stardict[x] for x in likely if x in stardict]
 
+    # restrict to maglimit
+    mag_list = list(filter(lambda x: x.vmag < maglimit, stars))
     # only want the best stars with max possible observations
+    max_obs_sorted = sorted(mag_list, key=lambda x: x.obs, reverse=True)
     max_obs = np.max([x.obs for x in stars])
-    max_obs_stars = [x for x in stars if x.obs == max_obs]
-    logging.info(f"Stars with maximum of observations: {len(max_obs_stars)}")
+    max_obs_clipped = max_obs_sorted[:1000]
+    logging.info(f"Picked {len(max_obs_clipped)} stars with last star having "
+                 f"{max_obs_clipped[-2:-1][0].obs*100/max_obs} % of max observations")
 
 
     def limit(array, max_size):
@@ -56,7 +60,7 @@ def get_calculated_compstars(vastdir, stardict: StarDict):
 
 
     # stars are sorted according to their magnitude errors
-    min_err_stars = sorted(max_obs_stars, key=operator.attrgetter('e_vmag'))
+    min_err_stars = sorted(max_obs_clipped, key=operator.attrgetter('e_vmag'))
     # only first 100 are kept
     min_err_stars_clipped = min_err_stars[:limit(min_err_stars, 100)]
     logging.info(f"Using {len(min_err_stars_clipped)} calculated comparison stars: {min_err_stars_clipped[:3]}")
