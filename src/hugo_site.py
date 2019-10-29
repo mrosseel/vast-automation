@@ -19,7 +19,7 @@ def run(post_name: str, selected_stars: List[StarDescription], resultdir: str):
     sitedir = f"{os.getcwd()}/site/vsx/"
     copy_files(post_name, resultdir, sitedir)
     result = get_header(post_name)
-    sorted_stars = sorted(selected_stars, key=lambda x: int(x.get_metadata('STARFILE').our_name[8:]))
+    sorted_stars = utils.sort_rmh_hmb(selected_stars)
     part_block = partial(block, resultdir=resultdir, post_name=post_name)
     for star in sorted_stars:
         result += part_block(star)
@@ -57,7 +57,7 @@ def copy_files(post_name: str, resultdir: str, sitedir: str):
 
 def block(star: StarDescription, resultdir: str, post_name: str):
     try:
-        vsx_name, separation, filename_no_ext = do_charts_vast.get_star_or_vsx_name(star, suffix="_phase")
+        vsx_name, separation, filename_no_ext = do_charts_vast.get_star_or_catalog_name(star, suffix="_phase")
         txt_path = PurePath(resultdir, 'phase_candidates/txt', filename_no_ext + '.txt')
         metadata: StarFileData = star.get_metadata("STARFILE")
         try:

@@ -43,7 +43,7 @@ def plot_lightcurve(star_tuple: Tuple[StarDescription, DataFrame], chartsdir):
     curve = star_tuple[1]
     star_id = star_description.local_id
     logging.debug(f"Plotting light curve for {star_id}")
-    vsx_name, separation, filename_no_ext = get_star_or_vsx_name(star_description, suffix=f"_light")
+    vsx_name, separation, filename_no_ext = get_star_or_catalog_name(star_description, suffix=f"_light")
     vsx_title = '' if vsx_name is None else f" ({vsx_name} - dist:{separation:.4f})"
     save_location = PurePath(chartsdir, filename_no_ext)
     start = timer()
@@ -98,7 +98,7 @@ def plot_lightcurve(star_tuple: Tuple[StarDescription, DataFrame], chartsdir):
 def plot_lightcurve_jd(star: StarDescription, curve: DataFrame, chartsdir):
     star_id = star.local_id
     logging.debug(f"Plotting lightcurve for {star_id}")
-    vsx_name, separation, filename_no_ext = get_star_or_vsx_name(star, suffix=f"_light")
+    vsx_name, separation, filename_no_ext = get_star_or_catalog_name(star, suffix=f"_light")
     vsx_title = '' if vsx_name is None else f" ({vsx_name} - dist:{separation:.4f})"
     save_location = PurePath(chartsdir, filename_no_ext+'.png')
     start = timer()
@@ -141,7 +141,7 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
     logging.debug(f"Starting plot phase diagram with {star} and {fullphasedir}")
     coords = star.coords
     star_id = star.local_id
-    vsx_name, _, filename_no_ext = get_star_or_vsx_name(star, suffix=f"_phase{suffix}")
+    vsx_name, _, filename_no_ext = get_star_or_catalog_name(star, suffix=f"_phase{suffix}")
     vsx_title = f"{vsx_name}\n" if vsx_name is not None else ''
     save_location = PurePath(fullphasedir, filename_no_ext+'.png')
     upsilon_match = star.get_metadata('UPSILON')
@@ -192,11 +192,15 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
                            f"coords=[{coords.ra.deg}, {coords.dec.deg}]"]))
 
 
-def get_star_or_vsx_name(star: StarDescription, suffix: str):
-    vsx_name, separation = star.get_metadata("VSX")\
-        .get_name_and_separation() if star.has_metadata("VSX") else (None, None)
-    filename_no_ext = f"{vsx_name}{suffix}" if vsx_name is not None else f"{star.local_id:05}{suffix}"
-    return vsx_name, separation, filename_no_ext.replace(' ', '_')
+def get_star_or_catalog_name(star: StarDescription, suffix: str):
+    if star.has_metadata("VSX"):
+        catalog_name, separation = star.get_metadata("VSX").get_name_and_separation()
+    elif star.has_metadata("RMH+HMB"):
+        catalog_name, separation = star.get_metadata("RMH+HMB").get_name_and_separation()
+    else:
+        catalog_name, separation = None, None
+    filename_no_ext = f"{catalog_name}{suffix}" if catalog_name is not None else f"{star.local_id:05}{suffix}"
+    return catalog_name, separation, filename_no_ext.replace(' ', '_')
 
 
 def reject_outliers_iqr(data, cut=5):

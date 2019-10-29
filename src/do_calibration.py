@@ -84,18 +84,6 @@ def select_reference_frame_gzip(limit):
     return sorted_by_value[0][0]
 
 
-# not used atm
-def find_target_star(target_ra_deg, target_dec_deg, nr_results):
-    target = SkyCoord(target_ra_deg, target_dec_deg, unit='deg')
-    result_dict = reading.read_world_positions(settings.worldposdir)
-    distances_dict = {}
-    for key in result_dict:
-        distances_dict[key] = target.separation(SkyCoord(result_dict[key][0], result_dict[key][1], unit='deg')).degree
-    df = pd.DataFrame(list(distances_dict.items()), columns=['star_nr', 'deg_separation'])
-    df.sort_values(by='deg_separation', inplace=True)
-    return df[:nr_results]
-
-
 ############# star description utils #################
 
 # returns list of star descriptions
@@ -263,7 +251,7 @@ def get_vsx_in_field(star_descriptions, max_separation=0.01):
 ################ CATALOG related functions #########################
 
 def add_metadata_to_star_descriptions(stars: List[StarDescription],
-                                      metadata: List[object],  strict: True) -> List[StarDescription]:
+                                      metadata: List[object], strict: True) -> List[StarDescription]:
     """
     Adds metadata to a list of star descriptions for later filtering
     :param strict:

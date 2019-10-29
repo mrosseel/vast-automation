@@ -89,7 +89,12 @@ def get_stars_with_metadata(stars: List[star_description.StarMetaData], catalog_
     # gets all stars which have a catalog of name catalog_name
     return list(filter(partial(metadata_filter, catalog_name=catalog_name, exclude=exclude), stars))
 
+
 # Does this star have a catalog with catalog_name? Used in combination with filter()
 def metadata_filter(star: StarDescription, catalog_name, exclude=[]):
     catalogs = star.get_metadata_list()
     return catalog_name in catalogs and len([x for x in exclude if x in catalogs]) == 0
+
+
+def sort_rmh_hmb(stars: List[StarDescription]):
+    return sorted(stars, key=lambda x: int(x.get_metadata('STARFILE').our_name[8:]))

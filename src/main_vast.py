@@ -21,6 +21,7 @@ from reading import trash_and_recreate_dir
 from reading import file_selector
 from star_description import StarDescription
 from astropy.coordinates import SkyCoord
+from astropy.coordinates import match_coordinates_sky
 from astropy.wcs import WCS
 from typing import List, Dict, Tuple
 from comparison_stars import ComparisonStars
@@ -28,7 +29,7 @@ from pathlib import PurePath
 from ucac4 import UCAC4
 import hugo_site
 import pandas as pd
-from star_metadata import SelectedStarData, StarMetaData, StarFileData, CompStarData
+from star_metadata import SelectedStarData, CatalogData, StarFileData, CompStarData
 
 vsx_catalog_name = "vsx_catalog.bin"
 vsxcatalogdir = PurePath(os.getcwd(), vsx_catalog_name)
@@ -278,9 +279,10 @@ def write_augmented_all_stars(readdir: str, writedir: str, stardict: StarDict):
 def write_augmented_starfile(writedir: str, starfile_stars: List[StarDescription]):
     newname = f"{writedir}starfile.txt"
     logging.info(f"Writing {newname}...")
+    sorted_stars = utils.sort_rmh_hmb(starfile_stars)
     with open(newname, 'w') as outfile:
         outfile.write(f"# our_name,ra,dec,minmax,var_type,period,epoch\n")
-        for star in starfile_stars:
+        for star in sorted_stars:
             metadata: StarFileData = star.get_metadata("STARFILE")
             outfile.write(
                 f"{metadata.our_name},{star.coords.ra.deg:.5f},{star.coords.dec.deg:.5f},{metadata.minmax},"
@@ -370,7 +372,7 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
                      f" {[x.local_id for x in list(filter(lambda x: x.has_metadata('STARFILE'), star_descriptions))]}")
 
     if args.owncatalog:
-        tag_owncatalog(args.owncatalog, stardict)
+        tag_owncatalog(args.owncatalog, star_descriptions)
 
     # add ucac4 id's
     starfile_stars = utils.get_stars_with_metadata(star_descriptions, "STARFILE")
@@ -410,17 +412,25 @@ def tag_starfile(selectedstarfile: str, stardict: StarDict):
         logging.error(f"Could not read {selectedstarfile}, star {row['local_id']}")
 
 
-def tag_owncatalog(owncatalog: str, stardict: StarDict):
+def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
     # outfile.write(f"# our_name,ra,dec,minmax,var_type,period,epoch\n")
     df = pd.read_csv(owncatalog, delimiter=',', comment='#',
                      names=['our_name', 'ra', 'dec', 'minmax', 'var_type', 'period', 'epoch'],
-                     dtype={'ra': float, 'dec': float, 'minmax': str, 'period': float, 'period_err': float},
+                     dtype={'ra': float, 'dec': float, 'minmax': str},
                      skipinitialspace=True)
     df = df.replace({np.nan: None})
-    # TODO create catalog and match
-
-def tag_starids(star_ids: List[int], tags: List[str]):
-    print()
+    skycoord: SkyCoord = do_calibration.create_generic_astropy_catalog(df['ra'], df['dec'])
+    star_catalog = do_calibration.create_star_descriptions_catalog(stars)
+    idx, d2d, d3d = match_coordinates_sky(skycoord, star_catalog, nthneighbor=1)
+    for count, index in enumerate(idx):
+        entry = df.iloc[count]
+        stars[index].metadata = CatalogData(key="RMH+HMB", catalog_id=entry['our_name'],
+                                            name=entry['our_name'],
+                                            coords=SkyCoord(entry['ra'], entry['dec'], unit="deg"),
+                                            separation=d2d[count].degree)
+        if d2d[count].degree > 0.01:
+            logging.warning(f"Separation between {df.iloc(count)['our_name']} "
+                            f"and {stars[index].local_id} is {d2d[count]}")
 
 
 def set_lines(star: StarDescription):
