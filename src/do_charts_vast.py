@@ -218,7 +218,6 @@ def format_date(x, pos=None):
 
 def read_vast_lightcurves(star: StarDescription, ns, do_charts, do_phase, do_aavso,
                           aavso_limit, basedir: str, chartsdir: PurePath, phasedir: PurePath, aavsodir: PurePath):
-    comp_stars: ComparisonStars = ns.comp_stars
     start = timer()
     if star.path is '':
         logging.debug(f"Path for {star.local_id} is empty")
@@ -239,10 +238,11 @@ def read_vast_lightcurves(star: StarDescription, ns, do_charts, do_phase, do_aav
         logging.info(f"No lightcurve found for {star.path}")
         return
 
-    filtered_compstars = do_compstars.get_star_compstars_from_catalog(star, comp_stars)
+    filtered_compstars = do_compstars.get_star_compstars_from_catalog(star, ns.comp_stars)
     df['realV'], df['realErr'] = do_compstars.calculate_ensemble_photometry(df, filtered_compstars,
                                                                             do_compstars.weighted_value_ensemble_method)
     df['floatJD'] = df['JD'].astype(np.float)
+    filtered_compstars = None
     if do_charts:
         # start = timer()
         # logging.debug("NO LICGHTCRUVEGYET ")
@@ -269,7 +269,7 @@ def read_vast_lightcurves(star: StarDescription, ns, do_charts, do_phase, do_aav
         sitealt = 2500
         observer = 'ZZZ'
         do_aavso_report.report(star, df.copy(), target_dir=aavsodir, vastdir=basedir, sitelat=sitelat,
-                               sitelong=sitelong, sitealt=sitealt, comparison_stars=comp_stars, filter='V',
+                               sitelong=sitelong, sitealt=sitealt, comparison_stars=ns.comp_stars, filter='V',
                                observer=observer, chunk_size=aavso_limit)
 
     # except Exception as ex:
@@ -286,9 +286,9 @@ def read_vast_lightcurves(star: StarDescription, ns, do_charts, do_phase, do_aav
 def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir: str, phasepart: str, chartspart: str,
         aavso_part: str, do_charts=False, do_phase=True, do_aavso=False, aavsolimit=None, nr_threads=cpu_count(),
         desc="Writing light curve charts/phase diagrams"):
-    CHUNK = 1
+    CHUNK =len(star_descriptions) // nr_threads
     set_seaborn_style()
-    pool = mp.Pool(nr_threads, maxtasksperchild=10)
+    pool = mp.Pool(nr_threads)
     phasedir = PurePath(resultdir, phasepart)
     chartsdir = PurePath(resultdir, chartspart)
     aavsodir = PurePath(resultdir, aavso_part)
