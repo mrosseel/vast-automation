@@ -122,8 +122,9 @@ StarTuple = namedtuple('Star', 'ra spd mag1 mag2 mag_sigma obj_type double_star_
                                ' dec_sigma n_ucac_total n_ucac_used n_cats_used epoch_ra epoch_dec pm_ra pm_dec'
                                ' pm_ra_sigma pm_dec_sigma twomass_id mag_j mag_h mag_k icq_flag1 icq_flag2 icq_flag3'
                                ' e2mpho1 e2mpho2 e2mpho3 apass_mag_B apass_mag_V apass_mag_g apass_mag_r apass_mag_i'
-                               ' apass_mag_sigma_B apass_mag_sigma_V apass_mag_sigma_g apass_mag_sigma_r apass_mag_sigma_i'
-                               ' yale_gc_flags catalog_flags leda_flag twomass_ext_flag id_number ucac2_zone ucac2_number')
+                               ' apass_mag_sigma_B apass_mag_sigma_V apass_mag_sigma_g apass_mag_sigma_r'
+                               ' apass_mag_sigma_i yale_gc_flags catalog_flags leda_flag twomass_ext_flag'
+                               ' id_number ucac2_zone ucac2_number')
 
 
 def get_line_nr(n0, nn, line):
@@ -275,7 +276,7 @@ class UCAC4:
     def get_ucac4_star_description_fromtuple(star: StarTuple, zone: str, run_nr: int):
         ra, dec = UCAC4.get_real_ra_dec(star.ra, star.spd)
         sd = StarDescription(coords=SkyCoord(ra, dec, unit='deg'),
-                             vmag=star.apass_mag_V / 1000, e_vmag=star.apass_mag_sigma_V / 100,
+                             vmag=star.apass_mag_V / 1000, e_vmag=abs(star.apass_mag_sigma_V / 100),
                              aavso_id=UCAC4.zone_and_run_nr_to_name(zone, run_nr))
         return sd
 

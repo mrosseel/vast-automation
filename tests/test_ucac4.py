@@ -1,6 +1,7 @@
 # from .context import src
 import unittest
 import do_compstars
+from star_description import StarDescription
 from ucac4 import UCAC4
 from comparison_stars import ComparisonStars
 import os
@@ -8,7 +9,6 @@ from pathlib import PurePath
 import logging
 from pandas import DataFrame
 from astropy.coordinates import SkyCoord
-
 
 test_file_path = PurePath(os.getcwd(), 'tests', 'data')
 
@@ -19,6 +19,7 @@ class TestUcac4(unittest.TestCase):
         logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
         self.UCAC4_ID = 'UCAC4 001-000003'
         self.ucac4 = UCAC4()
+
 
     def test_get_ucac4_details_raw(self):
         # ucac4.get_ucac4_star_description_raw('UCAC4 001-000003')
@@ -80,6 +81,24 @@ class TestUcac4(unittest.TestCase):
         self.assertEqual(1440, self.ucac4.get_ra_bucket(360))
         self.assertEqual(1, self.ucac4.get_ra_bucket(0))
         self.assertEqual(720, self.ucac4.get_ra_bucket(180))
+
+
+    def test_mag_error(self):
+        # 'UCAC4 232-146904'
+        # <SkyCoord (ICRS): (ra, dec) in deg (270.91140731, -43.64018836)>
+        # sd: StarDescription = self.ucac4.get_ucac4_sd(270.91140731, -43.64018836)
+        raw = self.ucac4.get_ucac4_details_raw('232', [146904])
+        # Vmag	11.957 	mag, e_Vmag	01 cmag
+        self.assertEqual(-1, raw[0][0].apass_mag_sigma_V)
+        sd: StarDescription = self.ucac4.get_ucac4_star_description_fromtuple(*raw[0])
+        self.assertEqual(.01, sd.e_vmag)
+
+        # first entry of out.sam
+        raw = self.ucac4.get_ucac4_details_raw('451', [133336])
+        self.assertEqual(5, raw[0][0].apass_mag_sigma_V)
+        sd: StarDescription = self.ucac4.get_ucac4_star_description_fromtuple(*raw[0])
+        self.assertEqual(.05, sd.e_vmag)
+        print("bl")
 
 
 if __name__ == '__main__':
