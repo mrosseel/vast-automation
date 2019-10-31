@@ -209,7 +209,7 @@ def read_magdict(vastdir, star_id):
     for line in open(starfile):
         splitline = line.split()
         # {JD, (mag, magerr)}
-        stardict[str(splitline[0])] = (splitline[1], splitline[2])
+        stardict[str(splitline[0])] = (float(splitline[1]), float(splitline[2]))
     return stardict
 
 

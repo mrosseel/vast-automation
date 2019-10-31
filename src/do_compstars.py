@@ -91,9 +91,9 @@ def calculate_ensemble_photometry(df, comp_stars, ensemble_method):
         for idx, compstar in enumerate(comp_stars.observations):
             jd = row['JD']
             if jd in compstar:
-                comp_obs.append(float(compstar[jd][0]))
-                comp_err.append(float(compstar[jd][1]))
-                comp_real.append(float(comp_stars.comp_catalogmags[idx]))
+                comp_obs.append(compstar[jd][0])
+                comp_err.append(compstar[jd][1])
+                comp_real.append(comp_stars.comp_catalogmags[idx])
             else:
                 logging.debug(f"Key error for {row['JD']}, {comp_stars.ids}")
 
