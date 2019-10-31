@@ -228,7 +228,7 @@ def format_date(x, pos=None):
     return r.date[thisind].strftime('%Y-%m-%d')
 
 
-def read_vast_lightcurves(star: StarDescription, ns, do_charts, do_phase, do_aavso,
+def read_vast_lightcurves(star: StarDescription, compstarproxy, do_charts, do_phase, do_aavso,
                           aavso_limit, basedir: str, chartsdir: PurePath, phasedir: PurePath, aavsodir: PurePath):
     start = timer()
     if star.path is '':
@@ -250,7 +250,7 @@ def read_vast_lightcurves(star: StarDescription, ns, do_charts, do_phase, do_aav
             logging.info(f"No lightcurve found for {star.path}")
             return
 
-        filtered_compstars = do_compstars.get_star_compstars_from_catalog(star, ns.comp_stars)
+        filtered_compstars = do_compstars.get_star_compstars_from_catalog(star, compstarproxy.value)
         df['realV'], df['realErr'] = do_compstars.calculate_ensemble_photometry(df, filtered_compstars,
                                                                                 do_compstars.weighted_value_ensemble_method)
         df['floatJD'] = df['JD'].astype(np.float)
@@ -287,6 +287,8 @@ def read_vast_lightcurves(star: StarDescription, ns, do_charts, do_phase, do_aav
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
         logging.error(message)
+        import traceback
+        print(traceback.print_exc())
         logging.error(f"Exception during read_lightcurve for {star.path}")
 
     end = timer()
@@ -297,7 +299,7 @@ def read_vast_lightcurves(star: StarDescription, ns, do_charts, do_phase, do_aav
 def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir: str, phasepart: str, chartspart: str,
         aavso_part: str, do_charts=False, do_phase=True, do_aavso=False, aavsolimit=None, nr_threads=cpu_count(),
         desc="Writing light curve charts/phase diagrams"):
-    CHUNK =len(star_descriptions) // nr_threads
+    CHUNK =max(1, len(star_descriptions) // nr_threads)
     set_seaborn_style()
     pool = mp.Pool(nr_threads)
     phasedir = PurePath(resultdir, phasepart)
@@ -312,10 +314,9 @@ def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir:
         trash_and_recreate_dir(chartsdir)
     if do_aavso:
         trash_and_recreate_dir(aavsodir)
-    ns = Manager().Namespace()
-    ns.comp_stars = comp_stars
+    comp_stars_proxy = Manager().Value('comp_stars', comp_stars)
 
-    func = partial(read_vast_lightcurves, basedir=basedir, ns=ns, do_charts=do_charts,
+    func = partial(read_vast_lightcurves, basedir=basedir, compstarproxy=comp_stars_proxy, do_charts=do_charts,
                    do_phase=do_phase, do_aavso=do_aavso, aavso_limit=aavsolimit,
                    phasedir=phasedir, chartsdir=chartsdir, aavsodir=aavsodir)
     with tqdm.tqdm(total=len(star_descriptions), desc=desc, unit='stars') as pbar:
