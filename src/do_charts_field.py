@@ -13,8 +13,9 @@ from typing import List, Tuple
 from star_description import StarDescription
 import random
 import do_compstars
+import gc
 StarDescriptionList = List[StarDescription]
-
+gc.enable()
 PADDING = 200
 Shape = Tuple[int, int]
 
@@ -201,10 +202,12 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
     for star in starfile_labeled:
         filtered_compstars_sds = do_compstars.get_star_compstars_from_catalog(star, comp_stars).star_descriptions
         compstars_labeled = set_custom_label(filtered_compstars_sds, [x.vmag for x in filtered_compstars_sds])
+        filtered_compstars_sds = None
         logging.info(f"Plotting field chart with all VSX variable stars + star {star.local_id}...")
         fig = plot_it([[star], vsx_labeled, compstars_labeled], [10., 5., 3.], [True, False, True],
                       reference_fits_frame, wcs, f"VSX stars + star {star.local_id}", PADDING)
         save(fig, f"{fieldchartsdirs}vsx_and_star_{star.local_id:05}")
+        gc.collect()
 
 
 if __name__ == '__main__':
