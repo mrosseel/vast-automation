@@ -250,10 +250,9 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_charts, do_ph
             logging.info(f"No lightcurve found for {star.path}")
             return
         comp_stars = compstarproxy.value
-        comp_star_names = [x.get]
         filtered_compstars = do_compstars.get_star_compstars_from_catalog(star, comp_stars)
-        df['realV'], df['realErr'] = do_compstars.calculate_ensemble_photometry(df, filtered_compstars,
-                                                                                do_compstars.weighted_value_ensemble_method)
+        df['realV'], df['realErr'] = do_compstars.calculate_ensemble_photometry(
+            df, filtered_compstars, do_compstars.weighted_value_ensemble_method)
         df['floatJD'] = df['JD'].astype(np.float)
         filtered_compstars = None
         if do_charts:
