@@ -249,8 +249,9 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_charts, do_ph
         if df is None or len(df) == 0:
             logging.info(f"No lightcurve found for {star.path}")
             return
-
-        filtered_compstars = do_compstars.get_star_compstars_from_catalog(star, compstarproxy.value)
+        comp_stars = compstarproxy.value
+        comp_star_names = [x.get]
+        filtered_compstars = do_compstars.get_star_compstars_from_catalog(star, comp_stars)
         df['realV'], df['realErr'] = do_compstars.calculate_ensemble_photometry(df, filtered_compstars,
                                                                                 do_compstars.weighted_value_ensemble_method)
         df['floatJD'] = df['JD'].astype(np.float)
@@ -281,7 +282,7 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_charts, do_ph
             sitealt = 2500
             observer = 'ZZZ'
             do_aavso_report.report(star, df.copy(), target_dir=aavsodir, vastdir=basedir, sitelat=sitelat,
-                                   sitelong=sitelong, sitealt=sitealt, comparison_stars=ns.comp_stars, filter='V',
+                                   sitelong=sitelong, sitealt=sitealt, filter='V',
                                    observer=observer, chunk_size=aavso_limit)
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
