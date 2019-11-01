@@ -11,6 +11,7 @@ import do_calibration
 import utils
 import argparse
 import logging
+import gc
 import subprocess
 import math
 import matplotlib as mplotlib
@@ -26,7 +27,7 @@ from star_description import StarDescription
 from pathlib import PurePath
 from typing import Tuple
 from pandas import DataFrame
-
+gc.enable()
 mplotlib.use('Agg')  # needs no X server
 TITLE_PAD = 40
 
@@ -261,6 +262,7 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_charts, do_ph
             plot_lightcurve_jd(star, df.copy(), chartsdir)
             # end = timer()
             # print("plotting lightcurve:", end-start)
+            gc.collect()
         if do_phase:
             if star.has_metadata("STARFILE") and star.get_metadata("STARFILE") is None:
                 # This should not happen!!!
@@ -274,6 +276,7 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_charts, do_ph
                 plot_phase_diagram(star, df.copy(), phasedir, period=period)
             else:
                 plot_phase_diagram(star, df.copy(), phasedir, period=None, suffix="")
+            gc.collect()
         if do_aavso:
             # TODO put this in settings.txt
             sitelat = '-22 57 10'
@@ -283,6 +286,7 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_charts, do_ph
             do_aavso_report.report(star, df.copy(), target_dir=aavsodir, vastdir=basedir, sitelat=sitelat,
                                    sitelong=sitelong, sitealt=sitealt, filter='V',
                                    observer=observer, chunk_size=aavso_limit)
+            gc.collect()
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
