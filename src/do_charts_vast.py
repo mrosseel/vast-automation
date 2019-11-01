@@ -252,17 +252,17 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_charts, do_ph
             return
         comp_stars = compstarproxy.value
         filtered_compstars = do_compstars.get_star_compstars_from_catalog(star, comp_stars)
+        comp_stars = None
         df['realV'], df['realErr'] = do_compstars.calculate_ensemble_photometry(
             df, filtered_compstars, do_compstars.weighted_value_ensemble_method)
-        df['floatJD'] = df['JD'].astype(np.float)
         filtered_compstars = None
+        df['floatJD'] = df['JD'].astype(np.float)
         if do_charts:
             # start = timer()
             # logging.debug("NO LICGHTCRUVEGYET ")
             plot_lightcurve_jd(star, df.copy(), chartsdir)
             # end = timer()
             # print("plotting lightcurve:", end-start)
-            gc.collect()
         if do_phase:
             if star.has_metadata("STARFILE") and star.get_metadata("STARFILE") is None:
                 # This should not happen!!!
@@ -276,7 +276,6 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_charts, do_ph
                 plot_phase_diagram(star, df.copy(), phasedir, period=period)
             else:
                 plot_phase_diagram(star, df.copy(), phasedir, period=None, suffix="")
-            gc.collect()
         if do_aavso:
             # TODO put this in settings.txt
             sitelat = '-22 57 10'
@@ -286,7 +285,6 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_charts, do_ph
             do_aavso_report.report(star, df.copy(), target_dir=aavsodir, vastdir=basedir, sitelat=sitelat,
                                    sitelong=sitelong, sitealt=sitealt, filter='V',
                                    observer=observer, chunk_size=aavso_limit)
-            gc.collect()
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
