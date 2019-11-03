@@ -283,12 +283,12 @@ def write_augmented_starfile(writedir: str, starfile_stars: List[StarDescription
     logging.info(f"Writing {newname}...")
     sorted_stars = utils.sort_rmh_hmb(starfile_stars)
     with open(newname, 'w') as outfile:
-        outfile.write(f"# our_name,ra,dec,minmax,var_type,period,epoch\n")
+        outfile.write(f"# our_name,ra,dec,minmax,var_type,period,period_err,epoch\n")
         for star in sorted_stars:
             metadata: StarFileData = star.get_metadata("STARFILE")
             outfile.write(
                 f"{metadata.our_name},{star.coords.ra.deg:.5f},{star.coords.dec.deg:.5f},{metadata.minmax},"
-                f"{metadata.var_type},{metadata.period},{metadata.epoch}\n")
+                f"{metadata.var_type},{metadata.period},{metadata.period_err},{metadata.epoch}\n")
 
 
 def write_vsx_stars(resultdir, results_ids, stars: List[StarDescription]):
