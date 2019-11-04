@@ -288,7 +288,7 @@ def write_augmented_starfile(writedir: str, starfile_stars: List[StarDescription
             metadata: StarFileData = star.get_metadata("STARFILE")
             outfile.write(
                 f"{metadata.our_name},{star.coords.ra.deg:.5f},{star.coords.dec.deg:.5f},{metadata.minmax},"
-                f"{metadata.var_type},{metadata.period},{metadata.period_err},{metadata.epoch}\n")
+                f"{metadata.var_type},{metadata.period:.5f},{metadata.period_err:.5f},{metadata.epoch}\n")
 
 
 def write_vsx_stars(resultdir, results_ids, stars: List[StarDescription]):
