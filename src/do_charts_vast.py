@@ -216,12 +216,12 @@ def get_star_or_catalog_name(star: StarDescription, suffix: str):
     return catalog_name, separation, filename_no_ext.replace(' ', '_')
 
 
-def reject_outliers_iqr(data, cut=5):
-    q1, q3 = np.percentile(data, [cut, 100 - cut])
+def reject_outliers_iqr(df, column, cut=5):
+    q1, q3 = np.percentile(df[column], [cut, 100 - cut])
     iqr = q3 - q1
     lower_bound = q1 - (iqr * 1.5)
     upper_bound = q3 + (iqr * 1.5)
-    return np.where((data > lower_bound) & (data < upper_bound))
+    return df[df[column] > lower_bound & df[column] < upper_bound]
 
 
 def format_date(x, pos=None):
@@ -259,7 +259,7 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_charts, do_ph
         df['floatJD'] = df['JD'].astype(np.float)
         old_size = len(df)
         # remove errors
-        df = reject_outliers_iqr(df, 0.02)
+        df = reject_outliers_iqr(df, 'realV', 0.02)
         logging.debug(f"Rejected {old_size-len(df)} observations with iqr.")
         if do_charts:
             # start = timer()
