@@ -400,8 +400,8 @@ def tag_starfile(selectedstarfile: str, stardict: StarDict):
             if the_star is None:
                 logging.error(f"Could not find star {row['local_id']}, consider removing it from your txt file")
                 continue
-            the_star.metadata = StarFileData(row['local_id'], row['minmax'], row['var_type'], row['our_name'],
-                                             row['period'], row['period_err'], row['epoch'])
+            the_star.metadata = StarFileData(row['local_id'], row['minmax'].strip(), row['var_type'].strip(),
+                                             row['our_name'].strip(), row['period'], row['period_err'], row['epoch'])
             the_star.metadata = SelectedStarData()
             logging.info(f"starfile {the_star.local_id} metadata: {the_star.metadata}, "
                          f"{the_star.get_metadata('STARFILE')}")

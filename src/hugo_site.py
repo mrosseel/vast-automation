@@ -119,6 +119,6 @@ def get_header(title: str):
 
 
 def get_starfile_preamble(images_prefix: str):
-    return f'<div class="bb-l b--black-10 w-100">' \
+    return f'<div class="bb-l b--black-10 w-100"><div class="fl w-70 pa2 ba">' \
            f'<a href="{images_prefix}starfile.txt">CSV file of all stars on this page</a>' \
-           f'</div>\n'
+           f'</div></div>\n'
