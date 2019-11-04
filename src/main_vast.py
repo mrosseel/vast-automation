@@ -124,7 +124,7 @@ def run_do_rest(args):
     if args.site:
         ids = [x.local_id for x in starfile_stars]
         logging.info(f"Creating site entry with these {len(starfile_stars)} selected stars: {ids}")
-        hugo_site.run(args.site, starfile_stars, resultdir)
+        hugo_site.run(args.site, starfile_stars, len(vsx_stars), len(candidate_stars), resultdir)
 
 
 def read_comparison_stars(star_descriptions: List[StarDescription], checkstarfile: str, vastdir: str,

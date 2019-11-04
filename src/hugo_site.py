@@ -15,12 +15,12 @@ import utils
 from star_metadata import StarFileData
 
 
-def run(post_name: str, selected_stars: List[StarDescription], resultdir: str):
+def run(post_name: str, selected_stars: List[StarDescription], len_vsx: int, len_candidates: int, resultdir: str):
     sitedir = f"{os.getcwd()}/site/vsx/"
     images_prefix = f"/images/{post_name}/"
     copy_files(post_name, resultdir, sitedir)
     result = get_header(post_name)
-    result += get_starfile_preamble(images_prefix)
+    result += get_starfile_preamble(images_prefix, len(selected_stars), len_vsx, len_candidates)
     sorted_stars = utils.sort_rmh_hmb(selected_stars)
     part_block = partial(block, resultdir=resultdir, images_prefix=images_prefix)
     for star in sorted_stars:
@@ -116,7 +116,8 @@ def get_header(title: str):
            f'summary: "Batch of new variable stars"\n---\n'
 
 
-def get_starfile_preamble(images_prefix: str):
-    return f'<div class="bb-l b--black-10 w-100"><div class="fl w-70 pa2 ba">' \
+def get_starfile_preamble(images_prefix: str, len_selectied: int, len_vsx: int, len_candidates: int):
+    return f'<div class="bb-l b--black-10 w-100">' \
            f'<a href="{images_prefix}starfile.txt">CSV file of all stars on this page</a>' \
-           f'</div></div>\n'
+           f'<a href="{images_prefix}vsx_{len_vsx}_and_selected_{len_selectied}.png">' \
+           f'Finder chart with VSX and selected new stars</a></div>\n'
