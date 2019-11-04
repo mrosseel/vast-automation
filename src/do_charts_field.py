@@ -160,7 +160,7 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
 
     # starfile stars get their local id label
     starfile_descr = utils.get_stars_with_metadata(star_descriptions, "STARFILE", exclude=["VSX"])
-    starfile_labeled = set_custom_label(starfile_descr, [x.get_metadata("STARFILE") for x in starfile_descr])
+    starfile_labeled = set_custom_label(starfile_descr, [x.get_metadata("STARFILE").our_name for x in starfile_descr])
 
     # field chart with all detections
     logging.info("Plotting field chart with all detected stars...")
