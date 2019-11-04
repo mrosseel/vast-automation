@@ -259,8 +259,8 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_charts, do_ph
         df['floatJD'] = df['JD'].astype(np.float)
         old_size = len(df)
         # remove errors
-        df = reject_outliers_iqr(df, 'realV', 0.02)
-        logging.info(f"Rejected {old_size-len(df)} observations with iqr.")
+        # df = reject_outliers_iqr(df, 'realV', 0.02)
+        # logging.info(f"Rejected {old_size-len(df)} observations with iqr.")
         if do_charts:
             # start = timer()
             # logging.debug("NO LIGHTCRUVEGYET ")
