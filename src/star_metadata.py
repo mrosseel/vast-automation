@@ -52,16 +52,23 @@ class StarFileData(StarMetaData):
                  period_err: float = None, epoch: float = None, key='STARFILE'):
         super().__init__(key)
         self.local_id = local_id
-        self.minmax = minmax
-        self.var_type = var_type
-        self.our_name = our_name
+        self.minmax = self._strip_if_not_none(minmax)
+        self.var_type = self._strip_if_not_none(var_type)
+        self.our_name = self._strip_if_not_none(our_name)
         self.period = period
         self.period_err = period_err
         self.epoch = epoch
 
+
+    @staticmethod
+    def _strip_if_not_none(arg):
+        return arg.strip() if arg is not None else None
+
+
     def __repr__(self):
         return f'Key:{self.key}, {self.local_id} {self.minmax} {self.var_type} {self.our_name} {self.period}' \
                f' {self.period_err} {self.epoch}'
+
 
     def __str__(self):
         return self.__repr__()
@@ -80,8 +87,10 @@ class CatalogData(StarMetaData):
         # the separation between the munipack-found coords and the catalog coords
         self.separation = separation
 
+
     def get_name_and_separation(self):
         return self.name, self.separation
+
 
     def __repr__(self):
         return f'Catalog:{self.key}, CatalogId:{self.catalog_id}, Name:{self.name}, ' \
@@ -91,5 +100,3 @@ class CatalogData(StarMetaData):
     def __str__(self):
         return f'Catalog:{self.key}, CatalogId:{self.catalog_id}, Name:{self.name}, ' \
                f'Coords:{self.coords}, Separation:{self.separation}'
-
-

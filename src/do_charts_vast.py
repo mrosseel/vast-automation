@@ -257,9 +257,13 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_charts, do_ph
             df, filtered_compstars, do_compstars.weighted_value_ensemble_method)
         filtered_compstars = None
         df['floatJD'] = df['JD'].astype(np.float)
+        old_size = len(df)
+        # remove errors
+        df = reject_outliers_iqr(df, 0.02)
+        logging.debug(f"Rejected {old_size-len(df)} observations with iqr.")
         if do_charts:
             # start = timer()
-            # logging.debug("NO LICGHTCRUVEGYET ")
+            # logging.debug("NO LIGHTCRUVEGYET ")
             plot_lightcurve_jd(star, df.copy(), chartsdir)
             # end = timer()
             # print("plotting lightcurve:", end-start)

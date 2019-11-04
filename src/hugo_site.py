@@ -21,9 +21,7 @@ def run(post_name: str, selected_stars: List[StarDescription], resultdir: str):
     copy_files(post_name, resultdir, sitedir)
     result = get_header(post_name)
     result += get_starfile_preamble(images_prefix)
-    print("Selected stars", [(x.get_metadata("STARFILE").our_name, int(x.get_metadata("STARFILE").our_name[8:])) for x in selected_stars])
     sorted_stars = utils.sort_rmh_hmb(selected_stars)
-    print("Sorted stars", [x.get_metadata("STARFILE").our_name for x in sorted_stars])
     part_block = partial(block, resultdir=resultdir, images_prefix=images_prefix)
     for star in sorted_stars:
         result += part_block(star)
