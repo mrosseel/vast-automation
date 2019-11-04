@@ -9,6 +9,8 @@ import random
 import os
 from pathlib import PurePath
 import logging
+import pandas as pd
+import numpy as np
 
 logging.getLogger().setLevel(logging.DEBUG)
 logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
@@ -32,7 +34,19 @@ class TestUtils(unittest.TestCase):
         self.assertEqual("RMH+HMB-100", result[99].get_metadata("STARFILE").our_name)
 
 
-    def stardesc(self, id, ra, dec):
+    def test_reject_outliers_iqr(self):
+        np.random.seed(42)
+        data = pd.DataFrame(np.random.random_sample(size=(100, 2)), columns=list('AB'))
+        column = 'A'
+        df = utils.reject_outliers_iqr(data, column, cut=30)
+        self.assertEqual(len(data), len(df))
+        df['A'][50] = -0.4
+        df = utils.reject_outliers_iqr(df, column, cut=30)
+        self.assertEqual(len(data)-1, len(df))
+
+
+    @staticmethod
+    def stardesc(id, ra, dec):
         return StarDescription(local_id=id,
                                coords=SkyCoord(ra, dec, unit='deg'))
 

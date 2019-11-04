@@ -2,13 +2,14 @@ import glob
 from functools import partial
 from os import listdir
 from os.path import isfile, join
-
+import numpy as np
 import star_description
 from star_description import StarDescription, StarMetaData
 from typing import List, Dict
 import multiprocessing as mp
 from multiprocessing import cpu_count
 import re
+import logging
 
 
 def find_index_of_file(the_dir, the_file, the_filter='*'):
@@ -104,3 +105,12 @@ def add_star_lists(list1: List[StarDescription], list2: List[StarDescription]):
     ids = [x.local_id for x in list1]
     list2_filtered = [x for x in list2 if x.local_id not in ids]
     return list1 + list2_filtered
+
+
+def reject_outliers_iqr(df, column, cut=5):
+    q1, q3 = np.percentile(df[column], [cut, 100 - cut])
+    iqr = q3 - q1
+    lower_bound = q1 - (iqr * 1.5)
+    upper_bound = q3 + (iqr * 1.5)
+    logging.debug(f"q1 {q1} q3 {q3} iqr {iqr} lower {lower_bound} upper {upper_bound}")
+    return df[(df[column] < upper_bound) & (df[column] > lower_bound)]
