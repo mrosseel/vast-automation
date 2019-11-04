@@ -221,7 +221,7 @@ def reject_outliers_iqr(df, column, cut=5):
     iqr = q3 - q1
     lower_bound = q1 - (iqr * 1.5)
     upper_bound = q3 + (iqr * 1.5)
-    return df[df[column] > lower_bound & df[column] < upper_bound]
+    return df[lower_bound < df[column] < upper_bound]
 
 
 def format_date(x, pos=None):
