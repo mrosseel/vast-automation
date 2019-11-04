@@ -17,10 +17,12 @@ from star_metadata import StarFileData
 
 def run(post_name: str, selected_stars: List[StarDescription], resultdir: str):
     sitedir = f"{os.getcwd()}/site/vsx/"
+    images_prefix = f"/images/{post_name}/"
     copy_files(post_name, resultdir, sitedir)
     result = get_header(post_name)
+    result += get_starfile_preamble(images_prefix)
     sorted_stars = utils.sort_rmh_hmb(selected_stars)
-    part_block = partial(block, resultdir=resultdir, post_name=post_name)
+    part_block = partial(block, resultdir=resultdir, images_prefix=images_prefix)
     for star in sorted_stars:
         result += part_block(star)
     postdir = f"{sitedir}/content/posts/{post_name}/"
@@ -52,10 +54,12 @@ def copy_files(post_name: str, resultdir: str, sitedir: str):
     logging.info(f"Copying {len(fieldcharts_glob)} field charts from {fieldcharts}...")
     for file in fieldcharts_glob:
         copy(file, imagesdir)
+    copy(f"{resultdir}starfile.txt", imagesdir)
+    logging.info(f"Copying starfile.txt...")
     logging.info(f"Copying done.")
 
 
-def block(star: StarDescription, resultdir: str, post_name: str):
+def block(star: StarDescription, resultdir: str, images_prefix: str):
     try:
         vsx_name, separation, filename_no_ext = do_charts_vast.get_star_or_catalog_name(star, suffix="_phase")
         txt_path = PurePath(resultdir, 'phase_candidates/txt', filename_no_ext + '.txt')
@@ -73,7 +77,6 @@ def block(star: StarDescription, resultdir: str, post_name: str):
             ucac4_name = ucac4.catalog_id if not None else "unknown"
         period = f"{parsed_toml['period']:.5f}" if metadata.period is None \
             else f"{metadata.period:.5f} +/- {metadata.period_err:.5f}"
-        images_prefix = f"/images/{post_name}/"
         phase_url = f"{images_prefix}{filename_no_ext}.png"
         minmax = f"<li>{metadata.minmax}</li>" if metadata.minmax is not None else ""
         epoch = f"<li>epoch: {metadata.epoch}</li>" if metadata.epoch is not None else ""
@@ -111,3 +114,7 @@ def block(star: StarDescription, resultdir: str, post_name: str):
 def get_header(title: str):
     return f'---\ntitle: "{title}"\ndate: {pytz.utc.localize(datetime.utcnow()).isoformat()}\ndraft: false\n' \
            f'summary: "Batch of new variable stars"\n---\n'
+
+
+def get_starfile_preamble(images_prefix: str):
+    return f'<a href="{images_prefix}starfile.txt">CSV file of all stars on this page</a>\n'
