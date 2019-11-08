@@ -241,7 +241,7 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         if epoch:
             tomldict['epoch'] = float(epoch)
         outputfile = f"{fullphasedir}/txt/{filename_no_ext}.txt"
-        logging.info(f"Writing toml to {outputfile}")
+        logging.debug(f"Writing toml to {outputfile}")
         toml.dump(tomldict, open(outputfile, "w"))
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
