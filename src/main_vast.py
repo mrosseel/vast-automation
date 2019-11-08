@@ -29,6 +29,7 @@ from pathlib import PurePath
 from ucac4 import UCAC4
 import hugo_site
 import pandas as pd
+import toml
 from star_metadata import SelectedStarData, CatalogData, StarFileData, CompStarData
 
 vsx_catalog_name = "vsx_catalog.bin"
@@ -77,11 +78,11 @@ def run_do_rest(args):
     write_augmented_autocandidates(vastdir, resultdir, stardict)
     write_augmented_all_stars(vastdir, resultdir, stardict)
     candidate_stars = utils.get_stars_with_metadata(star_descriptions, "CANDIDATE", exclude="VSX")
-    rmhhmb_stars = utils.get_stars_with_metadata(star_descriptions, "RMH+HMB")
+    rmhhmb_stars = utils.get_stars_with_metadata(star_descriptions, "RMH-HMB")
     candidate_stars = utils.add_star_lists(candidate_stars, rmhhmb_stars)
     vsx_stars = utils.get_stars_with_metadata(star_descriptions, "VSX")
     starfile_stars = utils.get_stars_with_metadata(star_descriptions, "STARFILE")
-    write_augmented_starfile(resultdir, starfile_stars)
+
     interesting_stars = starfile_stars + vsx_stars + candidate_stars
 
     # set ucac4 stars selected
@@ -117,7 +118,8 @@ def run_do_rest(args):
             do_charts_vast.run(starfile_stars, comp_stars, vastdir, resultdir, 'phase_selected/', 'light_selected/',
                                'aavso_selected', do_phase=do_phase, do_charts=do_charts,
                                do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of selected stars")
-
+    # starfiledata is filled in during the phase plotting, so should come after it. Without phase it will be incomplete
+    write_augmented_starfile(resultdir, starfile_stars)
     if args.field:
         do_charts_field.run_standard_field_charts(star_descriptions, wcs, fieldchartsdir, wcs_file, comp_stars)
 
@@ -278,24 +280,44 @@ def write_augmented_all_stars(readdir: str, writedir: str, stardict: StarDict):
 
 
 # naam, ra, dec, max, min, type, periode, epoch?
-def write_augmented_starfile(writedir: str, starfile_stars: List[StarDescription]):
-    newname = f"{writedir}starfile.txt"
+def write_augmented_starfile(resultdir: str, starfile_stars: List[StarDescription]):
+    newname = f"{resultdir}starfile.txt"
     logging.info(f"Writing {newname}...")
     sorted_stars = utils.sort_rmh_hmb(starfile_stars)
     with open(newname, 'w') as outfile:
-        outfile.write(f"# our_name,ra,dec,minmax,var_type,period,period_err,epoch\n")
+        outfile.write(f"# our_name,ra,dec,minmax,min,max,var_type,period,period_err,epoch\n")
 
 
-        def format_float(arg: float):
-            return f"{arg:.5f}" if arg is not None else ''
+        def format_float_5(toml, arg: str):
+            if arg is None or arg not in toml:
+                return ''
+            return f"{toml[arg]:.5f}"
+
+
+        def format_float_1(toml, arg: str):
+            if arg is None or arg not in toml:
+                return ''
+            return f"{toml[arg]:.1f}"
+
+
+        def format_string(arg: str, toml):
+            print("Receiving arg", arg, "with type", type(arg))
+            if arg in toml:
+                return toml[arg]
+            return ''
 
 
         for star in sorted_stars:
             metadata: StarFileData = star.get_metadata("STARFILE")
+            _, _, filename_no_ext = do_charts_vast.get_star_or_catalog_name(star, '')
+            txt_path = PurePath(resultdir, 'phase_selected/txt', filename_no_ext + '_phase.txt')
+            parsed_toml = toml.load(txt_path)
             outfile.write(
-                f"{metadata.our_name},{format_float(star.coords.ra.deg)},{format_float(star.coords.dec.deg)},"
-                f"{metadata.minmax},{metadata.var_type},{format_float(metadata.period)},"
-                f"{format_float(metadata.period_err)},{metadata.epoch}\n")
+                f"{metadata.our_name},{star.coords.ra.deg:.5f},{star.coords.dec.deg:.5f},"
+                f"{format_string('minmax', parsed_toml)},{format_float_1(parsed_toml,'min')},"
+                f"{format_float_1(parsed_toml, 'max')},{metadata.var_type},"
+                f"{format_float_5(parsed_toml, 'period')},{format_float_5(parsed_toml, 'period_err')},"
+                f"{format_string('epoch', parsed_toml)}\n")
 
 
 def write_vsx_stars(resultdir, results_ids, stars: List[StarDescription]):
@@ -323,7 +345,7 @@ def count_dat_entries(afile):
 # constructs a list of star descriptions with catalog matches according to args
 def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_stardict: StarPosDict,
                                 list_of_dat_files: List[str], frames_used: int, args):
-    # Start with the list of all measured stars
+    # Start with the list of all measured 4stars
     stars_with_file_dict = {}
     list_of_dat_files.sort()
     for afile in list_of_dat_files:
@@ -397,8 +419,8 @@ def tag_candidates(vastdir: str, star_descriptions: List[StarDescription]):
 def tag_starfile(selectedstarfile: str, stardict: StarDict):
     try:
         df = pd.read_csv(selectedstarfile, delimiter=',', comment='#',
-                         names=['local_id', 'minmax', 'var_type', 'our_name', 'period', 'period_err', 'epoch'],
-                         dtype={'local_id': int, 'minmax': str, 'period': float, 'period_err': float},
+                         names=['local_id', 'var_type', 'our_name', 'period', 'period_err'],
+                         dtype={'local_id': int, 'period': float, 'period_err': float},
                          skipinitialspace=True)
         df = df.replace({np.nan: None})
         logging.info(f"Selecting {len(df)} stars added by {selectedstarfile}, {df['local_id'].to_numpy()}")
@@ -407,8 +429,9 @@ def tag_starfile(selectedstarfile: str, stardict: StarDict):
             if the_star is None:
                 logging.error(f"Could not find star {row['local_id']}, consider removing it from your txt file")
                 continue
-            the_star.metadata = StarFileData(row['local_id'], row['minmax'], row['var_type'],
-                                             row['our_name'], row['period'], row['period_err'], row['epoch'])
+            the_star.metadata = StarFileData(local_id=row['local_id'], var_type=row['var_type'],
+                                             our_name=row['our_name'], period=row['period'],
+                                             period_err=row['period_err'])
             the_star.metadata = SelectedStarData()
             logging.info(f"starfile {the_star.local_id} metadata: {the_star.metadata}, "
                          f"{the_star.get_metadata('STARFILE')}")
@@ -417,6 +440,8 @@ def tag_starfile(selectedstarfile: str, stardict: StarDict):
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
+        import traceback
+        print(traceback.print_exc())
         logging.error(message)
         logging.error(f"Could not read {selectedstarfile}, star {row['local_id']}")
 
@@ -433,7 +458,7 @@ def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
     idx, d2d, d3d = match_coordinates_sky(skycoord, star_catalog, nthneighbor=1)
     for count, index in enumerate(idx):
         entry = df.iloc[count]
-        stars[index].metadata = CatalogData(key="RMH+HMB", catalog_id=entry['our_name'],
+        stars[index].metadata = CatalogData(key="RMH-HMB", catalog_id=entry['our_name'],
                                             name=entry['our_name'],
                                             coords=SkyCoord(entry['ra'], entry['dec'], unit="deg"),
                                             separation=d2d[count].degree)

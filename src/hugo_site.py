@@ -75,7 +75,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             ucac4_name = f"{star.coords}"
         else:
             ucac4_name = ucac4.catalog_id if not None else "unknown"
-        period = f"{parsed_toml['period']:.5f}" if metadata.period is None \
+        period = f"{float(parsed_toml['period']):.5f}" if 'period' in parsed_toml \
             else f"{metadata.period:.5f} +/- {metadata.period_err:.5f}"
         phase_url = f"{images_prefix}{filename_no_ext}.png"
         minmax = f"<li>{metadata.minmax}</li>" if metadata.minmax is not None else ""
@@ -106,6 +106,8 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
+        import traceback
+        print(traceback.print_exc())
         logging.error(message)
         logging.error("File not found error in store and curve for star", star.path)
         return f'<div class="fl w-100 pa2 ba">Could not load {txt_path}</div>'

@@ -48,11 +48,14 @@ class SelectedStarData(StarMetaData):
 
 
 class StarFileData(StarMetaData):
-    def __init__(self, local_id: int, minmax: str, var_type: str = None, our_name: str = None, period: float = None,
-                 period_err: float = None, epoch: float = None, key='STARFILE'):
+    def __init__(self, local_id: int, minmax: str = None, var_min=None, var_max=None, var_type: str = None,
+                 our_name: str = None, period: float = None, period_err: float = None, epoch: float = None,
+                 key='STARFILE'):
         super().__init__(key)
         self.local_id = local_id
         self.minmax = self._strip_if_not_none(minmax)
+        self.var_min = var_min
+        self.var_max = var_max
         self.var_type = self._strip_if_not_none(var_type)
         self.our_name = self._strip_if_not_none(our_name)
         self.period = period
@@ -66,8 +69,8 @@ class StarFileData(StarMetaData):
 
 
     def __repr__(self):
-        return f'Key:{self.key}, {self.local_id} {self.minmax} {self.var_type} {self.our_name} {self.period}' \
-               f' {self.period_err} {self.epoch}'
+        return f'Key:{self.key}, {self.local_id} {self.minmax} {self.var_min}-{self.var_max} ' \
+               f'{self.var_type} {self.our_name} {self.period} {self.period_err} {self.epoch}'
 
 
     def __str__(self):

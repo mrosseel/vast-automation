@@ -24,14 +24,14 @@ class TestUtils(unittest.TestCase):
         stars = []
         for idx in range(1, 101):
             curr_star = self.stardesc(idx, random.random()*360, random.random()*90)
-            curr_star.metadata = star_metadata.StarFileData(curr_star.local_id, "minmax", 'var_type', f'RMH+HMB-{idx}',
+            curr_star.metadata = star_metadata.StarFileData(curr_star.local_id, "minmax", 'var_type', f'RMH-HMB-{idx}',
                                                        1, 0.1, "epoch")
             stars.append(curr_star)
         random.shuffle(stars)
         result = utils.sort_rmh_hmb(stars)
-        self.assertEqual("RMH+HMB-1", result[0].get_metadata("STARFILE").our_name)
-        self.assertEqual("RMH+HMB-10", result[9].get_metadata("STARFILE").our_name)
-        self.assertEqual("RMH+HMB-100", result[99].get_metadata("STARFILE").our_name)
+        self.assertEqual("RMH-HMB-1", result[0].get_metadata("STARFILE").our_name)
+        self.assertEqual("RMH-HMB-10", result[9].get_metadata("STARFILE").our_name)
+        self.assertEqual("RMH-HMB-100", result[99].get_metadata("STARFILE").our_name)
 
 
     def test_reject_outliers_iqr(self):
