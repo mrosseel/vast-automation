@@ -23,15 +23,26 @@ class TestUtils(unittest.TestCase):
     def test_sort_rmh_hmb(self):
         stars = []
         for idx in range(1, 101):
-            curr_star = self.stardesc(idx, random.random()*360, random.random()*90)
-            curr_star.metadata = star_metadata.StarFileData(curr_star.local_id, "minmax", 'var_type', f'RMH-HMB-{idx}',
-                                                       1, 0.1, "epoch")
+            curr_star = self.stardesc(idx, random.random() * 360, random.random() * 90)
+            curr_star.metadata = star_metadata.StarFileData(curr_star.local_id, minmax="minmax", var_min=14, var_max=16,
+                                                            var_type='var_type', our_name=f'RMH-HMB-{idx}',
+                                                            period=1, period_err=0.1, epoch="epoch")
             stars.append(curr_star)
         random.shuffle(stars)
         result = utils.sort_rmh_hmb(stars)
         self.assertEqual("RMH-HMB-1", result[0].get_metadata("STARFILE").our_name)
         self.assertEqual("RMH-HMB-10", result[9].get_metadata("STARFILE").our_name)
         self.assertEqual("RMH-HMB-100", result[99].get_metadata("STARFILE").our_name)
+
+        stars = []
+        for idx in range(1, 101):
+            curr_star = self.stardesc(idx, random.random() * 360, random.random() * 90)
+            curr_star.metadata = star_metadata.StarFileData(curr_star.local_id, minmax="minmax", var_min=14, var_max=16,
+                                                            var_type='var_type', our_name=f'',
+                                                            period=1, period_err=0.1, epoch="epoch")
+            stars.append(curr_star)
+        result = utils.sort_rmh_hmb(stars)
+
 
 
     def test_reject_outliers_iqr(self):
@@ -42,7 +53,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(len(data), len(df))
         df['A'][50] = -0.4
         df = utils.reject_outliers_iqr(df, column, cut=30)
-        self.assertEqual(len(data)-1, len(df))
+        self.assertEqual(len(data) - 1, len(df))
 
 
     @staticmethod
