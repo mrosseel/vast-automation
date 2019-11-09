@@ -205,20 +205,18 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         fig.savefig(save_location, format='png')
         plt.close(fig)
         plt.clf()
-        # write txt file with toml
-        try:
-            tomldict = {}
-            ymin_arg, ymax_arg = np.argmin(y_np), np.argmax(y_np)
-            epoch_min, epoch_max = t_np.iloc[ymin_arg], t_np.iloc[ymax_arg]
-            ymin, ymax = y_np[ymin_arg], y_np[ymax_arg]
-            var_range = f'{ymin:.1f}-{ymax:.1f}'
-            epoch = None
-            minmax = None
-        except:
-            print("errorke hier")
+
+        # write TXT file
+        tomldict = {}
+        ymin_arg, ymax_arg = np.argmin(y_np), np.argmax(y_np)
+        epoch_min, epoch_max = t_np.iloc[ymin_arg], t_np.iloc[ymax_arg]
+        ymin, ymax = y_np[ymin_arg], y_np[ymax_arg]
+        var_range = f'{ymin:.1f}-{ymax:.1f}'
+        epoch = None
+        minmax = None
         if star.has_metadata('STARFILE'):
             starfiledata: StarFileData = star.get_metadata('STARFILE')
-            if "RR" in starfiledata.var_type or "W Uma" in starfiledata.var_type:
+            if starfiledata.var_type is not None and "RR" in starfiledata.var_type or "W Uma" in starfiledata.var_type:
                 if "RR" in starfiledata.var_type:
                     epoch = epoch_max
                     minmax = f"max: {ymax:.1f}"
@@ -227,8 +225,8 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
                     minmax = f"min: {ymin:.1f}"
                 starfiledata.epoch = epoch
                 starfiledata.minmax = minmax
-                starfiledata.var_min = ymin
-                starfiledata.var_msax = ymax
+            starfiledata.var_min = ymin
+            starfiledata.var_max = ymax
             if starfiledata.period_err is not None:
                 tomldict['period_err'] = float(starfiledata.period_err)
         tomldict['period'] = float(period)
