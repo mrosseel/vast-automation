@@ -13,6 +13,7 @@ import math
 from comparison_stars import ComparisonStars
 from pathlib import PurePath
 import operator
+import tqdm
 
 StarDict = Dict[int, StarDescription]
 
@@ -52,7 +53,7 @@ def get_calculated_compstars(vastdir, stardict: StarDict, maglimit=15):
     max_obs = np.max([x.obs for x in stars])
     max_obs_clipped = max_obs_sorted[:1000]
     logging.info(f"Picked {len(max_obs_clipped)} stars with last star having "
-                 f"{max_obs_clipped[-2:-1][0].obs*100/max_obs} % of max observations")
+                 f"{max_obs_clipped[-2:-1][0].obs*100/max_obs:.2f} % of max observations")
 
 
     def limit(array, max_size):
@@ -63,7 +64,7 @@ def get_calculated_compstars(vastdir, stardict: StarDict, maglimit=15):
     min_err_stars = sorted(max_obs_clipped, key=operator.attrgetter('e_vmag'))
     # only first 100 are kept
     min_err_stars_clipped = min_err_stars[:limit(min_err_stars, 100)]
-    logging.info(f"Using {len(min_err_stars_clipped)} calculated comparison stars: {min_err_stars_clipped[:3]}")
+    logging.info(f"Using {len(min_err_stars_clipped)} calculated comparison stars.")
     return [x.local_id for x in min_err_stars_clipped], min_err_stars_clipped
 
 
@@ -124,8 +125,7 @@ def weighted_value_ensemble_method(vrel, comp_obs, comp_err, comp_real):
 
 
 def add_closest_compstars(stars: List[StarDescription], comp_stars: ComparisonStars, limit=10):
-    logging.info("Setting closest compstars")
-    for star in stars:
+    for star in tqdm.tqdm(stars, total=len(stars), desc='Adding closest comparison stars'):
         star.metadata = CompStarData(compstar_ids=_closest_compstar_ids(star, comp_stars, limit))
 
 
