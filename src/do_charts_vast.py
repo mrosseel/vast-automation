@@ -216,7 +216,10 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         minmax = None
         if star.has_metadata('STARFILE'):
             starfiledata: StarFileData = star.get_metadata('STARFILE')
-            if starfiledata.var_type is not None and "RR" in starfiledata.var_type or "W Uma" in starfiledata.var_type:
+            assert starfiledata is not None
+            print(starfiledata, starfiledata.var_type)
+            if starfiledata.var_type is not None \
+                and ("RR" in starfiledata.var_type or "W Uma" in starfiledata.var_type):
                 if "RR" in starfiledata.var_type:
                     epoch = epoch_max
                     minmax = f"max: {ymax:.1f}"

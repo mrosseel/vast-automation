@@ -91,7 +91,7 @@ def run_do_rest(args):
 
     comp_stars = read_comparison_stars(star_descriptions, args.checkstarfile, vastdir, stardict, ucac4)
 
-    # Set comp stars for every star
+    # Set comp stars for all interesting stars (stars which are interesting enough to measure)
     logging.info("Setting per star comparison stars...")
     if args.checkstarfile:
         utils.add_metadata(star_descriptions, CompStarData(compstar_ids=comp_stars.ids))
