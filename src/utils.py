@@ -98,7 +98,17 @@ def metadata_filter(star: StarDescription, catalog_name, exclude=[]):
 
 
 def sort_rmh_hmb(stars: List[StarDescription]):
-    return sorted(stars, key=lambda x: int(x.get_metadata('STARFILE').our_name[8:]))
+    regex = r'.*?(\d+)$'  # finding the number in our name
+
+    def get_sort_value(star: StarDescription):
+        starfile = star.get_metadata('STARFILE')
+        the_match = re.match(regex, starfile.our_name) if starfile is not None else None
+        if starfile is None or the_match is None:
+            logging.warning("The name in starfile can't be parsed for sorting, won't be sorted")
+            return 0
+        print(starfile.our_name, int(the_match.group(1)))
+        return int(the_match.group(1))
+    return sorted(stars, key=get_sort_value)
 
 
 def add_star_lists(list1: List[StarDescription], list2: List[StarDescription]):
