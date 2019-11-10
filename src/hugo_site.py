@@ -120,6 +120,9 @@ def get_header(title: str):
 
 def get_starfile_preamble(images_prefix: str, len_selectied: int, len_vsx: int, len_candidates: int):
     return f'<div class="bb-l b--black-10 w-100">' \
+           f'<div class="fl w-100 pa2 ba">' \
+           f'Images by Josch Hambsch, Data processing by Mike Rosseel, Josch Hambsch and ' \
+           f'<a href="http://scan.sai.msu.ru/vast/">VaST</a></div>' \
            f'<a href="{images_prefix}starfile.txt">CSV file of all stars on this page</a><br/>' \
            f'<a href="{images_prefix}vsx_{len_vsx}_and_selected_{len_selectied}.png">' \
            f'Finder chart with VSX and selected new stars</a></div>\n'

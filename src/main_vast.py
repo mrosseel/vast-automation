@@ -301,7 +301,6 @@ def write_augmented_starfile(resultdir: str, starfile_stars: List[StarDescriptio
 
 
         def format_string(arg: str, toml):
-            print("Receiving arg", arg, "with type", type(arg))
             if arg in toml:
                 return toml[arg]
             return ''
