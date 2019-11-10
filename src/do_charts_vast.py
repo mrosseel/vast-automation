@@ -29,7 +29,7 @@ from timeit import default_timer as timer
 from star_description import StarDescription
 from pathlib import PurePath
 from typing import Tuple
-from pandas import DataFrame
+from pandas import DataFrame, Series
 
 from star_metadata import StarFileData
 
@@ -43,67 +43,71 @@ def set_seaborn_style():
     sns.set_style("ticks")
 
 
-# takes:  [ {'id': star_id, 'match': {'name': match_name, 'separation': separation_deg  } } ]
-def plot_lightcurve(star_tuple: Tuple[StarDescription, DataFrame], chartsdir):
-    #    try:
-    star_description = star_tuple[0]
-    curve = star_tuple[1]
-    star_id = star_description.local_id
-    logging.debug(f"Plotting light curve for {star_id}")
-    vsx_name, separation, filename_no_ext = get_star_or_catalog_name(star_description, suffix=f"_light")
-    vsx_title = '' if vsx_name is None else f" ({vsx_name} - dist:{separation:.4f})"
-    save_location = PurePath(chartsdir, filename_no_ext)
-    start = timer()
-    upsilon_match = star_description.get_metadata('UPSILON')
-    upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
-    end = timer()
-    logging.debug(f"timing upsilon stuff {end - start}")
-    coord = star_description.coords
-    # print(f'Plotting lightcurve with star_description:{star_description}, curve length:{len(curve)}, star:{star}, curve:{curve}')
-    if (curve is None):
-        logging.info(f"Curve is None for star {star_id}")
-        return
-    # curve = curve.replace(to_replace=99.99999, value=np.nan, inplace=False) # we filter now
-    used_curve = curve
-    used_curve_max = used_curve['realV'].max()
-    used_curve_min = used_curve['realV'].min()
-    # print(f"used curve:{used_curve['V-C']}, used curve max:{used_curve_max}, used curve min:{used_curve_min}")
+def plot_lightcurve_jd(star: StarDescription, curve: DataFrame, chartsdir, period: float):
+    try:
+        star_id = star.local_id
+        logging.debug(f"Plotting lightcurve for {star_id}")
+        vsx_name, separation, filename_no_ext = get_star_or_catalog_name(star, suffix=f"_light")
+        vsx_title = '' if vsx_name is None else f" ({vsx_name} - dist:{separation:.4f})"
+        save_location = PurePath(chartsdir, filename_no_ext + '.png')
+        start = timer()
+        upsilon_match = star.get_metadata('UPSILON') if star.has_metadata('UPSILON') else None
+        upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
+        end = timer()
+        logging.debug(f"timing upsilon stuff {end - start}")
+        coord = star.coords
+        # print(f'Plotting lightcurve with star_description:{star_description}, curve length:{len(curve)}, star:{star}, curve:{curve}')
+        if (curve is None):
+            logging.info(f"Curve is None for star {star_id}")
+            return
 
-    # insert counting column
-    used_curve.insert(0, 'Count', range(0, len(used_curve)))
-    g = sns.lmplot('Count', 'Vrel',
-                   data=used_curve, height=20, aspect=5, scatter_kws={"s": 15},
-                   fit_reg=False)
+        curve_max = curve['realV'].max()
+        curve_min = curve['realV'].min()
+        curve['phaseJD'], xmin, ymin = phase_lock_lightcurve(curve['floatJD'], period)
+        fig = plt.figure(figsize=(20, 12), dpi=150, facecolor='w', edgecolor='k')
+        # plt.scatter(curve['floatJD'], curve['realV'])
+        plt.errorbar(curve['phaseJD'], curve['realV'], yerr=curve['realErr'], linestyle='none', marker='o',
+                     ecolor='gray',
+                     elinewidth=1)
 
-    plt.xlabel('Count', labelpad=TITLE_PAD)
-    # plt.ylabel("Absolute Mag, comp star = {:2.2f}".format(comparison_stars[0].vmag), labelpad=TITLE_PAD)
-    plot_max = used_curve_max
-    plot_min = min(plot_max - 1, used_curve_min)
-    logging.debug(f'min {plot_min} max {plot_max} usedmin {used_curve_min} usedmax {used_curve_max}')
-    if np.isnan(plot_max) or np.isnan(plot_min):
-        logging.info(f"star is nan:{star_id}, plot_max:{plot_max}, plot_min:{plot_min}")
-        return
-    plt.ylim(plot_min, plot_max)
-    plt.xlim(0, len(used_curve))
-    plt.gca().invert_yaxis()
-    # g.map(plt.errorbar, 'Count', 'V-C', yerr='s1', fmt='o')
-    # plt.ticklabel_format(style='plain', axis='x')
-    plt.title(f"Star {star_id}{vsx_title}, position: {utils.get_hms_dms_matplotlib(coord)}{upsilon_text}",
-              pad=TITLE_PAD)
-    start = timer()
-    figure = g.fig
-    figure.savefig(save_location)
-    # g.savefig(chartsdir+str(star).zfill(5)+'_plot')
-    end = timer()
-    logging.debug(f"timing saving fig {end - start}")
-    plt.close(g.fig)
+        plt.xlabel('phase-adjusted JD', labelpad=TITLE_PAD)
+        #plt.xscale('log')
+        # plt.ylabel("Absolute Mag, comp star = {:2.2f}".format(comparison_stars[0].vmag), labelpad=TITLE_PAD)
+        plot_max = curve_max + 0.1
+        plot_min = curve_min - 0.1
+        plt.ylim(plot_min, plot_max)
+        plt.xlim(xmin, ymin)
+        plt.gca().invert_yaxis()
+        # plt.ticklabel_format(style='plain', axis='x')
+        plt.title(f"Star {star_id}{vsx_title}\nposition: {utils.get_hms_dms_matplotlib(coord)}{upsilon_text}",
+                  pad=TITLE_PAD)
+        plt.tight_layout()
+        start = timer()
+        fig.savefig(save_location)
+        end = timer()
+        logging.debug(f"timing saving fig {end - start}")
+        plt.close(fig)
+        plt.clf()
+    except Exception as ex:
+        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+        message = template.format(type(ex).__name__, ex.args)
+        import traceback
+        print(traceback.print_exc())
+        logging.error(message)
+        logging.error(f"Error during plot lightcurve: {star.local_id}")
 
 
-#    except:
-#        print("error", tuple)
+def phase_lock_lightcurve(series: Series, period):
+    jds = series.to_numpy()
+    jds_norm_orig = np.subtract(jds, jds.min())
+    jds_norm = np.diff(jds_norm_orig)
+    jds_norm = np.mod(jds_norm, period)
+    jds_norm = np.concatenate(([jds_norm_orig[0]],jds_norm))
+    jds_norm = np.cumsum(jds_norm)
+    return jds_norm, np.min(jds_norm), np.max(jds_norm)
 
 
-def plot_lightcurve_jd(star: StarDescription, curve: DataFrame, chartsdir):
+def plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir):
     try:
         star_id = star.local_id
         logging.debug(f"Plotting lightcurve for {star_id}")
@@ -252,7 +256,7 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         print(traceback.print_exc())
         logging.error(message)
         logging.error(f"Error during plot phase: {star.local_id}")
-
+    return period
 
 def get_star_or_catalog_name(star: StarDescription, suffix: str):
     if star.has_metadata("VSX"):
@@ -299,12 +303,6 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_charts, do_ph
         # remove errors
         df = utils.reject_outliers_iqr(df, 'realV', 20)
         # logging.info(f"Rejected {old_size-len(df)} observations with iqr.")
-        if do_charts:
-            # start = timer()
-            # logging.debug("NO LIGHTCRUVEGYET ")
-            plot_lightcurve_jd(star, df.copy(), chartsdir)
-            # end = timer()
-            # print("plotting lightcurve:", end-start)
         if do_phase:
             if star.has_metadata("STARFILE") and star.get_metadata("STARFILE") is None:
                 # This should not happen!!!
@@ -315,9 +313,15 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_charts, do_ph
             if star.get_metadata("STARFILE") is not None:
                 period: float = star.get_metadata("STARFILE").period
                 logging.debug(f"Using provided period for star {star.local_id}: {period}")
-                plot_phase_diagram(star, df.copy(), phasedir, period=period)
+                period = plot_phase_diagram(star, df.copy(), phasedir, period=period)
             else:
-                plot_phase_diagram(star, df.copy(), phasedir, period=None, suffix="")
+                period = plot_phase_diagram(star, df.copy(), phasedir, period=None, suffix="")
+        if do_charts:
+            # start = timer()
+            # logging.debug("NO LIGHTCRUVEGYET ")
+            plot_lightcurve_jd(star, df.copy(), chartsdir, period)
+            # end = timer()
+            # print("plotting lightcurve:", end-start)
         if do_aavso:
             # TODO put this in settings.txt
             sitelat = '-22 57 10'
