@@ -1,5 +1,6 @@
 import csv
 
+
 class FormatException(Exception):
     """
     Raised when the data does not conform to AAVSO format specification.
@@ -20,7 +21,7 @@ class ExtendedFormatWriter(object):
 
         >>> with open('data.txt', 'wb') as fp:
         ...     writer = VisualFormatWriter(fp, 'XYZ')
-        ...     writer.writerow({
+        ...     writer.addrow({
         ...         'name': 'SS CYG',
         ...         'date': '2450702.1234',
         ...         'magnitude': '<11.1',
@@ -33,6 +34,7 @@ class ExtendedFormatWriter(object):
 
     .. _`Visual File Format`: http://www.aavso.org/aavso-visual-file-format
     """
+
 
     def __init__(self, fp, observer_code, *, delimiter=',', date_format='JD', type='EXTENDED',
                  obstype='CCD', software='pyaavso'):
@@ -57,16 +59,24 @@ class ExtendedFormatWriter(object):
         self.observer_code = observer_code
         self.date_format = date_format
         self.obstype = obstype
-        fp.write(f"#TYPE={type}\n")
-        fp.write(f'#OBSCODE={observer_code}\n')
-        fp.write(f"#SOFTWARE={software}\n")
-        fp.write(f"#DELIM={delimiter}\n")
-        fp.write(f"#DATE={date_format.upper()}\n")
-        fp.write(f"#OBSTYPE={obstype}\n")
-        fp.write("#NAME,DATE,MAG,MERR,FILT,TRANS,MTYPE,CNAME,CMAG,KNAME,KMAG,AMASS,GROUP,CHART,NOTES\n")
-        self.writer = csv.writer(fp, delimiter=delimiter)
+        self.fp = fp
+        self.data = []
+        self.data.append(f"#TYPE={type}")
+        self.data.append(f'#OBSCODE={observer_code}')
+        self.data.append(f"#SOFTWARE={software}")
+        self.data.append(f"#DELIM={delimiter}")
+        self.data.append(f"#DATE={date_format.upper()}")
+        self.data.append(f"#OBSTYPE={obstype}")
+        self.data.append("#NAME,DATE,MAG,MERR,FILT,TRANS,MTYPE,CNAME,CMAG,KNAME,KMAG,AMASS,GROUP,CHART,NOTES")
 
-    def writerow(self, observation_data):
+
+    def flush(self):
+        string_to_write = "\n".join(self.data)
+        self.fp.write(string_to_write)
+        self.data = []
+
+
+    def addrow(self, observation_data):
         """
         Writes a single observation to the output file.
 
@@ -77,11 +87,12 @@ class ExtendedFormatWriter(object):
 
         :param observation_data: a single observation as a dictionary or list
         """
-        if isinstance(observation_data, (list, tuple)):
+        if isinstance(observation_data, str):
             row = observation_data
         else:
             row = self.dict_to_row(observation_data)
-        self.writer.writerow(row)
+        self.data.append(row)
+
 
     @classmethod
     def dict_to_row(cls, observation_data):
@@ -94,16 +105,15 @@ class ExtendedFormatWriter(object):
         :param cls: current class
         :param observation_data: a single observation as a dictionary
         """
-        row = ["{:.30}".format(observation_data['name']), "{:.16}".format(observation_data['date']),
-               "{:.8}".format(observation_data['magnitude']), "{:.6}".format(observation_data['magnitude_error']),
-               "{:.5}".format(observation_data['filter']), "{:.3}".format(observation_data['transformed']),
-               "{:.3}".format(observation_data['magnitude_type']),
-               "{:.20}".format(observation_data.get('comparison_name', 'na')),
-               "{:.8}".format(observation_data.get('comparison_magnitude', 'na')),
-               "{:.20}".format(observation_data.get('check_name', 'na')),
-               "{:.8}".format(observation_data.get('check_magnitude', 'na')),
-               "{:.7}".format(observation_data.get('airmass', 'na')),
-               "{:.5}".format(observation_data.get('group', 'na')),
-               "{:.20}".format(observation_data.get('chart', 'na')),
-               "{:.2000}".format(observation_data.get('notes', 'na'))]
-        return row
+        return f"{observation_data['name']:.30},{observation_data['date']:.16}," \
+               f"{observation_data['magnitude']:.8},{observation_data['magnitude_error']:.6}," \
+               f"{observation_data['filter']:.5},{observation_data['transformed']:.3}," \
+               f"{observation_data['magnitude_type']:.3}," \
+               f"{observation_data.get('comparison_name', 'na'):.20}," \
+               f"{observation_data.get('comparison_magnitude', 'na'):.8}," \
+               f"{observation_data.get('check_name', 'na'):.20}," \
+               f"{observation_data.get('check_magnitude', 'na'):.8}," \
+               f"{observation_data.get('airmass', 'na'):.7}," \
+               f"{observation_data.get('group', 'na'):.5}," \
+               f"{observation_data.get('chart', 'na'):.20}," \
+               f"{observation_data.get('notes', 'na'):.2000}"

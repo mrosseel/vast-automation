@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import do_aavso_report
 import do_calibration
+import reading
 import utils
 import argparse
 import logging
@@ -283,10 +284,7 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_charts, do_ph
     # comp_mags = [x.vmag for x in comparison_stars]
 
     try:
-        df = pd.read_csv(star.path, delim_whitespace=True,
-                         names=['JD', 'Vrel', 'err', 'X', 'Y', 'unknown', 'file', 'vast1', 'vast2', 'vast3', 'vast4',
-                                'vast5', 'vast6', 'vast7', 'vast8', 'vast9', 'vast10'], dtype={'JD': str})
-
+        df = reading.read_lightcurve_vast(star.path)
         if df is None or len(df) == 0:
             logging.info(f"No lightcurve found for {star.path}")
             return
@@ -347,7 +345,7 @@ def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir:
         desc="Writing light curve charts/phase diagrams"):
     CHUNK = max(1, len(star_descriptions) // nr_threads)
     set_seaborn_style()
-    pool = mp.Pool(nr_threads)
+    pool = mp.Pool(nr_threads, maxtasksperchild=10)
     phasedir = PurePath(resultdir, phasepart)
     chartsdir = PurePath(resultdir, chartspart)
     aavsodir = PurePath(resultdir, aavso_part)

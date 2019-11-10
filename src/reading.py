@@ -8,6 +8,7 @@ import glob
 import logging
 import pickle
 
+
 # - 1st column - JD(TT) (default) or JD(UTC) (if VaST was started with "-u" flag)
 # - 2nd column - magnitude (with respect to the background level on the reference image if an absolute calibration was not done yet)
 # - 3rd column - estimated magnitude error
@@ -15,16 +16,12 @@ import pickle
 # - 5th column - Y position of the star on the current frame (in pixels)
 # - 6th column - diameter of the circular aperture used to measure the current frame (in pixels)
 # - 7th column - file path corresponding to the current frame
-def read_lightcurve_vast(star: int, vastdir:str, preprocess=False):
-    try:
-        df = pd.read_csv(vastdir + f"out{star:05}.dat", names=['JD', 'mag', 'mag_e', 'X', 'Y', 'aperture', 'file', 'c1', 'c1b', 'c2', 'c2b', 'c3', 'c3b', 'c4', 'c4b', 'c5', 'c5b'],
-                         header=None, delim_whitespace=True)
-        logging.debug(f"Read lightcurve of {star} with {df.shape[0]}")
-        if(preprocess):
-            df = preprocess_lightcurve(df)
-        return df
-    except OSError as e:
-        logging.error(f"OSError for star: {star}, {e}")
+def read_lightcurve_vast(starpath: str):
+    logging.debug(f"Read lightcurve at path {starpath}")
+    return pd.read_csv(starpath, delim_whitespace=True,
+                       names=['JD', 'Vrel', 'err', 'X', 'Y', 'unknown', 'file', 'vast1', 'vast2', 'vast3', 'vast4',
+                              'vast5', 'vast6', 'vast7', 'vast8', 'vast9', 'vast10'],
+                       usecols=['JD', 'Vrel', 'err', 'X', 'Y', 'unknown', 'file'], dtype={'JD': str})
 
 
 def preprocess_lightcurve(df):
@@ -36,6 +33,7 @@ def preprocess_lightcurve(df):
     except IndexError:
         logging.error(f"len df: {len(df)}")
 
+
 def read_pos(star, jd):
     try:
         df = pd.read_csv(settings.posdir + 'pos_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
@@ -45,12 +43,12 @@ def read_pos(star, jd):
         row = df.loc[df['JD'] == jd]
         logging.info(f"reading position, row: {row}, jd: {jd}")
         row = df3.iloc[0]
-        return [row['JD'], row['X'],row['Y'], row['MAG']]
-        #return (df3['X'].iloc[0], df3['Y'].iloc[0])
+        return [row['JD'], row['X'], row['Y'], row['MAG']]
+        # return (df3['X'].iloc[0], df3['Y'].iloc[0])
         # return df
     except IndexError:
         logging.error("ERROR: IndexError")
-        #print("df:",len(df),"df2:", len(df2),"df3:", len(df3))
+        # print("df:",len(df),"df2:", len(df2),"df3:", len(df3))
         logging.error(len(df))
 
 
@@ -58,15 +56,16 @@ def read_reference_frame():
     file_to_load = settings.basedir + 'reference_frame.txt'
     reference_file = open(file_to_load, 'r')
     reference_file_contents = reference_file.readlines()
-    reference_frame=reference_file_contents[0].rstrip()
-    reference_frame_index=int(reference_file_contents[1])
+    reference_frame = reference_file_contents[0].rstrip()
+    reference_frame_index = int(reference_file_contents[1])
     return file_to_load, reference_frame, reference_frame_index
 
 
 def trash_and_recreate_dir(dir):
     os.system('rm -fr "%s"' % dir)
-    #shutil.rmtree(dir, ignore_errors=True)
+    # shutil.rmtree(dir, ignore_errors=True)
     create_dir(dir)
+
 
 def create_dir(dir):
     os.makedirs(dir, exist_ok=True)
@@ -82,10 +81,12 @@ def reduce_star_list(star_list_1, the_path):
     logging.info(f"Found {len(found)} stars already processed in {the_path}")
     return [item for item in star_list_1 if item not in found]
 
+
 # takes a filename and extracts the star number from it
 def filename_to_star(filename):
-    m = re.search(r'\d+',filename)
+    m = re.search(r'\d+', filename)
     return int(m.group(0).lstrip('0'))
+
 
 # read the world positions and return them in a dictionary
 # returns {'name': [ra.deg, dec.deg ]}
@@ -93,13 +94,13 @@ def read_world_positions(the_path):
     the_dir = os.listdir(the_path)
     the_dir.sort()
     results = {}
-    for name in the_dir: # 'file' is a builtin type, 'name' is a less-ambiguous variable name.
+    for name in the_dir:  # 'file' is a builtin type, 'name' is a less-ambiguous variable name.
         try:
-            with open(the_path + name) as f: # No need to specify 'r': this is the default.
+            with open(the_path + name) as f:  # No need to specify 'r': this is the default.
                 results[filename_to_star(name)] = f.readlines()[0].split(' ')
         except IOError as exc:
-            if exc.errno != errno.EISDIR: # Do not fail if a directory is found, just ignore it.
-                raise # Propagate other kinds of IOError.
+            if exc.errno != errno.EISDIR:  # Do not fail if a directory is found, just ignore it.
+                raise  # Propagate other kinds of IOError.
     return results
 
 
@@ -109,18 +110,20 @@ def read_aperture():
     aperture = apertures[apertureidx]
     return apertures, apertureidx, aperture
 
+
 def read_compstars():
     comparison_stars_1 = np.loadtxt(settings.basedir + "comparison_stars_1.txt", dtype=int, delimiter=';')
     with open(settings.basedir + 'comparison_stars_1_desc.bin', 'rb') as compfile:
         comparison_stars_1_desc = pickle.load(compfile)
     return comparison_stars_1, comparison_stars_1_desc
 
+
 # Select files conforming to the match_pattern using percentage which is between 0 and 1
 def file_selector(the_dir, match_pattern, percentage=1) -> List[str]:
-    matched_files = glob.glob(the_dir+match_pattern)
+    matched_files = glob.glob(the_dir + match_pattern)
     desired_length = max(1, int(len(matched_files) * float(percentage)))
-    logging.debug(f"Reading.file_selector: {the_dir+match_pattern}, "
+    logging.debug(f"Reading.file_selector: {the_dir + match_pattern}, "
                   f"total:{len(matched_files)}, desired:{desired_length}")
-    np.random.seed(42) # for the same percentage, we always get the same selection
+    np.random.seed(42)  # for the same percentage, we always get the same selection
     selected_files = np.random.choice(matched_files, size=desired_length, replace=False).tolist()
     return selected_files

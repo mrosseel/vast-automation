@@ -14,7 +14,7 @@ import read_camera_filters
 from typing import Tuple, List
 from pandas import DataFrame
 from comparison_stars import ComparisonStars
-from pathlib import PurePath
+from pathlib import PurePath, Path
 
 
 def calculate_airmass(coord, location, jd):
@@ -23,12 +23,12 @@ def calculate_airmass(coord, location, jd):
     return alt_azs.secz
 
 
-def report(star: StarDescription, df_curve: DataFrame, target_dir: PurePath, vastdir: str, sitelat, sitelong,
+def report(star: StarDescription, df_curve: DataFrame, target_dir: Path, vastdir: str, sitelat, sitelong,
            sitealt, filter=None, observer='RMH', chunk_size=None):
-    star_match_ucac4, separation = star.get_metadata("UCAC4")\
-                                       .get_name_and_separation() if star.has_metadata("UCAC4") else (None, None)
-    star_match_vsx, separation = star.get_metadata("VSX")\
-                                     .get_name_and_separation() if star.has_metadata("VSX") else (None, None)
+    star_match_ucac4, separation = star.get_metadata("UCAC4") \
+        .get_name_and_separation() if star.has_metadata("UCAC4") else (None, None)
+    star_match_vsx, separation = star.get_metadata("VSX") \
+        .get_name_and_separation() if star.has_metadata("VSX") else (None, None)
     var_display_name = star_match_ucac4 if star_match_vsx is None else star_match_vsx
     var_display_name = var_display_name if var_display_name is not None else f"Star_{star.local_id}"
     check_display_name = "TODO"
@@ -55,12 +55,12 @@ def report(star: StarDescription, df_curve: DataFrame, target_dir: PurePath, vas
     for chunk in star_chunks:
         chunk_counters += 1
         suffix = f"_{chunk_counters}.txt" if len(star_chunks) != 1 else ".txt"
-        with open(PurePath(target_dir, f"{title}_ext{suffix}"), 'w') as fp:
+        with open(Path(target_dir, f"{title}_ext{suffix}"), 'w') as fp:
             writer = aavso.ExtendedFormatWriter(fp, observer, software='munipack-automation', type='EXTENDED',
                                                 obstype='CCD')
             for _, row in chunk.iterrows():
                 # logging.info(row, type(row))
-                writer.writerow({
+                writer.addrow({
                     'name': var_display_name,
                     'date': row['JD'],
                     'magnitude': row['realV'],
@@ -77,6 +77,7 @@ def report(star: StarDescription, df_curve: DataFrame, target_dir: PurePath, vas
                     'chart': 'na',
                     'notes': 'na'
                 })
+            writer.flush()
 
 
 if __name__ == '__main__':
