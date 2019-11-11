@@ -448,7 +448,8 @@ def tag_starfile(selectedstarfile: str, stardict: StarDict):
 def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
     # outfile.write(f"# our_name,ra,dec,minmax,var_type,period,epoch\n")
     df = pd.read_csv(owncatalog, delimiter=',', comment='#',
-                     names=['our_name', 'ra', 'dec', 'minmax', 'var_type', 'period', 'epoch'],
+                     names=['our_name', 'ra', 'dec', 'minmax', 'min', 'max', 'var_type', 'period', 'period_err',
+                            'epoch'],
                      dtype={'ra': float, 'dec': float, 'minmax': str},
                      skipinitialspace=True)
     df = df.replace({np.nan: None})
