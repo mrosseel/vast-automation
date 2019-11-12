@@ -347,7 +347,7 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_charts, do_ph
 def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir: str, phasepart: str, chartspart: str,
         aavso_part: str, do_charts=False, do_phase=True, do_aavso=False, aavsolimit=None, nr_threads=cpu_count(),
         desc="Writing light curve charts/phase diagrams"):
-    CHUNK = max(1, len(star_descriptions) // nr_threads*10)
+    CHUNK = 1  # max(1, len(star_descriptions) // nr_threads*10)
     set_seaborn_style()
     pool = mp.Pool(nr_threads, maxtasksperchild=10)
     phasedir = PurePath(resultdir, phasepart)
