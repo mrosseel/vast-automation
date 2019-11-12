@@ -2,6 +2,8 @@ import logging
 import argparse
 import utils
 from datetime import datetime
+import main_vast
+import os.path
 
 if __name__ == '__main__':
     logger = logging.getLogger()
@@ -45,9 +47,13 @@ if __name__ == '__main__':
     fh.setLevel(logging.INFO)
     # add the handlers to the logger
     logger.addHandler(fh)
-    # print(dir(init))
-    # print(dir(settings))pr
-    import main_vast
+
+    # sanity checks
+    assert os.path.exists(args.datadir), "datadir does not exist"
+    # assert os.path.exists(args.resultdir), "resultdir does not exist" ==> this dir is created
+    assert os.path.exists(args.checkstarfile) if args.checkstarfile else True, "checkstarfile does not exist"
+    assert os.path.exists(args.owncatalog) if args.owncatalog else True, "owncatalog does not exist"
+    assert os.path.exists(args.selectedstarfile) if args.selectedstarfile else True, "selectedstarfile does not exist"
 
     # monitoring_thread = start_monitoring(seconds_frozen=15, test_interval=1000)
     if args.verbose:
