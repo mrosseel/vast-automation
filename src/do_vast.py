@@ -49,6 +49,7 @@ if __name__ == '__main__':
     logger.addHandler(fh)
 
     # sanity checks
+    # improve with: https://stackoverflow.com/questions/37471636/python-argument-parsing-validation-best-practices
     assert os.path.exists(args.datadir), "datadir does not exist"
     # assert os.path.exists(args.resultdir), "resultdir does not exist" ==> this dir is created
     assert os.path.exists(args.checkstarfile) if args.checkstarfile else True, "checkstarfile does not exist"
