@@ -77,12 +77,14 @@ def run_do_rest(args):
                   star_descriptions[:10] if len(star_descriptions) >= 10 else star_descriptions)
     write_augmented_autocandidates(vastdir, resultdir, stardict)
     write_augmented_all_stars(vastdir, resultdir, stardict)
-    candidate_stars = utils.get_stars_with_metadata(star_descriptions, "CANDIDATE", exclude="VSX")
     rmhhmb_stars = utils.get_stars_with_metadata(star_descriptions, "RMH-HMB")
+    candidate_stars = utils.get_stars_with_metadata(star_descriptions, "CANDIDATE", exclude="VSX")
     candidate_stars = utils.add_star_lists(candidate_stars, rmhhmb_stars)
-    vsx_stars = utils.get_stars_with_metadata(star_descriptions, "VSX")
-    starfile_stars = utils.get_stars_with_metadata(star_descriptions, "STARFILE")
 
+    vsx_stars = utils.get_stars_with_metadata(star_descriptions, "VSX")
+    rmhhmb_stars = utils.get_stars_with_metadata(star_descriptions, "RMH-HMB")
+    starfile_stars = utils.get_stars_with_metadata(star_descriptions, "STARFILE")
+    starfile_stars = utils.add_star_lists(starfile_stars, rmhhmb_stars)
     interesting_stars = starfile_stars + vsx_stars + candidate_stars
 
     # set ucac4 stars selected

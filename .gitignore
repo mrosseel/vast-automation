@@ -19,3 +19,5 @@ venv
 /support/vast-dev/
 /results/
 
+/.venv/
+/.vscode/
