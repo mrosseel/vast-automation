@@ -63,24 +63,26 @@ def run_do_rest(args):
         if not args.imagedir:
             logging.error("There is no reference frame AND you didn't specify the --imagedir option. Please fix.")
             sys.exit(0)
-        rotation = extract_reference_frame_rotation(vastdir, reference_frame)
-        from scipy import ndimage
-        from astropy.io import fits
-        reference_frame_filename = Path(reference_frame).name
-        hdulist = fits.open(Path(args.imagedir, reference_frame_filename))
-        data = hdulist[0].data.astype(float)
-        data = ndimage.interpolation.rotate(data, rotation)
-        hdulist[0].data = data
-        rotated_reference = Path(vastdir, 'reference_frame.fits')
-        if os.path.exists(rotated_reference):
-            os.remove(rotated_reference)
-        hdulist.writeto(rotated_reference)
-        logging.info(f"Wrote {rotated_reference} which is a {rotation} degrees rotation of {reference_frame_filename}")
-    while not os.path.isfile(wcs_file):
-        logging.info(
-            f"Please provide the reference header '{wcs_file}', which is an astrometry.net plate-solve of "
-            f"{rotated_reference} and press Enter to continue...")
-        subprocess.call("read -t 10", shell=True, executable='/bin/bash')
+        import subprocess
+        subprocess.Popen("script2.py 1", shell=True)
+    #     rotation = extract_reference_frame_rotation(vastdir, reference_frame)
+    #     from scipy import ndimage
+    #     from astropy.io import fits
+    #     reference_frame_filename = Path(reference_frame).name
+    #     hdulist = fits.open(Path(args.imagedir, reference_frame_filename))
+    #     data = hdulist[0].data.astype(float)
+    #     data = ndimage.interpolation.rotate(data, rotation)
+    #     hdulist[0].data = data
+    #     rotated_reference = Path(vastdir, 'reference_frame.fits')
+    #     if os.path.exists(rotated_reference):
+    #         os.remove(rotated_reference)
+    #     hdulist.writeto(rotated_reference)
+    #     logging.info(f"Wrote {rotated_reference} which is a {rotation} degrees rotation of {reference_frame_filename}")
+    # while not os.path.isfile(wcs_file):
+    #     logging.info(
+    #         f"Please provide the reference header '{wcs_file}', which is an astrometry.net plate-solve of "
+    #         f"{rotated_reference} and press Enter to continue...")
+    #     subprocess.call("read -t 10", shell=True, executable='/bin/bash')
 
     # get wcs model from the reference header. Used in writing world positions and field charts
     wcs = do_calibration.get_wcs(wcs_file)
@@ -314,7 +316,7 @@ def write_augmented_all_stars(readdir: str, writedir: str, stardict: StarDict):
 # naam, ra, dec, max, min, type, periode, epoch?
 def write_augmented_starfile(resultdir: str, starfile_stars: List[StarDescription]):
     newname = f"{resultdir}starfile.txt"
-    logging.info(f"Writing {newname}...")
+    logging.info(f"Writing {newname} with {len(starfile_stars)}...")
     sorted_stars = utils.sort_rmh_hmb(starfile_stars)
     with open(newname, 'w') as outfile:
         outfile.write(f"# our_name,ra,dec,minmax,min,max,var_type,period,period_err,epoch\n")
@@ -374,7 +376,8 @@ def count_dat_entries(afile):
 
 
 # constructs a list of star descriptions with catalog matches according to args
-def add_number_of_observations(vastdir):
+def count_number_of_observations(vastdir):
+    logging.info("Counting number of observations per star ...")
     obsdict = {}
     columns = ['Median magnitude', 'idx00_STD', 'X position of the star on the reference image [pix]',
                'Y position of the star on the reference image [pix]',
@@ -409,7 +412,7 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
 
     # get SD's for all stars which are backed by a file with measurements
     star_descriptions = do_calibration.get_empty_star_descriptions(intersect_dict)
-    obsdict = add_number_of_observations(vastdir)
+    obsdict = count_number_of_observations(vastdir)
     for sd in star_descriptions:
         sd.path = '' if sd.local_id not in intersect_dict else intersect_dict[sd.local_id][3]
         sd.xpos = intersect_dict[int(sd.local_id)][0]
@@ -492,6 +495,7 @@ def tag_starfile(selectedstarfile: str, stardict: StarDict):
 
 def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
     # outfile.write(f"# our_name,ra,dec,minmax,var_type,period,epoch\n")
+    logging.info(f"Tagging owncatalog: {owncatalog}")
     df = pd.read_csv(owncatalog, delimiter=',', comment='#',
                      names=['our_name', 'ra', 'dec', 'minmax', 'min', 'max', 'var_type', 'period', 'period_err',
                             'epoch'],
