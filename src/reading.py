@@ -19,8 +19,7 @@ import pickle
 def read_lightcurve_vast(starpath: str):
     logging.debug(f"Read lightcurve at path {starpath}")
     return pd.read_csv(starpath, delim_whitespace=True,
-                       names=['JD', 'Vrel', 'err', 'X', 'Y', 'unknown', 'file', 'vast1', 'vast2', 'vast3', 'vast4',
-                              'vast5', 'vast6', 'vast7', 'vast8', 'vast9', 'vast10'],
+                       names=['JD', 'Vrel', 'err', 'X', 'Y', 'unknown', 'file'],
                        usecols=['JD', 'Vrel', 'err', 'X', 'Y', 'unknown', 'file'], dtype={'JD': str})
 
 

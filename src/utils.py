@@ -98,13 +98,15 @@ def metadata_filter(star: StarDescription, catalog_name, exclude=[]):
 
 
 def sort_rmh_hmb(stars: List[StarDescription]):
-    regex = r'.*?(\d+)$'  # finding the number in our name
+    pattern = re.compile(r'.*?(\d+)$')  # finding the number in our name
 
     def get_sort_value(star: StarDescription):
         starfile = star.get_metadata('STARFILE')
-        the_match = re.match(regex, starfile.our_name) if starfile is not None else None
+        the_match = re.match(pattern, starfile.our_name) if starfile is not None else None
         if starfile is None or the_match is None:
-            logging.warning("The name in starfile can't be parsed for sorting, won't be sorted")
+            logging.warning(f"The name in starfile "
+                            f"'{starfile.our_name if starfile is not None else 'None'}'can't be parsed for sorting, "
+                            f"won't be sorted")
             return 0
         print(starfile.our_name, int(the_match.group(1)))
         return int(the_match.group(1))
