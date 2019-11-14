@@ -374,6 +374,23 @@ def count_dat_entries(afile):
 
 
 # constructs a list of star descriptions with catalog matches according to args
+def add_number_of_observations(vastdir):
+    obsdict = {}
+    columns = ['Median magnitude', 'idx00_STD', 'X position of the star on the reference image [pix]',
+               'Y position of the star on the reference image [pix]',
+               'lightcurve file name', 'idx01_wSTD', 'idx02_skew', 'idx03_kurt', 'idx04_I', 'idx05_J', 'idx06_K',
+               'idx07_L', 'idx08_Npts', 'idx09_MAD',
+               'idx10_lag1', 'idx11_RoMS', 'idx12_rCh2', 'idx13_Isgn', 'idx14_Vp2p', 'idx15_Jclp', 'idx16_Lclp',
+               'idx17_Jtim', 'idx18_Ltim', 'idx19_N3',
+               'idx20_excr', 'idx21_eta', 'idx22_E_A', 'idx23_S_B', 'idx24_NXS', 'idx25_IQR', 'idx26_A01', 'idx27_A02',
+               'idx28_A03', 'idx29_A04', 'idx30_A05',
+               ]
+    df = pd.read_csv(Path(vastdir, 'vast_lightcurve_statistics.log'), names=columns, delim_whitespace=True)
+    for index, row in df.iterrows():
+        obsdict[row['lightcurve file name']] = row['idx08_Npts']
+    return obsdict
+
+
 def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_stardict: StarPosDict,
                                 list_of_dat_files: List[str], frames_used: int, args):
     # Start with the list of all measured 4stars
@@ -392,23 +409,17 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
 
     # get SD's for all stars which are backed by a file with measurements
     star_descriptions = do_calibration.get_empty_star_descriptions(intersect_dict)
+    obsdict = add_number_of_observations(vastdir)
     for sd in star_descriptions:
         sd.path = '' if sd.local_id not in intersect_dict else intersect_dict[sd.local_id][3]
         sd.xpos = intersect_dict[int(sd.local_id)][0]
         sd.ypos = intersect_dict[int(sd.local_id)][1]
-        sd.obs = -1
+        path_filename = Path(sd.path).name
+        sd.obs = obsdict[path_filename] if path_filename in obsdict else -1
         world_coords = wcs.all_pix2world(float(sd.xpos), float(sd.ypos), 0, ra_dec_order=True)
         # logging.debug(f"world coords for star {sd.local_id}, {world_coords}")
         sd.coords = SkyCoord(world_coords[0], world_coords[1], unit='deg')
 
-    # add line counts
-    pool = utils.get_pool(cpu_count() * 2,
-                          maxtasksperchild=1000)  # lot's of small files, needs many threads to fill cpu
-    stars = []
-    for star in tqdm.tqdm(pool.imap_unordered(set_lines, star_descriptions, 5), total=len(star_descriptions),
-                          desc="Counting obs per star", unit="files"):
-        stars.append(star)
-    star_descriptions = stars
     # only keep stars which are present on at least 10% of the images
     star_descriptions = list(filter(lambda x: x.obs > frames_used * STAR_KEEPER_PERCENTAGE, star_descriptions))
     logging.info(f"Filtered star descriptions to {len(star_descriptions)} stars")
