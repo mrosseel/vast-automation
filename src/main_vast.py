@@ -66,12 +66,16 @@ def run_do_rest(args):
         rotation = extract_reference_frame_rotation(vastdir, reference_frame)
         from scipy import ndimage
         from astropy.io import fits
-        hdulist = fits.open(Path(args.imagedir, reference_frame))
+        reference_frame_filename = Path(reference_frame).name
+        hdulist = fits.open(Path(args.imagedir, reference_frame_filename))
         data = hdulist[0].data.astype(float)
         data = ndimage.interpolation.rotate(data, rotation)
         hdulist[0].data = data
         rotated_reference = Path(vastdir, 'reference_frame.fits')
+        if os.path.exists(rotated_reference):
+            os.remove(rotated_reference)
         hdulist.writeto(rotated_reference)
+        logging.info(f"Wrote {rotated_reference} which is a {rotation} degrees rotation of {reference_frame_filename}")
     while not os.path.isfile(wcs_file):
         logging.info(
             f"Please provide the reference header '{wcs_file}', which is an astrometry.net plate-solve of "
