@@ -6,6 +6,7 @@ from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz
 # supress the warning about vector transforms so as not to clutter the doc build log
 import warnings
+import utils
 
 warnings.filterwarnings('ignore', module='astropy.coordinates.baseframe')
 from star_description import StarDescription
@@ -31,10 +32,7 @@ def report(star: StarDescription, df_curve: DataFrame, target_dir: Path, vastdir
         .get_name_and_separation() if star.has_metadata("VSX") else (None, None)
     var_display_name = star_match_ucac4 if star_match_vsx is None else star_match_vsx
     var_display_name = var_display_name if var_display_name is not None else f"Star_{star.local_id}"
-    check_display_name = "TODO"
 
-    # NO COMP STAR TODAY
-    comparison_star_vmag = 0.0
     title = f"{star.local_id:05}" if star.aavso_id is None else star.aavso_id
     earth_location = EarthLocation(lat=sitelat, lon=sitelong, height=sitealt * u.m)
     logging.debug(f"Starting aavso report with star:{star}")
@@ -42,6 +40,9 @@ def report(star: StarDescription, df_curve: DataFrame, target_dir: Path, vastdir
         chunk_size = df_curve.shape[0]
     star_chunks = [df_curve[i:i + chunk_size] for i in range(0, df_curve.shape[0], chunk_size)]
     chunk_counters = 0
+    kname = "TODO"
+    kmag = 0.0
+    notes = f"Standard mag: K = ???"
 
     filterdict = None
     # Setting up the filter value
@@ -66,16 +67,16 @@ def report(star: StarDescription, df_curve: DataFrame, target_dir: Path, vastdir
                     'magnitude': row['realV'],
                     'magnitude_error': row['realErr'],
                     'filter': filterlambda(row['JD']),
-                    'transformed': 'YES',
+                    'transformed': 'NO',
                     'magnitude_type': 'STD',
                     'comparison_name': 'ENSEMBLE',
                     'comparison_magnitude': 'na',
-                    'check_name': check_display_name,
-                    'check_magnitude': comparison_star_vmag,
+                    'check_name': kname,
+                    'check_magnitude': kmag,
                     'airmass': calculate_airmass(star.coords, earth_location, row['floatJD']),
                     'group': 'na',
                     'chart': 'na',
-                    'notes': 'na'
+                    'notes': notes
                 })
             writer.flush()
 

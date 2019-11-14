@@ -147,21 +147,21 @@ def get_star_compstars_from_catalog(star: StarDescription, comp_stars: Compariso
     return filtered_compstars
 
 
-if __name__ == '__main__':
-    logging.getLogger().setLevel(logging.DEBUG)
-    logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
-    parser = argparse.ArgumentParser(description='Getting the compstars')
-    parser.add_argument('-f', '--fixed', help="Use the comparison stars as specified in init.py", action="store_true")
-    parser.add_argument('-c', '--calculated', help="Calculate the comparison stars to use", action="store_true")
-    parser.add_argument('-d', '--descriptions', help="Calculate star descriptions", action="store_true")
-    args = parser.parse_args()
-    if args.fixed:
-        result = get_fixed_compstars()
-        logging.info(f"result: {result}")
-    elif args.calculated:
-        # stddevs, _, apertures, apertureidx, _, _, counts = do_aperture.main(the_dir=settings.matchedphotometrydir,
-        #                                                                     percentage=init.aperture_find_percentage)
-        result = get_calculated_compstars(apertureidx, stddevs, counts)
-        logging.info(f"result: {result}")
-    # if args.descriptions:
-    #     get_comparison_star_descriptions(result)
+# if __name__ == '__main__':
+#     logging.getLogger().setLevel(logging.DEBUG)
+#     logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
+#     parser = argparse.ArgumentParser(description='Getting the compstars')
+#     parser.add_argument('-f', '--fixed', help="Use the comparison stars as specified in init.py", action="store_true")
+#     parser.add_argument('-c', '--calculated', help="Calculate the comparison stars to use", action="store_true")
+#     parser.add_argument('-d', '--descriptions', help="Calculate star descriptions", action="store_true")
+#     args = parser.parse_args()
+#     if args.fixed:
+#         result = get_fixed_compstars()
+#         logging.info(f"result: {result}")
+#     elif args.calculated:
+#         # stddevs, _, apertures, apertureidx, _, _, counts = do_aperture.main(the_dir=settings.matchedphotometrydir,
+#         #                                                                     percentage=init.aperture_find_percentage)
+#         result = get_calculated_compstars(apertureidx, stddevs, counts)
+#         logging.info(f"result: {result}")
+#     # if args.descriptions:
+#     #     get_comparison_star_descriptions(result)

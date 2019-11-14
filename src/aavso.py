@@ -106,7 +106,7 @@ class ExtendedFormatWriter(object):
         :param observation_data: a single observation as a dictionary
         """
         return f"{observation_data['name']:.30},{observation_data['date']:.16}," \
-               f"{observation_data['magnitude']:.8},{observation_data['magnitude_error']:.6}," \
+               f"{observation_data['magnitude']:.3f},{observation_data['magnitude_error']:.3f}," \
                f"{observation_data['filter']:.5},{observation_data['transformed']:.3}," \
                f"{observation_data['magnitude_type']:.3}," \
                f"{observation_data.get('comparison_name', 'na'):.20}," \

@@ -31,6 +31,20 @@ This will generate many vast files in the vast directory
 
 ### run the command
 
+Make sure you have all the necessary python dependencies by running this command once:
+
+`python -m pip install -r requirements.txt`
+
+Run this command every time to activate a python virtual environment:
+
+`source .venv/bin/activate`
+
+Run the actual processing software to get all options:
+
+`./vast_process.sh -h`
+
+Example usage:
+
 `./vast_process.sh --vsx --candidates -d support/vast-1.0rc84`
 
 ### plate solve the reference frame (first run only)
@@ -52,11 +66,6 @@ Also a few extra files are generated:
 
 ## Other
 
-### Jupyter lab usage
-
-The docker image also exposes a Jupyter lab instance on port 8888.
-_Password is 'muni'_
-
 ### Importing UCAC4 star catalog
 
 Getting the 900 files (9Gb):
@@ -64,6 +73,12 @@ Getting the 900 files (9Gb):
 
 Checking that all 900 files were downloaded correctly:
 - `md5sum -c md5sum.txt`
+
+### Docker & Jupyter lab
+
+The docker image exposes a Jupyter lab instance on port 8888.
+_Password is 'muni'_
+
 
 ## TODO
 

@@ -4,6 +4,7 @@ import logging
 import re
 import os
 import os.path
+import sys
 import subprocess
 import numpy as np
 from functools import partial
@@ -25,7 +26,7 @@ from astropy.coordinates import match_coordinates_sky
 from astropy.wcs import WCS
 from typing import List, Dict, Tuple
 from comparison_stars import ComparisonStars
-from pathlib import PurePath
+from pathlib import PurePath, Path
 from ucac4 import UCAC4
 import hugo_site
 import pandas as pd
@@ -50,7 +51,7 @@ def run_do_rest(args):
     do_phase = args.phase
     do_aavso = args.aavso
     logging.info(f"Directory where all files will be read: '{vastdir}' and written: '{resultdir}'")
-    wcs_file = vastdir + 'new-image.fits'
+    wcs_file = Path(vastdir, 'new-image.fits')
     reference_frame = extract_reference_frame(vastdir)
     first_frame = extract_first_frame(vastdir)
     frames_used = int(extract_images_used(vastdir))
@@ -58,9 +59,23 @@ def run_do_rest(args):
     logging.info(f"The reference frame is {reference_frame}")
     logging.info(f"The first frame is {first_frame}")
     logging.info(f"reference header is {wcs_file}")
+    if not os.path.isfile(wcs_file):
+        if not args.imagedir:
+            logging.error("There is no reference frame AND you didn't specify the --imagedir option. Please fix.")
+            sys.exit(0)
+        rotation = extract_reference_frame_rotation(vastdir, reference_frame)
+        from scipy import ndimage
+        from astropy.io import fits
+        hdulist = fits.open(Path(args.imagedir, reference_frame))
+        data = hdulist[0].data.astype(float)
+        data = ndimage.interpolation.rotate(data, rotation)
+        hdulist[0].data = data
+        rotated_reference = Path(vastdir, 'reference_frame.fits')
+        hdulist.writeto(rotated_reference)
     while not os.path.isfile(wcs_file):
         logging.info(
-            f"Please provide the reference header '{wcs_file}', which is an astrometry.net plate-solve of {reference_frame} and press Enter to continue...")
+            f"Please provide the reference header '{wcs_file}', which is an astrometry.net plate-solve of "
+            f"{rotated_reference} and press Enter to continue...")
         subprocess.call("read -t 10", shell=True, executable='/bin/bash')
 
     # get wcs model from the reference header. Used in writing world positions and field charts
@@ -179,6 +194,17 @@ def wcs_test_pattern(wcs):
 
 def extract_reference_frame(from_dir):
     return extract_frame_from_summary_helper(from_dir, "Ref.  image")
+
+
+def extract_reference_frame_rotation(vastdir, referenc_frame) -> float:
+    filename = Path(vastdir, 'vast_image_details.log')
+    the_regex = re.compile(r'^.*rotation=\s*([0-9,.,-]+).*\s+(.+)$')
+    with open(filename, 'r') as infile:
+        for line in infile:
+            thesearch = the_regex.search(line)
+            if thesearch and referenc_frame in thesearch.group(2):
+                return float(thesearch.group(1).strip())
+    return 0.0
 
 
 def extract_first_frame(from_dir):
@@ -315,7 +341,7 @@ def write_augmented_starfile(resultdir: str, starfile_stars: List[StarDescriptio
             parsed_toml = toml.load(txt_path)
             outfile.write(
                 f"{metadata.our_name},{star.coords.ra.deg:.5f},{star.coords.dec.deg:.5f},"
-                f"{format_string('minmax', parsed_toml)},{format_float_1(parsed_toml,'min')},"
+                f"{format_string('minmax', parsed_toml)},{format_float_1(parsed_toml, 'min')},"
                 f"{format_float_1(parsed_toml, 'max')},{metadata.var_type},"
                 f"{format_float_5(parsed_toml, 'period')},{format_float_5(parsed_toml, 'period_err')},"
                 f"{format_string('epoch', parsed_toml)}\n")
@@ -355,7 +381,8 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
 
     # intersect dict, results in starid -> (xpos, ypos, shortfile, longfile),
     # example:  42445: ('175.948', '1194.074', 'out42445.dat', 'support/vast-1.0rc84/out42445.dat')
-    intersect_dict = {x: (*all_stardict[x], stars_with_file_dict[x]) for x in all_stardict if x in stars_with_file_dict}
+    intersect_dict = {x: (*all_stardict[x], stars_with_file_dict[x]) for x in all_stardict if
+                      x in stars_with_file_dict}
     logging.info(
         f"Calculating the intersect between all stars and measured stars, result has {len(intersect_dict)} entries.")
 
@@ -399,9 +426,10 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
 
     if args.selectedstarfile:
         tag_starfile(args.selectedstarfile, stardict)
-        logging.info(f"Succesfully read {len(list(filter(lambda x: x.has_metadata('STARFILE'), star_descriptions)))} "
-                     f"stars from file:"
-                     f" {[x.local_id for x in list(filter(lambda x: x.has_metadata('STARFILE'), star_descriptions))]}")
+        logging.info(
+            f"Succesfully read {len(list(filter(lambda x: x.has_metadata('STARFILE'), star_descriptions)))} "
+            f"stars from file:"
+            f" {[x.local_id for x in list(filter(lambda x: x.has_metadata('STARFILE'), star_descriptions))]}")
 
     if args.owncatalog:
         tag_owncatalog(args.owncatalog, star_descriptions)
