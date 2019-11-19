@@ -536,7 +536,7 @@ def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
                                             coords=SkyCoord(entry['ra'], entry['dec'], unit="deg"),
                                             separation=d2d[count].degree)
         if d2d[count].degree > 0.01:
-            logging.warning(f"Separation between {df.iloc(count)['our_name']} "
+            logging.warning(f"Separation between {df.iloc[count]['our_name']} "
                             f"and {stars[index].local_id} is {d2d[count]}")
 
 
