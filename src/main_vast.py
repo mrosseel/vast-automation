@@ -7,6 +7,7 @@ import os.path
 import sys
 import subprocess
 import numpy as np
+import time
 from functools import partial
 from collections import namedtuple
 import do_calibration
@@ -31,6 +32,7 @@ from ucac4 import UCAC4
 import hugo_site
 import pandas as pd
 import toml
+import subprocess
 from star_metadata import SelectedStarData, CatalogData, StarFileData, CompStarData
 
 vsx_catalog_name = "vsx_catalog.bin"
@@ -59,34 +61,50 @@ def run_do_rest(args):
     logging.info(f"The reference frame is {reference_frame}")
     logging.info(f"The first frame is {first_frame}")
     logging.info(f"reference header is {wcs_file}")
+    #################################################################################################################
     if not os.path.isfile(wcs_file):
-        if not args.imagedir:
-            logging.error("There is no reference frame AND you didn't specify the --imagedir option. Please fix.")
+        from scipy import ndimage
+        from astropy.io import fits
+
+        reference_frame_filename = Path(reference_frame).name
+        fitsdir = Path(args.fitsdir)
+        if not args.fitsdir and args.apikey:
+            logging.error("There is no plate-solved reference frame {wcs_file}, please specify both --apikey "
+                          "and --fitsdir.")
             sys.exit(0)
-        import subprocess
-        subprocess.Popen("script2.py 1", shell=True)
-    #     rotation = extract_reference_frame_rotation(vastdir, reference_frame)
-    #     from scipy import ndimage
-    #     from astropy.io import fits
-    #     reference_frame_filename = Path(reference_frame).name
-    #     hdulist = fits.open(Path(args.imagedir, reference_frame_filename))
-    #     data = hdulist[0].data.astype(float)
-    #     data = ndimage.interpolation.rotate(data, rotation)
-    #     hdulist[0].data = data
-    #     rotated_reference = Path(vastdir, 'reference_frame.fits')
-    #     if os.path.exists(rotated_reference):
-    #         os.remove(rotated_reference)
-    #     hdulist.writeto(rotated_reference)
-    #     logging.info(f"Wrote {rotated_reference} which is a {rotation} degrees rotation of {reference_frame_filename}")
-    # while not os.path.isfile(wcs_file):
-    #     logging.info(
-    #         f"Please provide the reference header '{wcs_file}', which is an astrometry.net plate-solve of "
-    #         f"{rotated_reference} and press Enter to continue...")
-    #     subprocess.call("read -t 10", shell=True, executable='/bin/bash')
+
+        rotation = extract_reference_frame_rotation(vastdir, reference_frame_filename)
+        with fits.open(Path(fitsdir, reference_frame_filename)) as hdulist:
+            data = hdulist[0].data.astype(float)
+            header = hdulist[0].header
+            radec_param = ""
+            # try:
+            #     ra, dec = header['OBJCTRA'], header['OBJCTDEC']
+            #     center_coord = SkyCoord(f"{ra} {dec}", unit='deg')
+            #     radec_param = f"--ra {center_coord.ra.value} --dec {center_coord.dec.value}"
+            #     logging.info(f"Using these values as field center position: {radec_param}")
+            # except:
+            #     logging.warning("RA and DEC object position not found/badly formatted in reference fits. "
+            #                     "Plate-solving will be slower.")
+            data = ndimage.interpolation.rotate(data, rotation)
+            hdulist[0].data = data
+            rotated_reference = Path(vastdir, 'reference_frame_rotated.fits')
+            if os.path.exists(rotated_reference):
+                os.remove(rotated_reference)
+            hdulist.writeto(rotated_reference)
+        logging.info(f"Wrote {rotated_reference} which is a {rotation} degrees rotation of {reference_frame_filename}")
+
+        subprocess.Popen(f"python3 ./src/astrometry_api.py --apikey={args.apikey} {radec_param} "
+                         f"--upload={rotated_reference} --newfits={wcs_file} --private --no_commercial", shell=True)
+        while not os.path.isfile(wcs_file):
+            logging.info(f"Waiting for the astrometry.net plate solve...")
+            time.sleep(10)
+
+
 
     # get wcs model from the reference header. Used in writing world positions and field charts
     wcs = do_calibration.get_wcs(wcs_file)
-
+    #################################################################################################################
     all_stardict = read_stardict(vastdir)
     list_of_dat_files = file_selector(the_dir=vastdir, match_pattern="*.dat")
     logging.info(
@@ -99,14 +117,17 @@ def run_do_rest(args):
     write_augmented_autocandidates(vastdir, resultdir, stardict)
     write_augmented_all_stars(vastdir, resultdir, stardict)
     rmhhmb_stars = utils.get_stars_with_metadata(star_descriptions, "RMH-HMB")
+    logging.info(f"There are {len(rmhhmb_stars)} own catalog stars")
     candidate_stars = utils.get_stars_with_metadata(star_descriptions, "CANDIDATE", exclude="VSX")
     candidate_stars = utils.add_star_lists(candidate_stars, rmhhmb_stars)
+    logging.info(f"There are {len(candidate_stars)} candidate stars")
 
     vsx_stars = utils.get_stars_with_metadata(star_descriptions, "VSX")
-    rmhhmb_stars = utils.get_stars_with_metadata(star_descriptions, "RMH-HMB")
+    logging.info(f"There are {len(vsx_stars)} vsx stars")
     starfile_stars = utils.get_stars_with_metadata(star_descriptions, "STARFILE")
-    starfile_stars = utils.add_star_lists(starfile_stars, rmhhmb_stars)
-    interesting_stars = starfile_stars + vsx_stars + candidate_stars
+    starfile_stars = starfile_stars
+    logging.info(f"There are {len(starfile_stars)} selected stars")
+    compstar_needing_stars = starfile_stars + vsx_stars + candidate_stars + rmhhmb_stars
 
     # set ucac4 stars selected
     ucac4 = UCAC4()
@@ -119,7 +140,7 @@ def run_do_rest(args):
     if args.checkstarfile:
         utils.add_metadata(star_descriptions, CompStarData(compstar_ids=comp_stars.ids))
     else:
-        do_compstars.add_closest_compstars(interesting_stars, comp_stars, 10)
+        do_compstars.add_closest_compstars(compstar_needing_stars, comp_stars, 10)
 
     if args.allstars:
         do_charts_vast.run(star_descriptions, comp_stars, vastdir, resultdir, 'phase_all/', 'light_all/', 'aavso_all/',
@@ -157,25 +178,25 @@ def read_comparison_stars(star_descriptions: List[StarDescription], checkstarfil
     if checkstarfile:
         # load comparison stars
         checkstars = read_checkstars(checkstarfile)
-        comparison_stars_1, comparison_stars_1_desc = do_compstars.get_fixed_compstars(star_descriptions, checkstars)
+        comparison_stars_ids, comparison_stars_1_sds = do_compstars.get_fixed_compstars(star_descriptions, checkstars)
     else:
         ucac4.add_ucac4_to_sd(star_descriptions)
-        comparison_stars_1, comparison_stars_1_desc = do_compstars.get_calculated_compstars(vastdir, stardict)
+        comparison_stars_ids, comparison_stars_1_sds = do_compstars.get_calculated_compstars(vastdir, stardict)
     comp_observations = []
-    logging.info(f"Using comparison star ids:{comparison_stars_1}")
-    for star in comparison_stars_1:
-        read_comp_magdict = read_magdict(vastdir, star)
+    logging.info(f"Using comparison star ids:{comparison_stars_ids}")
+    for star in comparison_stars_ids:
+        comp_magdict = read_magdict_for_star(vastdir, star)
         # logging.info(f"Read comp magdict for {star}: {read_comp_magdict}")
-        comp_observations.append(read_comp_magdict)
+        comp_observations.append(comp_magdict)
     comp_catalogmags = []
     comp_catalogerr = []
-    for star in comparison_stars_1_desc:
+    for star in comparison_stars_1_sds:
         comp_catalogmags.append(star.vmag)
         comp_catalogerr.append(star.e_vmag)
-    comp_stars = ComparisonStars(comparison_stars_1, comparison_stars_1_desc, comp_observations, comp_catalogmags,
+    comp_stars = ComparisonStars(comparison_stars_ids, comparison_stars_1_sds, comp_observations, comp_catalogmags,
                                  comp_catalogerr)
     logging.info(
-        f"Comparison stars have {np.shape(comp_observations)}, {len(comp_observations[0])}, {len(comp_observations[1])} observations")
+        f"Comparison stars have on average {np.array(list(map(len, comp_observations))).mean()} observations")
     return comp_stars
 
 
@@ -202,13 +223,13 @@ def extract_reference_frame(from_dir):
     return extract_frame_from_summary_helper(from_dir, "Ref.  image")
 
 
-def extract_reference_frame_rotation(vastdir, referenc_frame) -> float:
+def extract_reference_frame_rotation(vastdir, reference_frame) -> float:
     filename = Path(vastdir, 'vast_image_details.log')
     the_regex = re.compile(r'^.*rotation=\s*([0-9,.,-]+).*\s+(.+)$')
     with open(filename, 'r') as infile:
         for line in infile:
             thesearch = the_regex.search(line)
-            if thesearch and referenc_frame in thesearch.group(2):
+            if thesearch and reference_frame in thesearch.group(2):
                 return float(thesearch.group(1).strip())
     return 0.0
 
@@ -239,7 +260,7 @@ def read_stardict(vastdir: str) -> StarPosDict:
 
 
 # get all possible stars with dict: JD, (mag, error)
-def read_magdict(vastdir, star_id):
+def read_magdict_for_star(vastdir, star_id):
     stardict = {}
     starfile = f"{vastdir}{star_to_dat(star_id)}"
     for line in open(starfile):
@@ -344,13 +365,16 @@ def write_augmented_starfile(resultdir: str, starfile_stars: List[StarDescriptio
             metadata: StarFileData = star.get_metadata("STARFILE")
             _, _, filename_no_ext = do_charts_vast.get_star_or_catalog_name(star, '')
             txt_path = PurePath(resultdir, 'phase_selected/txt', filename_no_ext + '_phase.txt')
-            parsed_toml = toml.load(txt_path)
-            outfile.write(
-                f"{metadata.our_name},{star.coords.ra.deg:.5f},{star.coords.dec.deg:.5f},"
-                f"{format_string('minmax', parsed_toml)},{format_float_1(parsed_toml, 'min')},"
-                f"{format_float_1(parsed_toml, 'max')},{metadata.var_type},"
-                f"{format_float_5(parsed_toml, 'period')},{format_float_5(parsed_toml, 'period_err')},"
-                f"{format_string('epoch', parsed_toml)}\n")
+            try:
+                parsed_toml = toml.load(txt_path)
+                outfile.write(
+                    f"{metadata.our_name},{star.coords.ra.deg:.5f},{star.coords.dec.deg:.5f},"
+                    f"{format_string('minmax', parsed_toml)},{format_float_1(parsed_toml, 'min')},"
+                    f"{format_float_1(parsed_toml, 'max')},{metadata.var_type},"
+                    f"{format_float_5(parsed_toml, 'period')},{format_float_5(parsed_toml, 'period_err')},"
+                    f"{format_string('epoch', parsed_toml)}\n")
+            except FileNotFoundError:
+                logging.error(f"Could not find {txt_path}")
 
 
 def write_vsx_stars(resultdir, results_ids, stars: List[StarDescription]):
@@ -433,7 +457,7 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
                                                                                        vsxcatalogdir, 0.01)
     logging.info(f"Added {len(results_ids)} vsx names to star descriptions")
     test = utils.get_stars_with_metadata(star_descriptions, "VSX")
-    logging.info(f"Test Tagged {len(test)} stars as VSX.")
+    logging.debug(f"Test Tagged {len(test)} stars as VSX.")
 
     # write the vsx stars used into a file
     results_ids.sort()
@@ -495,7 +519,7 @@ def tag_starfile(selectedstarfile: str, stardict: StarDict):
 
 def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
     # outfile.write(f"# our_name,ra,dec,minmax,var_type,period,epoch\n")
-    logging.info(f"Tagging owncatalog: {owncatalog}")
+    logging.info(f"Using owncatalog: {owncatalog}")
     df = pd.read_csv(owncatalog, delimiter=',', comment='#',
                      names=['our_name', 'ra', 'dec', 'minmax', 'min', 'max', 'var_type', 'period', 'period_err',
                             'epoch'],

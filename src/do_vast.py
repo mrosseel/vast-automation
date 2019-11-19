@@ -20,7 +20,10 @@ if __name__ == '__main__':
                         nargs='?', required=False)
     parser.add_argument('-o', '--owncatalog', help="Supply a file to identify stars known to you",
                         nargs='?', required=False)
-    parser.add_argument('-m', '--imagedir', help="The dir where the fits are, only needed to rotate reference frame",
+    parser.add_argument('--apikey', help="Astrometry.net api key for automatic plate solving of the referenc "
+                                               "frame found by vast.",
+                        nargs='?', required=False)
+    parser.add_argument('--fitsdir', help="The dir where the fits are, only needed to plate-solve the reference frame",
                         nargs='?', required=False)
     parser.add_argument('-v', '--vsx', help="Add vsx stars to field charts/reporting list", action="store_true")
     parser.add_argument('-!', '--allstars', help="Generate phase/light/aavso for all stars. WARNING: takes long",
