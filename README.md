@@ -1,4 +1,4 @@
-# munipack-automation
+# vast-automation
 
 Docker is used to construct a light-weight virtual machine linux containing all necessary dependencies.
 Once you're in this VM, all python commands can be run.
