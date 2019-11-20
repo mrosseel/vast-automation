@@ -41,14 +41,11 @@ Run the actual processing software to get all options:
 
 Example usage:
 
-`./vast_process.sh --vsx --candidates -d support/vast-1.0rc84`
+`./vast_process.sh --vsx --candidates -d support/vast-1.0rc84 --fitsdir ./fits --apikey abcde`
 
-### plate solve the reference frame (first run only)
-
-The software will stop and ask you to do this.
-
-* take the reference frame and calculate a fits header using http://Astrometry.net
-* store it in the vast directory as *new-image.fits*
+Note that the fitsdir and apikey options are needed to perform automatic plate-solving via 
+astrometry.net. If you prefer to do your own plate-solving, put the solved image as new-image.fits
+in the directory passed via -d
 
 ### look at the results
 
