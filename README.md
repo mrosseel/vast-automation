@@ -1,8 +1,5 @@
 # vast-automation
 
-Docker is used to construct a light-weight virtual machine linux containing all necessary dependencies.
-Once you're in this VM, all python commands can be run.
-
 ## Preparation
 
 ### Importing VSX star catalog
@@ -11,14 +8,13 @@ Once you're in this VM, all python commands can be run.
 * run 'python vsx_pickle.py vsx.dat' where vsx.dat is the unzipped versin of the downloaded vsx catalog
 * check that 'vsx_catalog.bin' has been written successfully
 
-### Starting Docker
+### Importing UCAC4 star catalog
 
-* have a working docker installation: https://www.docker.com/community-edition
-* cd docker
-* docker build . -t mrosseel/munipack-automation
-* cd ..
-* command: `./startJupyter.sh`
-* you are automatically logged into a root shell of the docker container
+Getting the 900 files (9Gb):
+- `wget ftp://cdsarc.u-strasbg.fr/0/more/UCAC4/u4b/*`
+
+Checking that all 900 files were downloaded correctly:
+- `md5sum -c md5sum.txt`
 
 ## Run VAST on the fits files
 
@@ -64,21 +60,24 @@ Also a few extra files are generated:
 * vast_list_of_all_stars_pos.txt
 * vast_autocandidates_pos.txt
 
-## Other
+## Docker
 
-### Importing UCAC4 star catalog
+The docker setup is currently mainly used to run Jupyter notebooks, but should also
+be a well-setup environment to run vast-automation.
 
-Getting the 900 files (9Gb):
-- `wget ftp://cdsarc.u-strasbg.fr/0/more/UCAC4/u4b/*`
+### Starting Docker
 
-Checking that all 900 files were downloaded correctly:
-- `md5sum -c md5sum.txt`
+* have a working docker installation: https://www.docker.com/community-edition
+* cd docker
+* docker build . -t mrosseel/munipack-automation
+* cd ..
+* command: `./startJupyter.sh`
+* you are automatically logged into a root shell of the docker container
 
 ### Docker & Jupyter lab
 
 The docker image exposes a Jupyter lab instance on port 8888.
 _Password is 'muni'_
-
 
 ## TODO
 
