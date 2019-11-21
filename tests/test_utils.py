@@ -21,28 +21,29 @@ test_file_path = PurePath(os.getcwd(), 'tests', 'data')
 class TestUtils(unittest.TestCase):
 
     def test_sort_rmh_hmb(self):
+
+        self.assertEqual(15, utils.metadata_sorter.get_metadata_name_number_part("oenutheo15"))
+        self.assertEqual(1, utils.metadata_sorter.get_metadata_name_number_part("RMH-HMB-1"))
+
         stars = []
         for idx in range(1, 101):
             curr_star = self.stardesc(idx, random.random() * 360, random.random() * 90)
-            curr_star.metadata = star_metadata.StarFileData(curr_star.local_id, minmax="minmax", var_min=14, var_max=16,
-                                                            var_type='var_type', our_name=f'RMH-HMB-{idx}',
-                                                            period=1, period_err=0.1, epoch="epoch")
+            curr_star.metadata = star_metadata.CatalogData(key="RMH-HMB", catalog_id=f'RMH-HMB-{idx}',
+                                                           name=f'RMH-HMB-{idx}', coords=curr_star.coords, separation=0)
             stars.append(curr_star)
         random.shuffle(stars)
-        result = utils.sort_rmh_hmb(stars)
-        self.assertEqual("RMH-HMB-1", result[0].get_metadata("STARFILE").our_name)
-        self.assertEqual("RMH-HMB-10", result[9].get_metadata("STARFILE").our_name)
-        self.assertEqual("RMH-HMB-100", result[99].get_metadata("STARFILE").our_name)
+        result = utils.metadata_sorter(stars)
+        self.assertEqual("RMH-HMB-1", result[0].get_metadata("RMH-HMB").name)
+        self.assertEqual("RMH-HMB-10", result[9].get_metadata("RMH-HMB").name)
+        self.assertEqual("RMH-HMB-100", result[99].get_metadata("RMH-HMB").name)
 
         stars = []
         for idx in range(1, 101):
             curr_star = self.stardesc(idx, random.random() * 360, random.random() * 90)
-            curr_star.metadata = star_metadata.StarFileData(curr_star.local_id, minmax="minmax", var_min=14, var_max=16,
-                                                            var_type='var_type', our_name=f'',
-                                                            period=1, period_err=0.1, epoch="epoch")
+            curr_star.metadata = star_metadata.CatalogData(key="RMH-HMB", catalog_id='', name='',
+                                                           coords=curr_star.coords, separation=0)
             stars.append(curr_star)
-        result = utils.sort_rmh_hmb(stars)
-
+        utils.metadata_sorter(stars)  # expect no exception
 
 
     def test_reject_outliers_iqr(self):

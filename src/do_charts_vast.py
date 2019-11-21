@@ -258,11 +258,12 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         logging.error(f"Error during plot phase: {star.local_id}")
     return period
 
+
 def get_star_or_catalog_name(star: StarDescription, suffix: str):
     if star.has_metadata("VSX"):
         catalog_name, separation = star.get_metadata("VSX").get_name_and_separation()
-    elif star.has_metadata("RMH-HMB"):
-        catalog_name, separation = star.get_metadata("RMH-HMB").get_name_and_separation()
+    elif star.has_metadata("OWNCATALOG"):
+        catalog_name, separation = star.get_metadata("OWNCATALOG").get_name_and_separation()
     else:
         catalog_name, separation = None, None
     filename_no_ext = f"{catalog_name}{suffix}" if catalog_name is not None else f"{star.local_id:05}{suffix}"

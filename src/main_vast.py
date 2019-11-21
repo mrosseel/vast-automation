@@ -72,30 +72,10 @@ def run_do_rest(args):
             logging.error("There is no plate-solved reference frame {wcs_file}, please specify both --apikey "
                           "and --fitsdir.")
             sys.exit(0)
-
         rotation = extract_reference_frame_rotation(vastdir, reference_frame_filename)
-        with fits.open(Path(fitsdir, reference_frame_filename)) as hdulist:
-            data = hdulist[0].data.astype(float)
-            header = hdulist[0].header
-            radec_param = ""
-            # try:
-            #     ra, dec = header['OBJCTRA'], header['OBJCTDEC']
-            #     center_coord = SkyCoord(f"{ra} {dec}", unit='deg')
-            #     radec_param = f"--ra {center_coord.ra.value} --dec {center_coord.dec.value}"
-            #     logging.info(f"Using these values as field center position: {radec_param}")
-            # except:
-            #     logging.warning("RA and DEC object position not found/badly formatted in reference fits. "
-            #                     "Plate-solving will be slower.")
-            data = ndimage.interpolation.rotate(data, rotation)
-            hdulist[0].data = data
-            rotated_reference = Path(vastdir, 'reference_frame_rotated.fits')
-            if os.path.exists(rotated_reference):
-                os.remove(rotated_reference)
-            hdulist.writeto(rotated_reference)
-        logging.info(f"Wrote {rotated_reference} which is a {rotation} degrees rotation of {reference_frame_filename}")
-
+        assert rotation == 0.0, f"Error: rotation is {rotation} and should always be 0.0"
         subprocess.Popen(f"python3 ./src/astrometry_api.py --apikey={args.apikey} {radec_param} "
-                         f"--upload={rotated_reference} --newfits={wcs_file} --private --no_commercial", shell=True)
+                         f"--upload={reference_frame_filename} --newfits={wcs_file} --private --no_commercial", shell=True)
         while not os.path.isfile(wcs_file):
             logging.info(f"Waiting for the astrometry.net plate solve...")
             time.sleep(10)
@@ -116,7 +96,7 @@ def run_do_rest(args):
                   star_descriptions[:10] if len(star_descriptions) >= 10 else star_descriptions)
     write_augmented_autocandidates(vastdir, resultdir, stardict)
     write_augmented_all_stars(vastdir, resultdir, stardict)
-    rmhhmb_stars = utils.get_stars_with_metadata(star_descriptions, "RMH-HMB")
+    rmhhmb_stars = utils.get_stars_with_metadata(star_descriptions, "OWNCATALOG")
     logging.info(f"There are {len(rmhhmb_stars)} own catalog stars")
     candidate_stars = utils.get_stars_with_metadata(star_descriptions, "CANDIDATE", exclude="VSX")
     candidate_stars = utils.add_star_lists(candidate_stars, rmhhmb_stars)
@@ -338,7 +318,7 @@ def write_augmented_all_stars(readdir: str, writedir: str, stardict: StarDict):
 def write_augmented_starfile(resultdir: str, starfile_stars: List[StarDescription]):
     newname = f"{resultdir}starfile.txt"
     logging.info(f"Writing {newname} with {len(starfile_stars)}...")
-    sorted_stars = utils.sort_rmh_hmb(starfile_stars)
+    sorted_stars = utils.metadata_sorter(starfile_stars)
     with open(newname, 'w') as outfile:
         outfile.write(f"# our_name,ra,dec,minmax,min,max,var_type,period,period_err,epoch\n")
 
@@ -531,7 +511,7 @@ def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
     idx, d2d, d3d = match_coordinates_sky(skycoord, star_catalog, nthneighbor=1)
     for count, index in enumerate(idx):
         entry = df.iloc[count]
-        stars[index].metadata = CatalogData(key="RMH-HMB", catalog_id=entry['our_name'],
+        stars[index].metadata = CatalogData(key="OWNCATALOG", catalog_id=entry['our_name'],
                                             name=entry['our_name'],
                                             coords=SkyCoord(entry['ra'], entry['dec'], unit="deg"),
                                             separation=d2d[count].degree)

@@ -2,6 +2,8 @@ import glob
 from functools import partial
 from os import listdir
 from os.path import isfile, join
+from subprocess import call
+
 import numpy as np
 import star_description
 from star_description import StarDescription, StarMetaData
@@ -97,20 +99,35 @@ def metadata_filter(star: StarDescription, catalog_name, exclude=[]):
     return catalog_name in catalogs and len([x for x in exclude if x in catalogs]) == 0
 
 
-def sort_rmh_hmb(stars: List[StarDescription]):
+class MetadataSorter:
     pattern = re.compile(r'.*?(\d+)$')  # finding the number in our name
 
-    def get_sort_value(star: StarDescription):
-        starfile = star.get_metadata('RMH-HMB')
-        the_match = re.match(pattern, starfile.name) if starfile is not None else None
-        if starfile is None or the_match is None:
-            logging.warning(f"The name in starfile "
-                            f"'{starfile.our_name if starfile is not None else 'None'}'can't be parsed for sorting, "
-                            f"won't be sorted")
-            return 0
-        print("RMH HMB sorting: ", starfile.name, int(the_match.group(1)))
-        return int(the_match.group(1))
-    return sorted(stars, key=get_sort_value)
+
+    def sort_metadata_name(self, stars: List[StarDescription], metadata_id='OWNCATALOG'):
+        def get_sort_value(star: StarDescription):
+            metadata_entry = star.get_metadata(metadata_id)
+            number_part = self.get_metadata_name_number_part(metadata_entry.name) if metadata_entry is not None else None
+            if metadata_entry is None or number_part is None:
+                logging.warning(f"The name '{metadata_entry.name if metadata_entry is not None else 'None'}' "
+                                f"can't be parsed for sorting, won't be sorted")
+                return 0
+            # print("Metadata name sorting: ", metadata_entry.name, number_part)
+            return number_part
+
+
+        return sorted(stars, key=get_sort_value)
+
+
+    def get_metadata_name_number_part(self, star_name: str):
+        match = re.match(self.pattern, star_name)
+        return int(match.group(1)) if match is not None else None
+
+
+    def __call__(self, stars: List[StarDescription]):
+        return self.sort_metadata_name(stars)
+
+
+metadata_sorter = MetadataSorter()
 
 
 def add_star_lists(list1: List[StarDescription], list2: List[StarDescription]):

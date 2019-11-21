@@ -87,7 +87,7 @@ class CatalogData(StarMetaData):
         self.name = name
         # the coords in the catalog
         self.coords = coords
-        # the separation between the munipack-found coords and the catalog coords
+        # the separation between the vast coords and the catalog coords
         self.separation = separation
 
 

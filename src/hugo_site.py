@@ -21,7 +21,7 @@ def run(post_name: str, selected_stars: List[StarDescription], len_vsx: int, len
     copy_files(post_name, resultdir, sitedir)
     result = get_header(post_name)
     result += get_starfile_preamble(images_prefix, len(selected_stars), len_vsx, len_candidates)
-    sorted_stars = utils.sort_rmh_hmb(selected_stars)
+    sorted_stars = utils.metadata_sorter(selected_stars)
     part_block = partial(block, resultdir=resultdir, images_prefix=images_prefix)
     for star in sorted_stars:
         result += part_block(star)
@@ -114,8 +114,12 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
 
 
 def get_header(title: str):
-    return f'---\ntitle: "{title}"\ndate: {pytz.utc.localize(datetime.utcnow()).isoformat()}\ndraft: false\n' \
-           f'summary: "Batch of new variable stars"\n---\n'
+    return f'---\ntitle: "{title}"\ndate: {get_date_time()}\ndraft: false\n' \
+           f'summary: "Batch of new variable stars, created at {datetime.now()}"\n---\n'
+
+
+def get_date_time():
+    return pytz.utc.localize(datetime.utcnow()).isoformat()
 
 
 def get_starfile_preamble(images_prefix: str, len_selectied: int, len_vsx: int, len_candidates: int):

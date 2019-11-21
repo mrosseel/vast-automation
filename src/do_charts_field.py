@@ -32,9 +32,12 @@ def set_aavso_id_label(star_descriptions):
     return star_descriptions
 
 
-def set_custom_label(star_descriptions, label):
+def set_custom_label(star_descriptions, label, strict=False):
     for index, star_descr in enumerate(star_descriptions):
-        star_descr.label = label if not isinstance(label, list) else label[index]
+        label_to_set = label if not isinstance(label, list) else label[index]
+        if strict and (star_descr.label is not '' or None):
+            logging.warning(f"Setting label to {label_to_set} but it has previous value {star_descr.label}")
+        star_descr.label = label_to_set
     return star_descriptions
 
 
@@ -160,7 +163,13 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
 
     # starfile stars get their local id label
     starfile_descr = utils.get_stars_with_metadata(star_descriptions, "STARFILE", exclude=["VSX"])
-    starfile_labeled = set_custom_label(starfile_descr, [x.get_metadata("STARFILE").our_name for x in starfile_descr])
+    starfile_labeled = set_custom_label(starfile_descr, [x.get_metadata("STARFILE").our_name for x in starfile_descr],
+                                        strict=True)
+
+    # owncatalog stars get their local id label
+    owncatalog_descr = utils.get_stars_with_metadata(star_descriptions, "OWNCATALOG")
+    owncatalog_labeled = set_custom_label(owncatalog_descr, [x.get_metadata("OWNCATALOG").name for x in owncatalog_descr],
+                                          strict=True)
 
     # field chart with all detections
     logging.info("Plotting field chart with all detected stars...")
@@ -182,16 +191,16 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
     fig, _ = get_plot_with_background(reference_fits_frame, 0, "Reference frame")
     save(fig, fieldchartsdirs + 'only_ref')
 
-    # field chart with all vsx stars + candidates
+    # field chart with all vsx stars + candidates + owncatalog
     logging.info("Plotting field chart with all VSX variable stars + candidate vars...")
-    fig = plot_it([vsx_labeled, candidate_labeled], [10., 5.], [False, True], reference_fits_frame, wcs,
-                  "VSX stars + candidate stars", PADDING)
+    fig = plot_it([vsx_labeled, candidate_labeled, owncatalog_labeled], [10., 5., 4.], [False, True, True],
+                  reference_fits_frame, wcs, "VSX stars + candidate stars + own catalog", PADDING)
     save(fig, fieldchartsdirs + f'vsx_{len(vsx_labeled)}_and_candidates_{len(candidate_labeled)}')
 
-    # field chart with all vsx stars + starfile
+    # field chart with all vsx stars + starfile + owncatalog
     logging.info("Plotting field chart with all VSX variable stars + selected vars...")
-    fig = plot_it([vsx_labeled, starfile_labeled], [10., 5.], [False, True], reference_fits_frame, wcs,
-                  "VSX stars + selected stars", PADDING)
+    fig = plot_it([vsx_labeled, starfile_labeled, owncatalog_labeled], [10., 5., 4.], [False, True, True],
+                  reference_fits_frame, wcs, "VSX stars + selected stars + own catalog", PADDING)
     save(fig, fieldchartsdirs + 'vsx_{}_and_selected_{}'.format(len(vsx_labeled), len(starfile_labeled)))
 
     # compstars get their vmag as label
