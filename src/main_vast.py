@@ -67,15 +67,15 @@ def run_do_rest(args):
         from astropy.io import fits
 
         reference_frame_filename = Path(reference_frame).name
-        fitsdir = Path(args.fitsdir)
+        full_ref_path = Path(args.fitsdir)/reference_frame_filename
         if not args.fitsdir and args.apikey:
             logging.error("There is no plate-solved reference frame {wcs_file}, please specify both --apikey "
                           "and --fitsdir.")
             sys.exit(0)
         rotation = extract_reference_frame_rotation(vastdir, reference_frame_filename)
         assert rotation == 0.0, f"Error: rotation is {rotation} and should always be 0.0"
-        subprocess.Popen(f"python3 ./src/astrometry_api.py --apikey={args.apikey} {radec_param} "
-                         f"--upload={reference_frame_filename} --newfits={wcs_file} --private --no_commercial", shell=True)
+        subprocess.Popen(f"python3 ./src/astrometry_api.py --apikey={args.apikey} "
+                         f"--upload={full_ref_path} --newfits={wcs_file} --private --no_commercial", shell=True)
         while not os.path.isfile(wcs_file):
             logging.info(f"Waiting for the astrometry.net plate solve...")
             time.sleep(10)

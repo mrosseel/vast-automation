@@ -24,6 +24,7 @@ class TestUtils(unittest.TestCase):
 
         self.assertEqual(15, utils.metadata_sorter.get_metadata_name_number_part("oenutheo15"))
         self.assertEqual(1, utils.metadata_sorter.get_metadata_name_number_part("RMH-HMB-1"))
+        self.assertEqual(7, utils.metadata_sorter.get_metadata_name_number_part("RMH-NEW-7"))
 
         stars = []
         for idx in range(1, 101):
@@ -32,7 +33,7 @@ class TestUtils(unittest.TestCase):
                                                            name=f'RMH-HMB-{idx}', coords=curr_star.coords, separation=0)
             stars.append(curr_star)
         random.shuffle(stars)
-        result = utils.metadata_sorter(stars)
+        result = utils.metadata_sorter(stars, metadata_id='RMH-HMB')
         self.assertEqual("RMH-HMB-1", result[0].get_metadata("RMH-HMB").name)
         self.assertEqual("RMH-HMB-10", result[9].get_metadata("RMH-HMB").name)
         self.assertEqual("RMH-HMB-100", result[99].get_metadata("RMH-HMB").name)
@@ -44,6 +45,18 @@ class TestUtils(unittest.TestCase):
                                                            coords=curr_star.coords, separation=0)
             stars.append(curr_star)
         utils.metadata_sorter(stars)  # expect no exception
+
+        stars = []
+        for idx in range(1, 101):
+            curr_star = self.stardesc(idx, random.random() * 360, random.random() * 90)
+            curr_star.metadata = star_metadata.CatalogData(key="RMH-HMB", catalog_id=f'RMH-NEW{idx}',
+                                                           name=f'RMH-NEW{idx}', coords=curr_star.coords, separation=0)
+            stars.append(curr_star)
+        random.shuffle(stars)
+        result = utils.metadata_sorter(stars, metadata_id='RMH-HMB')
+        self.assertEqual("RMH-NEW1", result[0].get_metadata("RMH-HMB").name)
+        self.assertEqual("RMH-NEW10", result[9].get_metadata("RMH-HMB").name)
+        self.assertEqual("RMH-NEW100", result[99].get_metadata("RMH-HMB").name)
 
 
     def test_reject_outliers_iqr(self):

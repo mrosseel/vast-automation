@@ -103,7 +103,7 @@ class MetadataSorter:
     pattern = re.compile(r'.*?(\d+)$')  # finding the number in our name
 
 
-    def sort_metadata_name(self, stars: List[StarDescription], metadata_id='OWNCATALOG'):
+    def sort_metadata_name(self, stars: List[StarDescription], metadata_id):
         def get_sort_value(star: StarDescription):
             metadata_entry = star.get_metadata(metadata_id)
             number_part = self.get_metadata_name_number_part(metadata_entry.name) if metadata_entry is not None else None
@@ -123,8 +123,8 @@ class MetadataSorter:
         return int(match.group(1)) if match is not None else None
 
 
-    def __call__(self, stars: List[StarDescription]):
-        return self.sort_metadata_name(stars)
+    def __call__(self, stars: List[StarDescription], metadata_id='OWNCATALOG'):
+        return self.sort_metadata_name(stars, metadata_id)
 
 
 metadata_sorter = MetadataSorter()
