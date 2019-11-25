@@ -484,9 +484,9 @@ def tag_starfile(selectedstarfile: str, stardict: StarDict):
                                              our_name=row['our_name'], period=row['period'],
                                              period_err=row['period_err'])
             the_star.metadata = SelectedStarData()
-            logging.info(f"starfile {the_star.local_id} metadata: {the_star.metadata}, "
-                         f"{the_star.get_metadata('STARFILE')}")
-            logging.info(f"starfile {the_star.get_metadata('STARFILE')}")
+            logging.debug(f"starfile {the_star.local_id} metadata: {the_star.metadata}, "
+                          f"{the_star.get_metadata('STARFILE')}")
+            logging.debug(f"starfile {the_star.get_metadata('STARFILE')}")
         logging.info(f"Tagged {len(df)} stars as selected by file.")
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
