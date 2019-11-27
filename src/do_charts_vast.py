@@ -302,7 +302,7 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_charts, do_ph
         df['floatJD'] = df['JD'].astype(np.float)
         old_size = len(df)
         # remove errors
-        df = utils.reject_outliers_iqr(df, 'realV', 20)
+        # df = utils.reject_outliers_iqr(df, 'realV', 20)
         # logging.info(f"Rejected {old_size-len(df)} observations with iqr.")
         if do_phase:
             if star.has_metadata("STARFILE") and star.get_metadata("STARFILE") is None:
