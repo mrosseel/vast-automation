@@ -78,8 +78,8 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         period = f"{float(parsed_toml['period']):.5f}" if 'period' in parsed_toml \
             else f"{metadata.period:.5f} +/- {metadata.period_err:.5f}"
         phase_url = f"{images_prefix}{filename_no_ext}.png"
-        minmax = f"<li>{metadata.minmax}</li>" if metadata.minmax is not None else ""
-        epoch = f"<li>epoch: {metadata.epoch}</li>" if metadata.epoch is not None else ""
+        minmax = metadata.minmax if metadata.minmax is not None else "Unknown"
+        epoch = metadata.epoch if metadata.epoch is not None else "Unknown"
         var_type = metadata.var_type if metadata.var_type else "Unknown"
         result = f'''<div class="bb-l b--black-10 w-100">
         <div class="fl w-70 pa2 ba">
@@ -90,10 +90,10 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             <li>{ucac4_name}</li>
             <li>name: {metadata.our_name}</li>
             <li>period (d): {period}</li>
-            {minmax}
+            <li>{minmax}</li>
             <li>mag. range: {parsed_toml['range']}</li>
             <li>type: {var_type}</li>
-            {epoch}
+            <li>epoch: {epoch}</li>
             <li>coords: {utils.get_hms_dms(star.coords)}</li>
             <li><a href="{images_prefix}vsx_and_star_{star.local_id:05}.png">finder chart</a></li>
             <li><a href="{images_prefix}{star.local_id:05}_ext.txt">observations</a></li>
