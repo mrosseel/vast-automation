@@ -6,7 +6,7 @@ import errno
 import re
 import glob
 import logging
-import pickle
+import utils
 
 
 # - 1st column - JD(TT) (default) or JD(UTC) (if VaST was started with "-u" flag)
@@ -19,45 +19,8 @@ import pickle
 def read_lightcurve_vast(starpath: str):
     logging.debug(f"Read lightcurve at path {starpath}")
     return pd.read_csv(starpath, delim_whitespace=True,
-                       names=['JD', 'Vrel', 'err', 'X', 'Y', 'unknown', 'file'],
-                       usecols=['JD', 'Vrel', 'err', 'X', 'Y', 'unknown', 'file'], dtype={'JD': str})
-
-
-def preprocess_lightcurve(df):
-    logging.error("not adapted for vast usage!!!!!!!!!!!!!")
-    try:
-        P = np.percentile(df['V-C'], [5, 95])
-        df2 = df[(df['V-C'] > P[0]) & (df['V-C'] < P[1])]
-        return df2
-    except IndexError:
-        logging.error(f"len df: {len(df)}")
-
-
-def read_pos(star, jd):
-    try:
-        df = pd.read_csv(settings.posdir + 'pos_' + str(star).zfill(5) + '.txt', skiprows=[1], sep=' ')
-        logging.info(f"reading pos head: {df.head()}")
-        df2 = df[df['X'] > 0]
-        df3 = df2[df['MAG'] < 99]
-        row = df.loc[df['JD'] == jd]
-        logging.info(f"reading position, row: {row}, jd: {jd}")
-        row = df3.iloc[0]
-        return [row['JD'], row['X'], row['Y'], row['MAG']]
-        # return (df3['X'].iloc[0], df3['Y'].iloc[0])
-        # return df
-    except IndexError:
-        logging.error("ERROR: IndexError")
-        # print("df:",len(df),"df2:", len(df2),"df3:", len(df3))
-        logging.error(len(df))
-
-
-def read_reference_frame():
-    file_to_load = settings.basedir + 'reference_frame.txt'
-    reference_file = open(file_to_load, 'r')
-    reference_file_contents = reference_file.readlines()
-    reference_frame = reference_file_contents[0].rstrip()
-    reference_frame_index = int(reference_file_contents[1])
-    return file_to_load, reference_frame, reference_frame_index
+                     names=['JD', 'Vrel', 'err', 'X', 'Y', 'unknown', 'file'],
+                     usecols=['JD', 'Vrel', 'err', 'X', 'Y', 'unknown', 'file'], dtype={'JD': str})
 
 
 def trash_and_recreate_dir(dir):
@@ -101,20 +64,6 @@ def read_world_positions(the_path):
             if exc.errno != errno.EISDIR:  # Do not fail if a directory is found, just ignore it.
                 raise  # Propagate other kinds of IOError.
     return results
-
-
-def read_aperture():
-    apertures = np.loadtxt(settings.basedir + 'apertures.txt', dtype=float, delimiter=';')
-    apertureidx = np.loadtxt(settings.basedir + 'apertureidx_best.txt', dtype=int)
-    aperture = apertures[apertureidx]
-    return apertures, apertureidx, aperture
-
-
-def read_compstars():
-    comparison_stars_1 = np.loadtxt(settings.basedir + "comparison_stars_1.txt", dtype=int, delimiter=';')
-    with open(settings.basedir + 'comparison_stars_1_desc.bin', 'rb') as compfile:
-        comparison_stars_1_desc = pickle.load(compfile)
-    return comparison_stars_1, comparison_stars_1_desc
 
 
 # Select files conforming to the match_pattern using percentage which is between 0 and 1

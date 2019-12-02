@@ -52,19 +52,6 @@ def get_data_from_fits_header(reference_frame):
     return [object_ra, object_dec, naxis1, naxis2, jd]
 
 
-def pixel_to_radec(wcs_config, xpix, ypix):
-    pixcrd = np.array([[xpix, ypix]], np.float_)
-    result = wcs_config.wcs_pix2world(pixcrd, 1)
-    return SkyCoord(result[0][0], result[0][1], unit='deg')
-
-
-def star_to_radec(star, w, jd):
-    jd, x, y, mag = reading.read_pos(star, jd)
-    logging.info(f"star to radec head: {jd}, {x}, {y}, {mag}")
-    radec = pixel_to_radec(w, x, y)
-    return [radec, mag]
-
-
 def get_fits_header(reference_file):
     hdulist = fits.open(reference_file)
     return hdulist[0].header

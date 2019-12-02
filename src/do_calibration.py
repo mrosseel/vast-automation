@@ -86,23 +86,6 @@ def select_reference_frame_gzip(limit):
 
 ############# star description utils #################
 
-# returns list of star descriptions
-def get_star_descriptions(star_id_list=None):
-    # returns {'name': [ra.deg, dec.deg ]}
-    positions = reading.read_world_positions(settings.worldposdir)
-    result = []
-    plist = "all stars"
-    if star_id_list is not None:
-        plist = star_id_list
-
-    logging.info(f'Reading star descriptions for: {plist} with size {len(init.star_list)}')
-    for key in positions:
-        star_id = reading.filename_to_star(str(key))
-        if star_id_list is None or star_id in star_id_list:
-            result.append(StarDescription(local_id=reading.filename_to_star(str(key)),
-                                          coords=SkyCoord(positions[key][0], positions[key][1], unit='deg')))
-    return result
-
 
 def select_star_descriptions(star_id_list: List[int], stars: List[StarDescription]):
     return [x for x in stars if x.local_id in star_id_list]
@@ -471,9 +454,8 @@ def get_vizier_field(center_coord, radius, catalog, row_limit=2):
         return None
     return df
 
-
-if __name__ == '__main__':
-    star_descriptions = do_calibration.get_star_descriptions(init.star_list)
-    star_catalog = create_star_descriptions_catalog(star_descriptions)
-    result = get_starid_1_for_radec(star_catalog, [271.234735], [-43.845816])
-    logging.info(f"calibration result: {result}")
+# if __name__ == '__main__':
+#     star_descriptions = do_calibration.get_star_descriptions(init.star_list)
+#     star_catalog = create_star_descriptions_catalog(star_descriptions)
+#     result = get_starid_1_for_radec(star_catalog, [271.234735], [-43.845816])
+#     logging.info(f"calibration result: {result}")
