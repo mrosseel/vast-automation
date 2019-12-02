@@ -113,7 +113,7 @@ def run_do_rest(args):
     ucac4 = UCAC4()
     ucac4.add_ucac4_to_sd(starfile_stars)
 
-    comp_stars = read_comparison_stars(star_descriptions, args.checkstarfile, vastdir, stardict, ucac4)
+    comp_stars = create_comparison_stars(star_descriptions, args.checkstarfile, vastdir, stardict, ucac4)
 
     # Set comp stars for all interesting stars (stars which are interesting enough to measure)
     logging.info("Setting per star comparison stars...")
@@ -153,8 +153,9 @@ def run_do_rest(args):
         hugo_site.run(args.site, starfile_stars, len(vsx_stars), len(candidate_stars), resultdir)
 
 
-def read_comparison_stars(star_descriptions: List[StarDescription], checkstarfile: str, vastdir: str,
-                          stardict: StarDict, ucac4: UCAC4) -> ComparisonStars:
+# Either read UCAC4 check stars from a file, or calculate our own comparison stars
+def create_comparison_stars(star_descriptions: List[StarDescription], checkstarfile: str, vastdir: str,
+                            stardict: StarDict, ucac4: UCAC4) -> ComparisonStars:
     if checkstarfile:
         # load comparison stars
         checkstars = read_checkstars(checkstarfile)
