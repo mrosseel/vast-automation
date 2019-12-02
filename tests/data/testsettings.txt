@@ -1,0 +1,4 @@
+sitelat = "-22 57 10"
+sitelong = "-68 10 49"
+sitealt = 2500
+observer = "RMH"

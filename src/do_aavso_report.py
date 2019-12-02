@@ -18,14 +18,27 @@ from comparison_stars import ComparisonStars
 from pathlib import PurePath, Path
 
 
+# TODO
+# + CNAME ENSEMBLE
+# + CMAG na
+# KNAME: sternaam = helderste ensemble, ucac4 nummer
+# KMAG: instrumental mag van helderste uit ensemble
+# Notes: K = catalogus mag van helderste ensemble
+# + chart N/A
+# + AMASS: 2 cijfers na de komma
+# + Software: vast-automation
+# + Observation site Latitude = 50 49 02
+# + Observation site Longitude = 02 54 45
+
+
 def calculate_airmass(coord, location, jd):
     time = Time(jd, format='jd')
     alt_azs = coord.transform_to(AltAz(obstime=time, location=location))
     return alt_azs.secz
 
 
-def report(star: StarDescription, df_curve: DataFrame, target_dir: Path, vastdir: str, sitelat, sitelong,
-           sitealt, filter=None, observer='RMH', chunk_size=None):
+def report(star: StarDescription, df_curve: DataFrame, comp_stars: ComparisonStars,
+           target_dir: Path, sitelat, sitelong, sitealt, camera_filter=None, observer='RMH', chunk_size=None):
     star_match_ucac4, separation = star.get_metadata("UCAC4") \
         .get_name_and_separation() if star.has_metadata("UCAC4") else (None, None)
     star_match_vsx, separation = star.get_metadata("VSX") \
@@ -40,30 +53,37 @@ def report(star: StarDescription, df_curve: DataFrame, target_dir: Path, vastdir
         chunk_size = df_curve.shape[0]
     star_chunks = [df_curve[i:i + chunk_size] for i in range(0, df_curve.shape[0], chunk_size)]
     chunk_counters = 0
-    kname = "TODO"
-    kmag = 0.0
-    notes = f"Standard mag: K = ???"
+    brightest_index = comp_stars.get_brightest_comparison_star_index()
+    kname = comp_stars.star_descriptions[brightest_index].get_metadata("UCAC4").catalog_id
+    notes = f"Standard mag: K = {comp_stars.comp_catalogmags[brightest_index]:.3f}"
 
     filterdict = None
     # Setting up the filter value
-    if filter is None:
+    if camera_filter is None:
         filterdict = read_camera_filters.read_filters()
         print(filterdict)
         filterlambda = lambda x: filterdict[x]
     else:
-        filterlambda = lambda x: filter
+        filterlambda = lambda x: camera_filter
 
     for chunk in star_chunks:
         chunk_counters += 1
         suffix = f"_{chunk_counters}.txt" if len(star_chunks) != 1 else ".txt"
         with open(Path(target_dir, f"{title}_ext{suffix}"), 'w') as fp:
-            writer = aavso.ExtendedFormatWriter(fp, observer, software='munipack-automation', type='EXTENDED',
-                                                obstype='CCD')
+            writer = aavso.ExtendedFormatWriter(fp, observer, location=(sitelat, sitelong, sitealt),
+                                                software='https://github.com/mrosseel/vast-automation',
+                                                type='EXTENDED', obstype='CCD')
             for _, row in chunk.iterrows():
                 # logging.info(row, type(row))
+                jd = row['JD']
+                if jd in comp_stars.observations[brightest_index]:
+                    check_mag = f"{comp_stars.observations[brightest_index][jd]:.3f}"
+                else:
+                    check_mag = "na"
+
                 writer.addrow({
                     'name': var_display_name,
-                    'date': row['JD'],
+                    'date': jd,
                     'magnitude': row['realV'],
                     'magnitude_error': row['realErr'],
                     'filter': filterlambda(row['JD']),
@@ -72,8 +92,8 @@ def report(star: StarDescription, df_curve: DataFrame, target_dir: Path, vastdir
                     'comparison_name': 'ENSEMBLE',
                     'comparison_magnitude': 'na',
                     'check_name': kname,
-                    'check_magnitude': kmag,
-                    'airmass': calculate_airmass(star.coords, earth_location, row['floatJD']),
+                    'check_magnitude': check_mag,
+                    'airmass': calculate_airmass(star.coords, earth_location, row['floatJD']).value,
                     'group': 'na',
                     'chart': 'na',
                     'notes': notes

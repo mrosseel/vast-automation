@@ -26,3 +26,6 @@ class ComparisonStars:
         return ComparisonStars(np.array(self.ids)[mask], np.array(self.star_descriptions)[mask],
                                np.array(self.observations)[mask],
                                np.array(self.comp_catalogmags)[mask], np.array(self.comp_catalogerr)[mask])
+
+    def get_brightest_comparison_star_index(self):
+        return np.argmin(self.comp_catalogmags)

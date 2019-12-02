@@ -15,8 +15,6 @@ import utils
 import argparse
 import logging
 import gc
-import subprocess
-import math
 import matplotlib as mplotlib
 from multiprocessing import cpu_count, Manager
 from comparison_stars import ComparisonStars
@@ -24,11 +22,9 @@ from functools import partial
 from gatspy.periodic import LombScargleFast
 from gatspy.periodic import TrendedLombScargle
 from reading import trash_and_recreate_dir
-from reading import file_selector
 from timeit import default_timer as timer
 from star_description import StarDescription
 from pathlib import PurePath
-from typing import Tuple
 from pandas import DataFrame, Series
 
 from star_metadata import StarFileData
@@ -71,7 +67,7 @@ def plot_lightcurve_jd(star: StarDescription, curve: DataFrame, chartsdir, perio
                      elinewidth=1)
 
         plt.xlabel('phase-adjusted JD', labelpad=TITLE_PAD)
-        #plt.xscale('log')
+        # plt.xscale('log')
         # plt.ylabel("Absolute Mag, comp star = {:2.2f}".format(comparison_stars[0].vmag), labelpad=TITLE_PAD)
         plot_max = curve_max + 0.1
         plot_min = curve_min - 0.1
@@ -102,7 +98,7 @@ def phase_lock_lightcurve(series: Series, period):
     jds_norm_orig = np.subtract(jds, jds.min())
     jds_norm = np.diff(jds_norm_orig)
     jds_norm = np.mod(jds_norm, period)
-    jds_norm = np.concatenate(([jds_norm_orig[0]],jds_norm))
+    jds_norm = np.concatenate(([jds_norm_orig[0]], jds_norm))
     jds_norm = np.cumsum(jds_norm)
     return jds_norm, np.min(jds_norm), np.max(jds_norm)
 
@@ -159,11 +155,10 @@ def plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir):
         logging.error(f"Error during plot lightcurve: {star.local_id}")
 
 
-def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, suffix='', period: float = None):
+def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, suffix='', period: float = None,
+                       write_plot=True, filter_func=None):
     try:
         logging.debug(f"Starting plot phase diagram with {star} and {fullphasedir}")
-        coords = star.coords
-        star_id = star.local_id
         vsx_name, _, filename_no_ext = get_star_or_catalog_name(star, suffix=f"_phase{suffix}")
         vsx_title = f"{vsx_name}\n" if vsx_name is not None else ''
         save_location = PurePath(fullphasedir, filename_no_ext + '.png')
@@ -171,7 +166,7 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
         # print("Calculating phase diagram for", star)
         if curve is None:
-            logging.info("Curve of star {} is None".format(star_id))
+            logging.info("Curve of star {} is None".format(star.local_id))
             return
         t_np = curve['floatJD']
         y_np = curve['realV'].to_numpy()
@@ -181,36 +176,23 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
             if period_max <= 0.01:
                 return
             ls = LombScargleFast(optimizer_kwds={'quiet': True, 'period_range': (0.01, period_max)},
-                                 silence_warnings=True).fit(t_np, y_np)
+                                 silence_warnings=True, fit_period=True).fit(t_np, y_np, dy_np)
             period = ls.best_period
             # TODO test this trended lombscargle !
             # tmodel = TrendedLombScargle(optimizer_kwds={'quiet': True, 'period_range': (0.01, period_max)},
             #                             silence_warnings=True).fit(t_np, y_np)
             # period = tmodel.best_period
-        fig = plt.figure(figsize=(18, 16), dpi=80, facecolor='w', edgecolor='k')
-        plt.xlabel("Phase", labelpad=TITLE_PAD)
-        plt.ylabel("Magnitude", labelpad=TITLE_PAD)
-        plt.title(f"{vsx_title}Star {star_id}, p: {period:.5f} d{upsilon_text}\n{utils.get_hms_dms_matplotlib(coords)}",
-                  pad=TITLE_PAD)
-        plt.ticklabel_format(style='plain', axis='x')
-        # plt.title(f"Star {star} - {period}", pad=TITLE_PAD)
-        plt.tight_layout()
-        # plotting + calculation of 'double' phase diagram from -1 to 1
         phased_t = np.fmod(t_np / period, 1)
-        minus_one = np.vectorize(lambda t: t - 1)
-        phased_t2 = minus_one(phased_t)
         phased_lc = y_np[:]
-        phased_t_final = np.append(phased_t2, phased_t)
+        if filter_func is not None:
+            phased_t, phased_lc = filter_func(phased_t, phased_lc)
+        phased_t_final = np.append(phased_t.subtract(1), phased_t)
         phased_lc_final = np.append(phased_lc, phased_lc)
         phased_err = np.clip(np.append(dy_np, dy_np), -0.5, 0.5)  # error values are clipped to +0.5 and -0.5
-        plt.gca().invert_yaxis()
-        plt.errorbar(phased_t_final, phased_lc_final, yerr=phased_err, linestyle='none', marker='o', ecolor='gray',
-                     elinewidth=1)
-        logging.debug(f"Saving phase plot to {save_location}")
-        fig.savefig(save_location, format='png')
-        plt.close(fig)
-        plt.clf()
-
+        plt = _plot_phase_diagram(phased_t_final, phased_lc_final, phased_err, write_plot, save_location, star,
+                                  vsx_title, period, upsilon_text)
+        if not write_plot:
+            return plt, t_np, y_np
         # write TXT file
         tomldict = {}
         ymin_arg, ymax_arg = np.argmin(y_np), np.argmax(y_np)
@@ -241,7 +223,7 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         tomldict['min'] = float(ymin)
         tomldict['max'] = float(ymax)
         tomldict['range'] = var_range
-        tomldict['coords'] = [coords.ra.deg, coords.dec.deg]
+        tomldict['coords'] = [star.coords.ra.deg, star.coords.dec.deg]
         if minmax:
             tomldict['minmax'] = minmax
         if epoch:
@@ -257,6 +239,30 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         logging.error(message)
         logging.error(f"Error during plot phase: {star.local_id}")
     return period
+
+
+def _plot_phase_diagram(phased_t_final, phased_lc_final, phased_err, write_plot, save_location, star, vsx_title, period,
+                        upsilon_text):
+    fig = plt.figure(figsize=(18, 16), dpi=80, facecolor='w', edgecolor='k')
+    plt.xlabel("Phase", labelpad=TITLE_PAD)
+    plt.ylabel("Magnitude", labelpad=TITLE_PAD)
+    plt.title(
+        f"{vsx_title}Star {star.local_id}, p: {period:.5f} d{upsilon_text}\n{utils.get_hms_dms_matplotlib(star.coords)}",
+        pad=TITLE_PAD)
+    plt.ticklabel_format(style='plain', axis='x')
+    # plt.title(f"Star {star} - {period}", pad=TITLE_PAD)
+    plt.tight_layout()
+    # plotting + calculation of 'double' phase diagram from -1 to 1
+    plt.gca().invert_yaxis()
+    plt.errorbar(phased_t_final, phased_lc_final, yerr=phased_err, linestyle='none', marker='o', ecolor='gray',
+                 elinewidth=1)
+    logging.debug(f"Saving phase plot to {save_location}")
+    if write_plot:
+        fig.savefig(save_location, format='png')
+        plt.close(fig)
+        plt.clf()
+    else:
+        return plt
 
 
 def get_star_or_catalog_name(star: StarDescription, suffix: str):
@@ -298,7 +304,6 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_charts, do_ph
         comp_stars = None
         df['realV'], df['realErr'] = do_compstars.calculate_ensemble_photometry(
             df, filtered_compstars, do_compstars.weighted_value_ensemble_method)
-        filtered_compstars = None
         df['floatJD'] = df['JD'].astype(np.float)
         old_size = len(df)
         # remove errors
@@ -324,14 +329,12 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_charts, do_ph
             # end = timer()
             # print("plotting lightcurve:", end-start)
         if do_aavso:
-            # TODO put this in settings.txt
-            sitelat = '-22 57 10'
-            sitelong = '-68 10 49'
-            sitealt = 2500
-            observer = 'ZZZ'
-            do_aavso_report.report(star, df.copy(), target_dir=aavsodir, vastdir=basedir, sitelat=sitelat,
-                                   sitelong=sitelong, sitealt=sitealt, filter='V',
-                                   observer=observer, chunk_size=aavso_limit)
+            settings = toml.load('settings.txt')
+            do_aavso_report.report(star, df.copy(), filtered_compstars, target_dir=aavsodir,
+                                   sitelat=settings['sitelat'], sitelong=settings['sitelong'],
+                                   sitealt=settings['sitealt'], camera_filter='V', observer=settings['observer'],
+                                   chunk_size=aavso_limit)
+        filtered_compstars = None
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
@@ -417,7 +420,7 @@ if __name__ == '__main__':
         ucacsd = ucac4.get_ucac4_star_description(check_star)
         stars.append(StarDescription(local_id=real_sd[idx], coords=ucacsd.coords,
                                      path=f"{vastdir}out{real_sd[idx]:05}.dat"))
-    comp_stars = main_vast.read_comparison_stars(stars, args.checkstarfile, vastdir)
+    comp_stars = main_vast.create_comparison_stars(stars, args.checkstarfile, vastdir)
 
     # run(stars, comp_stars, vastdir, args.resultdir, 'phase_candidates/', 'light_candidates/',
     run(stars[:-len(real_sd)], comp_stars, vastdir, args.resultdir, 'phase_candidates/', 'light_candidates/',

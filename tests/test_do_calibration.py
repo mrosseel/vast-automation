@@ -4,6 +4,7 @@ from star_description import StarDescription
 from astropy.coordinates import SkyCoord
 import logging
 
+
 class TestDoCalibration(unittest.TestCase):
 
     def test_add_info_to_star_description(self):

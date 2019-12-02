@@ -13,6 +13,7 @@ import math
 from comparison_stars import ComparisonStars
 from pathlib import PurePath
 import operator
+from pandas import DataFrame
 import tqdm
 
 StarDict = Dict[int, StarDescription]
@@ -77,7 +78,7 @@ def _get_list_of_likely_constant_stars(vastdir):
     return result
 
 
-def calculate_ensemble_photometry(df, comp_stars, ensemble_method):
+def calculate_ensemble_photometry(df: DataFrame, comp_stars: ComparisonStars, ensemble_method):
     assert comp_stars is not None
     logging.debug(f"Start calculate_real with {df.shape[0]} rows and {len(comp_stars.observations)} comp stars.")
 

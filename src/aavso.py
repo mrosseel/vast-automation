@@ -37,7 +37,7 @@ class ExtendedFormatWriter(object):
 
 
     def __init__(self, fp, observer_code, *, delimiter=',', date_format='JD', type='EXTENDED',
-                 obstype='CCD', software='pyaavso'):
+                 obstype='CCD', software='pyaavso', location=None):
         """
         Creates the writer which will write observations into the file-like
         object given in first parameter. The only other required parameter
@@ -67,6 +67,9 @@ class ExtendedFormatWriter(object):
         self.data.append(f"#DELIM={delimiter}")
         self.data.append(f"#DATE={date_format.upper()}")
         self.data.append(f"#OBSTYPE={obstype}")
+        self.data.append(f"#Observation site Latitude = {location[0]}")
+        self.data.append(f"#Observation site Longitude = {location[1]}")
+        self.data.append(f"#Observation site Altitude = {location[2]} m")
         self.data.append("#NAME,DATE,MAG,MERR,FILT,TRANS,MTYPE,CNAME,CMAG,KNAME,KMAG,AMASS,GROUP,CHART,NOTES")
 
 
@@ -110,10 +113,10 @@ class ExtendedFormatWriter(object):
                f"{observation_data['filter']:.5},{observation_data['transformed']:.3}," \
                f"{observation_data['magnitude_type']:.3}," \
                f"{observation_data.get('comparison_name', 'na'):.20}," \
-               f"{observation_data.get('comparison_magnitude', 'na'):.8}," \
-               f"{observation_data.get('check_name', 'na'):.20}," \
-               f"{observation_data.get('check_magnitude', 'na'):.8}," \
-               f"{observation_data.get('airmass', 'na'):.7}," \
+               f"{observation_data.get('comparison_magnitude', 'na'):.2}," \
+               f"{observation_data['check_name']:.20}," \
+               f"{observation_data['check_magnitude']}," \
+               f"{observation_data['airmass']:.2f}," \
                f"{observation_data.get('group', 'na'):.5}," \
                f"{observation_data.get('chart', 'na'):.20}," \
                f"{observation_data.get('notes', 'na'):.2000}"
