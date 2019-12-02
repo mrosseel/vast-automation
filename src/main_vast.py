@@ -96,10 +96,10 @@ def run_do_rest(args):
                   star_descriptions[:10] if len(star_descriptions) >= 10 else star_descriptions)
     write_augmented_autocandidates(vastdir, resultdir, stardict)
     write_augmented_all_stars(vastdir, resultdir, stardict)
-    rmhhmb_stars = utils.get_stars_with_metadata(star_descriptions, "OWNCATALOG")
-    logging.info(f"There are {len(rmhhmb_stars)} own catalog stars")
+    owncatalog = utils.get_stars_with_metadata(star_descriptions, "OWNCATALOG")
+    logging.info(f"There are {len(owncatalog)} own catalog stars")
     candidate_stars = utils.get_stars_with_metadata(star_descriptions, "CANDIDATE", exclude="VSX")
-    candidate_stars = utils.add_star_lists(candidate_stars, rmhhmb_stars)
+    candidate_stars = utils.add_star_lists(candidate_stars, owncatalog)
     logging.info(f"There are {len(candidate_stars)} candidate stars")
 
     vsx_stars = utils.get_stars_with_metadata(star_descriptions, "VSX")
@@ -107,7 +107,7 @@ def run_do_rest(args):
     starfile_stars = utils.get_stars_with_metadata(star_descriptions, "STARFILE")
     starfile_stars = starfile_stars
     logging.info(f"There are {len(starfile_stars)} selected stars")
-    compstar_needing_stars = starfile_stars + vsx_stars + candidate_stars + rmhhmb_stars
+    compstar_needing_stars = starfile_stars + vsx_stars + candidate_stars + owncatalog
 
     # set ucac4 stars selected
     ucac4 = UCAC4()
