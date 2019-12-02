@@ -77,7 +77,7 @@ def report(star: StarDescription, df_curve: DataFrame, comp_stars: ComparisonSta
                 # logging.info(row, type(row))
                 jd = row['JD']
                 if jd in comp_stars.observations[brightest_index]:
-                    check_mag = f"{comp_stars.observations[brightest_index][jd]:.3f}"
+                   check_mag = f"{comp_stars.observations[brightest_index][jd][0]:.3f}"
                 else:
                     check_mag = "na"
 

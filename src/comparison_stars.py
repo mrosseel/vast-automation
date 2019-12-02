@@ -8,13 +8,13 @@ class ComparisonStars:
     def __init__(self, ids, star_descriptions: List[StarDescription], observations: Dict[str, Tuple[float, float]],
                  comp_catalogmags, comp_catalogerr):
         self.ids = ids
-        # one StarDescription per comparison star
+        # one StarDescription per comparison star: [index_of_comp_star] = StarDescription
         self.star_descriptions = star_descriptions
-        # one array of observations per comparison star
+        # observations per comparison star: [index_of_comp_star][JD] = Tuple(mag, err)
         self.observations = observations
-        # one catalog magnitude per comparison star
+        # one catalog magnitude per comparison star: [index_of_comp_star] = catalog_mag
         self.comp_catalogmags = comp_catalogmags
-        # one catalog error per comparison star
+        # one catalog error per comparison star: [index_of_comp_star] = catalog_err
         self.comp_catalogerr = comp_catalogerr
 
 
