@@ -52,8 +52,10 @@ class TestDoAAVSO(unittest.TestCase):
         self.sd.set_metadata(star_metadata.CompStarData(compstar_ids=[1, 5]))
         # ComparisonStars(comparison_stars_ids, comparison_stars_1_sds, comp_observations, comp_catalogmags,
         #                 comp_catalogerr)
-        observations = [{'2457236.66302': 12.2}, {'2457236.66302': 11.2}]
+        observations = [{'2457236.66302': (12.2, 0.01)}, {'2457236.66302': (11.2, 0.01)}]
         self.comp_stars = ComparisonStars([1, 5], [self.sd_comp1, self.sd_comp5], observations, [12, 11], [0.1, 0.1])
+        import toml
+        self.settings = toml.load('./tests/data/testsettings.txt')
 
 
     def test_aavso(self):
@@ -69,36 +71,54 @@ class TestDoAAVSO(unittest.TestCase):
             'comparison_magnitude': 'na',
             'check_name': 'check_display_name',
             'check_magnitude': 'comparison_star_vmag',
-            'airmass': 'airmass',
+            'airmass': 2.5,
             'group': 'na',
             'chart': 'na',
             'notes': 'na'
         }
         start = timer()
-        with open('./tests/data/aavso_out.txt', 'w') as fp:
-            writer = aavso.ExtendedFormatWriter(fp, 'RMH', software='munipack-automation', type='EXTENDED',
-                                                obstype='CCD')
-            for i in range(100000):
-                writer.addrow(data)
-            s = "".join(writer.data)
-            writer.flush()
+        try:
+            aavso_out_txt = './tests/data/aavso_out.txt'
+            with open(aavso_out_txt, 'w') as fp:
+                writer = aavso.ExtendedFormatWriter(fp, 'RMH', software='munipack-automation', type='EXTENDED',
+                                                    obstype='CCD', location=(self.settings['sitelat'],
+                                                                             self.settings['sitelong'],
+                                                                             self.settings['sitealt']))
+                for i in range(100):
+                    writer.addrow(data)
+                s = "".join(writer.data)
+                writer.flush()
+        except:
+            print("exception")
         end = timer()
-        import hashlib
-        m = hashlib.sha256()
-        m.update(s.encode('utf-8'))
-        result = m.hexdigest()
-        self.assertEqual("f042e25b9e6078d03b1e76e8ce9a12ac64ec1d16edbdff0fd452ca4a44ab2555", result)
+        #NAME,DATE,MAG,MERR,FILT,TRANS,MTYPE,CNAME,CMAG,KNAME,KMAG,AMASS,GROUP,CHART,NOTES
+        # var_display_name,212312321.12,12.000,0.010,V,NO,STD,ENSEMBLE,na,check_display_name,comparison_star_vmag,2.50,na,na,na
+        df = reading.read_aavso_lightcurve(aavso_out_txt)
+        self.assertEqual(df.iloc[0]['NAME'], data['name'])
+        self.assertEqual(df.iloc[0]['DATE'], str(data['date']))
+        self.assertEqual(df.iloc[0]['MAG'], data['magnitude'])
+        self.assertEqual(df.iloc[0]['MERR'], data['magnitude_error'])
+        self.assertEqual(df.iloc[0]['FILT'], data['filter'])
+        self.assertEqual(df.iloc[0]['TRANS'], data['transformed'])
+        self.assertEqual(df.iloc[0]['MTYPE'], data['magnitude_type'])
+        self.assertEqual(df.iloc[0]['CNAME'], data['comparison_name'])
+        self.assertEqual(df.iloc[0]['CMAG'], data['comparison_magnitude'])
+        self.assertEqual(df.iloc[0]['KNAME'], data['check_name'])
+        self.assertEqual(df.iloc[0]['KMAG'], data['check_magnitude'])
+        self.assertEqual(df.iloc[0]['AMASS'], data['airmass'])
+        self.assertEqual(df.iloc[0]['GROUP'], data['group'])
+        self.assertEqual(df.iloc[0]['CHART'], data['chart'])
+        self.assertEqual(df.iloc[0]['NOTES'], data['notes'])
+
         print("timing is", end - start)
 
 
     def test_do_aavso_report(self):
         # def report(star: StarDescription, df_curve: DataFrame, target_dir: Path, vastdir: str, sitelat, sitelong,
         #            sitealt, filter=None, observer='RMH', chunk_size=None):
-        import toml
-        settings = toml.load('./tests/data/testsettings.txt')
         do_aavso_report.report(self.sd, massage_df_for_phase_plot(self.df), self.comp_stars, './tests/data',
-                               sitelat=settings['sitelat'], sitelong=settings['sitelong'], sitealt=settings['sitealt'],
-                               observer=settings['observer'], camera_filter='V')
+                               sitelat=self.settings['sitelat'], sitelong=self.settings['sitelong'],
+                               sitealt=self.settings['sitealt'], observer=self.settings['observer'], camera_filter='V')
 
 
 if __name__ == '__main__':

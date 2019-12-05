@@ -30,7 +30,8 @@ class TestMainVast(unittest.TestCase):
         stars = [self.stardesc(515, 12.7725921, 12.0036631), self.stardesc(2269, 12.2686600, 12.0382637),
                  self.stardesc(3154, 12.1520503, 12.0935881),
                  self.stardesc(2635, 10.24490, 9.96730), self.stardesc(1, 10, 9)]
-        main_vast.tag_starfile(PurePath(test_file_path, "wwcra2015_starlist.txt"), stars)
+        main_vast.tag_starfile(PurePath(test_file_path, "wwcra2015_starlist.txt"),
+                               utils.get_star_description_cache(stars))
         test = utils.get_stars_with_metadata(stars, "STARFILE")
         self.assertEqual(4, len(test))
 
