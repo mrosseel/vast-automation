@@ -265,7 +265,8 @@ def _add_vsx_metadata_to_star_description(catalog_name: str, star: StarDescripti
     match = CatalogData(key=catalog_name, catalog_id=vsx_name,
                         name=vsx_name, separation=separation,
                         coords=SkyCoord(vsx_dict['ra_deg_np'][index_vsx], vsx_dict['dec_deg_np'][index_vsx],
-                                        unit='deg'))
+                                        unit='deg'),
+                        extradata=vsx_dict['metadata'][index_vsx])
     star.metadata = match
     return match
 

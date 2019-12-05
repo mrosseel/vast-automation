@@ -124,23 +124,23 @@ def run_do_rest(args):
 
     if args.allstars:
         do_charts_vast.run(star_descriptions, comp_stars, vastdir, resultdir, 'phase_all/', 'light_all/', 'aavso_all/',
-                           do_phase=do_phase, do_charts=do_charts, do_aavso=do_aavso, nr_threads=thread_count,
+                           do_phase=do_phase, do_light=do_charts, do_aavso=do_aavso, nr_threads=thread_count,
                            desc="Phase/light/aavso of ALL stars")
     else:
         if args.candidates:
             logging.info(f"Plotting {len(candidate_stars)} candidates...")
             do_charts_vast.run(candidate_stars, comp_stars, vastdir, resultdir, 'phase_candidates/',
-                               'light_candidates/', 'aavso_candidates/', do_phase=do_phase, do_charts=do_charts,
+                               'light_candidates/', 'aavso_candidates/', do_phase=do_phase, do_light=do_charts,
                                do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of candidates")
         if args.vsx:
             do_calibration.add_metadata_to_star_descriptions(vsx_stars, ["SELECTED"], strict=False)
             logging.info(f"Plotting {len(vsx_stars)} vsx stars...")
             do_charts_vast.run(vsx_stars, comp_stars, vastdir, resultdir, 'phase_vsx/', 'light_vsx/', 'aavso_vsx/',
-                               do_phase=do_phase, do_charts=do_charts, do_aavso=do_aavso, nr_threads=thread_count,
+                               do_phase=do_phase, do_light=do_charts, do_aavso=do_aavso, nr_threads=thread_count,
                                desc="Phase/light/aavso of VSX stars")
         if args.selectedstarfile:
             do_charts_vast.run(starfile_stars, comp_stars, vastdir, resultdir, 'phase_selected/', 'light_selected/',
-                               'aavso_selected', do_phase=do_phase, do_charts=do_charts,
+                               'aavso_selected', do_phase=do_phase, do_light=do_charts, do_light_raw=do_charts,
                                do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of selected stars")
     # starfiledata is filled in during the phase plotting, so should come after it. Without phase it will be incomplete
     write_augmented_starfile(resultdir, starfile_stars)
@@ -164,7 +164,7 @@ def create_comparison_stars(star_descriptions: List[StarDescription], checkstarf
         ucac4.add_ucac4_to_sd(star_descriptions)
         comparison_stars_ids, comparison_stars_1_sds = do_compstars.get_calculated_compstars(vastdir, stardict)
     comp_observations = []
-    logging.info(f"Using comparison star ids:{comparison_stars_ids}")
+    logging.info(f"Using {len(comparison_stars_ids)} comparison stars.")
     for star in comparison_stars_ids:
         comp_magdict = read_magdict_for_star(vastdir, star)
         # logging.info(f"Read comp magdict for {star}: {read_comp_magdict}")
@@ -344,7 +344,7 @@ def write_augmented_starfile(resultdir: str, starfile_stars: List[StarDescriptio
 
         for star in sorted_stars:
             metadata: StarFileData = star.get_metadata("STARFILE")
-            _, _, filename_no_ext = do_charts_vast.get_star_or_catalog_name(star, '')
+            _, _, _, filename_no_ext = do_charts_vast.get_star_or_catalog_name(star, '')
             txt_path = PurePath(resultdir, 'phase_selected/txt', filename_no_ext + '_phase.txt')
             try:
                 parsed_toml = toml.load(txt_path)

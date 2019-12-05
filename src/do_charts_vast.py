@@ -39,12 +39,28 @@ def set_seaborn_style():
     sns.set_style("ticks")
 
 
-def plot_lightcurve_jd(star: StarDescription, curve: DataFrame, chartsdir, period: float):
+def plot_lightcurve_raw(star: StarDescription, curve: DataFrame, chartsdir):
+    logging.debug(f"Plotting raw lightcurve for {star.local_id}")
+    return _plot_lightcurve(star, curve, chartsdir)
+
+
+def plot_lightcurve_pa(star: StarDescription, curve: DataFrame, chartsdir, period: float):
+    logging.debug(f"Plotting phase adjusted lightcurve for {star.local_id}")
+    if star.has_metadata("VSX"):
+        vsx = star.get_metadata("VSX")
+        period = vsx.extradata['Period'] if not np.isnan(vsx.extradata['Period']) else period
+    convert_func = partial(phase_lock_lightcurve, period=period)
+    return _plot_lightcurve(star, curve, chartsdir, f"_lightpa", convert_func, xlabel='phase-adjusted JD')
+
+
+def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=f"_light",
+                     jd_adjusting_func=None, xlabel='JD'):
     try:
         star_id = star.local_id
         logging.debug(f"Plotting lightcurve for {star_id}")
-        vsx_name, separation, filename_no_ext = get_star_or_catalog_name(star, suffix=f"_light")
-        vsx_title = '' if vsx_name is None else f" ({vsx_name} - dist:{separation:.4f})"
+        vsx_name, separation, extradata, filename_no_ext = get_star_or_catalog_name(star, suffix=suffix)
+        vsx_title = '' if vsx_name is None else f"{vsx_name} Type: {extradata['Type']}"
+        vsx_dist = '' if separation is None else f"(+/- {separation:.3f} deg)"
         save_location = PurePath(chartsdir, filename_no_ext + '.png')
         start = timer()
         upsilon_match = star.get_metadata('UPSILON') if star.has_metadata('UPSILON') else None
@@ -52,31 +68,37 @@ def plot_lightcurve_jd(star: StarDescription, curve: DataFrame, chartsdir, perio
         end = timer()
         logging.debug(f"timing upsilon stuff {end - start}")
         coord = star.coords
-        # print(f'Plotting lightcurve with star_description:{star_description}, curve length:{len(curve)}, star:{star}, curve:{curve}')
-        if (curve is None):
+        plot_title = f"{vsx_title}\nStar {star.local_id}  {vsx_dist}\n" \
+                     f"{utils.get_hms_dms_matplotlib(coord)}{upsilon_text}"
+
+        if curve is None:
             logging.info(f"Curve is None for star {star_id}")
             return
 
         curve_max = curve['realV'].max()
         curve_min = curve['realV'].min()
-        curve['phaseJD'], xmin, ymin = phase_lock_lightcurve(curve['floatJD'], period)
+        if jd_adjusting_func is None:
+            curve['realJD'] = curve['floatJD']
+        else:
+            curve['realJD'] = jd_adjusting_func(curve['floatJD'])
         fig = plt.figure(figsize=(20, 12), dpi=150, facecolor='w', edgecolor='k')
-        # plt.scatter(curve['floatJD'], curve['realV'])
-        plt.errorbar(curve['phaseJD'], curve['realV'], yerr=curve['realErr'], linestyle='none', marker='o',
+        plt.errorbar(curve['realJD'], curve['realV'], yerr=curve['realErr'], linestyle='none', marker='o',
                      ecolor='gray',
                      elinewidth=1)
 
-        plt.xlabel('phase-adjusted JD', labelpad=TITLE_PAD)
-        # plt.xscale('log')
-        # plt.ylabel("Absolute Mag, comp star = {:2.2f}".format(comparison_stars[0].vmag), labelpad=TITLE_PAD)
+        plt.xlabel(xlabel, labelpad=TITLE_PAD)
         plot_max = curve_max + 0.1
         plot_min = curve_min - 0.1
         plt.ylim(plot_min, plot_max)
-        plt.xlim(xmin, ymin)
+        if curve['realJD'].isna().any():
+            print("we have a nan")
+            print("limits are here:", star_id, curve['realJD'].min(), curve['realJD'].max(), curve['realJD'][:5], "len", len(curve['realJD']))
+            print(curve['realJD'].describe(), curve['realJD'].info())
+
+        plt.xlim(curve['realJD'].min(), curve['realJD'].max())
         plt.gca().invert_yaxis()
         # plt.ticklabel_format(style='plain', axis='x')
-        plt.title(f"Star {star_id}{vsx_title}\nposition: {utils.get_hms_dms_matplotlib(coord)}{upsilon_text}",
-                  pad=TITLE_PAD)
+        plt.title(plot_title, pad=TITLE_PAD)
         plt.tight_layout()
         start = timer()
         fig.savefig(save_location)
@@ -100,67 +122,16 @@ def phase_lock_lightcurve(series: Series, period):
     jds_norm = np.mod(jds_norm, period)
     jds_norm = np.concatenate(([jds_norm_orig[0]], jds_norm))
     jds_norm = np.cumsum(jds_norm)
-    return jds_norm, np.min(jds_norm), np.max(jds_norm)
-
-
-def plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir):
-    try:
-        star_id = star.local_id
-        logging.debug(f"Plotting lightcurve for {star_id}")
-        vsx_name, separation, filename_no_ext = get_star_or_catalog_name(star, suffix=f"_light")
-        vsx_title = '' if vsx_name is None else f" ({vsx_name} - dist:{separation:.4f})"
-        save_location = PurePath(chartsdir, filename_no_ext + '.png')
-        start = timer()
-        upsilon_match = star.get_metadata('UPSILON') if star.has_metadata('UPSILON') else None
-        upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
-        end = timer()
-        logging.debug(f"timing upsilon stuff {end - start}")
-        coord = star.coords
-        # print(f'Plotting lightcurve with star_description:{star_description}, curve length:{len(curve)}, star:{star}, curve:{curve}')
-        if (curve is None):
-            logging.info(f"Curve is None for star {star_id}")
-            return
-
-        curve_max = curve['realV'].max()
-        curve_min = curve['realV'].min()
-        fig = plt.figure(figsize=(20, 12), dpi=150, facecolor='w', edgecolor='k')
-        # plt.scatter(curve['floatJD'], curve['realV'])
-        plt.errorbar(curve['floatJD'], curve['realV'], yerr=curve['realErr'], linestyle='none', marker='o',
-                     ecolor='gray',
-                     elinewidth=1)
-
-        plt.xlabel('JD', labelpad=TITLE_PAD)
-        # plt.ylabel("Absolute Mag, comp star = {:2.2f}".format(comparison_stars[0].vmag), labelpad=TITLE_PAD)
-        plot_max = curve_max + 0.1
-        plot_min = curve_min - 0.1
-        plt.ylim(plot_min, plot_max)
-        plt.xlim(curve['floatJD'].min(), curve['floatJD'].max())
-        plt.gca().invert_yaxis()
-        plt.ticklabel_format(style='plain', axis='x')
-        plt.title(f"Star {star_id}{vsx_title}\nposition: {utils.get_hms_dms_matplotlib(coord)}{upsilon_text}",
-                  pad=TITLE_PAD)
-        plt.tight_layout()
-        start = timer()
-        fig.savefig(save_location)
-        end = timer()
-        logging.debug(f"timing saving fig {end - start}")
-        plt.close(fig)
-        plt.clf()
-    except Exception as ex:
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-        message = template.format(type(ex).__name__, ex.args)
-        import traceback
-        print(traceback.print_exc())
-        logging.error(message)
-        logging.error(f"Error during plot lightcurve: {star.local_id}")
+    return jds_norm
 
 
 def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, suffix='', period: float = None,
                        write_plot=True, filter_func=None):
     try:
         logging.debug(f"Starting plot phase diagram with {star} and {fullphasedir}")
-        vsx_name, _, filename_no_ext = get_star_or_catalog_name(star, suffix=f"_phase{suffix}")
-        vsx_title = f"{vsx_name}\n" if vsx_name is not None else ''
+        vsx_name, _, extradata, filename_no_ext = get_star_or_catalog_name(star, suffix=f"_phase{suffix}")
+        catalog_title = f"{vsx_name}" if vsx_name is not None else ''
+        period = extradata['Period'] if extradata is not None else period  # override period for vsx stars
         save_location = PurePath(fullphasedir, filename_no_ext + '.png')
         upsilon_match = star.get_metadata('UPSILON')
         upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
@@ -190,7 +161,7 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         phased_lc_final = np.append(phased_lc, phased_lc)
         phased_err = np.clip(np.append(dy_np, dy_np), -0.5, 0.5)  # error values are clipped to +0.5 and -0.5
         plt = _plot_phase_diagram(phased_t_final, phased_lc_final, phased_err, write_plot, save_location, star,
-                                  vsx_title, period, upsilon_text)
+                                  catalog_title, period, upsilon_text)
         if not write_plot:
             return plt, t_np, y_np
         # write TXT file
@@ -247,7 +218,7 @@ def _plot_phase_diagram(phased_t_final, phased_lc_final, phased_err, write_plot,
     plt.xlabel("Phase", labelpad=TITLE_PAD)
     plt.ylabel("Magnitude", labelpad=TITLE_PAD)
     plt.title(
-        f"{vsx_title}Star {star.local_id}, p: {period:.5f} d{upsilon_text}\n{utils.get_hms_dms_matplotlib(star.coords)}",
+        f"{vsx_title}\nStar {star.local_id}, p: {period:.5f} d{upsilon_text}\n{utils.get_hms_dms_matplotlib(star.coords)}",
         pad=TITLE_PAD)
     plt.ticklabel_format(style='plain', axis='x')
     # plt.title(f"Star {star} - {period}", pad=TITLE_PAD)
@@ -266,14 +237,18 @@ def _plot_phase_diagram(phased_t_final, phased_lc_final, phased_err, write_plot,
 
 
 def get_star_or_catalog_name(star: StarDescription, suffix: str):
+    extradata = None
     if star.has_metadata("VSX"):
-        catalog_name, separation = star.get_metadata("VSX").get_name_and_separation()
+        catalog = star.get_metadata("VSX")
+        catalog_name, separation = catalog.name, catalog.separation
+        extradata = catalog.extradata
     elif star.has_metadata("OWNCATALOG"):
-        catalog_name, separation = star.get_metadata("OWNCATALOG").get_name_and_separation()
+        catalog = star.get_metadata("OWNCATALOG")
+        catalog_name, separation = catalog.name, catalog.separation
     else:
         catalog_name, separation = None, None
     filename_no_ext = f"{catalog_name}{suffix}" if catalog_name is not None else f"{star.local_id:05}{suffix}"
-    return catalog_name, separation, filename_no_ext.replace(' ', '_')
+    return catalog_name, separation, extradata, filename_no_ext.replace(' ', '_')
 
 
 def format_date(x, pos=None):
@@ -281,13 +256,13 @@ def format_date(x, pos=None):
     return r.date[thisind].strftime('%Y-%m-%d')
 
 
-def read_vast_lightcurves(star: StarDescription, compstarproxy, do_charts, do_phase, do_aavso,
+def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_light_raw, do_phase, do_aavso,
                           aavso_limit, basedir: str, chartsdir: PurePath, phasedir: PurePath, aavsodir: PurePath):
     start = timer()
     if star.path is '':
         logging.debug(f"Path for {star.local_id} is empty")
         return
-    if not do_charts and not do_phase:
+    if not do_light and not do_phase:
         logging.debug("Nothing to do, no charts or phase needed")
 
     logging.debug(
@@ -322,12 +297,10 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_charts, do_ph
                 period = plot_phase_diagram(star, df.copy(), phasedir, period=period)
             else:
                 period = plot_phase_diagram(star, df.copy(), phasedir, period=None, suffix="")
-        if do_charts:
-            # start = timer()
-            # logging.debug("NO LIGHTCRUVEGYET ")
-            plot_lightcurve_jd(star, df.copy(), chartsdir, period)
-            # end = timer()
-            # print("plotting lightcurve:", end-start)
+        if do_light:
+            plot_lightcurve_pa(star, df.copy(), chartsdir, period)
+        if do_light_raw:
+            plot_lightcurve_raw(star, df.copy(), chartsdir)
         if do_aavso:
             settings = toml.load('settings.txt')
             do_aavso_report.report(star, df.copy(), filtered_compstars, target_dir=aavsodir,
@@ -349,8 +322,8 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_charts, do_ph
 
 # reads lightcurves and passes them to lightcurve plot or phase plot
 def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir: str, phasepart: str, chartspart: str,
-        aavso_part: str, do_charts=False, do_phase=True, do_aavso=False, aavsolimit=None, nr_threads=cpu_count(),
-        desc="Writing light curve charts/phase diagrams"):
+        aavso_part: str, do_light=False, do_light_raw=False, do_phase=True, do_aavso=False, aavsolimit=None,
+        nr_threads=cpu_count(), desc="Writing light curve charts/phase diagrams"):
     CHUNK = 1  # max(1, len(star_descriptions) // nr_threads*10)
     set_seaborn_style()
     pool = mp.Pool(nr_threads, maxtasksperchild=10)
@@ -362,14 +335,14 @@ def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir:
     if do_phase:
         trash_and_recreate_dir(phasedir)
         trash_and_recreate_dir(PurePath(phasedir, PurePath('txt')))
-    if do_charts:
+    if do_light or do_light_raw:
         trash_and_recreate_dir(chartsdir)
     if do_aavso:
         trash_and_recreate_dir(aavsodir)
     comp_stars_proxy = Manager().Value('comp_stars', comp_stars)
 
-    func = partial(read_vast_lightcurves, basedir=basedir, compstarproxy=comp_stars_proxy, do_charts=do_charts,
-                   do_phase=do_phase, do_aavso=do_aavso, aavso_limit=aavsolimit,
+    func = partial(read_vast_lightcurves, basedir=basedir, compstarproxy=comp_stars_proxy, do_light=do_light,
+                   do_light_raw=do_light_raw, do_phase=do_phase, do_aavso=do_aavso, aavso_limit=aavsolimit,
                    phasedir=phasedir, chartsdir=chartsdir, aavsodir=aavsodir)
     with tqdm.tqdm(total=len(star_descriptions), desc=desc, unit='stars') as pbar:
         for _ in pool.imap_unordered(func, star_descriptions, chunksize=CHUNK):
@@ -424,7 +397,7 @@ if __name__ == '__main__':
 
     # run(stars, comp_stars, vastdir, args.resultdir, 'phase_candidates/', 'light_candidates/',
     run(stars[:-len(real_sd)], comp_stars, vastdir, args.resultdir, 'phase_candidates/', 'light_candidates/',
-        'aavso_candidates/', do_phase=args.phase, do_charts=args.light, do_aavso=args.aavso, nr_threads=1,
+        'aavso_candidates/', do_phase=args.phase, do_light=args.light, do_aavso=args.aavso, nr_threads=1,
         desc="Phase/light/aavso of candidates")
 # def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir: str, phasepart: str, chartspart: str,
 #         aavso_part: str, do_charts=False, do_phase=True, do_aavso=False, aavsolimit=None, nr_threads=cpu_count(),

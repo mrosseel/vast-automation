@@ -37,7 +37,7 @@ class ExtendedFormatWriter(object):
 
 
     def __init__(self, fp, observer_code, *, delimiter=',', date_format='JD', type='EXTENDED',
-                 obstype='CCD', software='pyaavso', location=None):
+                 obstype='CCD', software='pyaavso', location=("unknown", "unknown", "unknown")):
         """
         Creates the writer which will write observations into the file-like
         object given in first parameter. The only other required parameter

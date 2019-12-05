@@ -1,14 +1,5 @@
 import aavso
-import reading
 import logging
-from astropy import units as u
-from astropy.time import Time
-from astropy.coordinates import SkyCoord, EarthLocation, AltAz
-# supress the warning about vector transforms so as not to clutter the doc build log
-import warnings
-import utils
-
-warnings.filterwarnings('ignore', module='astropy.coordinates.baseframe')
 from star_description import StarDescription
 import argparse
 import read_camera_filters
@@ -16,6 +7,13 @@ from typing import Tuple, List
 from pandas import DataFrame
 from comparison_stars import ComparisonStars
 from pathlib import PurePath, Path
+from astropy import units as u
+from astropy.time import Time
+from astropy.coordinates import SkyCoord, EarthLocation, AltAz
+# supress the warning about vector transforms so as not to clutter the doc build log
+import warnings
+import utils
+warnings.filterwarnings('ignore', module='astropy.coordinates.baseframe')
 
 
 # TODO
@@ -39,10 +37,8 @@ def calculate_airmass(coord, location, jd):
 
 def report(star: StarDescription, df_curve: DataFrame, comp_stars: ComparisonStars,
            target_dir: Path, sitelat, sitelong, sitealt, camera_filter=None, observer='RMH', chunk_size=None):
-    star_match_ucac4, separation = star.get_metadata("UCAC4") \
-        .get_name_and_separation() if star.has_metadata("UCAC4") else (None, None)
-    star_match_vsx, separation = star.get_metadata("VSX") \
-        .get_name_and_separation() if star.has_metadata("VSX") else (None, None)
+    star_match_ucac4 = star.get_metadata("UCAC4").name if star.has_metadata("UCAC4") else None
+    star_match_vsx = star.get_metadata("VSX").name if star.has_metadata("VSX") else None
     var_display_name = star_match_ucac4 if star_match_vsx is None else star_match_vsx
     var_display_name = var_display_name if var_display_name is not None else f"Star_{star.local_id}"
 
@@ -61,7 +57,7 @@ def report(star: StarDescription, df_curve: DataFrame, comp_stars: ComparisonSta
     # Setting up the filter value
     if camera_filter is None:
         filterdict = read_camera_filters.read_filters()
-        print(filterdict)
+        # print(filterdict)
         filterlambda = lambda x: filterdict[x]
     else:
         filterlambda = lambda x: camera_filter

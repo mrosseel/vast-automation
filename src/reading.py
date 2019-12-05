@@ -24,9 +24,9 @@ def read_lightcurve_vast(starpath: str):
 
 
 def read_aavso_lightcurve(aavso_file: str):
-    return pd.read_csv(aavso_file, sep=',', skiprows=7, header=None, index_col=False,
+    return pd.read_csv(aavso_file, sep=',', header=None, index_col=False, comment='#',
                        names=['NAME', 'DATE', 'MAG', 'MERR', 'FILT', 'TRANS', 'MTYPE', 'CNAME', 'CMAG', 'KNAME',
-                              'KMAG', 'AMASS', 'GROUP', 'CHART,NOTES'])
+                              'KMAG', 'AMASS', 'GROUP', 'CHART', 'NOTES'], dtype={'DATE': str})
 
 
 def trash_and_recreate_dir(dir):

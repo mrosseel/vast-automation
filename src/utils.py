@@ -111,7 +111,7 @@ class MetadataSorter:
                 logging.warning(f"The name '{metadata_entry.name if metadata_entry is not None else 'None'}' "
                                 f"can't be parsed for sorting, won't be sorted")
                 return 0
-            # print("Metadata name sorting: ", metadata_entry.name, number_part)
+            print("Metadata name sorting: ", metadata_entry.name, number_part)
             return number_part
 
 

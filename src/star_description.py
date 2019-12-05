@@ -59,9 +59,12 @@ class StarDescription:
     def set_metadata(self, val: StarMetaData, strict=True):
         if strict and val.key in self._metadata:
             error = f"Tried to add metadata with key {val.key} but this is already present."
-            print(traceback.print_exc())
+            print("traceback:", traceback.print_exc())
             logging.error(error)
             raise ValueError(error)
+        elif val.key in self._metadata:
+            logging.warning(f"Overwriting metadata with key {val.key}, strict is False")
+
         self._metadata[val.key] = val
 
 

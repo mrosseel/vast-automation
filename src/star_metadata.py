@@ -78,7 +78,7 @@ class StarFileData(StarMetaData):
 
 
 class CatalogData(StarMetaData):
-    def __init__(self, key=None, catalog_id=None, name=None, coords: SkyCoord = None, separation=-1):
+    def __init__(self, key=None, catalog_id=None, name=None, coords: SkyCoord = None, separation=-1, extradata=None):
         # the name of the catalog
         super().__init__(key)
         # the id in the catalog
@@ -89,6 +89,8 @@ class CatalogData(StarMetaData):
         self.coords = coords
         # the separation between the vast coords and the catalog coords
         self.separation = separation
+        # optional extra info on the catalog object
+        self.extradata = extradata
 
 
     def get_name_and_separation(self):
