@@ -12,19 +12,21 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='munipack automation cli')
     parser.add_argument('-d', '--datadir',
                         help="The directory where the data can be found (usually the vast dir)",
-                        nargs='?', required=True)
+                        required=True)
     parser.add_argument('-r', '--resultdir',
                         help="The directory where all results will be written",
-                        nargs='?', required=True)
+                        required=True)
     parser.add_argument('-k', '--checkstarfile', help="The bright and stable stars used to do ensemble photometry",
-                        nargs='?', required=False)
+                        required=False)
     parser.add_argument('-o', '--owncatalog', help="Supply a file to identify stars known to you",
-                        nargs='?', required=False)
+                        required=False)
+    # parser.add_argument('--owncatalogasselected', help="The owncatalog stars are added to the selection",
+    #                     action="store_true")
     parser.add_argument('--apikey', help="Astrometry.net api key for automatic plate solving of the referenc "
                                                "frame found by vast.",
-                        nargs='?', required=False)
+                        required=False)
     parser.add_argument('--fitsdir', help="The dir where the fits are, only needed to plate-solve the reference frame",
-                        nargs='?', required=False)
+                        required=False)
     parser.add_argument('-v', '--vsx', help="Add vsx stars to field charts/reporting list", action="store_true")
     parser.add_argument('-!', '--allstars', help="Generate phase/light/aavso for all stars. WARNING: takes long",
                         action="store_true")
