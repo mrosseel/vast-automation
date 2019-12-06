@@ -319,7 +319,7 @@ def write_augmented_all_stars(readdir: str, writedir: str, stardict: StarDict):
 def write_augmented_starfile(resultdir: str, starfile_stars: List[StarDescription]):
     newname = f"{resultdir}starfile.txt"
     logging.info(f"Writing {newname} with {len(starfile_stars)}...")
-    sorted_stars = utils.metadata_sorter(starfile_stars)
+    sorted_stars = utils.metadata_sorter(starfile_stars, metadata_id="STARFILE")
     with open(newname, 'w') as outfile:
         outfile.write(f"# our_name,ra,dec,minmax,min,max,var_type,period,period_err,epoch\n")
 
@@ -477,14 +477,14 @@ def tag_starfile(selectedstarfile: str, stardict: StarDict):
         df = df.replace({np.nan: None})
         logging.info(f"Selecting {len(df)} stars added by {selectedstarfile}, {df['local_id'].to_numpy()}")
         for idx, row in df.iterrows():
-            the_star = stardict.get(row['local_id'])
+            the_star: StarDescription = stardict.get(row['local_id'])
             if the_star is None:
                 logging.error(f"Could not find star {row['local_id']}, consider removing it from your txt file")
                 continue
             the_star.metadata = StarFileData(local_id=row['local_id'], var_type=row['var_type'],
                                              our_name=row['our_name'], period=row['period'],
                                              period_err=row['period_err'])
-            the_star.metadata = SelectedStarData()
+            the_star.set_metadata(SelectedStarData(), False)
             logging.debug(f"starfile {the_star.local_id} metadata: {the_star.metadata}, "
                           f"{the_star.get_metadata('STARFILE')}")
             logging.debug(f"starfile {the_star.get_metadata('STARFILE')}")

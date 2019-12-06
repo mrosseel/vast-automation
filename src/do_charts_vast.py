@@ -46,9 +46,6 @@ def plot_lightcurve_raw(star: StarDescription, curve: DataFrame, chartsdir):
 
 def plot_lightcurve_pa(star: StarDescription, curve: DataFrame, chartsdir, period: float):
     logging.debug(f"Plotting phase adjusted lightcurve for {star.local_id}")
-    if star.has_metadata("VSX"):
-        vsx = star.get_metadata("VSX")
-        period = vsx.extradata['Period'] if not np.isnan(vsx.extradata['Period']) else period
     convert_func = partial(phase_lock_lightcurve, period=period)
     return _plot_lightcurve(star, curve, chartsdir, f"_lightpa", convert_func, xlabel='phase-adjusted JD')
 
@@ -75,8 +72,6 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
             logging.info(f"Curve is None for star {star_id}")
             return
 
-        curve_max = curve['realV'].max()
-        curve_min = curve['realV'].min()
         if jd_adjusting_func is None:
             curve['realJD'] = curve['floatJD']
         else:
@@ -87,13 +82,20 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
                      elinewidth=1)
 
         plt.xlabel(xlabel, labelpad=TITLE_PAD)
+        curve_max = curve['realV'].max()
+        curve_min = curve['realV'].min()
         plot_max = curve_max + 0.1
         plot_min = curve_min - 0.1
         plt.ylim(plot_min, plot_max)
-        if curve['realJD'].isna().any():
-            print("we have a nan")
-            print("limits are here:", star_id, curve['realJD'].min(), curve['realJD'].max(), curve['realJD'][:5], "len", len(curve['realJD']))
-            print(curve['realJD'].describe(), curve['realJD'].info())
+        # if curve['realJD'].isna().any():
+        #     print("we have a nan", jd_adjusting_func)
+        #     print("star: ", star)
+        #     if star.has_metadata("VSX"):
+        #         print("extradata", star.get_metadata("VSX").extradata)
+        nop = lambda *a, **k: None
+        print("limits are here:", star_id, "min:", curve['realJD'].min(), "max", curve['realJD'].max(),
+              "first 10", curve['realJD'][:10], "first 10 orig:", curve['floatJD'][:10],"len", len(curve['realJD']), "describe", curve['realJD'].describe()) \
+            if curve['realJD'].max() == 0 else nop()
 
         plt.xlim(curve['realJD'].min(), curve['realJD'].max())
         plt.gca().invert_yaxis()
@@ -127,11 +129,12 @@ def phase_lock_lightcurve(series: Series, period):
 
 def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, suffix='', period: float = None,
                        write_plot=True, filter_func=None):
+    assert period is not None
     try:
         logging.debug(f"Starting plot phase diagram with {star} and {fullphasedir}")
         vsx_name, _, extradata, filename_no_ext = get_star_or_catalog_name(star, suffix=f"_phase{suffix}")
         catalog_title = f"{vsx_name}" if vsx_name is not None else ''
-        period = extradata['Period'] if extradata is not None else period  # override period for vsx stars
+
         save_location = PurePath(fullphasedir, filename_no_ext + '.png')
         upsilon_match = star.get_metadata('UPSILON')
         upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
@@ -142,17 +145,6 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         t_np = curve['floatJD']
         y_np = curve['realV'].to_numpy()
         dy_np = curve['realErr'].to_numpy()
-        if period is None:
-            period_max = np.max(t_np) - np.min(t_np)
-            if period_max <= 0.01:
-                return
-            ls = LombScargleFast(optimizer_kwds={'quiet': True, 'period_range': (0.01, period_max)},
-                                 silence_warnings=True, fit_period=True).fit(t_np, y_np, dy_np)
-            period = ls.best_period
-            # TODO test this trended lombscargle !
-            # tmodel = TrendedLombScargle(optimizer_kwds={'quiet': True, 'period_range': (0.01, period_max)},
-            #                             silence_warnings=True).fit(t_np, y_np)
-            # period = tmodel.best_period
         phased_t = np.fmod(t_np / period, 1)
         phased_lc = y_np[:]
         if filter_func is not None:
@@ -209,7 +201,6 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         print(traceback.print_exc())
         logging.error(message)
         logging.error(f"Error during plot phase: {star.local_id}")
-    return period
 
 
 def _plot_phase_diagram(phased_t_final, phased_lc_final, phased_err, write_plot, save_location, star, vsx_title, period,
@@ -280,23 +271,33 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_lig
         df['realV'], df['realErr'] = do_compstars.calculate_ensemble_photometry(
             df, filtered_compstars, do_compstars.weighted_value_ensemble_method)
         df['floatJD'] = df['JD'].astype(np.float)
-        old_size = len(df)
+
         # remove errors
         # df = utils.reject_outliers_iqr(df, 'realV', 20)
         # logging.info(f"Rejected {old_size-len(df)} observations with iqr.")
-        if do_phase:
-            if star.has_metadata("STARFILE") and star.get_metadata("STARFILE") is None:
-                # This should not happen!!!
-                logging.warning(f"This should not happen !!!!!!!!!!!!!!!!!!!! "
-                                f"{star.local_id}, {star.get_metadata_list()}, {star.has_metadata('STARFILE')}, "
-                                f"{[star.get_metadata(x) for x in star.get_metadata_list()]}")
+        period = None
+        # calculate period for phase or light
+        calculate_phase = do_phase or do_light or do_light_raw
 
-            if star.get_metadata("STARFILE") is not None:
+        if calculate_phase:
+            starfile = star.get_metadata("STARFILE")
+            vsx_metadata = star.get_metadata("VSX")
+            if vsx_metadata is not None and np.isnan(vsx_metadata.extradata['Period']):
+                logging.info(f"VSX with unknown period: {star.local_id}, {vsx_metadata.catalog_id}")
+            if starfile is not None and starfile.period is not None:
                 period: float = star.get_metadata("STARFILE").period
                 logging.debug(f"Using provided period for star {star.local_id}: {period}")
-                period = plot_phase_diagram(star, df.copy(), phasedir, period=period)
+            elif vsx_metadata is not None and not np.isnan(vsx_metadata.extradata['Period']):
+                # override period for vsx stars
+                period = vsx_metadata.extradata['Period'] if vsx_metadata.extradata is not None else period
             else:
-                period = plot_phase_diagram(star, df.copy(), phasedir, period=None, suffix="")
+                df2 = df.copy()
+                t_np = df2['floatJD']
+                y_np = df2['realV'].to_numpy()
+                dy_np = df2['realErr'].to_numpy()
+                period = calculate_period(t_np, y_np, dy_np)
+        if do_phase:
+            plot_phase_diagram(star, df.copy(), phasedir, period=period, suffix="")
         if do_light:
             plot_lightcurve_pa(star, df.copy(), chartsdir, period)
         if do_light_raw:
@@ -318,6 +319,21 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_lig
 
     end = timer()
     logging.debug(f"Full lightcurve/phase: {end - start}")
+
+
+def calculate_period(t_np, y_np, dy_np):
+    period_max = np.max(t_np) - np.min(t_np)
+    if period_max <= 0.01:
+        return
+    ls = LombScargleFast(optimizer_kwds={'quiet': True, 'period_range': (0.01, period_max)},
+                         silence_warnings=True, fit_period=True).fit(t_np, y_np, dy_np)
+    period = ls.best_period
+    return period
+    # TODO test this trended lombscargle !
+    # tmodel = TrendedLombScargle(optimizer_kwds={'quiet': True, 'period_range': (0.01, period_max)},
+    #                             silence_warnings=True).fit(t_np, y_np)
+    # period = tmodel.best_period
+
 
 
 # reads lightcurves and passes them to lightcurve plot or phase plot

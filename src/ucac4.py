@@ -296,8 +296,10 @@ class UCAC4:
     def add_ucac4_to_sd(self, stars: List[StarDescription]):
         with tqdm.tqdm(total=len(stars), desc='Adding UCAC4', unit='stars') as pbar:
             for star in stars:
-                sd = self.get_ucac4_sd(star.coords.ra.deg, star.coords.dec.deg)
-                do_calibration.add_info_to_star_description(star, sd.vmag, sd.e_vmag, sd.aavso_id, "UCAC4", sd.coords)
+                if not star.has_metadata("UCAC4"):
+                    sd = self.get_ucac4_sd(star.coords.ra.deg, star.coords.dec.deg)
+                    do_calibration.add_info_to_star_description(star, sd.vmag, sd.e_vmag, sd.aavso_id, "UCAC4",
+                                                                sd.coords)
                 pbar.update(1)
 
     # >>> ra=140361

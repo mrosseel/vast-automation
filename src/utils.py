@@ -103,15 +103,17 @@ class MetadataSorter:
     pattern = re.compile(r'.*?(\d+)$')  # finding the number in our name
 
 
-    def sort_metadata_name(self, stars: List[StarDescription], metadata_id):
+    def sort_metadata_name(self, stars: List[StarDescription], metadata_id, name_extract):
         def get_sort_value(star: StarDescription):
             metadata_entry = star.get_metadata(metadata_id)
-            number_part = self.get_metadata_name_number_part(metadata_entry.name) if metadata_entry is not None else None
+            number_part = self.get_metadata_name_number_part(
+                name_extract(metadata_entry)) if metadata_entry is not None else None
             if metadata_entry is None or number_part is None:
-                logging.warning(f"The name '{metadata_entry.name if metadata_entry is not None else 'None'}' "
-                                f"can't be parsed for sorting, won't be sorted")
+                logging.warning(
+                    f"Lookup with {metadata_id} id gave name "
+                    f"'{metadata_entry.name if metadata_entry is not None else 'None'}' "
+                    f"can't be parsed for sorting, won't be sorted, star: {star}")
                 return 0
-            print("Metadata name sorting: ", metadata_entry.name, number_part)
             return number_part
 
 
@@ -123,8 +125,8 @@ class MetadataSorter:
         return int(match.group(1)) if match is not None else None
 
 
-    def __call__(self, stars: List[StarDescription], metadata_id='OWNCATALOG'):
-        return self.sort_metadata_name(stars, metadata_id)
+    def __call__(self, stars: List[StarDescription], metadata_id='STARFILE', name_extract=lambda x: x.our_name):
+        return self.sort_metadata_name(stars, metadata_id, name_extract)
 
 
 metadata_sorter = MetadataSorter()

@@ -247,13 +247,9 @@ def add_metadata_to_star_descriptions(stars: List[StarDescription],
     for sd in stars:
         for entry in metadata:
             if isinstance(entry, str):
-                if strict and sd.has_metadata(entry):
-                    raise ValueError(f"Trying to add metadata {entry} but it already exists")
-                sd.metadata = StarMetaData(key=entry)
+                sd.set_metadata(StarMetaData(key=entry), strict)
             else:
-                if strict and sd.has_metadata(entry.key):
-                    raise ValueError(f"Trying to add metadata {entry} but it already exists")
-                sd.metadata.append(entry)
+                sd.set_metadata(entry, strict)
     return stars
 
 

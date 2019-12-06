@@ -54,7 +54,7 @@ def get_calculated_compstars(vastdir, stardict: StarDict, maglimit=15):
     max_obs = np.max([x.obs for x in stars])
     max_obs_clipped = max_obs_sorted[:1000]
     logging.info(f"Picked {len(max_obs_clipped)} stars with last star having "
-                 f"{max_obs_clipped[-2:-1][0].obs*100/max_obs:.2f} % of max observations")
+                 f"{max_obs_clipped[-2:-1][0].obs*100/max_obs:.2f} % of max observations ({max_obs})")
 
 
     def limit(array, max_size):
