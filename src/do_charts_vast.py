@@ -94,7 +94,8 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
         #         print("extradata", star.get_metadata("VSX").extradata)
         nop = lambda *a, **k: None
         print("limits are here:", star_id, "min:", curve['realJD'].min(), "max", curve['realJD'].max(),
-              "first 10", curve['realJD'][:10], "first 10 orig:", curve['floatJD'][:10],"len", len(curve['realJD']), "describe", curve['realJD'].describe()) \
+              "first 10", curve['realJD'][:10], "first 10 orig:", curve['floatJD'][:10], "len", len(curve['realJD']),
+              "describe", curve['realJD'].describe()) \
             if curve['realJD'].max() == 0 else nop()
 
         plt.xlim(curve['realJD'].min(), curve['realJD'].max())
@@ -167,7 +168,6 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         if star.has_metadata('STARFILE'):
             starfiledata: StarFileData = star.get_metadata('STARFILE')
             assert starfiledata is not None
-            print(starfiledata, starfiledata.var_type)
             if starfiledata.var_type is not None \
                 and ("RR" in starfiledata.var_type or "W Uma" in starfiledata.var_type):
                 if "RR" in starfiledata.var_type:
@@ -333,7 +333,6 @@ def calculate_period(t_np, y_np, dy_np):
     # tmodel = TrendedLombScargle(optimizer_kwds={'quiet': True, 'period_range': (0.01, period_max)},
     #                             silence_warnings=True).fit(t_np, y_np)
     # period = tmodel.best_period
-
 
 
 # reads lightcurves and passes them to lightcurve plot or phase plot
