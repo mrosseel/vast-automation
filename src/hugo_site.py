@@ -62,7 +62,7 @@ def copy_files(post_name: str, resultdir: str, sitedir: str):
 
 def block(star: StarDescription, resultdir: str, images_prefix: str):
     try:
-        vsx_name, separation, _, filename_no_ext = do_charts_vast.get_star_or_catalog_name(star, suffix="_phase")
+        vsx_name, separation, extradata, filename_no_ext = utils.get_star_or_catalog_name(star, suffix="_phase")
         txt_path = PurePath(resultdir, 'phase_candidates/txt', filename_no_ext + '.txt')
         metadata: StarFileData = star.get_metadata("STARFILE")
         try:
@@ -97,9 +97,9 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             <li>epoch: {epoch}</li>
             <li>coords: {utils.get_hms_dms(star.coords)}</li>
             <li><a href="{images_prefix}vsx_and_star_{star.local_id:05}.png">finder chart</a></li>
-            <li><a href="{images_prefix}{star.local_id:05}_ext.txt">observations</a></li>
-            <li><a href="{images_prefix}{star.local_id:05}_light.png">light curve</a></li>
-            <li><a href="{images_prefix}{star.local_id:05}_lightpa.png">light curve PA</a></li>
+            <li><a href="{images_prefix}{filename_no_ext}_ext.txt">observations</a></li>
+            <li><a href="{images_prefix}{filename_no_ext}_light.png">light curve</a></li>
+            <li><a href="{images_prefix}{filename_no_ext}_lightpa.png">light curve PA</a></li>
             </ul>
         </div>
     </div>
@@ -131,5 +131,5 @@ def get_starfile_preamble(images_prefix: str, len_selectied: int, len_vsx: int, 
            f'<a href="http://scan.sai.msu.ru/vast/">VaST</a></div>' \
            f'<a href="{images_prefix}starfile.txt">CSV file of all stars on this page</a><br/>' \
            f'<a href="{images_prefix}vsx_{len_vsx}_and_selected_{len_selectied}.png">' \
-           f'Finder chart with VSX and selected new stars</a></div>\n' \
-           f'<br/>Periods are derived using Lomb-Scargle (LS), Peronso (OWN) on frob VSX database (VSX)<br/>'
+           f'Finder chart with VSX and selected new stars</a>' \
+           f'Periods are derived using Lomb-Scargle (LS), Peranso (OWN) on from VSX database (VSX)</div>\n'

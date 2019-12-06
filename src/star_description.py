@@ -63,7 +63,8 @@ class StarDescription:
             logging.error(error)
             raise ValueError(error)
         elif val.key in self._metadata:
-            logging.warning(f"Overwriting metadata with key {val.key}, strict is False")
+            logging.warning(f"Overwriting metadata of star {self.local_id} with key {val.key}, strict is False. "
+                            f"{self._metadata}")
 
         self._metadata[val.key] = val
 

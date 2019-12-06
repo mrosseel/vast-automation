@@ -71,6 +71,23 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(len(data) - 1, len(df))
 
 
+    def test_concat_sd_lists(self):
+        a = self.stardesc(1, 1, 1)
+        b = self.stardesc(2, 2, 2)
+        c = self.stardesc(3, 3, 3)
+        list1 = [a, b]
+        list2 = [b, c]
+        list3 = [c, b, a]
+        result = utils.concat_sd_lists(list1, list2)
+        self.assertEqual(3, len(result))
+        result = utils.concat_sd_lists([], [])
+        self.assertEqual(0, len(result))
+        result = utils.concat_sd_lists(list1, list1)
+        self.assertEqual(2, len(result))
+        result = utils.concat_sd_lists(list1, list2, list3)
+        self.assertEqual(3, len(result))
+
+
     @staticmethod
     def stardesc(id, ra, dec):
         return StarDescription(local_id=id,

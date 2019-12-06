@@ -93,6 +93,18 @@ def get_stars_with_metadata(stars: List[star_description.StarMetaData], catalog_
     return list(filter(partial(metadata_filter, catalog_name=catalog_name, exclude=exclude), stars))
 
 
+def concat_sd_lists(*star_descriptions):
+    result = []
+    id_set = set()
+    for sd_list in star_descriptions:
+        assert isinstance(sd_list, list)
+        for sd in sd_list:
+            if sd.local_id not in id_set:
+                result.append(sd)
+                id_set.add(sd.local_id)
+    return result
+
+
 # Does this star have a catalog with catalog_name? Used in combination with filter()
 def metadata_filter(star: StarDescription, catalog_name, exclude=[]):
     catalogs = star.get_metadata_list()
@@ -145,3 +157,23 @@ def reject_outliers_iqr(df, column, cut=5):
     upper_bound = q3 + (iqr * 1.5)
     logging.debug(f"q1 {q1} q3 {q3} iqr {iqr} lower {lower_bound} upper {upper_bound}")
     return df[(df[column] < upper_bound) & (df[column] > lower_bound)]
+
+
+def get_star_or_catalog_name(star: StarDescription, suffix: str):
+    extradata = None
+    if star.has_metadata("VSX"):
+        catalog = star.get_metadata("VSX")
+        catalog_name, separation = catalog.name, catalog.separation
+        extradata = catalog.extradata
+    elif star.has_metadata("OWNCATALOG"):
+        catalog = star.get_metadata("OWNCATALOG")
+        catalog_name, separation = catalog.name, catalog.separation
+    else:
+        catalog_name, separation = None, None
+    filename_no_ext = f"{catalog_name}{suffix}" if catalog_name is not None else f"{star.local_id:05}{suffix}"
+    return catalog_name, separation, extradata, replace_spaces(filename_no_ext)
+
+
+# replace spaces with underscores
+def replace_spaces(a_string: str):
+    return a_string.replace(' ', '_')

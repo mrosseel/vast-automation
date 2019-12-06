@@ -107,13 +107,8 @@ def run_do_rest(args):
     starfile_stars = utils.get_stars_with_metadata(star_descriptions, "STARFILE")
     starfile_stars = starfile_stars
     logging.info(f"There are {len(starfile_stars)} selected stars")
-    compstar_needing_stars = starfile_stars + vsx_stars + candidate_stars + owncatalog
-
-    # set ucac4 stars selected
-    ucac4 = UCAC4()
-    ucac4.add_ucac4_to_sd(starfile_stars)
-
-    comp_stars = create_comparison_stars(star_descriptions, args.checkstarfile, vastdir, stardict, ucac4)
+    compstar_needing_stars = utils.concat_sd_lists(starfile_stars, vsx_stars, candidate_stars, owncatalog)
+    comp_stars = set_comp_stars_and_ucac4(star_descriptions, starfile_stars, args.checkstarfile, vastdir, stardict)
 
     # Set comp stars for all interesting stars (stars which are interesting enough to measure)
     logging.info("Setting per star comparison stars...")
@@ -154,11 +149,13 @@ def run_do_rest(args):
 
 
 # Either read UCAC4 check stars from a file, or calculate our own comparison stars
-def create_comparison_stars(star_descriptions: List[StarDescription], checkstarfile: str, vastdir: str,
-                            stardict: StarDict, ucac4: UCAC4) -> ComparisonStars:
+def set_comp_stars_and_ucac4(star_descriptions: List[StarDescription], selectedstars: List[StarDescription],
+                             checkstarfile: str, vastdir: str, stardict: StarDict) -> ComparisonStars:
+    ucac4 = UCAC4()
     if checkstarfile:
         # load comparison stars
         checkstars = read_checkstars(checkstarfile)
+        ucac4.add_ucac4_to_sd(selectedstars)
         comparison_stars_ids, comparison_stars_1_sds = do_compstars.get_fixed_compstars(star_descriptions, checkstars)
     else:
         ucac4.add_ucac4_to_sd(star_descriptions)
@@ -344,7 +341,7 @@ def write_augmented_starfile(resultdir: str, starfile_stars: List[StarDescriptio
 
         for star in sorted_stars:
             metadata: StarFileData = star.get_metadata("STARFILE")
-            _, _, _, filename_no_ext = do_charts_vast.get_star_or_catalog_name(star, '')
+            _, _, _, filename_no_ext = utils.get_star_or_catalog_name(star, '')
             txt_path = PurePath(resultdir, 'phase_selected/txt', filename_no_ext + '_phase.txt')
             try:
                 parsed_toml = toml.load(txt_path)
@@ -464,8 +461,8 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
 
 def tag_candidates(vastdir: str, star_descriptions: List[StarDescription]):
     candidate_ids = get_autocandidates(vastdir)
-    selected_stars = do_calibration.select_star_descriptions(candidate_ids, star_descriptions)
-    do_calibration.add_metadata_to_star_descriptions(selected_stars, ["SELECTED", "CANDIDATE"], strict=False)
+    candidate_stars = do_calibration.select_star_descriptions(candidate_ids, star_descriptions)
+    do_calibration.add_metadata_to_star_descriptions(candidate_stars, ["SELECTED", "CANDIDATE"], strict=False)
 
 
 def tag_starfile(selectedstarfile: str, stardict: StarDict):

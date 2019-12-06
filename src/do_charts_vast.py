@@ -56,7 +56,7 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
     try:
         star_id = star.local_id
         logging.debug(f"Plotting lightcurve for {star_id}")
-        vsx_name, separation, extradata, filename_no_ext = get_star_or_catalog_name(star, suffix=suffix)
+        vsx_name, separation, extradata, filename_no_ext = utils.get_star_or_catalog_name(star, suffix=suffix)
         vsx_title = '' if vsx_name is None else f"{vsx_name} Type: {extradata['Type']}"
         vsx_dist = '' if separation is None else f"(+/- {separation:.3f} deg)"
         save_location = PurePath(chartsdir, filename_no_ext + '.png')
@@ -134,7 +134,7 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
     assert period is not None
     try:
         logging.debug(f"Starting plot phase diagram with {star} and {fullphasedir}")
-        vsx_name, _, extradata, filename_no_ext = get_star_or_catalog_name(star, suffix=f"_phase{suffix}")
+        vsx_name, _, extradata, filename_no_ext = utils.get_star_or_catalog_name(star, suffix=f"_phase{suffix}")
         catalog_title = f"{vsx_name}" if vsx_name is not None else ''
 
         save_location = PurePath(fullphasedir, filename_no_ext + '.png')
@@ -229,21 +229,6 @@ def _plot_phase_diagram(phased_t_final, phased_lc_final, phased_err, write_plot,
         return plt
 
 
-def get_star_or_catalog_name(star: StarDescription, suffix: str):
-    extradata = None
-    if star.has_metadata("VSX"):
-        catalog = star.get_metadata("VSX")
-        catalog_name, separation = catalog.name, catalog.separation
-        extradata = catalog.extradata
-    elif star.has_metadata("OWNCATALOG"):
-        catalog = star.get_metadata("OWNCATALOG")
-        catalog_name, separation = catalog.name, catalog.separation
-    else:
-        catalog_name, separation = None, None
-    filename_no_ext = f"{catalog_name}{suffix}" if catalog_name is not None else f"{star.local_id:05}{suffix}"
-    return catalog_name, separation, extradata, filename_no_ext.replace(' ', '_')
-
-
 def format_date(x, pos=None):
     thisind = np.clip(int(x + 0.5), 0, N - 1)
     return r.date[thisind].strftime('%Y-%m-%d')
@@ -291,19 +276,19 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_lig
 
             if is_selected_with_period:
                 period: Period = Period(star.get_metadata("STARFILE").period, "OWN")
-                logging.info(f"Using OWN period for star {star.local_id}: {period.period}")
+                logging.debug(f"Using OWN period for star {star.local_id}: {period.period}")
             elif is_vsx_with_period:
                 period: Period = Period(vsx_metadata.extradata['Period'], "VSX") if vsx_metadata.extradata is \
                                                                                          not None else period
-                logging.info(f"Using VSX period for star {star.local_id}: {period.period}")
+                logging.debug(f"Using VSX period for star {star.local_id}: {period.period}")
             else:
                 df2 = df.copy()
                 t_np = df2['floatJD']
                 y_np = df2['realV'].to_numpy()
                 dy_np = df2['realErr'].to_numpy()
                 period: Period = calculate_period(t_np, y_np, dy_np)
-                logging.info(f"Using LS period for star {star.local_id}: {period.period}")
-            logging.info(f"Using period: {period.period} for star {star.local_id}")
+                logging.debug(f"Using LS period for star {star.local_id}: {period.period}")
+            logging.debug(f"Using period: {period.period} for star {star.local_id}")
 
         if do_phase:
             plot_phase_diagram(star, df.copy(), phasedir, period=period, suffix="")
@@ -417,7 +402,7 @@ if __name__ == '__main__':
         ucacsd = ucac4.get_ucac4_star_description(check_star)
         stars.append(StarDescription(local_id=real_sd[idx], coords=ucacsd.coords,
                                      path=f"{vastdir}out{real_sd[idx]:05}.dat"))
-    comp_stars = main_vast.create_comparison_stars(stars, args.checkstarfile, vastdir)
+    comp_stars = main_vast.set_comp_stars_and_ucac4(stars, None, args.checkstarfile, vastdir)
 
     # run(stars, comp_stars, vastdir, args.resultdir, 'phase_candidates/', 'light_candidates/',
     run(stars[:-len(real_sd)], comp_stars, vastdir, args.resultdir, 'phase_candidates/', 'light_candidates/',
