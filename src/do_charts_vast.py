@@ -7,7 +7,6 @@ import seaborn as sns
 import multiprocessing as mp
 import tqdm
 import numpy as np
-import pandas as pd
 import do_aavso_report
 import do_calibration
 import reading
@@ -16,6 +15,7 @@ import argparse
 import logging
 import gc
 import matplotlib as mplotlib
+from collections import namedtuple
 from multiprocessing import cpu_count, Manager
 from comparison_stars import ComparisonStars
 from functools import partial
@@ -31,6 +31,7 @@ from star_metadata import StarFileData
 
 gc.enable()
 mplotlib.use('Agg')  # needs no X server
+Period = namedtuple('Period', 'period origin')
 TITLE_PAD = 40
 
 
@@ -44,7 +45,7 @@ def plot_lightcurve_raw(star: StarDescription, curve: DataFrame, chartsdir):
     return _plot_lightcurve(star, curve, chartsdir)
 
 
-def plot_lightcurve_pa(star: StarDescription, curve: DataFrame, chartsdir, period: float):
+def plot_lightcurve_pa(star: StarDescription, curve: DataFrame, chartsdir, period: Period):
     logging.debug(f"Plotting phase adjusted lightcurve for {star.local_id}")
     convert_func = partial(phase_lock_lightcurve, period=period)
     return _plot_lightcurve(star, curve, chartsdir, f"_lightpa", convert_func, xlabel='phase-adjusted JD')
@@ -118,17 +119,17 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
         logging.error(f"Error during plot lightcurve: {star.local_id}")
 
 
-def phase_lock_lightcurve(series: Series, period):
+def phase_lock_lightcurve(series: Series, period: Period):
     jds = series.to_numpy()
     jds_norm_orig = np.subtract(jds, jds.min())
     jds_norm = np.diff(jds_norm_orig)
-    jds_norm = np.mod(jds_norm, period)
+    jds_norm = np.mod(jds_norm, period.period)
     jds_norm = np.concatenate(([jds_norm_orig[0]], jds_norm))
     jds_norm = np.cumsum(jds_norm)
     return jds_norm
 
 
-def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, suffix='', period: float = None,
+def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, suffix='', period: Period = None,
                        write_plot=True, filter_func=None):
     assert period is not None
     try:
@@ -146,7 +147,7 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         t_np = curve['floatJD']
         y_np = curve['realV'].to_numpy()
         dy_np = curve['realErr'].to_numpy()
-        phased_t = np.fmod(t_np / period, 1)
+        phased_t = np.fmod(t_np / period.period, 1)
         phased_lc = y_np[:]
         if filter_func is not None:
             phased_t, phased_lc = filter_func(phased_t, phased_lc)
@@ -182,7 +183,8 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
             starfiledata.var_max = ymax
             if starfiledata.period_err is not None:
                 tomldict['period_err'] = float(starfiledata.period_err)
-        tomldict['period'] = float(period)
+        tomldict['period'] = float(period.period)
+        tomldict['period_origin'] = period.origin
         tomldict['min'] = float(ymin)
         tomldict['max'] = float(ymax)
         tomldict['range'] = var_range
@@ -203,16 +205,16 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         logging.error(f"Error during plot phase: {star.local_id}")
 
 
-def _plot_phase_diagram(phased_t_final, phased_lc_final, phased_err, write_plot, save_location, star, vsx_title, period,
-                        upsilon_text):
+def _plot_phase_diagram(phased_t_final, phased_lc_final, phased_err, write_plot, save_location, star, vsx_title,
+                        period: Period, upsilon_text):
     fig = plt.figure(figsize=(18, 16), dpi=80, facecolor='w', edgecolor='k')
     plt.xlabel("Phase", labelpad=TITLE_PAD)
     plt.ylabel("Magnitude", labelpad=TITLE_PAD)
     plt.title(
-        f"{vsx_title}\nStar {star.local_id}, p: {period:.5f} d{upsilon_text}\n{utils.get_hms_dms_matplotlib(star.coords)}",
-        pad=TITLE_PAD)
+        f"{vsx_title}\nStar {star.local_id}, p: {period.period:.5f} d ({period.origin}) "
+        f"{upsilon_text}\n{utils.get_hms_dms_matplotlib(star.coords)}", pad=TITLE_PAD)
     plt.ticklabel_format(style='plain', axis='x')
-    # plt.title(f"Star {star} - {period}", pad=TITLE_PAD)
+    # plt.title(f"Star {star} - {period.period}", pad=TITLE_PAD)
     plt.tight_layout()
     # plotting + calculation of 'double' phase diagram from -1 to 1
     plt.gca().invert_yaxis()
@@ -275,27 +277,34 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_lig
         # remove errors
         # df = utils.reject_outliers_iqr(df, 'realV', 20)
         # logging.info(f"Rejected {old_size-len(df)} observations with iqr.")
-        period = None
+
         # calculate period for phase or light
         calculate_phase = do_phase or do_light or do_light_raw
 
         if calculate_phase:
+            period: Period = None
             starfile = star.get_metadata("STARFILE")
             vsx_metadata = star.get_metadata("VSX")
-            if vsx_metadata is not None and np.isnan(vsx_metadata.extradata['Period']):
-                logging.info(f"VSX with unknown period: {star.local_id}, {vsx_metadata.catalog_id}")
-            if starfile is not None and starfile.period is not None:
-                period: float = star.get_metadata("STARFILE").period
-                logging.debug(f"Using provided period for star {star.local_id}: {period}")
-            elif vsx_metadata is not None and not np.isnan(vsx_metadata.extradata['Period']):
-                # override period for vsx stars
-                period = vsx_metadata.extradata['Period'] if vsx_metadata.extradata is not None else period
+            is_vsx = vsx_metadata is not None
+            is_vsx_with_period = is_vsx and not np.isnan(vsx_metadata.extradata['Period'])
+            is_selected_with_period = starfile is not None and starfile.period is not None
+
+            if is_selected_with_period:
+                period: Period = Period(star.get_metadata("STARFILE").period, "OWN")
+                logging.info(f"Using OWN period for star {star.local_id}: {period.period}")
+            elif is_vsx_with_period:
+                period: Period = Period(vsx_metadata.extradata['Period'], "VSX") if vsx_metadata.extradata is \
+                                                                                         not None else period
+                logging.info(f"Using VSX period for star {star.local_id}: {period.period}")
             else:
                 df2 = df.copy()
                 t_np = df2['floatJD']
                 y_np = df2['realV'].to_numpy()
                 dy_np = df2['realErr'].to_numpy()
-                period = calculate_period(t_np, y_np, dy_np)
+                period: Period = calculate_period(t_np, y_np, dy_np)
+                logging.info(f"Using LS period for star {star.local_id}: {period.period}")
+            logging.info(f"Using period: {period.period} for star {star.local_id}")
+
         if do_phase:
             plot_phase_diagram(star, df.copy(), phasedir, period=period, suffix="")
         if do_light:
@@ -321,14 +330,14 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_lig
     logging.debug(f"Full lightcurve/phase: {end - start}")
 
 
-def calculate_period(t_np, y_np, dy_np):
+def calculate_period(t_np, y_np, dy_np) -> Period:
     period_max = np.max(t_np) - np.min(t_np)
     if period_max <= 0.01:
         return
     ls = LombScargleFast(optimizer_kwds={'quiet': True, 'period_range': (0.01, period_max)},
                          silence_warnings=True, fit_period=True).fit(t_np, y_np, dy_np)
     period = ls.best_period
-    return period
+    return Period(period, "LS")
     # TODO test this trended lombscargle !
     # tmodel = TrendedLombScargle(optimizer_kwds={'quiet': True, 'period_range': (0.01, period_max)},
     #                             silence_warnings=True).fit(t_np, y_np)

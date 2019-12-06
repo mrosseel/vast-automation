@@ -33,7 +33,8 @@ class TestUtils(unittest.TestCase):
                                                            name=f'RMH-HMB-{idx}', coords=curr_star.coords, separation=0)
             stars.append(curr_star)
         random.shuffle(stars)
-        result = utils.metadata_sorter(stars, metadata_id='RMH-HMB')
+        name_extractor = lambda x: x.name
+        result = utils.metadata_sorter(stars, metadata_id='RMH-HMB', name_extract=name_extractor)
         self.assertEqual("RMH-HMB-1", result[0].get_metadata("RMH-HMB").name)
         self.assertEqual("RMH-HMB-10", result[9].get_metadata("RMH-HMB").name)
         self.assertEqual("RMH-HMB-100", result[99].get_metadata("RMH-HMB").name)
@@ -53,7 +54,7 @@ class TestUtils(unittest.TestCase):
                                                            name=f'RMH-NEW{idx}', coords=curr_star.coords, separation=0)
             stars.append(curr_star)
         random.shuffle(stars)
-        result = utils.metadata_sorter(stars, metadata_id='RMH-HMB')
+        result = utils.metadata_sorter(stars, metadata_id='RMH-HMB', name_extract=name_extractor)
         self.assertEqual("RMH-NEW1", result[0].get_metadata("RMH-HMB").name)
         self.assertEqual("RMH-NEW10", result[9].get_metadata("RMH-HMB").name)
         self.assertEqual("RMH-NEW100", result[99].get_metadata("RMH-HMB").name)

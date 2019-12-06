@@ -21,3 +21,5 @@ venv
 
 /.venv/
 /.vscode/
+/tests/data/aavso_out.txt
+/tests/data/outliers/ASASSN-V_J110351.21-544047.3_light.png

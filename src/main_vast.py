@@ -164,7 +164,6 @@ def create_comparison_stars(star_descriptions: List[StarDescription], checkstarf
         ucac4.add_ucac4_to_sd(star_descriptions)
         comparison_stars_ids, comparison_stars_1_sds = do_compstars.get_calculated_compstars(vastdir, stardict)
     comp_observations = []
-    logging.info(f"Using {len(comparison_stars_ids)} comparison stars.")
     for star in comparison_stars_ids:
         comp_magdict = read_magdict_for_star(vastdir, star)
         # logging.info(f"Read comp magdict for {star}: {read_comp_magdict}")
@@ -177,7 +176,8 @@ def create_comparison_stars(star_descriptions: List[StarDescription], checkstarf
     comp_stars = ComparisonStars(comparison_stars_ids, comparison_stars_1_sds, comp_observations, comp_catalogmags,
                                  comp_catalogerr)
     logging.info(
-        f"Comparison stars have on average {np.array(list(map(len, comp_observations))).mean()} observations")
+        f"Using {len(comparison_stars_ids)} comparison stars with on average "
+        f"{np.array(list(map(len, comp_observations))).mean()} observations")
     return comp_stars
 
 

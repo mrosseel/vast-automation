@@ -65,7 +65,6 @@ def get_calculated_compstars(vastdir, stardict: StarDict, maglimit=15):
     min_err_stars = sorted(max_obs_clipped, key=operator.attrgetter('e_vmag'))
     # only first 100 are kept
     min_err_stars_clipped = min_err_stars[:limit(min_err_stars, 100)]
-    logging.info(f"Using {len(min_err_stars_clipped)} calculated comparison stars.")
     return [x.local_id for x in min_err_stars_clipped], min_err_stars_clipped
 
 

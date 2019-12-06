@@ -131,4 +131,5 @@ def get_starfile_preamble(images_prefix: str, len_selectied: int, len_vsx: int, 
            f'<a href="http://scan.sai.msu.ru/vast/">VaST</a></div>' \
            f'<a href="{images_prefix}starfile.txt">CSV file of all stars on this page</a><br/>' \
            f'<a href="{images_prefix}vsx_{len_vsx}_and_selected_{len_selectied}.png">' \
-           f'Finder chart with VSX and selected new stars</a></div>\n'
+           f'Finder chart with VSX and selected new stars</a></div>\n' \
+           f'<br/>Periods are derived using Lomb-Scargle (LS), Peronso (OWN) on frob VSX database (VSX)<br/>'
