@@ -1,7 +1,6 @@
 FROM jupyter/scipy-notebook:2662627f26e0
 
 MAINTAINER Mike Rosseel version: 0.1
-
 ENV CMUNIPACK_VERSION 2.1.27
 
 USER root
@@ -29,4 +28,5 @@ RUN chmod 777 .jupyter/jupyter_notebook_config.json
 WORKDIR /home/jovyan/upsilon
 RUN python3 setup.py install
 WORKDIR /home/jovyan/work
+EXPOSE 80
 USER $NB_USER
