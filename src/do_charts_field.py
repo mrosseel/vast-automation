@@ -198,7 +198,7 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
     save(fig, fieldchartsdirs + f'vsx_{len(vsx_labeled)}_and_candidates_{len(candidate_labeled)}')
 
     # field chart with all vsx stars + starfile + owncatalog
-    logging.info("Plotting field chart with all VSX variable stars + selected vars...")
+    logging.info(f"Plotting field chart with all VSX variable stars + {len(starfile_labeled)} selected vars...")
     fig = plot_it([vsx_labeled, starfile_labeled, owncatalog_labeled], [10., 5., 4.], [False, True, True],
                   reference_fits_frame, wcs, "VSX stars + selected stars + own catalog", PADDING)
     save(fig, fieldchartsdirs + 'vsx_{}_and_selected_{}'.format(len(vsx_labeled), len(starfile_labeled)))
