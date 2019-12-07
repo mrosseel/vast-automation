@@ -162,7 +162,7 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
     candidate_labeled = set_local_id_label(candidate_descr)
 
     # starfile stars get their local id label
-    starfile_descr = utils.get_stars_with_metadata(star_descriptions, "STARFILE", exclude=["VSX"])
+    starfile_descr = utils.get_stars_with_metadata(star_descriptions, "STARFILE")
     starfile_labeled = set_custom_label(starfile_descr, [x.get_metadata("STARFILE").our_name for x in starfile_descr],
                                         strict=True)
 

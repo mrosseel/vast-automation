@@ -42,11 +42,6 @@ class CompStarData(StarMetaData):
         return f'Key:{self.key}, Compstars: {self.compstar_ids}'
 
 
-class SelectedStarData(StarMetaData):
-    def __init__(self, key='SELECTED'):
-        super().__init__(key)
-
-
 class StarFileData(StarMetaData):
     def __init__(self, local_id: int, minmax: str = None, var_min=None, var_max=None, var_type: str = None,
                  our_name: str = None, period: float = None, period_err: float = None, epoch: float = None,

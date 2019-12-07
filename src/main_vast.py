@@ -33,7 +33,7 @@ import hugo_site
 import pandas as pd
 import toml
 import subprocess
-from star_metadata import SelectedStarData, CatalogData, StarFileData, CompStarData
+from star_metadata import CatalogData, StarFileData, CompStarData
 
 vsx_catalog_name = "vsx_catalog.bin"
 vsxcatalogdir = PurePath(os.getcwd(), vsx_catalog_name)
@@ -98,7 +98,7 @@ def run_do_rest(args):
     write_augmented_all_stars(vastdir, resultdir, stardict)
     owncatalog = utils.get_stars_with_metadata(star_descriptions, "OWNCATALOG")
     logging.info(f"There are {len(owncatalog)} own catalog stars")
-    candidate_stars = utils.get_stars_with_metadata(star_descriptions, "CANDIDATE", exclude="VSX")
+    candidate_stars = utils.get_stars_with_metadata(star_descriptions, "CANDIDATE", exclude=["VSX"])
     candidate_stars = utils.add_star_lists(candidate_stars, owncatalog)
     logging.info(f"There are {len(candidate_stars)} candidate stars")
 
@@ -128,7 +128,6 @@ def run_do_rest(args):
                                'light_candidates/', 'aavso_candidates/', do_phase=do_phase, do_light=do_charts,
                                do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of candidates")
         if args.vsx:
-            do_calibration.add_metadata_to_star_descriptions(vsx_stars, ["SELECTED"], strict=False)
             logging.info(f"Plotting {len(vsx_stars)} vsx stars...")
             do_charts_vast.run(vsx_stars, comp_stars, vastdir, resultdir, 'phase_vsx/', 'light_vsx/', 'aavso_vsx/',
                                do_phase=do_phase, do_light=do_charts, do_aavso=do_aavso, nr_threads=thread_count,
@@ -462,7 +461,7 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
 def tag_candidates(vastdir: str, star_descriptions: List[StarDescription]):
     candidate_ids = get_autocandidates(vastdir)
     candidate_stars = do_calibration.select_star_descriptions(candidate_ids, star_descriptions)
-    do_calibration.add_metadata_to_star_descriptions(candidate_stars, ["SELECTED", "CANDIDATE"], strict=False)
+    do_calibration.add_metadata_to_star_descriptions(candidate_stars, ["CANDIDATE"], strict=False)
 
 
 def tag_starfile(selectedstarfile: str, stardict: StarDict):
@@ -481,7 +480,6 @@ def tag_starfile(selectedstarfile: str, stardict: StarDict):
             the_star.metadata = StarFileData(local_id=row['local_id'], var_type=row['var_type'],
                                              our_name=row['our_name'], period=row['period'],
                                              period_err=row['period_err'])
-            the_star.set_metadata(SelectedStarData(), False)
             logging.debug(f"starfile {the_star.local_id} metadata: {the_star.metadata}, "
                           f"{the_star.get_metadata('STARFILE')}")
             logging.debug(f"starfile {the_star.get_metadata('STARFILE')}")

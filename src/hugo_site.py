@@ -62,14 +62,15 @@ def copy_files(post_name: str, resultdir: str, sitedir: str):
 
 def block(star: StarDescription, resultdir: str, images_prefix: str):
     try:
-        vsx_name, separation, extradata, filename_no_ext = utils.get_star_or_catalog_name(star, suffix="_phase")
-        txt_path = PurePath(resultdir, 'phase_candidates/txt', filename_no_ext + '.txt')
+        vsx_name, separation, extradata, filename_no_ext = utils.get_star_or_catalog_name(star, suffix="")
+        filename_no_ext_phase = filename_no_ext + "_phase"
+        txt_path = PurePath(resultdir, 'phase_candidates/txt', filename_no_ext_phase + '.txt')
         metadata: StarFileData = star.get_metadata("STARFILE")
         try:
             parsed_toml = toml.load(txt_path)
         except FileNotFoundError:
             # txt can be in candidates or selected.
-            txt_path = PurePath(resultdir, 'phase_selected/txt', filename_no_ext + '.txt')
+            txt_path = PurePath(resultdir, 'phase_selected/txt', filename_no_ext_phase + '.txt')
             parsed_toml = toml.load(txt_path)
         ucac4 = star.get_metadata("UCAC4")
         if ucac4 is None:
@@ -78,7 +79,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             ucac4_name = ucac4.catalog_id if not None else "unknown"
         period = f"{float(parsed_toml['period']):.5f}" if 'period' in parsed_toml \
             else f"{metadata.period:.5f} +/- {metadata.period_err:.5f}"
-        phase_url = f"{images_prefix}{filename_no_ext}.png"
+        phase_url = f"{images_prefix}{filename_no_ext_phase}.png"
         minmax = metadata.minmax if metadata.minmax is not None else "Unknown"
         epoch = metadata.epoch if metadata.epoch is not None else "Unknown"
         var_type = metadata.var_type if metadata.var_type else "Unknown"
@@ -124,12 +125,12 @@ def get_date_time():
     return pytz.utc.localize(datetime.utcnow()).isoformat()
 
 
-def get_starfile_preamble(images_prefix: str, len_selectied: int, len_vsx: int, len_candidates: int):
+def get_starfile_preamble(images_prefix: str, len_selected: int, len_vsx: int, len_candidates: int):
     return f'<div class="bb-l b--black-10 w-100">' \
            f'<div class="fl w-100 pa2 ba">' \
            f'Images by Josch Hambsch, Data processing by Mike Rosseel, Josch Hambsch and ' \
            f'<a href="http://scan.sai.msu.ru/vast/">VaST</a></div>' \
            f'<a href="{images_prefix}starfile.txt">CSV file of all stars on this page</a><br/>' \
-           f'<a href="{images_prefix}vsx_{len_vsx}_and_selected_{len_selectied}.png">' \
-           f'Finder chart with VSX and selected new stars</a>' \
-           f'Periods are derived using Lomb-Scargle (LS), Peranso (OWN) on from VSX database (VSX)</div>\n'
+           f'<a href="{images_prefix}vsx_{len_vsx}_and_selected_{len_selected}.png">' \
+           f'Finder chart with VSX and selected new stars</a><br/>' \
+           f'Periods are derived using Lomb-Scargle (LS), Peranso (OWN) or from the VSX database (VSX)</div></div>\n'
