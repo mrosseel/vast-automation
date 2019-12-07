@@ -90,6 +90,7 @@ def add_metadata(stars: List[star_description.StarDescription], metadata: StarMe
 def get_stars_with_metadata(stars: List[star_description.StarMetaData], catalog_name: str,
                             exclude=[]) -> List[star_description.StarDescription]:
     # gets all stars which have a catalog of name catalog_name
+    assert isinstance(exclude, list) and isinstance(stars, list)
     return list(filter(partial(metadata_filter, catalog_name=catalog_name, exclude=exclude), stars))
 
 

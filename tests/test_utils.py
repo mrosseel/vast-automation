@@ -1,5 +1,7 @@
 # from .context import src
 import unittest
+from functools import partial
+
 import star_metadata
 import utils
 from star_description import StarDescription
@@ -11,6 +13,7 @@ from pathlib import PurePath
 import logging
 import pandas as pd
 import numpy as np
+from star_metadata import CatalogData
 
 logging.getLogger().setLevel(logging.DEBUG)
 logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
@@ -20,7 +23,18 @@ test_file_path = PurePath(os.getcwd(), 'tests', 'data')
 
 class TestUtils(unittest.TestCase):
 
-    def test_sort_rmh_hmb(self):
+    def setUp(self) -> None:
+        self.a = self.stardesc(1, 1, 1)
+        self.b = self.stardesc(2, 2, 2)
+        self.c = self.stardesc(3, 3, 3)
+        self.star_descriptions = [self.a, self.b, self.c]
+        self.set_catalog(self.star_descriptions[0], catalog_name="VSX")
+        self.set_catalog(self.star_descriptions[0], catalog_name="CANDIDATES")
+        self.set_catalog(self.star_descriptions[1], catalog_name="CANDIDATES")
+        self.set_catalog(self.star_descriptions[2], catalog_name="VSX")
+
+
+    def test_metadata_sorter(self):
 
         self.assertEqual(15, utils.metadata_sorter.get_metadata_name_number_part("oenutheo15"))
         self.assertEqual(1, utils.metadata_sorter.get_metadata_name_number_part("RMH-HMB-1"))
@@ -72,12 +86,9 @@ class TestUtils(unittest.TestCase):
 
 
     def test_concat_sd_lists(self):
-        a = self.stardesc(1, 1, 1)
-        b = self.stardesc(2, 2, 2)
-        c = self.stardesc(3, 3, 3)
-        list1 = [a, b]
-        list2 = [b, c]
-        list3 = [c, b, a]
+        list1 = [self.a, self.b]
+        list2 = [self.b, self.c]
+        list3 = [self.c, self.b, self.a]
         result = utils.concat_sd_lists(list1, list2)
         self.assertEqual(3, len(result))
         result = utils.concat_sd_lists([], [])
@@ -88,10 +99,48 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(3, len(result))
 
 
+    def test_get_stars_with_metadata(self):
+        vsx_descr = utils.get_stars_with_metadata(self.star_descriptions, catalog_name="CANDIDATES", exclude=["VSX"])
+        self.assertEqual(1, len(vsx_descr))
+        vsx_descr = utils.get_stars_with_metadata(self.star_descriptions, catalog_name="VSX", exclude=["CANDIDATES"])
+        self.assertEqual(1, len(vsx_descr))
+        vsx_descr = utils.get_stars_with_metadata(self.star_descriptions, catalog_name="VSX", exclude=["VSX",
+                                                                                                       "CANDIDATES"])
+        self.assertEqual(0, len(vsx_descr))
+
+
+    def test_metadata_filter(self):
+        # # Does this star have a catalog with catalog_name? Used in combination with filter()
+        # def metadata_filter(star: StarDescription, catalog_name, exclude=[]):
+        #     catalogs = star.get_metadata_list()
+        #     return catalog_name in catalogs and len([x for x in exclude if x in catalogs]) == 0
+
+        result = utils.metadata_filter(self.star_descriptions[0], catalog_name="CANDIDATES", exclude=["VSX"])
+        self.assertFalse(result)
+        result = utils.metadata_filter(self.star_descriptions[1], catalog_name="CANDIDATES", exclude=["VSX"])
+        self.assertTrue(result)
+        result = utils.metadata_filter(self.star_descriptions[1], catalog_name="CANDIDATES", exclude=[])
+        self.assertTrue(result)
+        result = utils.metadata_filter(self.star_descriptions[2], catalog_name="VSX", exclude=[])
+        self.assertTrue(result)
+        try:
+            result = utils.metadata_filter(self.star_descriptions[2], catalog_name="VSX", exclude="VSX")
+            self.fail("Should give an exception because exclude is not a list")
+        except:
+            pass
+
+
     @staticmethod
     def stardesc(id, ra, dec):
         return StarDescription(local_id=id,
                                coords=SkyCoord(ra, dec, unit='deg'))
+
+    @staticmethod
+    def set_catalog(star, catalog_name: str):
+        star.metadata = CatalogData(key=catalog_name, catalog_id=f"{catalog_name}-{star.local_id}",
+                                    name=f"{catalog_name}-{star.local_id}", separation=None, coords=star.coords,
+                                    extradata=None)
+        return star
 
 
 if __name__ == '__main__':
