@@ -93,7 +93,8 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             <li>period (d): {period}</li>
             <li>{minmax}</li>
             <li>mag. range: {parsed_toml['range']}</li>
-            <li><a href="https://www.aavso.org/vsx/index.php?view=about.vartypes">type</a>: {var_type}</li>
+            <li><a target="_blank" rel="noopener noreferrer" href="
+            https://www.aavso.org/vsx/index.php?view=about.vartypes">type</a>: {var_type}</li>
             <li>epoch: {epoch}</li>
             <li>coords: {utils.get_hms_dms(star.coords)}</li>
             <li><a href="{images_prefix}vsx_and_star_{star.local_id:05}.png">finder chart</a></li>
