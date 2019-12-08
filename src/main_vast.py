@@ -52,15 +52,15 @@ def run_do_rest(args):
     do_charts = args.light
     do_phase = args.phase
     do_aavso = args.aavso
-    logging.info(f"Directory where all files will be read: '{vastdir}' and written: '{resultdir}'")
+    logging.info(f"Dir with VaST files: '{vastdir}', results dir: '{resultdir}'")
     wcs_file = Path(vastdir, 'new-image.fits')
     reference_frame = extract_reference_frame(vastdir)
     first_frame = extract_first_frame(vastdir)
     frames_used = int(extract_images_used(vastdir))
     logging.info(f"{frames_used} frames were used for photometry")
-    logging.info(f"The reference frame is {reference_frame}")
-    logging.info(f"The first frame is {first_frame}")
-    logging.info(f"reference header is {wcs_file}")
+    logging.info(f"The reference frame is '{reference_frame}'")
+    logging.info(f"The first frame is '{first_frame}'")
+    logging.info(f"Reference header is '{wcs_file}'")
     #################################################################################################################
     if not os.path.isfile(wcs_file):
         from scipy import ndimage
@@ -117,6 +117,7 @@ def run_do_rest(args):
     else:
         do_compstars.add_closest_compstars(compstar_needing_stars, comp_stars, 10)
 
+    logging.info(f"Using {thread_count} threads for phase plots, lightcurves, ...")
     if args.allstars:
         do_charts_vast.run(star_descriptions, comp_stars, vastdir, resultdir, 'phase_all/', 'light_all/', 'aavso_all/',
                            do_phase=do_phase, do_light=do_charts, do_aavso=do_aavso, nr_threads=thread_count,
@@ -143,7 +144,7 @@ def run_do_rest(args):
 
     if args.site:
         ids = [x.local_id for x in starfile_stars]
-        logging.info(f"Creating site entry with these {len(starfile_stars)} selected stars: {ids}")
+        logging.info(f"Creating HTML site with {len(starfile_stars)} selected stars: {ids}")
         hugo_site.run(args.site, starfile_stars, len(vsx_stars), len(candidate_stars), resultdir)
 
 
@@ -397,7 +398,7 @@ def count_number_of_observations(vastdir):
 
 def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_stardict: StarPosDict,
                                 list_of_dat_files: List[str], frames_used: int, args):
-    # Start with the list of all measured 4stars
+    # Start with the list of all measured stars
     stars_with_file_dict = {}
     list_of_dat_files.sort()
     for afile in list_of_dat_files:
@@ -426,13 +427,13 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
 
     # only keep stars which are present on at least 10% of the images
     star_descriptions = list(filter(lambda x: x.obs > frames_used * STAR_KEEPER_PERCENTAGE, star_descriptions))
-    logging.info(f"Filtered star descriptions to {len(star_descriptions)} stars")
+    logging.info(f"Number of stars on more than {STAR_KEEPER_PERCENTAGE:.0%} of frames: {len(star_descriptions)}")
     stardict = get_star_description_cache(star_descriptions)
 
     # Add VSX information to SDs
     star_descriptions, results_ids = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions,
                                                                                        vsxcatalogdir, 0.01)
-    logging.info(f"Added {len(results_ids)} vsx names to star descriptions")
+    logging.debug(f"Identified {len(results_ids)} VSX stars")
     test = utils.get_stars_with_metadata(star_descriptions, "VSX")
     logging.debug(f"Test Tagged {len(test)} stars as VSX.")
 
@@ -444,8 +445,8 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
     tag_candidates(vastdir, star_descriptions)
 
     if args.selectedstarfile:
-        tag_starfile(args.selectedstarfile, stardict)
-        logging.info(
+        tag_selected(args.selectedstarfile, stardict)
+        logging.debug(
             f"Succesfully read {len(list(filter(lambda x: x.has_metadata('STARFILE'), star_descriptions)))} "
             f"stars from file:"
             f" {[x.local_id for x in list(filter(lambda x: x.has_metadata('STARFILE'), star_descriptions))]}")
@@ -464,14 +465,14 @@ def tag_candidates(vastdir: str, star_descriptions: List[StarDescription]):
     do_calibration.add_metadata_to_star_descriptions(candidate_stars, ["CANDIDATE"], strict=False)
 
 
-def tag_starfile(selectedstarfile: str, stardict: StarDict):
+def tag_selected(selectedstarfile: str, stardict: StarDict):
     try:
         df = pd.read_csv(selectedstarfile, delimiter=',', comment='#',
                          names=['local_id', 'var_type', 'our_name', 'period', 'period_err'],
                          dtype={'local_id': int, 'period': float, 'period_err': float},
                          skipinitialspace=True)
         df = df.replace({np.nan: None})
-        logging.info(f"Selecting {len(df)} stars added by {selectedstarfile}, {df['local_id'].to_numpy()}")
+        logging.info(f"Selecting {len(df)} stars added by {selectedstarfile}: {df['local_id'].to_numpy()}")
         for idx, row in df.iterrows():
             the_star: StarDescription = stardict.get(row['local_id'])
             if the_star is None:
@@ -483,7 +484,7 @@ def tag_starfile(selectedstarfile: str, stardict: StarDict):
             logging.debug(f"starfile {the_star.local_id} metadata: {the_star.metadata}, "
                           f"{the_star.get_metadata('STARFILE')}")
             logging.debug(f"starfile {the_star.get_metadata('STARFILE')}")
-        logging.info(f"Tagged {len(df)} stars as selected by file.")
+        logging.debug(f"Tagged {len(df)} stars as selected by file.")
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)

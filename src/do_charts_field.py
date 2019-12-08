@@ -14,6 +14,7 @@ from star_description import StarDescription
 import random
 import do_compstars
 import gc
+import tqdm
 StarDescriptionList = List[StarDescription]
 gc.enable()
 PADDING = 200
@@ -87,7 +88,7 @@ def get_cmap(n, name='hsv'):
 def plot_it(star_lists: List[StarDescriptionList], sizes: List[float], random_offset: List[bool], fits_file: str, wcs, title,
             padding: int = PADDING, plot_fits: bool = True):
     fig, data = get_plot_with_background(fits_file, padding, title, plot_fits)
-    logging.info(f"plotting {[len(x) for x in star_lists]} stars per color")
+    logging.debug(f"plotting {[len(x) for x in star_lists]} stars per color")
     positions = []
     for stars in star_lists:
         stars = add_pixels(stars, wcs, PADDING)
@@ -163,13 +164,11 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
 
     # starfile stars get their local id label
     starfile_descr = utils.get_stars_with_metadata(star_descriptions, "STARFILE")
-    starfile_labeled = set_custom_label(starfile_descr, [x.get_metadata("STARFILE").our_name for x in starfile_descr],
-                                        strict=True)
+    starfile_labeled = set_custom_label(starfile_descr, [x.get_metadata("STARFILE").our_name for x in starfile_descr])
 
     # owncatalog stars get their local id label
     owncatalog_descr = utils.get_stars_with_metadata(star_descriptions, "OWNCATALOG")
-    owncatalog_labeled = set_custom_label(owncatalog_descr, [x.get_metadata("OWNCATALOG").name for x in owncatalog_descr],
-                                          strict=True)
+    owncatalog_labeled = set_custom_label(owncatalog_descr, [x.get_metadata("OWNCATALOG").name for x in owncatalog_descr])
 
     # field chart with all detections
     logging.info("Plotting field chart with all detected stars...")
@@ -207,12 +206,13 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
     # comp_stars_descr = comp_stars.star_descriptions
     # comp_stars_labeled = set_custom_label(comp_stars_descr, [x.vmag for x in comp_stars_descr])
 
+    logging.info(f"Plotting field chart for each of the {len(starfile_labeled)} selected stars")
     # field charts for each individually selected starfile star
-    for star in starfile_labeled:
+    for star in tqdm.tqdm(starfile_labeled):
         filtered_compstars_sds = do_compstars.get_star_compstars_from_catalog(star, comp_stars).star_descriptions
         compstars_labeled = set_custom_label(filtered_compstars_sds, [x.vmag for x in filtered_compstars_sds])
         filtered_compstars_sds = None
-        logging.info(f"Plotting field chart with all VSX variable stars + star {star.local_id}...")
+
         fig = plot_it([[star], vsx_labeled, compstars_labeled], [10., 5., 3.], [True, False, True],
                       reference_fits_frame, wcs, f"VSX stars + star {star.local_id}", PADDING)
         save(fig, f"{fieldchartsdirs}vsx_and_star_{star.local_id:05}")

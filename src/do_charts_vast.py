@@ -339,7 +339,7 @@ def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir:
     phasedir = PurePath(resultdir, phasepart)
     chartsdir = PurePath(resultdir, chartspart)
     aavsodir = PurePath(resultdir, aavso_part)
-    logging.info(f"Using {nr_threads} threads for lightcurve, phase plotting and aavso reporting.")
+    logging.debug(f"Using {nr_threads} threads for lightcurve, phase plotting and aavso reporting.")
 
     if do_phase:
         trash_and_recreate_dir(phasedir)

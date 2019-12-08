@@ -294,8 +294,8 @@ def create_generic_astropy_catalog(ra_deg_np, dec_deg_np):
 
 
 def create_vsx_astropy_catalog(vsx_catalog_location):
-    logging.info("Creating vsx star catalog...")
     vsx_dict = vsx_pickle.read(vsx_catalog_location)
+    logging.info(f"Creating VSX star catalog with {len(vsx_dict)} stars using '{vsx_catalog_location}'")
     return create_generic_astropy_catalog(vsx_dict['ra_deg_np'], vsx_dict['dec_deg_np']), vsx_dict
 
 
@@ -312,7 +312,7 @@ def create_upsilon_astropy_catalog(threshold_prob_candidates=0.5):
 
 
 def create_star_descriptions_catalog(star_descriptions):
-    logging.info("Creating star_descriptions star catalog with {} stars...".format(len(star_descriptions)))
+    logging.debug("Creating star_descriptions star catalog with {} stars...".format(len(star_descriptions)))
     ra2 = np.array([])
     dec2 = np.array([])
     for entry in star_descriptions:

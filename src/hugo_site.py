@@ -46,7 +46,6 @@ def copy_files(post_name: str, resultdir: str, sitedir: str):
     for file in selected_phase_glob:
         copy(file, imagesdir)
     logging.info(f"Copying {len(lightcharts_glob)} light charts from {lightcharts}...")
-    print("lightchartsblob is", lightcharts_glob)
     for file in lightcharts_glob:
         copy(file, imagesdir)
     logging.info(f"Copying {len(aavso_glob)} aavso files from {aavso}...")
@@ -82,7 +81,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         phase_url = f"{images_prefix}{filename_no_ext_phase}.png"
         minmax = metadata.minmax if metadata.minmax is not None else "Unknown"
         epoch = metadata.epoch if metadata.epoch is not None else "Unknown"
-        var_type = metadata.var_type if metadata.var_type else "Unknown"
+        var_type = metadata.var_type if metadata.var_type else extradata["Type"] if extradata is not None else "Unknown"
         result = f'''<div class="bb-l b--black-10 w-100">
         <div class="fl w-70 pa2 ba">
             <img class="special-img-class" src="{phase_url}" alt="{phase_url}"/>
@@ -94,7 +93,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             <li>period (d): {period}</li>
             <li>{minmax}</li>
             <li>mag. range: {parsed_toml['range']}</li>
-            <li>type: {var_type}</li>
+            <li><a href="https://www.aavso.org/vsx/index.php?view=about.vartypes">type</a>: {var_type}</li>
             <li>epoch: {epoch}</li>
             <li>coords: {utils.get_hms_dms(star.coords)}</li>
             <li><a href="{images_prefix}vsx_and_star_{star.local_id:05}.png">finder chart</a></li>
