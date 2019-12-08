@@ -358,18 +358,20 @@ def write_augmented_starfile(resultdir: str, starfile_stars: List[StarDescriptio
 
 def write_vsx_stars(resultdir, results_ids, stars: List[StarDescription]):
     newname = f"{resultdir}vsx_stars.txt"
+    selected_file = f"{resultdir}vsx_stars_selected.txt"
     logging.info(f"Writing {newname}...")
     total_found = 0
     stardict = utils.get_star_description_cache(stars)
     logging.debug(f"Receiving {len(stardict.keys())} as vsx input")
-    with open(newname, 'wt') as fp:
-        for vsx_id in results_ids:
+    with open(newname, 'wt') as fp, open(selected_file, 'wt') as selected:
+        for number, vsx_id in enumerate(results_ids):
             current_sd = stardict[vsx_id]
             found = False if current_sd.path is '' else True
             assert vsx_id == current_sd.local_id
             total_found += 1 if found else 0
             fp.write(
                 f"{vsx_id}{'' if found else '*'}:\t{current_sd.aavso_id}\t{utils.get_lesve_coords(current_sd.coords)}\n")
+            selected.write(f'{vsx_id},,VSX-{number},,\n')
         fp.write(
             f"# Total entries: {len(results_ids)}, found: {total_found}, not found: {len(results_ids) - total_found}\n")
 
