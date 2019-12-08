@@ -105,7 +105,8 @@ def run_do_rest(args):
     vsx_stars = utils.get_stars_with_metadata(star_descriptions, "VSX")
     logging.info(f"There are {len(vsx_stars)} vsx stars")
     starfile_stars = utils.get_stars_with_metadata(star_descriptions, "STARFILE")
-    starfile_stars = starfile_stars
+    if args.selectvsx:
+        starfile_stars = utils.concat_sd_lists(starfile_stars, vsx_stars)
     logging.info(f"There are {len(starfile_stars)} selected stars")
     compstar_needing_stars = utils.concat_sd_lists(starfile_stars, vsx_stars, candidate_stars, owncatalog)
     comp_stars = set_comp_stars_and_ucac4(star_descriptions, starfile_stars, args.checkstarfile, vastdir, stardict)

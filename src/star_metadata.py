@@ -29,9 +29,11 @@ class UpsilonData(StarMetaData):
 
 
 class CompStarData(StarMetaData):
-    def __init__(self, key='COMPSTARS', compstar_ids=List[int]):
+    def __init__(self, compstar_ids: List[int], extra_id: int, key='COMPSTARS'):
         super().__init__(key)
         self.compstar_ids = compstar_ids
+        # extra star which is also constant, and can be used as K star for AAVSO ensemble calculations
+        self.extra_id = extra_id
 
 
     def __repr__(self):
