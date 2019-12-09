@@ -6,9 +6,11 @@
 
 ### Importing VSX star catalog
 
-* AAVSO VSX catalog can be downloaded here: http://cdsarc.u-strasbg.fr/viz-bin/Cat?cat=B%2Fvsx%2Fversions%2F2018-02-26&target=brief&
-* run 'python vsx_pickle.py vsx.dat' where vsx.dat is the unzipped versin of the downloaded vsx catalog
-* check that 'vsx_catalog.bin' has been written successfully
+* First time download of AAVSO VSX catalog: use the script `vsx_download.sh`
+* If you want to update: use the same script. 
+* Is an update needed? Each time you download the VSX catalog, its date is written in `vsx_last_modified.txt`.
+Compare this with the output of the script `vsx_check_last_modified.sh`.
+* check that `vsx_catalog.bin` has been written successfully
 
 ### Importing UCAC4 star catalog
 
