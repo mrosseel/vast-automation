@@ -2,7 +2,7 @@ inputfiles
 current
 cmunipack*
 *.pyc
-*.log
+process*.log
 .idea/**/*
 **/.ipynb_checkpoints/**/*
 transfer/

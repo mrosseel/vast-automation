@@ -112,7 +112,7 @@ from collections import namedtuple
 from typing import List, Tuple
 from star_description import StarDescription
 from astropy.coordinates import SkyCoord
-from pathlib import PurePath
+from pathlib import Path
 from LRUCache import LRUCache
 # remove this, would be cleaner in ucac4_utils or something
 import do_calibration
@@ -132,14 +132,14 @@ def get_line_nr(n0, nn, line):
 
 
 class UCAC4:
-    def __init__(self, ucac_path: PurePath = PurePath('./support/ucac4/UCAC4/')):
+    def __init__(self, ucac_path: Path = Path('./support/ucac4/UCAC4/')):
         # star id given by munipack
         self.ucac_path = ucac_path
         self.zones_cache = LRUCache(capacity=5)
         self.bucket_cache = LRUCache(capacity=100000)
         self.zone_bucket_cache = LRUCache(capacity=10000)
         self.index_cache = None
-        with open(str(PurePath(ucac_path, 'u4i', 'u4index.unf')), mode='rb') as file:  # b is important -> binary
+        with open(str(Path(ucac_path, 'u4i', 'u4index.unf')), mode='rb') as file:  # b is important -> binary
             self.index_cache = file.read()
         self.zone_starformat = "=iiHHBBBbbBBBHHhhbbIHHHBBBBBBHHHHHbbbbbBIBBIHI"
         self.zone_star_length = struct.calcsize(self.zone_starformat)
@@ -159,7 +159,7 @@ class UCAC4:
         result = self.zones_cache.get(zone)
         if result != -1:
             return result
-        with open(str(PurePath(self.ucac_path, f"u4b/z{zone}")), mode='rb') as file:  # b is important -> binary
+        with open(str(Path(self.ucac_path, f"u4b/z{zone}")), mode='rb') as file:  # b is important -> binary
             result = file.read()
             self.zones_cache.set(zone, result)
             return result

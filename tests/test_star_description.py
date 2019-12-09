@@ -11,7 +11,7 @@ class TestStarDescription(unittest.TestCase):
     def test_metadata(self):
         star = StarDescription(local_id=id, coords=SkyCoord(10, 11, unit='deg'))
         self.assertEqual({}, star.metadata)
-        star.metadata = CompStarData()
+        star.metadata = CompStarData([1])
         self.assertEqual(1, len(star.metadata))
         star.metadata = StarMetaData()
         self.assertEqual(2, len(star.metadata))

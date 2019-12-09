@@ -36,6 +36,8 @@ def copy_files(post_name: str, resultdir: str, sitedir: str):
     trash_and_recreate_dir(imagesdir)
     selected_phase = f'{resultdir}phase_selected/*.png'
     selected_phase_glob = glob.glob(selected_phase)
+    vsx_phase = f'{resultdir}phase_vsx/*.png'
+    vsx_phase_glob = glob.glob(vsx_phase)
     aavso = f'{resultdir}aavso*/*.txt'
     aavso_glob = glob.glob(aavso)
     fieldcharts = f'{resultdir}fieldcharts/*.png'
@@ -44,6 +46,9 @@ def copy_files(post_name: str, resultdir: str, sitedir: str):
     lightcharts_glob = glob.glob(lightcharts)
     logging.info(f"Copying {len(selected_phase_glob)} phase files from {selected_phase}...")
     for file in selected_phase_glob:
+        copy(file, imagesdir)
+    logging.info(f"Copying {len(vsx_phase_glob)} phase files from {vsx_phase}...")
+    for file in vsx_phase_glob:
         copy(file, imagesdir)
     logging.info(f"Copying {len(lightcharts_glob)} light charts from {lightcharts}...")
     for file in lightcharts_glob:
@@ -61,27 +66,41 @@ def copy_files(post_name: str, resultdir: str, sitedir: str):
 
 def block(star: StarDescription, resultdir: str, images_prefix: str):
     try:
+        is_vsx = star.has_metadata("VSX")
+        is_selected = star.has_metadata("STARFILE")
+        is_candidate = star.has_metadata("CANDIDATE")
+        starfile_metadata: StarFileData = star.get_metadata("STARFILE")
+
         vsx_name, separation, extradata, filename_no_ext = utils.get_star_or_catalog_name(star, suffix="")
         filename_no_ext_phase = filename_no_ext + "_phase"
-        txt_path = PurePath(resultdir, 'phase_candidates/txt', filename_no_ext_phase + '.txt')
-        metadata: StarFileData = star.get_metadata("STARFILE")
+        if is_vsx:
+            txt_path = PurePath(resultdir, 'phase_vsx/txt', filename_no_ext_phase + '.txt')
+        elif is_selected:
+            txt_path = PurePath(resultdir, 'phase_selected/txt', filename_no_ext_phase + '.txt')
+        elif is_candidate:
+            txt_path = PurePath(resultdir, 'phase_candidates/txt', filename_no_ext_phase + '.txt')
+
         try:
             parsed_toml = toml.load(txt_path)
         except FileNotFoundError:
-            # txt can be in candidates or selected.
-            txt_path = PurePath(resultdir, 'phase_selected/txt', filename_no_ext_phase + '.txt')
-            parsed_toml = toml.load(txt_path)
+            logging.error(f"Could not load txt file with phase information from {txt_path}")
+
         ucac4 = star.get_metadata("UCAC4")
         if ucac4 is None:
             ucac4_name = f"{star.coords}"
         else:
             ucac4_name = ucac4.catalog_id if not None else "unknown"
+        name = {starfile_metadata.our_name} if is_selected else star.aavso_id
         period = f"{float(parsed_toml['period']):.5f}" if 'period' in parsed_toml \
-            else f"{metadata.period:.5f} +/- {metadata.period_err:.5f}"
+            else f"{starfile_metadata.period:.5f} +/- {starfile_metadata.period_err:.5f}"
         phase_url = f"{images_prefix}{filename_no_ext_phase}.png"
-        minmax = metadata.minmax if metadata.minmax is not None else "Unknown"
-        epoch = metadata.epoch if metadata.epoch is not None else "Unknown"
-        var_type = metadata.var_type if metadata.var_type else extradata["Type"] if extradata is not None else "Unknown"
+        minmax = starfile_metadata.minmax if is_selected and starfile_metadata.minmax is not None \
+            else f"{parsed_toml['min']:.1f}-{parsed_toml['max']:.1f}"
+        epoch = starfile_metadata.epoch if is_selected and is_selected and starfile_metadata.epoch is not None \
+            else "Unknown"
+        var_type = starfile_metadata.var_type if is_selected and starfile_metadata.var_type else extradata["Type"] \
+            if extradata is not None else "Unknown"
+        mag_range = starfile_metadata.minmax if is_selected and starfile_metadata.minmax else {parsed_toml['range']}
         result = f'''<div class="bb-l b--black-10 w-100">
         <div class="fl w-70 pa2 ba">
             <img class="special-img-class" src="{phase_url}" alt="{phase_url}"/>
@@ -89,10 +108,10 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         <div class="fl w-30 pa2 ba">
             <ul>
             <li>{ucac4_name}</li>
-            <li>name: {metadata.our_name}</li>
+            <li>name: {name}</li>
             <li>period (d): {period}</li>
             <li>{minmax}</li>
-            <li>mag. range: {parsed_toml['range']}</li>
+            <li>mag. range: {mag_range}</li>
             <li><a target="_blank" rel="noopener noreferrer" href="
             https://www.aavso.org/vsx/index.php?view=about.vartypes">type</a>: {var_type}</li>
             <li>epoch: {epoch}</li>
