@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/mrosseel/vast-automation.svg?branch=master)](https://travis-ci.com/mrosseel/vast-automation)
+
 # vast-automation
 
 ## Preparation
