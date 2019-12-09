@@ -104,9 +104,11 @@ def run_do_rest(args):
 
     vsx_stars = utils.get_stars_with_metadata(star_descriptions, "VSX")
     logging.info(f"There are {len(vsx_stars)} vsx stars")
-    starfile_stars = utils.get_stars_with_metadata(star_descriptions, "STARFILE")
+    starfile_stars_pure = utils.get_stars_with_metadata(star_descriptions, "STARFILE")
     if args.selectvsx:
-        starfile_stars = utils.concat_sd_lists(starfile_stars, vsx_stars)
+        starfile_stars = utils.concat_sd_lists(starfile_stars_pure, vsx_stars)
+    else:
+        starfile_stars = starfile_stars_pure
     logging.info(f"There are {len(starfile_stars)} selected stars")
     compstar_needing_stars = utils.concat_sd_lists(starfile_stars, vsx_stars, candidate_stars, owncatalog)
     comp_stars = set_comp_stars_and_ucac4(star_descriptions, starfile_stars, args.checkstarfile, vastdir, stardict)
@@ -139,7 +141,7 @@ def run_do_rest(args):
                                'aavso_selected', do_phase=do_phase, do_light=do_charts, do_light_raw=do_charts,
                                do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of selected stars")
     # starfiledata is filled in during the phase plotting, so should come after it. Without phase it will be incomplete
-    write_augmented_starfile(resultdir, starfile_stars)
+    write_augmented_starfile(resultdir, starfile_stars_pure)
     if args.field:
         do_charts_field.run_standard_field_charts(star_descriptions, wcs, fieldchartsdir, wcs_file, comp_stars)
 
@@ -353,7 +355,7 @@ def write_augmented_starfile(resultdir: str, starfile_stars: List[StarDescriptio
                     f"{format_float_5(parsed_toml, 'period')},{format_float_5(parsed_toml, 'period_err')},"
                     f"{format_string('epoch', parsed_toml)}\n")
             except FileNotFoundError:
-                logging.error(f"Could not find {txt_path}")
+                logging.error(f"While writing augmented starfile, Could not find {txt_path}")
 
 
 def write_vsx_stars(resultdir, results_ids, stars: List[StarDescription]):

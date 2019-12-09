@@ -264,32 +264,9 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_lig
         # logging.info(f"Rejected {old_size-len(df)} observations with iqr.")
 
         # calculate period for phase or light
-        calculate_phase = do_phase or do_light or do_light_raw
-
-        if calculate_phase:
-            period: Period = None
-            starfile = star.get_metadata("STARFILE")
-            vsx_metadata = star.get_metadata("VSX")
-            is_vsx = vsx_metadata is not None
-            is_vsx_with_period = is_vsx and not np.isnan(vsx_metadata.extradata['Period'])
-            is_selected_with_period = starfile is not None and starfile.period is not None
-
-            if is_selected_with_period:
-                period: Period = Period(star.get_metadata("STARFILE").period, "OWN")
-                logging.debug(f"Using OWN period for star {star.local_id}: {period.period}")
-            elif is_vsx_with_period:
-                period: Period = Period(vsx_metadata.extradata['Period'], "VSX") if vsx_metadata.extradata is \
-                                                                                         not None else period
-                logging.debug(f"Using VSX period for star {star.local_id}: {period.period}")
-            else:
-                df2 = df.copy()
-                t_np = df2['floatJD']
-                y_np = df2['realV'].to_numpy()
-                dy_np = df2['realErr'].to_numpy()
-                period: Period = calculate_period(t_np, y_np, dy_np)
-                logging.debug(f"Using LS period for star {star.local_id}: {period.period}")
-            logging.debug(f"Using period: {period.period} for star {star.local_id}")
-
+        do_period = do_phase or do_light or do_light_raw
+        if do_period:
+            period = determine_period(df, star)
         if do_phase:
             plot_phase_diagram(star, df.copy(), phasedir, period=period, suffix="")
         if do_light:
@@ -315,7 +292,33 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_lig
     logging.debug(f"Full lightcurve/phase: {end - start}")
 
 
-def calculate_period(t_np, y_np, dy_np) -> Period:
+def determine_period(df, star):
+    period: Period = None
+    starfile = star.get_metadata("STARFILE")
+    vsx_metadata = star.get_metadata("VSX")
+    is_vsx = vsx_metadata is not None
+    is_vsx_with_period = is_vsx and not np.isnan(vsx_metadata.extradata['Period'])
+    is_selected_with_period = starfile is not None and starfile.period is not None
+
+    if is_selected_with_period:
+        period: Period = Period(star.get_metadata("STARFILE").period, "OWN")
+        logging.debug(f"Using OWN period for star {star.local_id}: {period.period}")
+    elif is_vsx_with_period:
+        period: Period = Period(vsx_metadata.extradata['Period'], "VSX") if vsx_metadata.extradata is \
+                                                                            not None else period
+        logging.debug(f"Using VSX period for star {star.local_id}: {period.period}")
+    else:
+        df2 = df.copy()
+        t_np = df2['floatJD']
+        y_np = df2['realV'].to_numpy()
+        dy_np = df2['realErr'].to_numpy()
+        period: Period = calculate_ls_period(t_np, y_np, dy_np)
+        logging.debug(f"Using LS period for star {star.local_id}: {period.period}")
+    logging.debug(f"Using period: {period.period} for star {star.local_id}")
+    return period
+
+
+def calculate_ls_period(t_np, y_np, dy_np) -> Period:
     period_max = np.max(t_np) - np.min(t_np)
     if period_max <= 0.01:
         return

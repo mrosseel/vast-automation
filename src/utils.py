@@ -121,11 +121,12 @@ class MetadataSorter:
             metadata_entry = star.get_metadata(metadata_id)
             number_part = self.get_metadata_name_number_part(
                 name_extract(metadata_entry)) if metadata_entry is not None else None
-            if warnings and (metadata_entry is None or number_part is None):
-                logging.warning(
-                    f"Lookup with {metadata_id} id gave name "
-                    f"'{name_extract(metadata_entry) if metadata_entry is not None else 'None'}' "
-                    f"can't be parsed for sorting, won't be sorted, star: {star}")
+            if metadata_entry is None or number_part is None:
+                if warnings:
+                    logging.warning(
+                        f"Lookup with {metadata_id} id gave name "
+                        f"'{name_extract(metadata_entry) if metadata_entry is not None else 'None'}' "
+                        f"can't be parsed for sorting, won't be sorted, star: {star}")
                 return 0
             return number_part
 
