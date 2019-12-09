@@ -21,7 +21,7 @@ def run(post_name: str, selected_stars: List[StarDescription], len_vsx: int, len
     copy_files(post_name, resultdir, sitedir)
     result = get_header(post_name)
     result += get_starfile_preamble(images_prefix, len(selected_stars), len_vsx, len_candidates)
-    sorted_stars = utils.metadata_sorter(selected_stars, metadata_id="STARFILE")
+    sorted_stars = utils.metadata_sorter(selected_stars, metadata_id="STARFILE", warnings=False)
     part_block = partial(block, resultdir=resultdir, images_prefix=images_prefix)
     for star in sorted_stars:
         result += part_block(star)

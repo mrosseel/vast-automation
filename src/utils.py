@@ -116,12 +116,12 @@ class MetadataSorter:
     pattern = re.compile(r'.*?(\d+)$')  # finding the number in our name
 
 
-    def sort_metadata_name(self, stars: List[StarDescription], metadata_id, name_extract):
+    def sort_metadata_name(self, stars: List[StarDescription], metadata_id, name_extract, warnings):
         def get_sort_value(star: StarDescription):
             metadata_entry = star.get_metadata(metadata_id)
             number_part = self.get_metadata_name_number_part(
                 name_extract(metadata_entry)) if metadata_entry is not None else None
-            if metadata_entry is None or number_part is None:
+            if warnings and (metadata_entry is None or number_part is None):
                 logging.warning(
                     f"Lookup with {metadata_id} id gave name "
                     f"'{name_extract(metadata_entry) if metadata_entry is not None else 'None'}' "
@@ -138,8 +138,9 @@ class MetadataSorter:
         return int(match.group(1)) if match is not None else None
 
 
-    def __call__(self, stars: List[StarDescription], metadata_id='STARFILE', name_extract=lambda x: x.our_name):
-        return self.sort_metadata_name(stars, metadata_id, name_extract)
+    def __call__(self, stars: List[StarDescription], metadata_id='STARFILE', name_extract=lambda x: x.our_name,
+                 warnings=True):
+        return self.sort_metadata_name(stars, metadata_id, name_extract, warnings)
 
 
 metadata_sorter = MetadataSorter()

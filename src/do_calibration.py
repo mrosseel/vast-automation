@@ -295,7 +295,7 @@ def create_generic_astropy_catalog(ra_deg_np, dec_deg_np):
 
 def create_vsx_astropy_catalog(vsx_catalog_location):
     vsx_dict = vsx_pickle.read(vsx_catalog_location)
-    logging.info(f"Creating VSX star catalog with {len(vsx_dict)} stars using '{vsx_catalog_location}'")
+    logging.info(f"Creating VSX star catalog with {len(vsx_dict['ra_deg_np'])} stars using '{vsx_catalog_location}'")
     return create_generic_astropy_catalog(vsx_dict['ra_deg_np'], vsx_dict['dec_deg_np']), vsx_dict
 
 
