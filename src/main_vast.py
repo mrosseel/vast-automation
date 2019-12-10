@@ -439,14 +439,14 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
     star_descriptions, results_ids = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions,
                                                                                        vsxcatalogdir, 0.01)
     logging.debug(f"Identified {len(results_ids)} VSX stars")
-    test = utils.get_stars_with_metadata(star_descriptions, "VSX")
+    assert len(utils.get_stars_with_metadata(star_descriptions, "VSX")) == len(results_ids)
     logging.debug(f"Test Tagged {len(test)} stars as VSX.")
 
     # write the vsx stars used into a file
     results_ids.sort()
     write_vsx_stars(resultdir, results_ids, star_descriptions)
 
-    # tag all candidates with a 'selected' and 'candidate' catalog
+    # tag all candidates with a 'candidate' catalog
     tag_candidates(vastdir, star_descriptions)
 
     if args.selectedstarfile:
@@ -459,8 +459,6 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
     if args.owncatalog:
         tag_owncatalog(args.owncatalog, star_descriptions)
 
-    # add ucac4 id's
-    starfile_stars = utils.get_stars_with_metadata(star_descriptions, "STARFILE")
     return star_descriptions
 
 

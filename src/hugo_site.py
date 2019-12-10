@@ -90,7 +90,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             ucac4_name = f"{star.coords}"
         else:
             ucac4_name = ucac4.catalog_id if not None else "unknown"
-        name = {starfile_metadata.our_name} if is_selected else star.aavso_id
+        name = starfile_metadata.our_name if is_selected else star.aavso_id
         period = f"{float(parsed_toml['period']):.5f}" if 'period' in parsed_toml \
             else f"{starfile_metadata.period:.5f} +/- {starfile_metadata.period_err:.5f}"
         phase_url = f"{images_prefix}{filename_no_ext_phase}.png"
@@ -110,8 +110,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             <li>{ucac4_name}</li>
             <li>name: {name}</li>
             <li>period (d): {period}</li>
-            <li>{minmax}</li>
-            <li>mag. range: {mag_range}</li>
+            <li>mag. range: {minmax}</li>
             <li><a target="_blank" rel="noopener noreferrer" href="
             https://www.aavso.org/vsx/index.php?view=about.vartypes">type</a>: {var_type}</li>
             <li>epoch: {epoch}</li>

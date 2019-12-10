@@ -308,14 +308,14 @@ def determine_period(df, star):
                                                                             not None else period
         logging.debug(f"Using VSX period for star {star.local_id}: {period.period}")
     else:
-        df2 = df.copy()
-        t_np = df2['floatJD']
-        y_np = df2['realV'].to_numpy()
-        dy_np = df2['realErr'].to_numpy()
-        period: Period = calculate_ls_period(t_np, y_np, dy_np)
+        period: Period = calculate_ls_period(df.copy())
         logging.debug(f"Using LS period for star {star.local_id}: {period.period}")
     logging.debug(f"Using period: {period.period} for star {star.local_id}")
     return period
+
+
+def calculate_ls_period_from_df(df: DataFrame) -> Period:
+    return calculate_ls_period(df['floatJD'], df['realV'].to_numpy(), df['realErr'].to_numpy())
 
 
 def calculate_ls_period(t_np, y_np, dy_np) -> Period:
