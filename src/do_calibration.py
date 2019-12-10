@@ -211,26 +211,6 @@ def get_starid_1_for_radec(ra_deg, dec_deg, all_star_catalog, max_separation=0.0
     return idx[0] + 1
 
 
-# returns StarDescription array
-def get_vsx_in_field(star_descriptions, max_separation=0.01):
-    logging.info("Get VSX in field star descriptions")
-    vsx_catalog, vsx_dict = create_vsx_astropy_catalog(settings.vsxcatalogdir)
-    star_catalog = create_star_descriptions_catalog(star_descriptions)
-    idx, d2d, d3d = match_coordinates_sky(vsx_catalog, star_catalog)
-    result = []
-    for index_vsx, entry in enumerate(d2d):
-        if entry.value < max_separation:
-            star_local_id = idx[index_vsx] + 1
-            star_coords = star_catalog[star_local_id - 1]
-            result_entry = StarDescription()
-            result_entry.local_id = star_local_id
-            result_entry.coords = star_coords
-            _add_vsx_metadata_to_star_description('VSX', result_entry, vsx_dict, index_vsx, entry.value)
-            result.append(result_entry)
-    logging.info("Found {} VSX stars in field: {}".format(len(result), [star.local_id for star in result]))
-    return result
-
-
 ################ CATALOG related functions #########################
 
 def add_metadata_to_star_descriptions(stars: List[StarDescription],
@@ -256,13 +236,13 @@ def add_metadata_to_star_descriptions(stars: List[StarDescription],
 def _add_vsx_metadata_to_star_description(catalog_name: str, star: StarDescription, vsx_dict, index_vsx,
                                           separation):
     assert star.metadata is not None
-    vsx_name = vsx_dict['metadata'][index_vsx]['Name']
+    vsx_name = vsx_dict['extradata'][index_vsx]['Name']
     star.aavso_id = vsx_name
     match = CatalogData(key=catalog_name, catalog_id=vsx_name,
                         name=vsx_name, separation=separation,
                         coords=SkyCoord(vsx_dict['ra_deg_np'][index_vsx], vsx_dict['dec_deg_np'][index_vsx],
                                         unit='deg'),
-                        extradata=vsx_dict['metadata'][index_vsx])
+                        extradata=vsx_dict['extradata'][index_vsx])
     star.metadata = match
     return match
 
