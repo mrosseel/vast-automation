@@ -507,10 +507,11 @@ def tag_vsx_as_selected(vsx_stars: List[StarDescription]):
             continue
         # extradata: {'id': index, 'OID': row['OID'], 'Name': row['Name'], 'Type': row['Type'],
         # 'l_Period': row['l_Period'], 'Period': row['Period'], 'u_Period': row['u_Period']})
-        the_star.metadata = SiteData(var_type=extradata['Type'],
-                                     our_name=extradata['Name'], period=extradata['Period']
+        the_star.metadata = SiteData(var_type=str(extradata['Type']),
+                                     our_name=str(extradata['Name']),
+                                     period=float(extradata['Period'])
             if not np.isnan(extradata['Period']) else None,
-                                     period_err=extradata['u_Period']
+                                     period_err=float(extradata['u_Period'])
                                      if not np.isnan(extradata['u_Period']) else None,
                                      source='VSX')
         the_star.metadata = SelectedFileData()
