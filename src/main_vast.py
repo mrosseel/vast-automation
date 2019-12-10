@@ -1,25 +1,19 @@
 from multiprocessing import cpu_count
-import tqdm
 import logging
 import re
 import os
 import os.path
 import sys
-import subprocess
 import numpy as np
 import time
-from functools import partial
 from collections import namedtuple
 import do_calibration
 import do_charts_vast
 import do_charts_field
 import do_compstars
 import reading
-import star_metadata
 import utils
-import star_description
 from utils import get_star_description_cache
-from reading import trash_and_recreate_dir
 from reading import file_selector
 from star_description import StarDescription
 from astropy.coordinates import SkyCoord
@@ -33,7 +27,7 @@ import hugo_site
 import pandas as pd
 import toml
 import subprocess
-from star_metadata import CatalogData, StarFileData, CompStarData
+from star_metadata import CatalogData, SiteData, CompStarData, SelectedFileData
 
 vsx_catalog_name = "vsx_catalog.bin"
 vsxcatalogdir = PurePath(os.getcwd(), vsx_catalog_name)
@@ -67,7 +61,7 @@ def run_do_rest(args):
         from astropy.io import fits
 
         reference_frame_filename = Path(reference_frame).name
-        full_ref_path = Path(args.fitsdir)/reference_frame_filename
+        full_ref_path = Path(args.fitsdir) / reference_frame_filename
         if not args.fitsdir and args.apikey:
             logging.error("There is no plate-solved reference frame {wcs_file}, please specify both --apikey "
                           "and --fitsdir.")
@@ -79,8 +73,6 @@ def run_do_rest(args):
         while not os.path.isfile(wcs_file):
             logging.info(f"Waiting for the astrometry.net plate solve...")
             time.sleep(10)
-
-
 
     # get wcs model from the reference header. Used in writing world positions and field charts
     wcs = do_calibration.get_wcs(wcs_file)
@@ -103,15 +95,14 @@ def run_do_rest(args):
     logging.info(f"There are {len(candidate_stars)} candidate stars")
 
     vsx_stars = utils.get_stars_with_metadata(star_descriptions, "VSX")
+    assert vsx_stars[0].has_metadata("SITE")
     logging.info(f"There are {len(vsx_stars)} vsx stars")
-    starfile_stars_pure = utils.get_stars_with_metadata(star_descriptions, "STARFILE")
+    selected_stars = utils.get_stars_with_metadata(star_descriptions, "SELECTEDFILE")
     if args.selectvsx:
-        starfile_stars = utils.concat_sd_lists(starfile_stars_pure, vsx_stars)
-    else:
-        starfile_stars = starfile_stars_pure
-    logging.info(f"There are {len(starfile_stars)} selected stars")
-    compstar_needing_stars = utils.concat_sd_lists(starfile_stars, vsx_stars, candidate_stars, owncatalog)
-    comp_stars = set_comp_stars_and_ucac4(star_descriptions, starfile_stars, args.checkstarfile, vastdir, stardict)
+        selected_stars = utils.concat_sd_lists(selected_stars, vsx_stars)
+    logging.info(f"There are {len(selected_stars)} selected stars")
+    compstar_needing_stars = utils.concat_sd_lists(selected_stars, vsx_stars, candidate_stars, owncatalog)
+    comp_stars = set_comp_stars_and_ucac4(star_descriptions, selected_stars, args.checkstarfile, vastdir, stardict)
 
     # Set comp stars for all interesting stars (stars which are interesting enough to measure)
     logging.info("Setting per star comparison stars...")
@@ -137,18 +128,18 @@ def run_do_rest(args):
                                do_phase=do_phase, do_light=do_charts, do_aavso=do_aavso, nr_threads=thread_count,
                                desc="Phase/light/aavso of VSX stars")
         if args.selectedstarfile:
-            do_charts_vast.run(starfile_stars, comp_stars, vastdir, resultdir, 'phase_selected/', 'light_selected/',
+            do_charts_vast.run(selected_stars, comp_stars, vastdir, resultdir, 'phase_selected/', 'light_selected/',
                                'aavso_selected', do_phase=do_phase, do_light=do_charts, do_light_raw=do_charts,
                                do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of selected stars")
     # starfiledata is filled in during the phase plotting, so should come after it. Without phase it will be incomplete
-    write_augmented_starfile(resultdir, starfile_stars_pure)
+    write_augmented_starfile(resultdir, selected_stars)
     if args.field:
         do_charts_field.run_standard_field_charts(star_descriptions, wcs, fieldchartsdir, wcs_file, comp_stars)
 
     if args.site:
-        ids = [x.local_id for x in starfile_stars]
-        logging.info(f"Creating HTML site with {len(starfile_stars)} selected stars: {ids}")
-        hugo_site.run(args.site, starfile_stars, len(vsx_stars), len(candidate_stars), resultdir)
+        ids = [x.local_id for x in selected_stars]
+        logging.info(f"Creating HTML site with {len(selected_stars)} selected stars: {ids}")
+        hugo_site.run(args.site, selected_stars, len(vsx_stars), len(candidate_stars), resultdir)
 
 
 # Either read UCAC4 check stars from a file, or calculate our own comparison stars
@@ -319,7 +310,7 @@ def write_augmented_all_stars(readdir: str, writedir: str, stardict: StarDict):
 def write_augmented_starfile(resultdir: str, starfile_stars: List[StarDescription]):
     newname = f"{resultdir}starfile.txt"
     logging.info(f"Writing {newname} with {len(starfile_stars)}...")
-    sorted_stars = utils.metadata_sorter(starfile_stars, metadata_id="STARFILE")
+    sorted_stars = utils.sort_selected(starfile_stars)
     with open(newname, 'w') as outfile:
         outfile.write(f"# our_name,ra,dec,minmax,min,max,var_type,period,period_err,epoch\n")
 
@@ -343,9 +334,11 @@ def write_augmented_starfile(resultdir: str, starfile_stars: List[StarDescriptio
 
 
         for star in sorted_stars:
-            metadata: StarFileData = star.get_metadata("STARFILE")
+            metadata: SiteData = star.get_metadata("SITE")
             _, _, _, filename_no_ext = utils.get_star_or_catalog_name(star, '')
-            txt_path = PurePath(resultdir, 'phase_selected/txt', filename_no_ext + '_phase.txt')
+            txt_path = Path(resultdir,
+                                f"phase_{'vsx' if star.has_metadata('VSX') else 'selected'}/txt",
+                                filename_no_ext + '_phase.txt')
             try:
                 parsed_toml = toml.load(txt_path)
                 outfile.write(
@@ -439,8 +432,9 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
     star_descriptions, results_ids = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions,
                                                                                        vsxcatalogdir, 0.01)
     logging.debug(f"Identified {len(results_ids)} VSX stars")
-    assert len(utils.get_stars_with_metadata(star_descriptions, "VSX")) == len(results_ids)
-    logging.debug(f"Test Tagged {len(test)} stars as VSX.")
+    vsx_stars = utils.get_stars_with_metadata(star_descriptions, "VSX")
+    assert len(vsx_stars) == len(results_ids)
+    logging.debug(f"Test Tagged {len(vsx_stars)} stars as VSX.")
 
     # write the vsx stars used into a file
     results_ids.sort()
@@ -449,12 +443,16 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
     # tag all candidates with a 'candidate' catalog
     tag_candidates(vastdir, star_descriptions)
 
+    # adds sitedata to vsx stars
+    if args.selectvsx:
+        tag_vsx_as_selected(vsx_stars)
+    # adds sitedata to selected stars
     if args.selectedstarfile:
         tag_selected(args.selectedstarfile, stardict)
         logging.debug(
-            f"Succesfully read {len(list(filter(lambda x: x.has_metadata('STARFILE'), star_descriptions)))} "
+            f"Succesfully read {len(list(filter(lambda x: x.has_metadata('SELECTEDFILE'), star_descriptions)))} "
             f"stars from file:"
-            f" {[x.local_id for x in list(filter(lambda x: x.has_metadata('STARFILE'), star_descriptions))]}")
+            f" {[x.local_id for x in list(filter(lambda x: x.has_metadata('SELECTEDFILE'), star_descriptions))]}")
 
     if args.owncatalog:
         tag_owncatalog(args.owncatalog, star_descriptions)
@@ -481,12 +479,13 @@ def tag_selected(selectedstarfile: str, stardict: StarDict):
             if the_star is None:
                 logging.error(f"Could not find star {row['local_id']}, consider removing it from your txt file")
                 continue
-            the_star.metadata = StarFileData(local_id=row['local_id'], var_type=row['var_type'],
-                                             our_name=row['our_name'], period=row['period'],
-                                             period_err=row['period_err'])
+            the_star.metadata = SiteData(var_type=row['var_type'],
+                                         our_name=row['our_name'], period=row['period'],
+                                         period_err=row['period_err'], source="file")
+            the_star.metadata = SelectedFileData()
             logging.debug(f"starfile {the_star.local_id} metadata: {the_star.metadata}, "
-                          f"{the_star.get_metadata('STARFILE')}")
-            logging.debug(f"starfile {the_star.get_metadata('STARFILE')}")
+                          f"{the_star.get_metadata('SELECTEDFILE')}")
+            logging.debug(f"starfile {the_star.get_metadata('SELECTEDFILE')}")
         logging.debug(f"Tagged {len(df)} stars as selected by file.")
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
@@ -495,6 +494,30 @@ def tag_selected(selectedstarfile: str, stardict: StarDict):
         print(traceback.print_exc())
         logging.error(message)
         logging.error(f"Could not read {selectedstarfile}, star {row['local_id']}")
+
+
+def tag_vsx_as_selected(vsx_stars: List[StarDescription]):
+    for the_star in vsx_stars:
+        if the_star.has_metadata("SITE"):  # don't overwrite the SITE entry of SELECTEDFILE which has priority
+            continue
+        extradata = the_star.get_metadata("VSX").extradata
+        if extradata is None:
+            logging.error(f"Could not find extradata for star {the_star.local_id}, "
+                          f"consider removing it from your txt file")
+            continue
+        # extradata: {'id': index, 'OID': row['OID'], 'Name': row['Name'], 'Type': row['Type'],
+        # 'l_Period': row['l_Period'], 'Period': row['Period'], 'u_Period': row['u_Period']})
+        the_star.metadata = SiteData(var_type=extradata['Type'],
+                                     our_name=extradata['Name'], period=extradata['Period']
+            if not np.isnan(extradata['Period']) else None,
+                                     period_err=extradata['u_Period']
+                                     if not np.isnan(extradata['u_Period']) else None,
+                                     source='VSX')
+        the_star.metadata = SelectedFileData()
+        logging.debug(f"site {the_star.local_id} metadata: {the_star.metadata}, "
+                      f"{the_star.get_metadata('SITE')}")
+        logging.debug(f"site {the_star.get_metadata('SITE')}")
+    logging.debug(f"Tagged {len(vsx_stars)} stars as selected vxs stars.")
 
 
 def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):

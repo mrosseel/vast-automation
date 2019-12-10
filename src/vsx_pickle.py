@@ -12,10 +12,10 @@ def convert(path):
 
     ra_deg_np = data['RAdeg'].values
     dec_deg_np = data['DEdeg'].values
-    metadata = []
+    extradata = []
     for index, row in tqdm.tqdm(data.iterrows(), total=len(data), desc="Converting"):
-        metadata.append({'id': index, 'OID': row['OID'], 'Name': row['Name'], 'Type': row['Type'], 'l_Period': row['l_Period'], 'Period': row['Period'], 'u_Period': row['u_Period']})
-    vsx_dict = { 'ra_deg_np': ra_deg_np, 'dec_deg_np': dec_deg_np, 'metadata': metadata}
+        extradata.append({'id': index, 'OID': row['OID'], 'Name': row['Name'], 'Type': row['Type'], 'l_Period': row['l_Period'], 'Period': row['Period'], 'u_Period': row['u_Period']})
+    vsx_dict = { 'ra_deg_np': ra_deg_np, 'dec_deg_np': dec_deg_np, 'extradata': extradata}
 
     outfile = './vsx_catalog.bin'
     print(f"Writing {outfile}...")

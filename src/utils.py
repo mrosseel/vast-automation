@@ -116,22 +116,23 @@ class MetadataSorter:
     pattern = re.compile(r'.*?(\d+)$')  # finding the number in our name
 
 
-    def sort_metadata_name(self, stars: List[StarDescription], metadata_id, name_extract, warnings):
-        def get_sort_value(star: StarDescription):
-            metadata_entry = star.get_metadata(metadata_id)
-            number_part = self.get_metadata_name_number_part(
-                name_extract(metadata_entry)) if metadata_entry is not None else None
-            if metadata_entry is None or number_part is None:
-                if warnings:
-                    logging.warning(
-                        f"Lookup with {metadata_id} id gave name "
-                        f"'{name_extract(metadata_entry) if metadata_entry is not None else 'None'}' "
-                        f"can't be parsed for sorting, won't be sorted, star: {star}")
-                return 0
-            return number_part
+    def get_name_to_sort(self, star: StarDescription, metadata_id, name_extract, default_value, warnings):
+        metadata_entry = star.get_metadata(metadata_id)
+
+        if metadata_entry is None or name_extract(metadata_entry) is None:
+            if warnings:
+                logging.warning(
+                    f"Lookup with {metadata_id} id gave name "
+                    f"'{name_extract(metadata_entry) if metadata_entry is not None else 'None'}' "
+                    f"can't be parsed for sorting, won't be sorted, star: {star}")
+            return default_value
+        return name_extract(metadata_entry)
 
 
-        return sorted(stars, key=get_sort_value)
+    def get_int_sort_value(self, star: StarDescription, metadata_id, name_extract, warnings):
+        return self.get_metadata_name_number_part(
+            self.get_name_to_sort(star, metadata_id, name_extract, "ERR-999999999",
+                                  warnings))
 
 
     def get_metadata_name_number_part(self, star_name: str):
@@ -139,12 +140,31 @@ class MetadataSorter:
         return int(match.group(1)) if match is not None else None
 
 
-    def __call__(self, stars: List[StarDescription], metadata_id='STARFILE', name_extract=lambda x: x.our_name,
-                 warnings=True):
-        return self.sort_metadata_name(stars, metadata_id, name_extract, warnings)
+    def get_str_sort_value(self, star: StarDescription, metadata_id, name_extract, warnings):
+        return self.get_name_to_sort(star, metadata_id, name_extract, "ZZZZZZZZZZZ", warnings)
+
+
+    def sort_metadata_name(self, stars: List[StarDescription], metadata_id, name_extract, get_sort_value, warnings):
+        sort_value = partial(get_sort_value, metadata_id=metadata_id, name_extract=name_extract, warnings=warnings)
+        return sorted(stars, key=sort_value)
+
+
+    def __call__(self, stars: List[StarDescription], metadata_id='SITE', name_extract=lambda x: x.our_name,
+                 get_sort_value=None, warnings=True):
+        if get_sort_value is None: get_sort_value = self.get_int_sort_value
+        return self.sort_metadata_name(stars, metadata_id, name_extract, get_sort_value, warnings)
 
 
 metadata_sorter = MetadataSorter()
+
+
+def sort_selected(stars: List[StarDescription]) -> List[StarDescription]:
+    non_vsx = get_stars_with_metadata(stars, "SITE", exclude=["VSX"])
+    vsx = get_stars_with_metadata(stars, "VSX")
+    assert len(stars) == len(non_vsx) + len(vsx)
+    non_vsx_sorted_stars = metadata_sorter(non_vsx, metadata_id="SITE")
+    vsx_sorted_stars = metadata_sorter(vsx, metadata_id="SITE", get_sort_value=metadata_sorter.get_str_sort_value)
+    return non_vsx_sorted_stars + vsx_sorted_stars
 
 
 def add_star_lists(list1: List[StarDescription], list2: List[StarDescription]):

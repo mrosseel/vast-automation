@@ -12,7 +12,7 @@ from pathlib import PurePath
 import pytz
 from datetime import datetime
 import utils
-from star_metadata import StarFileData
+from star_metadata import SiteData
 
 
 def run(post_name: str, selected_stars: List[StarDescription], len_vsx: int, len_candidates: int, resultdir: str):
@@ -21,7 +21,7 @@ def run(post_name: str, selected_stars: List[StarDescription], len_vsx: int, len
     copy_files(post_name, resultdir, sitedir)
     result = get_header(post_name)
     result += get_starfile_preamble(images_prefix, len(selected_stars), len_vsx, len_candidates)
-    sorted_stars = utils.metadata_sorter(selected_stars, metadata_id="STARFILE", warnings=False)
+    sorted_stars = utils.sort_selected(selected_stars)
     part_block = partial(block, resultdir=resultdir, images_prefix=images_prefix)
     for star in sorted_stars:
         result += part_block(star)
@@ -67,9 +67,9 @@ def copy_files(post_name: str, resultdir: str, sitedir: str):
 def block(star: StarDescription, resultdir: str, images_prefix: str):
     try:
         is_vsx = star.has_metadata("VSX")
-        is_selected = star.has_metadata("STARFILE")
+        is_selected = star.has_metadata("SELECTEDFILE")
         is_candidate = star.has_metadata("CANDIDATE")
-        starfile_metadata: StarFileData = star.get_metadata("STARFILE")
+        sitedata: SiteData = star.get_metadata("SITE")
 
         vsx_name, separation, extradata, filename_no_ext = utils.get_star_or_catalog_name(star, suffix="")
         filename_no_ext_phase = filename_no_ext + "_phase"
@@ -90,17 +90,12 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             ucac4_name = f"{star.coords}"
         else:
             ucac4_name = ucac4.catalog_id if not None else "unknown"
-        name = starfile_metadata.our_name if is_selected else star.aavso_id
-        period = f"{float(parsed_toml['period']):.5f}" if 'period' in parsed_toml \
-            else f"{starfile_metadata.period:.5f} +/- {starfile_metadata.period_err:.5f}"
+        name = f"{parsed_toml['our_name']}"
+        period = f"{float(parsed_toml['period']):.5f}"
         phase_url = f"{images_prefix}{filename_no_ext_phase}.png"
-        minmax = starfile_metadata.minmax if is_selected and starfile_metadata.minmax is not None \
-            else f"{parsed_toml['min']:.1f}-{parsed_toml['max']:.1f}"
-        epoch = starfile_metadata.epoch if is_selected and is_selected and starfile_metadata.epoch is not None \
-            else "Unknown"
-        var_type = starfile_metadata.var_type if is_selected and starfile_metadata.var_type else extradata["Type"] \
-            if extradata is not None else "Unknown"
-        mag_range = starfile_metadata.minmax if is_selected and starfile_metadata.minmax else {parsed_toml['range']}
+        epoch = f"{parsed_toml['epoch']}" if 'epoch' in parsed_toml else "Unknown"
+        var_type = f"{parsed_toml['var_type']}" if 'var_type' in parsed_toml else "Unknown"
+        mag_range = f"{parsed_toml['range']}"
         result = f'''<div class="bb-l b--black-10 w-100">
         <div class="fl w-70 pa2 ba">
             <img class="special-img-class" src="{phase_url}" alt="{phase_url}"/>
@@ -110,7 +105,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             <li>{ucac4_name}</li>
             <li>name: {name}</li>
             <li>period (d): {period}</li>
-            <li>mag. range: {minmax}</li>
+            <li>mag. range: {mag_range}</li>
             <li><a target="_blank" rel="noopener noreferrer" href="
             https://www.aavso.org/vsx/index.php?view=about.vartypes">type</a>: {var_type}</li>
             <li>epoch: {epoch}</li>

@@ -44,12 +44,16 @@ class CompStarData(StarMetaData):
         return f'Key:{self.key}, Compstars: {self.compstar_ids}'
 
 
-class StarFileData(StarMetaData):
-    def __init__(self, local_id: int, minmax: str = None, var_min=None, var_max=None, var_type: str = None,
-                 our_name: str = None, period: float = None, period_err: float = None, epoch: float = None,
-                 key='STARFILE'):
+class SelectedFileData(StarMetaData):
+    def __init__(self, key='SELECTEDFILE'):
         super().__init__(key)
-        self.local_id = local_id
+
+
+class SiteData(StarMetaData):
+    def __init__(self, minmax: str = None, var_min=None, var_max=None, var_type: str = None,
+                 our_name: str = None, period: float = None, period_err: float = None, source: str = None,
+                 epoch: float = None, key='SITE'):
+        super().__init__(key)
         self.minmax = self._strip_if_not_none(minmax)
         self.var_min = var_min
         self.var_max = var_max
@@ -57,6 +61,7 @@ class StarFileData(StarMetaData):
         self.our_name = self._strip_if_not_none(our_name)
         self.period = period
         self.period_err = period_err
+        self.source = source
         self.epoch = epoch
 
 
@@ -66,7 +71,7 @@ class StarFileData(StarMetaData):
 
 
     def __repr__(self):
-        return f'Key:{self.key}, {self.local_id} {self.minmax} {self.var_min}-{self.var_max} ' \
+        return f'Key:{self.key}, {self.minmax} {self.var_min}-{self.var_max} ' \
                f'{self.var_type} {self.our_name} {self.period} {self.period_err} {self.epoch}'
 
 
@@ -102,3 +107,11 @@ class CatalogData(StarMetaData):
     def __str__(self):
         return f'Catalog:{self.key}, CatalogId:{self.catalog_id}, Name:{self.name}, ' \
                f'Coords:{self.coords}, Separation:{self.separation}'
+
+#
+# class DataTypes:
+#     upsilondata = UpsilonData.key
+#     sitedata = SiteData.key
+#     compstardata = CompStarData.key
+#     selectedfiledata = SelectedFileData.key
+

@@ -27,7 +27,7 @@ from star_description import StarDescription
 from pathlib import PurePath
 from pandas import DataFrame, Series
 
-from star_metadata import StarFileData
+from star_metadata import SiteData
 
 gc.enable()
 mplotlib.use('Agg')  # needs no X server
@@ -166,23 +166,21 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         var_range = f'{ymin:.1f}-{ymax:.1f}'
         epoch = None
         minmax = None
-        if star.has_metadata('STARFILE'):
-            starfiledata: StarFileData = star.get_metadata('STARFILE')
-            assert starfiledata is not None
-            if starfiledata.var_type is not None \
-                and ("RR" in starfiledata.var_type or "W Uma" in starfiledata.var_type):
-                if "RR" in starfiledata.var_type:
+        if star.has_metadata('SITE'):
+            sitedata: SiteData = star.get_metadata('SITE')
+            assert sitedata is not None
+            tomldict['var_type'] = sitedata.var_type
+            tomldict['our_name'] = sitedata.our_name
+            if sitedata.var_type is not None \
+                and ("RR" in sitedata.var_type or "W Uma" in sitedata.var_type):
+                if "RR" in sitedata.var_type:
                     epoch = epoch_max
                     minmax = f"max: {ymax:.1f}"
-                elif "W Uma" in starfiledata.var_type:
+                elif "W Uma" in sitedata.var_type:
                     epoch = epoch_min
                     minmax = f"min: {ymin:.1f}"
-                starfiledata.epoch = epoch
-                starfiledata.minmax = minmax
-            starfiledata.var_min = ymin
-            starfiledata.var_max = ymax
-            if starfiledata.period_err is not None:
-                tomldict['period_err'] = float(starfiledata.period_err)
+            if sitedata.period_err is not None:
+                tomldict['period_err'] = float(sitedata.period_err)
         tomldict['period'] = float(period.period)
         tomldict['period_origin'] = period.origin
         tomldict['min'] = float(ymin)
@@ -205,6 +203,7 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         logging.error(f"Error during plot phase: {star.local_id}")
 
 
+# plotting of 'double' phase diagram from -1 to 1
 def _plot_phase_diagram(phased_t_final, phased_lc_final, phased_err, write_plot, save_location, star, vsx_title,
                         period: Period, upsilon_text):
     fig = plt.figure(figsize=(18, 16), dpi=80, facecolor='w', edgecolor='k')
@@ -214,9 +213,8 @@ def _plot_phase_diagram(phased_t_final, phased_lc_final, phased_err, write_plot,
         f"{vsx_title}\nStar {star.local_id}, p: {period.period:.5f} d ({period.origin}) "
         f"{upsilon_text}\n{utils.get_hms_dms_matplotlib(star.coords)}", pad=TITLE_PAD)
     plt.ticklabel_format(style='plain', axis='x')
-    # plt.title(f"Star {star} - {period.period}", pad=TITLE_PAD)
     plt.tight_layout()
-    # plotting + calculation of 'double' phase diagram from -1 to 1
+
     plt.gca().invert_yaxis()
     plt.errorbar(phased_t_final, phased_lc_final, yerr=phased_err, linestyle='none', marker='o', ecolor='gray',
                  elinewidth=1)
@@ -227,11 +225,6 @@ def _plot_phase_diagram(phased_t_final, phased_lc_final, phased_err, write_plot,
         plt.clf()
     else:
         return plt
-
-
-def format_date(x, pos=None):
-    thisind = np.clip(int(x + 0.5), 0, N - 1)
-    return r.date[thisind].strftime('%Y-%m-%d')
 
 
 def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_light_raw, do_phase, do_aavso,
@@ -293,24 +286,15 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_lig
 
 
 def determine_period(df, star):
-    period: Period = None
-    starfile = star.get_metadata("STARFILE")
-    vsx_metadata = star.get_metadata("VSX")
-    is_vsx = vsx_metadata is not None
-    is_vsx_with_period = is_vsx and not np.isnan(vsx_metadata.extradata['Period'])
-    is_selected_with_period = starfile is not None and starfile.period is not None
-
-    if is_selected_with_period:
-        period: Period = Period(star.get_metadata("STARFILE").period, "OWN")
-        logging.debug(f"Using OWN period for star {star.local_id}: {period.period}")
-    elif is_vsx_with_period:
-        period: Period = Period(vsx_metadata.extradata['Period'], "VSX") if vsx_metadata.extradata is \
-                                                                            not None else period
-        logging.debug(f"Using VSX period for star {star.local_id}: {period.period}")
-    else:
-        period: Period = calculate_ls_period(df.copy())
+    if not star.has_metadata("SITE") or star.get_metadata("SITE").period is None:
+        period: Period = calculate_ls_period_from_df(df.copy())
         logging.debug(f"Using LS period for star {star.local_id}: {period.period}")
-    logging.debug(f"Using period: {period.period} for star {star.local_id}")
+        return period
+
+    sitedata = star.get_metadata("SITE")
+    source = sitedata.source
+    period: Period = Period(sitedata.period, source)
+    logging.debug(f"Using {source} period for star {star.local_id}: {period.period}")
     return period
 
 
