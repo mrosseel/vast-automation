@@ -32,7 +32,9 @@ class TestMainVast(unittest.TestCase):
                  self.stardesc(2635, 10.24490, 9.96730), self.stardesc(1, 10, 9)]
         main_vast.tag_selected(PurePath(test_file_path, "wwcra2015_starlist.txt"),
                                utils.get_star_description_cache(stars))
-        test = utils.get_stars_with_metadata(stars, "STARFILE")
+        test = utils.get_stars_with_metadata(stars, "SITE")
+        self.assertEqual(4, len(test))
+        test = utils.get_stars_with_metadata(stars, "SELECTEDFILE")
         self.assertEqual(4, len(test))
 
     def test_extract_reference_frame_rotation(self):
