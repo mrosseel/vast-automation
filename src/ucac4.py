@@ -194,6 +194,7 @@ class UCAC4:
 
 
     def get_ucac4_sd(self, ra: float, dec: float, tolerance_deg=0.01) -> StarDescription:
+        logging.debug(f"get_ucac4_sd with ra:{ra}, dec:{dec}, tolerance:{tolerance_deg}")
         # don't want to bother with more than 2 zone overlappings
         target_np = np.array((ra, dec))
         assert tolerance_deg < 0.2
