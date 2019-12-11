@@ -57,7 +57,8 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
         star_id = star.local_id
         logging.debug(f"Plotting lightcurve for {star_id}")
         vsx_name, separation, extradata, filename_no_ext = utils.get_star_or_catalog_name(star, suffix=suffix)
-        vsx_title = '' if vsx_name is None else f"{vsx_name} Type: {extradata['Type']}"
+        var_type = f"Type: {extradata['Type']}" if extradata is not None and 'Type' in extradata else ""
+        vsx_title = '' if vsx_name is None else f"{vsx_name} {var_type}"
         vsx_dist = '' if separation is None else f"(+/- {separation:.3f} deg)"
         save_location = PurePath(chartsdir, filename_no_ext + '.png')
         start = timer()
