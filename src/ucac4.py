@@ -193,7 +193,7 @@ class UCAC4:
         return result_n0, result_nn
 
 
-    def get_ucac4_sd(self, ra: float, dec: float, tolerance_deg=0.01) -> StarDescription:
+    def get_ucac4_sd_from_ra_dec(self, ra: float, dec: float, tolerance_deg=0.02) -> StarDescription:
         logging.debug(f"get_ucac4_sd with ra:{ra}, dec:{dec}, tolerance:{tolerance_deg}")
         # don't want to bother with more than 2 zone overlappings
         target_np = np.array((ra, dec))
@@ -298,7 +298,7 @@ class UCAC4:
         with tqdm.tqdm(total=len(stars), desc='Adding UCAC4', unit='stars') as pbar:
             for star in stars:
                 if not star.has_metadata("UCAC4"):
-                    sd = self.get_ucac4_sd(star.coords.ra.deg, star.coords.dec.deg)
+                    sd = self.get_ucac4_sd_from_ra_dec(star.coords.ra.deg, star.coords.dec.deg)
                     do_calibration.add_info_to_star_description(star, sd.vmag, sd.e_vmag, sd.aavso_id, "UCAC4",
                                                                 sd.coords)
                 pbar.update(1)
