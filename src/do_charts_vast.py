@@ -171,6 +171,8 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
             assert sitedata is not None
             tomldict['var_type'] = sitedata.var_type
             tomldict['our_name'] = sitedata.our_name
+            if sitedata.var_min and sitedata.var_max:
+                var_range = f'{sitedata.var_min:.1f}-{sitedata.var_max:.1f} {sitedata.source}'
             if sitedata.var_type is not None \
                 and ("RR" in sitedata.var_type or "W Uma" in sitedata.var_type):
                 if "RR" in sitedata.var_type:

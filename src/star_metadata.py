@@ -66,7 +66,7 @@ class SiteData(StarMetaData):
 
 
     @staticmethod
-    def _strip_if_not_none(arg):
+    def _strip_if_not_none(arg, is_nan=True):
         return arg.strip() if arg is not None else None
 
 
