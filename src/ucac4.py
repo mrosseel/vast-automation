@@ -159,7 +159,7 @@ class UCAC4:
         result = self.zones_cache.get(zone)
         if result != -1:
             return result
-        with open(str(Path(self.ucac_path, f"u4b/z{zone}")), mode='rb') as file:  # b is important -> binary
+        with open(str(Path(self.ucac_path, f"u4b/z{zone:03}")), mode='rb') as file:  # b is important -> binary
             result = file.read()
             self.zones_cache.set(zone, result)
             return result
