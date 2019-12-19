@@ -65,7 +65,7 @@ def annotate_it(star_descriptions, offset1, offset2, random_offset=False, size=1
     for stardescr in star_descriptions:
         xpos = stardescr.xpos
         ypos = stardescr.ypos
-        logging.debug(f"Plotting {stardescr.label} {xpos} {ypos}")
+        logging.debug(f"Field chart plotting label:{stardescr.label} x:{xpos} y:{ypos}")
         if random_offset:
             randoffset = random.randint(10, 20)
             xsignrand = random.choice([-1.0, 1.0])

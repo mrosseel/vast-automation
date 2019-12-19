@@ -59,7 +59,7 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
         vsx_name, separation, extradata, filename_no_ext = utils.get_star_or_catalog_name(star, suffix=suffix)
         var_type = f"Type: {extradata['Type']}" if extradata is not None and 'Type' in extradata else ""
         vsx_title = '' if vsx_name is None else f"{vsx_name} {var_type}"
-        vsx_dist = '' if separation is None else f"(+/- {separation:.3f} deg)"
+        vsx_dist = '' if separation is None else f"(+/- {separation*3600:.0f} arcsec)"
         save_location = PurePath(chartsdir, filename_no_ext + '.png')
         start = timer()
         upsilon_match = star.get_metadata('UPSILON') if star.has_metadata('UPSILON') else None
@@ -258,7 +258,6 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_lig
         # remove errors
         # df = utils.reject_outliers_iqr(df, 'realV', 20)
         # logging.info(f"Rejected {old_size-len(df)} observations with iqr.")
-
         # calculate period for phase or light
         do_period = do_phase or do_light or do_light_raw
         if do_period:

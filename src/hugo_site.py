@@ -96,7 +96,9 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         epoch = f"{parsed_toml['epoch']}" if 'epoch' in parsed_toml else "Unknown"
         var_type = f"{parsed_toml['var_type']}" if 'var_type' in parsed_toml else "Unknown"
         mag_range = f"{parsed_toml['range']}"
-        minmax = parsed_toml['minmax'] if 'minmax' in parsed_toml else ""
+        minmax = f"<li>{parsed_toml['minmax']}</li>" if 'minmax' in parsed_toml else ""
+        vsx_link = f'<li><a href="https://www.aavso.org/vsx/index.php?view=detail.top&oid={extradata["OID"]}"' \
+                   f'>VSX link</a></li>' if is_vsx else ""
         result = f'''<div class="bb-l b--black-10 w-100">
         <div class="fl w-70 pa2 ba">
             <img class="special-img-class" src="{phase_url}" alt="{phase_url}"/>
@@ -105,11 +107,10 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             <ul>
             <li>{ucac4_name}</li>
             <li>name: {name}</li>
-            <li>period (d): {period}</li>
-            <li>{minmax}</li>
+            <li>period (d): {period}</li>{minmax}
             <li>mag. range: {mag_range}</li>
             <li><a target="_blank" rel="noopener noreferrer" href="
-            https://www.aavso.org/vsx/index.php?view=about.vartypes">type</a>: {var_type}</li>
+            https://www.aavso.org/vsx/index.php?view=about.vartypes">type</a>: {var_type}</li>{vsx_link}
             <li>epoch: {epoch}</li>
             <li>coords: {utils.get_hms_dms(star.coords)}</li>
             <li><a href="{images_prefix}vsx_and_star_{star.local_id:05}.png">finder chart</a></li>

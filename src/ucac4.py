@@ -231,6 +231,9 @@ class UCAC4:
                     if dist < smallest_dist:
                         smallest_dist = dist
                         best = sd
+        if best is None:
+            logging.warning(f"Did not find a UCAC4 match for {ra}, {dec}, {tolerance_deg}. Buckets: {buckets}, "
+                            f"zones: {zones},smallest dist: {smallest_dist}")
         return self.get_ucac4_star_description_fromtuple(*best)
 
 

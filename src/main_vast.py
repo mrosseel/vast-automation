@@ -43,7 +43,7 @@ def run_do_rest(args):
     resultdir = clean_and_create_resultdir(args.resultdir, vastdir)
     fieldchartsdir = resultdir + 'fieldcharts/'
     aavsodir = resultdir + 'aavso/'
-    do_charts = args.light
+    do_light = args.light
     do_phase = args.phase
     do_aavso = args.aavso
     logging.info(f"Dir with VaST files: '{vastdir}', results dir: '{resultdir}'")
@@ -84,8 +84,8 @@ def run_do_rest(args):
     star_descriptions = construct_star_descriptions(vastdir, resultdir, wcs, all_stardict, list_of_dat_files,
                                                     frames_used, args)
     stardict = get_star_description_cache(star_descriptions)
-    logging.debug("First (max) 10 star descriptions",
-                  star_descriptions[:10] if len(star_descriptions) >= 10 else star_descriptions)
+    logging.debug(f"First (max) 10 star descriptions: "
+                  f"{star_descriptions[:10] if (len(star_descriptions) >= 10) else star_descriptions}")
     write_augmented_autocandidates(vastdir, resultdir, stardict)
     write_augmented_all_stars(vastdir, resultdir, stardict)
     owncatalog = utils.get_stars_with_metadata(star_descriptions, "OWNCATALOG")
@@ -95,7 +95,6 @@ def run_do_rest(args):
     logging.info(f"There are {len(candidate_stars)} candidate stars")
 
     vsx_stars = utils.get_stars_with_metadata(star_descriptions, "VSX")
-    assert vsx_stars[0].has_metadata("SITE")
     logging.info(f"There are {len(vsx_stars)} vsx stars")
     selected_stars = utils.get_stars_with_metadata(star_descriptions, "SELECTEDFILE")
     if args.selectvsx:
@@ -114,22 +113,22 @@ def run_do_rest(args):
     logging.info(f"Using {thread_count} threads for phase plots, lightcurves, ...")
     if args.allstars:
         do_charts_vast.run(star_descriptions, comp_stars, vastdir, resultdir, 'phase_all/', 'light_all/', 'aavso_all/',
-                           do_phase=do_phase, do_light=do_charts, do_aavso=do_aavso, nr_threads=thread_count,
+                           do_phase=do_phase, do_light=do_light, do_aavso=do_aavso, nr_threads=thread_count,
                            desc="Phase/light/aavso of ALL stars")
     else:
         if args.candidates:
             logging.info(f"Plotting {len(candidate_stars)} candidates...")
             do_charts_vast.run(candidate_stars, comp_stars, vastdir, resultdir, 'phase_candidates/',
-                               'light_candidates/', 'aavso_candidates/', do_phase=do_phase, do_light=do_charts,
+                               'light_candidates/', 'aavso_candidates/', do_phase=do_phase, do_light=do_light,
                                do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of candidates")
         if args.vsx:
             logging.info(f"Plotting {len(vsx_stars)} vsx stars...")
             do_charts_vast.run(vsx_stars, comp_stars, vastdir, resultdir, 'phase_vsx/', 'light_vsx/', 'aavso_vsx/',
-                               do_phase=do_phase, do_light=do_charts, do_aavso=do_aavso, nr_threads=thread_count,
+                               do_phase=do_phase, do_light=do_light, do_aavso=do_aavso, nr_threads=thread_count,
                                desc="Phase/light/aavso of VSX stars")
         if args.selectedstarfile:
             do_charts_vast.run(selected_stars, comp_stars, vastdir, resultdir, 'phase_selected/', 'light_selected/',
-                               'aavso_selected', do_phase=do_phase, do_light=do_charts, do_light_raw=do_charts,
+                               'aavso_selected', do_phase=do_phase, do_light=do_light, do_light_raw=do_light,
                                do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of selected stars")
     # starfiledata is filled in during the phase plotting, so should come after it. Without phase it will be incomplete
     write_augmented_starfile(resultdir, selected_stars)
@@ -513,7 +512,10 @@ def tag_vsx_as_selected(vsx_stars: List[StarDescription]):
                                      if not np.isnan(extradata['Period']) else None,
                                      period_err=float(extradata['u_Period'])
                                      if not np.isnan(extradata['u_Period']) else None,
-                                     source='VSX')
+                                     var_min=float(extradata['min']) if not np.isnan(extradata['min']) else None,
+                                     var_max=float(extradata['max']) if not np.isnan(extradata['max']) else None,
+                                     source='VSX'
+                                     )
         the_star.metadata = SelectedFileData()
         logging.debug(f"site {the_star.local_id} metadata: {the_star.metadata}, "
                       f"{the_star.get_metadata('SITE')}")
