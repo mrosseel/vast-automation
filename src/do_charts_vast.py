@@ -167,11 +167,14 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         var_range = f'{ymin:.1f}-{ymax:.1f}'
         epoch = None
         minmax = None
+        vsx_var_flag = None
         if star.has_metadata('SITE'):
             sitedata: SiteData = star.get_metadata('SITE')
             assert sitedata is not None
             tomldict['var_type'] = sitedata.var_type
             tomldict['our_name'] = sitedata.our_name
+            minmax = sitedata.minmax
+            vsx_var_flag = sitedata.vsx_var_flag
             if sitedata.var_min and sitedata.var_max:
                 var_range = f'{sitedata.var_min:.1f}-{sitedata.var_max:.1f} {sitedata.source}'
             if sitedata.var_type is not None \
@@ -194,6 +197,8 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
             tomldict['minmax'] = minmax
         if epoch:
             tomldict['epoch'] = float(epoch)
+        if vsx_var_flag:
+            tomldict['vsx_var_flag'] = int(vsx_var_flag)
         outputfile = f"{fullphasedir}/txt/{filename_no_ext}.txt"
         logging.debug(f"Writing toml to {outputfile}")
         toml.dump(tomldict, open(outputfile, "w"))

@@ -19,7 +19,8 @@ class TestUcac4(unittest.TestCase):
         logging.getLogger().setLevel(logging.DEBUG)
         logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
         self.UCAC4_ID = 'UCAC4 001-000003'
-        self.ucac4 = UCAC4(ucac_path=Path('tests/data/'))
+        # self.ucac4 = UCAC4(ucac_path=Path('tests/data/'))
+        self.ucac4 = UCAC4()
 
 
     def test_get_ucac4_details_raw(self):
@@ -60,12 +61,18 @@ class TestUcac4(unittest.TestCase):
         # Compstar match: UCAC4 232-147677 with 2620 (271.2807819444444 deg, -43.77729194444444 deg)
         ra, dec = 271.2347344444444, -43.84581611111111
         target = SkyCoord(ra, dec, unit='deg')
-        result = self.ucac4.get_ucac4_sd(ra, dec)
+        result = self.ucac4.get_ucac4_sd_from_ra_dec(ra, dec)
         self.assertEqual("UCAC4 231-154752", result.aavso_id)
         self.assertEqual(12.107, result.vmag)
         print("diff is ", target.separation(result.coords))
         ra, dec = 271.2807819444444, -43.77729194444444
-        result = self.ucac4.get_ucac4_sd(ra, dec)
+        result = self.ucac4.get_ucac4_sd_from_ra_dec(ra, dec)
+        self.assertEqual("UCAC4 232-147677", result.aavso_id)
+        self.assertEqual(12.314, result.vmag)
+        print("diff is ", target.separation(result.coords))
+        # ra:274.26921036101504, dec:-88.73827035367276, tolerance:0.01
+        ra, dec = 274.26921036101504, -88.73827035367276
+        result = self.ucac4.get_ucac4_sd_from_ra_dec(ra, dec, tolerance_deg=0.1)
         self.assertEqual("UCAC4 232-147677", result.aavso_id)
         self.assertEqual(12.314, result.vmag)
         print("diff is ", target.separation(result.coords))

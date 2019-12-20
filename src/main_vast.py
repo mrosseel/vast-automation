@@ -507,6 +507,7 @@ def tag_vsx_as_selected(vsx_stars: List[StarDescription]):
         # extradata: {'id': index, 'OID': row['OID'], 'Name': row['Name'], 'Type': row['Type'],
         # 'l_Period': row['l_Period'], 'Period': row['Period'], 'u_Period': row['u_Period']})
         the_star.metadata = SiteData(var_type=str(extradata['Type']),
+                                     vsx_var_flag=str(extradata['V']),
                                      our_name=str(extradata['Name']),
                                      period=float(extradata['Period'])
                                      if not np.isnan(extradata['Period']) else None,
@@ -514,6 +515,7 @@ def tag_vsx_as_selected(vsx_stars: List[StarDescription]):
                                      if not np.isnan(extradata['u_Period']) else None,
                                      var_min=float(extradata['min']) if not np.isnan(extradata['min']) else None,
                                      var_max=float(extradata['max']) if not np.isnan(extradata['max']) else None,
+                                     minmax=construct_vsx_mag_range(extradata),
                                      source='VSX'
                                      )
         the_star.metadata = SelectedFileData()
@@ -521,6 +523,16 @@ def tag_vsx_as_selected(vsx_stars: List[StarDescription]):
                       f"{the_star.get_metadata('SITE')}")
         logging.debug(f"site {the_star.get_metadata('SITE')}")
     logging.debug(f"Tagged {len(vsx_stars)} stars as selected vxs stars.")
+
+
+def construct_vsx_mag_range(entry):
+    def empty_if_nan(x):
+        if type(x) is str:
+            return x
+        return "" if np.isnan(x) else x
+    return f"{empty_if_nan(entry['f_min'])} {empty_if_nan(entry['l_min'])} {empty_if_nan(entry['l_max'])} " \
+           f"{empty_if_nan(entry['max'])} {empty_if_nan(entry['u_max'])} {empty_if_nan(entry['n_max'])} " \
+           f"{empty_if_nan(entry['min'])} {empty_if_nan(entry['u_min'])} {empty_if_nan(entry['n_min'])}"
 
 
 def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):

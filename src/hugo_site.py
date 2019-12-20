@@ -14,6 +14,7 @@ from datetime import datetime
 import utils
 from star_metadata import SiteData
 
+UNKNOWN = "Unknown"
 
 def run(post_name: str, selected_stars: List[StarDescription], len_vsx: int, len_candidates: int, resultdir: str):
     sitedir = f"{os.getcwd()}/site/vsx/"
@@ -89,12 +90,15 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         if ucac4 is None:
             ucac4_name = f"{star.coords}"
         else:
-            ucac4_name = ucac4.catalog_id if not None else "unknown"
+            ucac4_name = ucac4.catalog_id if not None else UNKNOWN
         name = f"{parsed_toml['our_name']}"
         period = f"{float(parsed_toml['period']):.5f}"
         phase_url = f"{images_prefix}{filename_no_ext_phase}.png"
-        epoch = f"{parsed_toml['epoch']}" if 'epoch' in parsed_toml else "Unknown"
-        var_type = f"{parsed_toml['var_type']}" if 'var_type' in parsed_toml else "Unknown"
+        epoch = f"{parsed_toml['epoch']}" if 'epoch' in parsed_toml else UNKNOWN
+        var_type = f"{parsed_toml['var_type']}" if 'var_type' in parsed_toml else UNKNOWN
+        vsx_var_flag = f" ({parsed_toml['vsx_var_flag']})" if 'vsx_var_flag' in parsed_toml else ""
+        var_type_link = f"<a href='https://www.aavso.org/vsx/index.php?view=help.vartype&nolayout=1&abbrev=" \
+                        f"{var_type}'>{var_type}</a>" if var_type != UNKNOWN else var_type
         mag_range = f"{parsed_toml['range']}"
         minmax = f"<li>{parsed_toml['minmax']}</li>" if 'minmax' in parsed_toml else ""
         vsx_link = f'<li><a href="https://www.aavso.org/vsx/index.php?view=detail.top&oid={extradata["OID"]}"' \
@@ -110,7 +114,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             <li>period (d): {period}</li>{minmax}
             <li>mag. range: {mag_range}</li>
             <li><a target="_blank" rel="noopener noreferrer" href="
-            https://www.aavso.org/vsx/index.php?view=about.vartypes">type</a>: {var_type}</li>{vsx_link}
+            https://www.aavso.org/vsx/index.php?view=about.vartypes">type</a>: {var_type_link}{vsx_var_flag}</li>{vsx_link}
             <li>epoch: {epoch}</li>
             <li>coords: {utils.get_hms_dms(star.coords)}</li>
             <li><a href="{images_prefix}vsx_and_star_{star.local_id:05}.png">finder chart</a></li>
