@@ -101,7 +101,8 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
                         f"{var_type}'>{var_type}</a>" if var_type != UNKNOWN else var_type
         mag_range = f"{parsed_toml['range']}"
         minmax = f"<li>{parsed_toml['minmax']}</li>" if 'minmax' in parsed_toml else ""
-        vsx_link = f'<li><a href="https://www.aavso.org/vsx/index.php?view=detail.top&oid={extradata["OID"]}"' \
+        vsx_link = f'<li><a target="_blank" rel="noopener noreferrer" ' \
+                   f'href="https://www.aavso.org/vsx/index.php?view=detail.top&oid={extradata["OID"]}"' \
                    f'>VSX link</a></li>' if is_vsx else ""
         result = f'''<div class="bb-l b--black-10 w-100">
         <div class="fl w-70 pa2 ba">
