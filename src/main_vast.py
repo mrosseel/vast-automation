@@ -512,7 +512,7 @@ def tag_vsx_as_selected(vsx_stars: List[StarDescription]):
                                      period=float(extradata['Period'])
                                      if not np.isnan(extradata['Period']) else None,
                                      period_err=float(extradata['u_Period'])
-                                     if not np.isnan(extradata['u_Period']) else None,
+                                     if not extradata['u_Period'] is None or np.isnan(extradata['u_Period']) else None,
                                      var_min=float(extradata['min']) if not np.isnan(extradata['min']) else None,
                                      var_max=float(extradata['max']) if not np.isnan(extradata['max']) else None,
                                      minmax=construct_vsx_mag_range(extradata),
