@@ -506,7 +506,6 @@ def tag_vsx_as_selected(vsx_stars: List[StarDescription]):
             continue
         # extradata: {'id': index, 'OID': row['OID'], 'Name': row['Name'], 'Type': row['Type'],
         # 'l_Period': row['l_Period'], 'Period': row['Period'], 'u_Period': row['u_Period']})
-        print("extradata:", extradata)
         the_star.metadata = SiteData(var_type=str(extradata['Type']),
                                      vsx_var_flag=str(extradata['V']),
                                      our_name=str(extradata['Name']),
