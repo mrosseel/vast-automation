@@ -186,7 +186,7 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
                     epoch = epoch_min
                     minmax = f"min: {ymin:.1f}"
             if sitedata.period_err is not None:
-                tomldict['period_err'] = float(sitedata.period_err)
+                tomldict['period_err'] = sitedata.period_err
         tomldict['period'] = float(period.period)
         tomldict['period_origin'] = period.origin
         tomldict['min'] = float(ymin)

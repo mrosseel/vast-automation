@@ -51,7 +51,7 @@ class SelectedFileData(StarMetaData):
 
 class SiteData(StarMetaData):
     def __init__(self, minmax: str = None, vsx_var_flag=None, var_min=None, var_max=None, var_type: str = None,
-                 our_name: str = None, period: float = None, period_err: float = None, source: str = None,
+                 our_name: str = None, period: float = None, period_err: str = None, source: str = None,
                  epoch: float = None, key='SITE'):
         super().__init__(key)
         self.minmax = self._strip_if_not_none(minmax)
