@@ -317,8 +317,8 @@ def write_augmented_starfile(resultdir: str, starfile_stars: List[StarDescriptio
         def format_float_arg(toml, arg: str, precision):
             if arg is None or arg not in toml:
                 return ''
-            if not isinstance(arg[toml], float):
-                return arg[toml]
+            if not isinstance(toml[arg], float):
+                return toml[arg]
             return f"{toml[arg]:.{precision}f}"
 
         def format_float_5(toml, arg: str):
