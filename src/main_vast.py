@@ -314,23 +314,23 @@ def write_augmented_starfile(resultdir: str, starfile_stars: List[StarDescriptio
         outfile.write(f"# our_name,ra,dec,minmax,min,max,var_type,period,period_err,epoch\n")
 
 
-        def format_float_5(toml, arg: str):
+        def format_float_arg(toml, arg: str, precision):
             if arg is None or arg not in toml:
                 return ''
-            return f"{toml[arg]:.5f}"
+            if not isinstance(arg[toml], float):
+                return arg[toml]
+            return f"{toml[arg]:.{precision}f}"
 
+        def format_float_5(toml, arg: str):
+            format_float_arg(toml, arg, 5)
 
         def format_float_1(toml, arg: str):
-            if arg is None or arg not in toml:
-                return ''
-            return f"{toml[arg]:.1f}"
-
+            format_float_arg(toml, arg, 1)
 
         def format_string(arg: str, toml):
             if arg in toml:
                 return toml[arg]
             return ''
-
 
         for star in sorted_stars:
             metadata: SiteData = star.get_metadata("SITE")
