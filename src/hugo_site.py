@@ -39,6 +39,8 @@ def copy_files(post_name: str, resultdir: str, sitedir: str):
     selected_phase_glob = glob.glob(selected_phase)
     vsx_phase = f'{resultdir}phase_vsx/*.png'
     vsx_phase_glob = glob.glob(vsx_phase)
+    candidates_phase = f'{resultdir}phase_candidates/*.png'
+    candidates_phase_glob = glob.glob(candidates_phase)
     aavso = f'{resultdir}aavso*/*.txt'
     aavso_glob = glob.glob(aavso)
     fieldcharts = f'{resultdir}fieldcharts/*.png'
@@ -50,6 +52,9 @@ def copy_files(post_name: str, resultdir: str, sitedir: str):
         copy(file, imagesdir)
     logging.info(f"Copying {len(vsx_phase_glob)} phase files from {vsx_phase}...")
     for file in vsx_phase_glob:
+        copy(file, imagesdir)
+    logging.info(f"Copying {len(candidates_phase_glob)} phase files from {candidates_phase}...")
+    for file in candidates_phase_glob:
         copy(file, imagesdir)
     logging.info(f"Copying {len(lightcharts_glob)} light charts from {lightcharts}...")
     for file in lightcharts_glob:
