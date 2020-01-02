@@ -92,6 +92,8 @@ def run_do_rest(args):
     logging.info(f"There are {len(owncatalog)} own catalog stars")
     candidate_stars = utils.get_stars_with_metadata(star_descriptions, "CANDIDATE", exclude=["VSX"])
     candidate_stars = utils.add_star_lists(candidate_stars, owncatalog)
+    if args.selectcandidates:
+        tag_candidates_as_selected(candidate_stars)
     logging.info(f"There are {len(candidate_stars)} candidate stars")
 
     vsx_stars = utils.get_stars_with_metadata(star_descriptions, "VSX")
@@ -445,6 +447,7 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
     # adds sitedata to vsx stars
     if args.selectvsx:
         tag_vsx_as_selected(vsx_stars)
+
     # adds sitedata to selected stars
     if args.selectedstarfile:
         tag_selected(args.selectedstarfile, stardict)
@@ -524,6 +527,22 @@ def tag_vsx_as_selected(vsx_stars: List[StarDescription]):
                       f"{the_star.get_metadata('SITE')}")
         logging.debug(f"site {the_star.get_metadata('SITE')}")
     logging.debug(f"Tagged {len(vsx_stars)} stars as selected vxs stars.")
+
+
+def tag_candidates_as_selected(candidate_stars: List[StarDescription]):
+    for the_star in candidate_stars:
+        if the_star.has_metadata("SITE"):  # don't overwrite the SITE entry of SELECTEDFILE or VSX which has priority
+            continue
+        extradata = the_star.get_metadata("CANDIDATE")
+        if extradata is None:
+            logging.error(f"Could not find extradata for star {the_star.local_id}")
+            continue
+        the_star.metadata = SiteData(our_name=str(the_star.local_id), source='CANDIDATE')
+        the_star.metadata = SelectedFileData()
+        logging.debug(f"site {the_star.local_id} metadata: {the_star.metadata}, "
+                      f"{the_star.get_metadata('SITE')}")
+        logging.debug(f"site {the_star.get_metadata('SITE')}")
+    logging.debug(f"Tagged {len(candidate_stars)} stars as selected candidate stars.")
 
 
 def construct_vsx_mag_range(entry):

@@ -42,6 +42,7 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--selectedstarfile',
                         help="Load a file with star ids, these ids will be used for field charts/reporting")
     parser.add_argument('--selectvsx', help="Add all VSX stars to the selected stars", action="store_true")
+    parser.add_argument('--selectcandidates', help="Add all candidate stars to the selected stars", action="store_true")
     parser.add_argument('--site', help="Generate a hugo compatible page")
     parser.add_argument('-x', '--verbose', help="Set logging to debug mode", action="store_true")
     parser.add_argument('-l', '--laststars', help="Use the star descriptions of the previous run to do the charting",
