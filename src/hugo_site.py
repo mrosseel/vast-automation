@@ -76,10 +76,10 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         filename_no_ext_phase = filename_no_ext + "_phase"
         if is_vsx:
             txt_path = PurePath(resultdir, 'phase_vsx/txt', filename_no_ext_phase + '.txt')
-        elif is_selected:
-            txt_path = PurePath(resultdir, 'phase_selected/txt', filename_no_ext_phase + '.txt')
         elif is_candidate:
             txt_path = PurePath(resultdir, 'phase_candidates/txt', filename_no_ext_phase + '.txt')
+        elif is_selected:
+            txt_path = PurePath(resultdir, 'phase_selected/txt', filename_no_ext_phase + '.txt')
 
         try:
             parsed_toml = toml.load(txt_path)
