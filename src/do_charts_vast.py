@@ -27,7 +27,7 @@ from star_description import StarDescription
 from pathlib import PurePath
 from pandas import DataFrame, Series
 
-from star_metadata import SiteData
+from star_metadata import SiteData, CatalogData
 
 gc.enable()
 mplotlib.use('Agg')  # needs no X server
@@ -135,7 +135,7 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
     assert period is not None
     try:
         logging.debug(f"Starting plot phase diagram with {star} and {fullphasedir}")
-        vsx_name, _, extradata, filename_no_ext = utils.get_star_or_catalog_name(star, suffix=f"_phase{suffix}")
+        vsx_name, separation, extradata, filename_no_ext = utils.get_star_or_catalog_name(star, suffix=f"_phase{suffix}")
         catalog_title = f"{vsx_name}" if vsx_name is not None else ''
 
         save_location = PurePath(fullphasedir, filename_no_ext + '.png')
@@ -160,48 +160,7 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         if not write_plot:
             return plt, t_np, y_np
         # write TXT file
-        tomldict = {}
-        ymin_arg, ymax_arg = np.argmin(y_np), np.argmax(y_np)
-        epoch_min, epoch_max = t_np.iloc[ymin_arg], t_np.iloc[ymax_arg]
-        ymin, ymax = y_np[ymin_arg], y_np[ymax_arg]
-        var_range = f'{ymin:.1f}-{ymax:.1f}'
-        epoch = None
-        minmax = None
-        vsx_var_flag = None
-        if star.has_metadata('SITE'):
-            sitedata: SiteData = star.get_metadata('SITE')
-            assert sitedata is not None
-            tomldict['var_type'] = sitedata.var_type
-            tomldict['our_name'] = sitedata.our_name
-            minmax = sitedata.minmax
-            vsx_var_flag = sitedata.vsx_var_flag
-            if sitedata.var_min and sitedata.var_max:
-                var_range = f'{sitedata.var_min:.1f}-{sitedata.var_max:.1f} {sitedata.source}'
-            if sitedata.var_type is not None \
-                and ("RR" in sitedata.var_type or "W Uma" in sitedata.var_type):
-                if "RR" in sitedata.var_type:
-                    epoch = epoch_max
-                    minmax = f"max: {ymax:.1f}"
-                elif "W Uma" in sitedata.var_type:
-                    epoch = epoch_min
-                    minmax = f"min: {ymin:.1f}"
-            if sitedata.period_err is not None:
-                tomldict['period_err'] = sitedata.period_err
-        tomldict['period'] = float(period.period)
-        tomldict['period_origin'] = period.origin
-        tomldict['min'] = float(ymin)
-        tomldict['max'] = float(ymax)
-        tomldict['range'] = var_range
-        tomldict['coords'] = [star.coords.ra.deg, star.coords.dec.deg]
-        if minmax:
-            tomldict['minmax'] = minmax
-        if epoch:
-            tomldict['epoch'] = float(epoch)
-        if vsx_var_flag:
-            tomldict['vsx_var_flag'] = int(vsx_var_flag)
-        outputfile = f"{fullphasedir}/txt/{filename_no_ext}.txt"
-        logging.debug(f"Writing toml to {outputfile}")
-        toml.dump(tomldict, open(outputfile, "w"))
+        write_toml(filename_no_ext, fullphasedir, period, star, t_np, y_np, separation)
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
@@ -209,6 +168,55 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         print(traceback.print_exc())
         logging.error(message)
         logging.error(f"Error during plot phase: {star.local_id}")
+
+
+def write_toml(filename_no_ext, fullphasedir, period, star, t_np, y_np, separation):
+    tomldict = {}
+    ymin_arg, ymax_arg = np.argmin(y_np), np.argmax(y_np)
+    epoch_min, epoch_max = t_np.iloc[ymin_arg], t_np.iloc[ymax_arg]
+    ymin, ymax = y_np[ymin_arg], y_np[ymax_arg]
+    var_range = f'{ymin:.1f}-{ymax:.1f}'
+    epoch = None
+    minmax = None
+    vsx_var_flag = None
+    vsx_separation = None
+    if star.has_metadata('SITE'):
+        sitedata: SiteData = star.get_metadata('SITE')
+        assert sitedata is not None
+        tomldict['var_type'] = sitedata.var_type
+        tomldict['our_name'] = sitedata.our_name
+        minmax = sitedata.minmax
+        vsx_var_flag = sitedata.vsx_var_flag
+        vsx_separation = sitedata.vsx_separation
+        if sitedata.var_min and sitedata.var_max:
+            var_range = f'{sitedata.var_min:.1f}-{sitedata.var_max:.1f} {sitedata.source}'
+        if sitedata.var_type is not None \
+            and ("RR" in sitedata.var_type or "W Uma" in sitedata.var_type):
+            if "RR" in sitedata.var_type:
+                epoch = epoch_max
+                minmax = f"max: {ymax:.1f}"
+            elif "W Uma" in sitedata.var_type:
+                epoch = epoch_min
+                minmax = f"min: {ymin:.1f}"
+        if sitedata.period_err is not None:
+            tomldict['period_err'] = sitedata.period_err
+    tomldict['period'] = float(period.period)
+    tomldict['period_origin'] = period.origin
+    tomldict['min'] = float(ymin)
+    tomldict['max'] = float(ymax)
+    tomldict['range'] = var_range
+    tomldict['coords'] = [star.coords.ra.deg, star.coords.dec.deg]
+    if minmax:
+        tomldict['minmax'] = minmax
+    if epoch:
+        tomldict['epoch'] = float(epoch)
+    if vsx_var_flag:
+        tomldict['vsx_var_flag'] = int(vsx_var_flag)
+    if vsx_separation:
+        tomldict['vsx_separation'] = float(vsx_separation)
+    outputfile = f"{fullphasedir}/txt/{filename_no_ext}.txt"
+    logging.debug(f"Writing toml to {outputfile}")
+    toml.dump(tomldict, open(outputfile, "w"))
 
 
 # plotting of 'double' phase diagram from -1 to 1
@@ -235,6 +243,16 @@ def _plot_phase_diagram(phased_t_final, phased_lc_final, phased_err, write_plot,
         return plt
 
 
+def write_compstars(filename_no_ext, fullphasedir, compstars):
+    if compstars:
+        outputfile = f"{fullphasedir}/txt/{filename_no_ext}_comps.txt"
+        with open(outputfile, "wt") as fp:
+            for sd, mag, err in zip(compstars.star_descriptions, compstars.comp_catalogmags, compstars.comp_catalogerr):
+                catdata: CatalogData = sd.get_metadata("UCAC4")
+                ucac4_id = catdata.catalog_id if catdata is not None else "unknown"
+                fp.write(f"{ucac4_id},{mag:.3f},{err:.5f}\n")
+
+
 def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_light_raw, do_phase, do_aavso,
                           aavso_limit, basedir: str, chartsdir: PurePath, phasedir: PurePath, aavsodir: PurePath):
     start = timer()
@@ -259,11 +277,15 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_lig
         df['realV'], df['realErr'] = do_compstars.calculate_ensemble_photometry(
             df, filtered_compstars, do_compstars.weighted_value_ensemble_method)
         df['floatJD'] = df['JD'].astype(np.float)
+        _, _, _, filename_no_ext = utils.get_star_or_catalog_name(star, suffix="")
+        write_compstars(filename_no_ext, phasedir, filtered_compstars)
 
         # remove errors
         # df = utils.reject_outliers_iqr(df, 'realV', 20)
         # logging.info(f"Rejected {old_size-len(df)} observations with iqr.")
         # calculate period for phase or light
+
+        # writing the comparison stars used for this particular star
         do_period = do_phase or do_light or do_light_raw
         if do_period:
             period = determine_period(df, star)
