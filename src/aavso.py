@@ -69,7 +69,7 @@ class ExtendedFormatWriter(object):
         self.data.append(f"#OBSTYPE={obstype}")
         self.data.append(f"#Observation site Latitude = {location[0]}")
         self.data.append(f"#Observation site Longitude = {location[1]}")
-        self.data.append(f"#Observation site Altitude = {location[2]} m")
+        # self.data.append(f"#Observation site Altitude = {location[2]} m")
         self.data.append("#NAME,DATE,MAG,MERR,FILT,TRANS,MTYPE,CNAME,CMAG,KNAME,KMAG,AMASS,GROUP,CHART,NOTES")
 
 
