@@ -502,7 +502,8 @@ def tag_vsx_as_selected(vsx_stars: List[StarDescription]):
     for the_star in vsx_stars:
         if the_star.has_metadata("SITE"):  # don't overwrite the SITE entry of SELECTEDFILE which has priority
             continue
-        extradata = the_star.get_metadata("VSX").extradata
+        vsx_metadata = the_star.get_metadata("VSX")
+        extradata = vsx_metadata.extradata
         if extradata is None:
             logging.error(f"Could not find extradata for star {the_star.local_id}, "
                           f"consider removing it from your txt file")
@@ -511,6 +512,7 @@ def tag_vsx_as_selected(vsx_stars: List[StarDescription]):
         # 'l_Period': row['l_Period'], 'Period': row['Period'], 'u_Period': row['u_Period']})
         the_star.metadata = SiteData(var_type=str(extradata['Type']),
                                      vsx_var_flag=str(extradata['V']),
+                                     vsx_separation=float(vsx_metadata.separation),
                                      our_name=str(extradata['Name']),
                                      period=float(extradata['Period'])
                                      if not np.isnan(extradata['Period']) else None,
