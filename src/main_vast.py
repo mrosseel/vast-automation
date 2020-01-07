@@ -122,12 +122,13 @@ def run_do_rest(args):
             logging.info(f"Plotting {len(candidate_stars)} candidates...")
             do_charts_vast.run(candidate_stars, comp_stars, vastdir, resultdir, 'phase_candidates/',
                                'light_candidates/', 'aavso_candidates/', do_phase=do_phase, do_light=do_light,
-                               do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of candidates")
+                               do_light_raw=do_light, do_aavso=do_aavso, nr_threads=thread_count,
+                               desc="Phase/light/aavso of candidates")
         if args.vsx:
             logging.info(f"Plotting {len(vsx_stars)} vsx stars...")
             do_charts_vast.run(vsx_stars, comp_stars, vastdir, resultdir, 'phase_vsx/', 'light_vsx/', 'aavso_vsx/',
-                               do_phase=do_phase, do_light=do_light, do_aavso=do_aavso, nr_threads=thread_count,
-                               desc="Phase/light/aavso of VSX stars")
+                               do_phase=do_phase, do_light=do_light, do_light_raw=do_light,
+                               do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of VSX stars")
         if args.selectedstarfile:
             do_charts_vast.run(selected_stars, comp_stars, vastdir, resultdir, 'phase_selected/', 'light_selected/',
                                'aavso_selected', do_phase=do_phase, do_light=do_light, do_light_raw=do_light,
