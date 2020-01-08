@@ -94,7 +94,7 @@ def plot_it(star_lists: List[StarDescriptionList], sizes: List[float], random_of
         stars = add_pixels(stars, wcs, PADDING)
         positions.append([(o.xpos, o.ypos) for o in stars])
     from itertools import cycle
-    cycol = cycle('rgbcmk')
+    cycol = cycle('rgbcmyk')
 
     for idx, pos in enumerate(positions):
         if len(pos) > 0:
@@ -213,7 +213,7 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
         filtered_compstars_sds = filtered_compstars.star_descriptions
         check_star_sd = check_star.star_descriptions
         compstars_labeled = set_custom_label(filtered_compstars_sds, [x.vmag for x in filtered_compstars_sds])
-        checkstar_labeled = set_custom_label(check_star_sd, [x.vmag for x in check_star_sd])
+        checkstar_labeled = set_custom_label(check_star_sd, f"Kmag={check_star_sd.vmag}")
         filtered_compstars_sds = None
         filtered_compstars = None
         check_star = None
