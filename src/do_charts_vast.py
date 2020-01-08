@@ -27,7 +27,7 @@ from star_description import StarDescription
 from pathlib import PurePath
 from pandas import DataFrame, Series
 
-from star_metadata import SiteData, CatalogData
+from star_metadata import SiteData, CatalogData, CompStarData
 
 gc.enable()
 mplotlib.use('Agg')  # needs no X server
@@ -243,13 +243,15 @@ def _plot_phase_diagram(phased_t_final, phased_lc_final, phased_err, write_plot,
         return plt
 
 
-def write_compstars(filename_no_ext, fullphasedir, compstars):
+def write_compstars(star, filename_no_ext, fullphasedir, compstars, check_star):
     if compstars:
         outputfile = f"{fullphasedir}/txt/{filename_no_ext}_comps.txt"
+        extra_id_ucac4 = utils.get_ucac4_of_sd(check_star.star_descriptions[0])
         with open(outputfile, "wt") as fp:
+            fp.write(f"# K star: {extra_id_ucac4},{check_star.comp_catalogmags[0]:.3f},"
+                     f"{check_star.comp_catalogerr[0]:.5f}\n")
             for sd, mag, err in zip(compstars.star_descriptions, compstars.comp_catalogmags, compstars.comp_catalogerr):
-                catdata: CatalogData = sd.get_metadata("UCAC4")
-                ucac4_id = catdata.catalog_id if catdata is not None else "unknown"
+                ucac4_id = utils.get_ucac4_of_sd(sd)
                 fp.write(f"{ucac4_id},{mag:.3f},{err:.5f}\n")
 
 
@@ -272,13 +274,13 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_lig
             logging.info(f"No lightcurve found for {star.path}")
             return
         comp_stars = compstarproxy.value
-        filtered_compstars = do_compstars.get_star_compstars_from_catalog(star, comp_stars)
+        filtered_compstars, check_star = do_compstars.filter_comparison_stars(star, comp_stars)
         comp_stars = None
         df['realV'], df['realErr'] = do_compstars.calculate_ensemble_photometry(
             df, filtered_compstars, do_compstars.weighted_value_ensemble_method)
         df['floatJD'] = df['JD'].astype(np.float)
         _, _, _, filename_no_ext = utils.get_star_or_catalog_name(star, suffix="")
-        write_compstars(filename_no_ext, phasedir, filtered_compstars)
+        write_compstars(star, filename_no_ext, phasedir, filtered_compstars, check_star)
 
         # remove errors
         # df = utils.reject_outliers_iqr(df, 'realV', 20)
@@ -297,7 +299,7 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_lig
             plot_lightcurve_raw(star, df.copy(), chartsdir)
         if do_aavso:
             settings = toml.load('settings.txt')
-            do_aavso_report.report(star, df.copy(), filtered_compstars, target_dir=aavsodir,
+            do_aavso_report.report(star, df.copy(), filtered_compstars, check_star, target_dir=aavsodir,
                                    sitelat=settings['sitelat'], sitelong=settings['sitelong'],
                                    sitealt=settings['sitealt'], camera_filter='V', observer=settings['observer'],
                                    chunk_size=aavso_limit)

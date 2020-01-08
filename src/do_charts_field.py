@@ -209,11 +209,17 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
     logging.info(f"Plotting field chart for each of the {len(starfile_labeled)} selected stars")
     # field charts for each individually selected starfile star
     for star in tqdm.tqdm(starfile_labeled):
-        filtered_compstars_sds = do_compstars.get_star_compstars_from_catalog(star, comp_stars).star_descriptions
+        filtered_compstars, check_star = do_compstars.filter_comparison_stars(star, comp_stars)
+        filtered_compstars_sds = filtered_compstars.star_descriptions
+        check_star_sd = check_star.star_descriptions
         compstars_labeled = set_custom_label(filtered_compstars_sds, [x.vmag for x in filtered_compstars_sds])
+        checkstar_labeled = set_custom_label(check_star_sd, [x.vmag for x in check_star_sd])
         filtered_compstars_sds = None
-
-        fig = plot_it([[star], vsx_labeled, compstars_labeled], [10., 5., 3.], [True, False, True],
+        filtered_compstars = None
+        check_star = None
+        check_star_sd = None
+        fig = plot_it([[star], vsx_labeled, compstars_labeled, checkstar_labeled], [10., 5., 3., 4.],
+                      [True, False, True, False],
                       reference_fits_frame, wcs, f"VSX stars + star {star.local_id}", PADDING)
         save(fig, f"{fieldchartsdirs}vsx_and_star_{star.local_id:05}")
         gc.collect()

@@ -353,6 +353,7 @@ def write_augmented_starfile(resultdir: str, starfile_stars: List[StarDescriptio
                 logging.error(f"While writing augmented starfile, Could not find {txt_path}")
 
 
+# write file with vsx local id, name and ra/dec, and write file to be used as 'selected star' file
 def write_vsx_stars(resultdir, results_ids, stars: List[StarDescription]):
     newname = f"{resultdir}vsx_stars.txt"
     selected_file = f"{resultdir}vsx_stars_selected.txt"
@@ -371,6 +372,20 @@ def write_vsx_stars(resultdir, results_ids, stars: List[StarDescription]):
             selected.write(f'{vsx_id},,VSX-{number},,\n')
         fp.write(
             f"# Total entries: {len(results_ids)}, found: {total_found}, not found: {len(results_ids) - total_found}\n")
+
+
+def write_candidate_stars(resultdir, stars: List[StarDescription]):
+    candidates = utils.get_stars_with_metadata(stars, "CANDIDATES", exclude=["VSX"])
+    newname = f"{resultdir}candidate_stars.txt"
+    logging.info(f"Writing {newname}...")
+    total_found = 0
+    stardict = utils.get_star_description_cache(stars)
+    logging.debug(f"Receiving {len(stardict.keys())} as vsx input")
+    with open(newname, 'wt') as fp:
+        for index, current_sd in enumerate(candidates):
+            found = False if current_sd.path is '' else True
+            total_found += 1 if found else 0
+            fp.write(f'{current_sd.local_id},,CANDIDATE-{index},,\n')
 
 
 def count_dat_entries(afile):
@@ -444,6 +459,7 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_star
 
     # tag all candidates with a 'candidate' catalog
     tag_candidates(vastdir, star_descriptions)
+    write_candidate_stars(resultdir, star_descriptions)
 
     # adds sitedata to vsx stars
     if args.selectvsx:

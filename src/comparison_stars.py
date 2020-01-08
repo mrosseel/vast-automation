@@ -29,3 +29,6 @@ class ComparisonStars:
 
     def get_brightest_comparison_star_index(self):
         return np.argmin(self.comp_catalogmags)
+
+    def get_star_id_index(self, star_id):
+        return np.where(self.ids == star_id)[0][0]

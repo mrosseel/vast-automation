@@ -13,6 +13,8 @@ from multiprocessing import cpu_count
 import re
 import logging
 
+from star_metadata import CatalogData
+
 
 def find_index_of_file(the_dir, the_file, the_filter='*'):
     the_dir = glob.glob(the_dir + "*" + the_filter)
@@ -195,6 +197,11 @@ def get_star_or_catalog_name(star: StarDescription, suffix: str):
         catalog_name, separation = None, None
     filename_no_ext = f"{catalog_name}{suffix}" if catalog_name is not None else f"{star.local_id:05}{suffix}"
     return catalog_name, separation, extradata, replace_spaces(filename_no_ext)
+
+
+def get_ucac4_of_sd(star: StarDescription):
+    catdata: CatalogData = star.get_metadata("UCAC4")
+    return catdata.catalog_id if catdata is not None else "Unknown"
 
 
 # replace spaces with underscores

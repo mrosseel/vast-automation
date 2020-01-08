@@ -13,6 +13,7 @@ from astropy.coordinates import SkyCoord, EarthLocation, AltAz
 # supress the warning about vector transforms so as not to clutter the doc build log
 import warnings
 import utils
+
 warnings.filterwarnings('ignore', module='astropy.coordinates.baseframe')
 
 
@@ -35,7 +36,7 @@ def calculate_airmass(coord, location, jd):
     return alt_azs.secz
 
 
-def report(star: StarDescription, df_curve: DataFrame, comp_stars: ComparisonStars,
+def report(star: StarDescription, df_curve: DataFrame, comp_stars: ComparisonStars, check_star: ComparisonStars,
            target_dir: Path, sitelat, sitelong, sitealt, camera_filter=None, observer='RMH', chunk_size=None):
     star_match_ucac4 = star.get_metadata("UCAC4").name if star.has_metadata("UCAC4") else None
     star_match_vsx = star.get_metadata("VSX").name if star.has_metadata("VSX") else None
@@ -48,9 +49,8 @@ def report(star: StarDescription, df_curve: DataFrame, comp_stars: ComparisonSta
         chunk_size = df_curve.shape[0]
     star_chunks = [df_curve[i:i + chunk_size] for i in range(0, df_curve.shape[0], chunk_size)]
     chunk_counters = 0
-    brightest_index = comp_stars.get_brightest_comparison_star_index()
-    kname = comp_stars.star_descriptions[brightest_index].get_metadata("UCAC4").catalog_id
-    notes = f"Standard mag: K = {comp_stars.comp_catalogmags[brightest_index]:.3f}"
+    kname = check_star.star_descriptions[0].get_metadata("UCAC4").catalog_id
+    notes = f"Standard mag: K = {check_star.comp_catalogmags[0]:.3f}"
 
     filterdict = None
     # Setting up the filter value
@@ -71,8 +71,8 @@ def report(star: StarDescription, df_curve: DataFrame, comp_stars: ComparisonSta
             for _, row in chunk.iterrows():
                 # logging.info(row, type(row))
                 jd = row['JD']
-                if jd in comp_stars.observations[brightest_index]:
-                   check_mag = f"{comp_stars.observations[brightest_index][jd][0]:.3f}"
+                if jd in check_star.observations[0]:
+                    check_mag = f"{check_star.observations[0][jd][0]:.3f}"
                 else:
                     check_mag = "na"
 

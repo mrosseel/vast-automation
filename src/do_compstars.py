@@ -43,7 +43,7 @@ def get_fixed_compstars(star_descriptions: List[StarDescription], comparison_sta
     return [x.local_id for x in star_desc_result], star_desc_result
 
 
-def get_calculated_compstars(vastdir, stardict: StarDict, maglimit=15):
+def get_calculated_compstars(vastdir, stardict: StarDict, maglimit=15, starlimit=1000):
     likely = _get_list_of_likely_constant_stars(vastdir)
     stars: List[StarDescription] = [stardict[x] for x in likely if x in stardict]
 
@@ -52,9 +52,9 @@ def get_calculated_compstars(vastdir, stardict: StarDict, maglimit=15):
     # only want the best stars with max possible observations
     max_obs_sorted = sorted(mag_list, key=lambda x: x.obs, reverse=True)
     max_obs = np.max([x.obs for x in stars])
-    max_obs_clipped = max_obs_sorted[:1000]
+    max_obs_clipped = max_obs_sorted[:starlimit]
     logging.info(f"Picked {len(max_obs_clipped)} stars with last star having "
-                 f"{max_obs_clipped[-2:-1][0].obs*100/max_obs:.2f} % of max observations ({max_obs})")
+                 f"{max_obs_clipped[-2:-1][0].obs * 100 / max_obs:.2f} % of max observations ({max_obs})")
 
 
     def limit(array, max_size):
@@ -99,7 +99,7 @@ def calculate_ensemble_photometry(df: DataFrame, comp_stars: ComparisonStars, en
                 logging.debug(f"Key error for {row['JD']}, {comp_stars.ids}")
 
         if len(comp_obs) > 0 and len(comp_obs) == len(comp_err):
-            v = ensemble_method(row['Vrel'],  comp_obs, comp_err, comp_real)
+            v = ensemble_method(row['Vrel'], comp_obs, comp_err, comp_real)
             err = math.sqrt(math.pow(row['err'], 2) + math.pow(np.mean(comp_err), 2))
             realV.append(v)
             realErr.append(err)
@@ -125,8 +125,10 @@ def weighted_value_ensemble_method(vrel, comp_obs, comp_err, comp_real):
 
 
 def add_closest_compstars(stars: List[StarDescription], comp_stars: ComparisonStars, limit=10):
+    assert limit > 1  # we need one extra K star for aavso ensemble output
     for star in tqdm.tqdm(stars, total=len(stars), desc='Adding closest comparison stars'):
-        star.metadata = CompStarData(compstar_ids=_closest_compstar_ids(star, comp_stars, limit))
+        closest_ids = _closest_compstar_ids(star, comp_stars, limit)
+        star.metadata = CompStarData(compstar_ids=closest_ids[:-1], extra_id=closest_ids[-1])
 
 
 def _closest_compstar_ids(star: StarDescription, comp_stars: ComparisonStars, limit=10) -> List[int]:
@@ -136,16 +138,17 @@ def _closest_compstar_ids(star: StarDescription, comp_stars: ComparisonStars, li
     return sorted_ids
 
 
-def get_star_compstars_from_catalog(star: StarDescription, comp_stars: ComparisonStars):
+def filter_comparison_stars(star: StarDescription, comp_stars: ComparisonStars) -> Tuple[ComparisonStars,
+                                                                                         ComparisonStars]:
     compstar_match: star_description.CompStarData = star.get_metadata("COMPSTARS")
     sd_ids = compstar_match.compstar_ids
     # skip part of the work if the list is equal. Biggest set first otherwise diff is always empty
     if len(set(comp_stars.ids).difference(set(sd_ids))) == 0:
         return comp_stars
     filtered_compstars = comp_stars.get_filtered_comparison_stars(sd_ids)
+    extra_compstar = comp_stars.get_filtered_comparison_stars([compstar_match.extra_id])
     logging.debug(f"get star compstars from catalog: {len(filtered_compstars.ids)}, {filtered_compstars.ids}")
-    return filtered_compstars
-
+    return filtered_compstars, extra_compstar
 
 # if __name__ == '__main__':
 #     logging.getLogger().setLevel(logging.DEBUG)
