@@ -213,7 +213,7 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
         filtered_compstars_sds = filtered_compstars.star_descriptions
         check_star_sd = check_star.star_descriptions
         compstars_labeled = set_custom_label(filtered_compstars_sds, [x.vmag for x in filtered_compstars_sds])
-        checkstar_labeled = set_custom_label(check_star_sd, f"Kmag={check_star_sd.vmag}")
+        checkstar_labeled = set_custom_label(check_star_sd, f"Kmag={check_star_sd[0].vmag}")
         filtered_compstars_sds = None
         filtered_compstars = None
         check_star = None
