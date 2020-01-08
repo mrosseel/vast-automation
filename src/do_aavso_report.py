@@ -72,7 +72,8 @@ def report(star: StarDescription, df_curve: DataFrame, comp_stars: ComparisonSta
                 # logging.info(row, type(row))
                 jd = row['JD']
                 if jd in check_star.observations[0]:
-                    check_mag = f"{check_star.observations[0][jd][0]:.3f}"
+                    # adding an offset of 30 to get instrumental mags to be positive (recommended by aavso)
+                    check_mag = f"{check_star.observations[0][jd][0]+30:.3f}"
                 else:
                     check_mag = "na"
 
