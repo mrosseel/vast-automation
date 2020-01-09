@@ -340,7 +340,7 @@ def write_augmented_starfile(resultdir: str, starfile_stars: List[StarDescriptio
             _, _, _, filename_no_ext = utils.get_star_or_catalog_name(star, '')
             txt_path = Path(resultdir,
                             f"phase_{'vsx' if star.has_metadata('VSX') else 'selected'}/txt",
-                            filename_no_ext + '_phase.txt')
+                            filename_no_ext + '.txt')
             try:
                 parsed_toml = toml.load(txt_path)
                 outfile.write(
