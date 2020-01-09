@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import toml
 
 import main_vast
@@ -25,6 +27,7 @@ from reading import trash_and_recreate_dir
 from timeit import default_timer as timer
 from star_description import StarDescription
 from pathlib import PurePath
+import pandas as pd
 from pandas import DataFrame, Series
 
 from star_metadata import SiteData, CatalogData, CompStarData
@@ -189,7 +192,7 @@ def write_toml(filename_no_ext, fullphasedir, period, star, t_np, y_np, separati
         vsx_var_flag = sitedata.vsx_var_flag
         vsx_separation = sitedata.vsx_separation
         if sitedata.var_min and sitedata.var_max:
-            var_range = f'{sitedata.var_min:.1f}-{sitedata.var_max:.1f} {sitedata.source}'
+            var_range = f'{sitedata.var_min:.2f}-{sitedata.var_max:.2f} {sitedata.source}'
         if sitedata.var_type is not None \
             and ("RR" in sitedata.var_type or "W Uma" in sitedata.var_type):
             if "RR" in sitedata.var_type:
@@ -288,9 +291,10 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_lig
         # calculate period for phase or light
 
         # writing the comparison stars used for this particular star
-        do_period = do_phase or do_light or do_light_raw
-        if do_period:
-            period = determine_period(df, star)
+
+        period = determine_period(df, star)
+        df, nr_removed = phase_dependent_outlier_removal(df, period)
+
         if do_phase:
             plot_phase_diagram(star, df.copy(), phasedir, period=period, suffix="")
         if do_light:
@@ -315,6 +319,20 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_lig
     end = timer()
     logging.debug(f"Full lightcurve/phase: {end - start}")
 
+
+def phase_dependent_outlier_removal(df, period) -> Tuple[DataFrame, int]:
+    phased_t = np.fmod(df['floatJD'] / period.period, 1)
+    # array of times rounded to 1 decimal (==2.4 hours) (not folded yet)
+    grouper = np.round(phased_t, 1)
+    df_v_grouped = df.groupby(grouper)
+    maskresult = pd.DataFrame()
+    for bucket_label, bucket_all in df_v_grouped:
+        bucket = bucket_all['realV']
+        bucketmean = bucket.median()
+        bucketstd = bucket.std()
+        mask = abs(bucket - bucketmean) < 5*bucketstd
+        maskresult = maskresult.append(bucket_all[mask])
+    return maskresult, len(df)-len(maskresult)
 
 def determine_period(df, star):
     if not star.has_metadata("SITE") or star.get_metadata("SITE").period is None:
