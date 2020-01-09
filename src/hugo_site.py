@@ -112,7 +112,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         vsx_link = f'<li><a target="_blank" rel="noopener noreferrer" ' \
                    f'href="https://www.aavso.org/vsx/index.php?view=detail.top&oid={extradata["OID"]}"' \
                    f'>VSX link</a></li>' if is_vsx else ""
-        points_removed = f"<li>Outliers removed: {parsed_toml['points_removed']}<li>" \
+        points_removed = f"<li>Outliers removed: {parsed_toml['points_removed']}</li>" \
             if parsed_toml['points_removed'] > 0 else ""
         result = f'''<div class="bb-l b--black-10 w-100">
         <div class="fl w-70 pa2 ba">
