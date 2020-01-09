@@ -34,7 +34,7 @@ from star_metadata import SiteData, CatalogData, CompStarData
 
 gc.enable()
 mplotlib.use('Agg')  # needs no X server
-Period = namedtuple('Period', 'period origin')
+Period = namedtuple('period', 'period origin')
 TITLE_PAD = 40
 
 
@@ -162,8 +162,6 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
                                   catalog_title, period, upsilon_text)
         if not write_plot:
             return plt, t_np, y_np
-        # write TXT file
-        write_toml(filename_no_ext, fullphasedir, period, star, t_np, y_np, separation)
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
@@ -173,11 +171,15 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         logging.error(f"Error during plot phase: {star.local_id}")
 
 
-def write_toml(filename_no_ext, fullphasedir, period, star, t_np, y_np, separation):
-    tomldict = {}
-    ymin_arg, ymax_arg = np.argmin(y_np), np.argmax(y_np)
+def calculate_min_max_epochs(t_np, y_np):
+    ymin_arg, ymax_arg = np.argmin(np.array(y_np)), np.argmax(np.array(y_np))
     epoch_min, epoch_max = t_np.iloc[ymin_arg], t_np.iloc[ymax_arg]
     ymin, ymax = y_np[ymin_arg], y_np[ymax_arg]
+    return ymin, ymax, epoch_min, epoch_max
+
+
+def write_toml(filename_no_ext, fullphasedir, period, star, points_removed, ymin, ymax, epoch_min, epoch_max):
+    tomldict = {}
     var_range = f'{ymin:.1f}-{ymax:.1f}'
     epoch = None
     minmax = None
@@ -209,6 +211,7 @@ def write_toml(filename_no_ext, fullphasedir, period, star, t_np, y_np, separati
     tomldict['max'] = float(ymax)
     tomldict['range'] = var_range
     tomldict['coords'] = [star.coords.ra.deg, star.coords.dec.deg]
+    tomldict['points_removed'] = points_removed
     if minmax:
         tomldict['minmax'] = minmax
     if epoch:
@@ -283,17 +286,11 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_lig
             df, filtered_compstars, do_compstars.weighted_value_ensemble_method)
         df['floatJD'] = df['JD'].astype(np.float)
         _, _, _, filename_no_ext = utils.get_star_or_catalog_name(star, suffix="")
-        write_compstars(star, filename_no_ext, phasedir, filtered_compstars, check_star)
-
-        # remove errors
-        # df = utils.reject_outliers_iqr(df, 'realV', 20)
-        # logging.info(f"Rejected {old_size-len(df)} observations with iqr.")
-        # calculate period for phase or light
-
-        # writing the comparison stars used for this particular star
-
         period = determine_period(df, star)
-        df, nr_removed = phase_dependent_outlier_removal(df, period)
+        df, points_removed = phase_dependent_outlier_removal(df, period)
+        write_compstars(star, filename_no_ext, phasedir, filtered_compstars, check_star)
+        write_toml(filename_no_ext, phasedir, period, star, points_removed,
+                   *calculate_min_max_epochs(df['floatJD'], df['realV']))
 
         if do_phase:
             plot_phase_diagram(star, df.copy(), phasedir, period=period, suffix="")
@@ -320,9 +317,9 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_lig
     logging.debug(f"Full lightcurve/phase: {end - start}")
 
 
-def phase_dependent_outlier_removal(df, period) -> Tuple[DataFrame, int]:
+def phase_dependent_outlier_removal(df: DataFrame, period: Period) -> Tuple[DataFrame, int]:
     phased_t = np.fmod(df['floatJD'] / period.period, 1)
-    # array of times rounded to 1 decimal (==2.4 hours) (not folded yet)
+    # array of times rounded to 1 decimal, results in 11 buckens which cover the phase diagram from 0.0 to 1.0
     grouper = np.round(phased_t, 1)
     df_v_grouped = df.groupby(grouper)
     maskresult = pd.DataFrame()
@@ -334,7 +331,8 @@ def phase_dependent_outlier_removal(df, period) -> Tuple[DataFrame, int]:
         maskresult = maskresult.append(bucket_all[mask])
     return maskresult, len(df)-len(maskresult)
 
-def determine_period(df, star):
+
+def determine_period(df: DataFrame, star: StarDescription):
     if not star.has_metadata("SITE") or star.get_metadata("SITE").period is None:
         period: Period = calculate_ls_period_from_df(df.copy())
         logging.debug(f"Using LS period for star {star.local_id}: {period.period}")
@@ -369,7 +367,7 @@ def calculate_ls_period(t_np, y_np, dy_np) -> Period:
 def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir: str, phasepart: str, chartspart: str,
         aavso_part: str, do_light=False, do_light_raw=False, do_phase=True, do_aavso=False, aavsolimit=None,
         nr_threads=cpu_count(), desc="Writing light curve charts/phase diagrams"):
-    CHUNK = 1  # max(1, len(star_descriptions) // nr_threads*10)
+    chunk: int = 1  # max(1, len(star_descriptions) // nr_threads*10)
     set_seaborn_style()
     pool = mp.Pool(nr_threads, maxtasksperchild=10)
     phasedir = PurePath(resultdir, phasepart)
@@ -390,7 +388,7 @@ def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir:
                    do_light_raw=do_light_raw, do_phase=do_phase, do_aavso=do_aavso, aavso_limit=aavsolimit,
                    phasedir=phasedir, chartsdir=chartsdir, aavsodir=aavsodir)
     with tqdm.tqdm(total=len(star_descriptions), desc=desc, unit='stars') as pbar:
-        for _ in pool.imap_unordered(func, star_descriptions, chunksize=CHUNK):
+        for _ in pool.imap_unordered(func, star_descriptions, chunksize=chunk):
             pbar.update(1)
             pass
     pool.close()

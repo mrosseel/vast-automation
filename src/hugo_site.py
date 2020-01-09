@@ -16,6 +16,7 @@ from star_metadata import SiteData
 
 UNKNOWN = "Unknown"
 
+
 def run(post_name: str, selected_stars: List[StarDescription], len_vsx: int, len_candidates: int, resultdir: str):
     sitedir = f"{os.getcwd()}/site/vsx/"
     images_prefix = f"/images/{post_name}/"
@@ -111,6 +112,8 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         vsx_link = f'<li><a target="_blank" rel="noopener noreferrer" ' \
                    f'href="https://www.aavso.org/vsx/index.php?view=detail.top&oid={extradata["OID"]}"' \
                    f'>VSX link</a></li>' if is_vsx else ""
+        points_removed = f"<li>Outliers removed: {parsed_toml['points_removed']}<li>" \
+            if parsed_toml['points_removed'] > 0 else ""
         result = f'''<div class="bb-l b--black-10 w-100">
         <div class="fl w-70 pa2 ba">
             <img class="special-img-class" src="{phase_url}" alt="{phase_url}"/>
@@ -124,7 +127,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             <li><a target="_blank" rel="noopener noreferrer" href="
             https://www.aavso.org/vsx/index.php?view=about.vartypes">type</a>: {var_type_link}{vsx_var_flag}</li>{vsx_link}{vsx_separation}
             <li>epoch: {epoch}</li>
-            <li>coords: {utils.get_hms_dms(star.coords)}</li>
+            <li>coords: {utils.get_hms_dms(star.coords)}</li>{points_removed}
             <li><a href="{images_prefix}vsx_and_star_{star.local_id:05}.png">finder chart</a></li>
             <li><a href="{images_prefix}{filename_no_ext}_ext.txt">observations</a></li>
             <li><a href="{images_prefix}{filename_no_ext}_light.png">light curve</a></li>
