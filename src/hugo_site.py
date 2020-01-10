@@ -97,7 +97,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             ucac4_name = f"{star.coords}"
         else:
             ucac4_name = ucac4.catalog_id if not None else UNKNOWN
-        name = f"{parsed_toml['our_name']}"
+        name = f"{parsed_toml['our_name']}" if 'our_name' in parsed_toml else "unknown"
         period = f"{float(parsed_toml['period']):.5f}"
         phase_url = f"{images_prefix}{filename_no_ext_phase}.png"
         epoch = f"{parsed_toml['epoch']}" if 'epoch' in parsed_toml else UNKNOWN
