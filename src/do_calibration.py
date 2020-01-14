@@ -46,44 +46,6 @@ def old_find_reference_frame_index():
     return reference_frame_index
 
 
-# Either reads the previously chosen reference frame, or determines one if it's missing
-def get_reference_frame(file_limit, reference_method):
-    # Calculate or retrieve reference frame and its index
-    try:
-        reference_file, reference_frame_fits, reference_frame_index = reading.read_reference_frame()
-        reference_frame = utils.find_file_for_index(settings.convfitsdir, reference_frame_index, '*.fts')
-        logging.info(
-            f"Loaded existing reference file '{reference_file}, found fits reference: {reference_frame_fits} == converted fits:{reference_frame}")
-    except:
-        reference_frame = reference_method(file_limit)
-        reference_frame_index = utils.find_index_of_file(settings.convfitsdir, reference_frame, '*.fts')
-        lines = [reference_frame, str(reference_frame_index)]
-        with open(settings.basedir + 'reference_frame.txt', 'w') as f:
-            f.write('\n'.join(lines))
-        logging.info(
-            f"Loaded reference file: '{reference_file}', found reference frame: {reference_frame}, index: {reference_frame_index}")
-    assert reference_frame_index == utils.find_index_of_file(settings.convfitsdir, reference_frame, '*.fts')
-    return [reference_frame, settings.convfitsdir + reference_frame, reference_frame_index]
-
-
-# returns the converted_fits file with the highest compressed filesize, limited to 'limit'
-# if limit is higher than listdir length, no harm
-def select_reference_frame_gzip(limit):
-    import gzip
-    count = 0
-    result = {}
-    for filename in os.listdir(settings.convfitsdir):
-        if count < limit:
-            count = count + 1
-            with open(settings.convfitsdir + filename, 'rb') as f_in:
-                length = len(gzip.compress(f_in.read()))
-                result[filename] = length
-                logging.info(f"select reference frame length: {length}")
-
-    sorted_by_value = sorted(result.items(), key=lambda kv: kv[1], reverse=True)
-    return sorted_by_value[0][0]
-
-
 ############# star description utils #################
 
 

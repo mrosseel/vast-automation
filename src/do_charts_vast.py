@@ -311,7 +311,8 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_lig
         logging.error(message)
         import traceback
         print(traceback.print_exc())
-        logging.error(f"Exception during read_lightcurve for {star.path}")
+        logging.error(f"Exception during read_lightcurve for {star.path}, size JD: {len(df['floatJD'])},"
+                      f"size V:  {len(df['realV'])}")
 
     end = timer()
     logging.debug(f"Full lightcurve/phase: {end - start}")
