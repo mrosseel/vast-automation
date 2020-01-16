@@ -46,8 +46,7 @@ def add_pixels(results, wcs, offset):
     for star in results:
         star_coord = star.coords
         xy = SkyCoord.to_pixel(star_coord, wcs=wcs, origin=0)
-        x = xy[0].item(0)
-        y = xy[1].item(0)
+        x, y = xy[0].item(0), xy[1].item(0)
         star.xpos = x + offset
         star.ypos = y + offset
     return results
