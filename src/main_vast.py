@@ -339,7 +339,7 @@ def write_augmented_starfile(resultdir: str, starfile_stars: List[StarDescriptio
             metadata: SiteData = star.get_metadata("SITE")
             _, _, _, filename_no_ext = utils.get_star_or_catalog_name(star, '')
             txt_path = Path(resultdir,
-                            f"phase_{'vsx' if star.has_metadata('VSX') else 'selected'}/txt",
+                            f"phase_{'vsx' if star.has_metadata('VSX') else 'candidates'}/txt",
                             filename_no_ext + '.txt')
             try:
                 parsed_toml = toml.load(txt_path)
