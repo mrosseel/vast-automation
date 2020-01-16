@@ -174,7 +174,7 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
 def calculate_min_max_epochs(t_np, y_np):
     ymin_arg, ymax_arg = np.argmin(np.array(y_np)), np.argmax(np.array(y_np))
     epoch_min, epoch_max = t_np.iloc[ymin_arg], t_np.iloc[ymax_arg]
-    ymin, ymax = y_np[ymin_arg], y_np[ymax_arg]
+    ymin, ymax = y_np.iloc[ymin_arg], y_np.iloc[ymax_arg]
     return ymin, ymax, epoch_min, epoch_max
 
 
