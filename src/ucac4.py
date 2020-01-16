@@ -135,10 +135,11 @@ class UCAC4:
     def __init__(self, ucac_path: Path = Path('./support/ucac4/UCAC4/')):
         # star id given by munipack
         self.ucac_path = ucac_path
-        self.zones_cache = LRUCache(capacity=5)
+        self.zones_cache = LRUCache(capacity=10)
         self.bucket_cache = LRUCache(capacity=100000)
         self.zone_bucket_cache = LRUCache(capacity=10000)
         self.index_cache = None
+        # read index file
         with open(str(Path(ucac_path, 'u4i', 'u4index.unf')), mode='rb') as file:  # b is important -> binary
             self.index_cache = file.read()
         self.zone_starformat = "=iiHHBBBbbBBBHHhhbbIHHHBBBBBBHHHHHbbbbbBIBBIHI"
@@ -147,15 +148,8 @@ class UCAC4:
         self.result_n0, self.result_nn = UCAC4._get_n0_and_nn(self.index_cache)
 
 
-    def get_ucac4_details(self, ucac_id) -> List[Tuple[Tuple, str, int]]:
-        full_id = ucac_id[6:]
-        zone = full_id[:3]
-        run_nr = int(full_id[4:].lstrip("0"))
-        logging.debug(f"UCAC4 id {full_id}, {zone}, {run_nr}")
-        return self.get_ucac4_details_raw(zone, [run_nr])
-
-
-    def get_zone_from_file(self, zone: str):
+    """ gets the content of a zone file, either from disk or from cache"""
+    def get_zone_filecontent(self, zone: int):
         result = self.zones_cache.get(zone)
         if result != -1:
             return result
@@ -165,22 +159,31 @@ class UCAC4:
             return result
 
 
-    def get_ucac4_details_raw(self, zone: str, run_nr: List[int]) -> List[Tuple[StarTuple, str, int]]:
+    """ Given a UCAC ID, return a tuple of (StarTuple, zone, run_nr) """
+    def get_ucac4_details(self, ucac_id) -> List[Tuple[StarTuple, str, int]]:
+        zone, run_nr = UCAC4.id_to_zone_and_run_nr(ucac_id)
+        logging.debug(f"UCAC4 id {zone}, {run_nr}")
+        return self.get_ucac4_details_raw(zone, [run_nr])
+
+
+    """ Given a zone and one or more run_nr's, return List of (StarTuple, zone, run_nr) """
+    def get_ucac4_details_raw(self, zone: int, run_nr_list: List[int]) -> List[Tuple[StarTuple, str, int]]:
         stars = []
-        filecontent = self.get_zone_from_file(zone)
-        for number in run_nr:
-            key = (zone, number)
+        filecontent = self.get_zone_filecontent(zone)
+        for run_nr in run_nr_list:
+            key = (zone, run_nr)
             bucketcache = self.bucket_cache.get(key)
             if bucketcache != -1:
                 star = bucketcache
             else:
                 result = self.unpack_zone_fileformat(
-                    filecontent[self.zone_star_length * (number - 1):self.zone_star_length * number])
+                    filecontent[self.zone_star_length * (run_nr - 1):self.zone_star_length * run_nr])
                 star = UCAC4.make_star(result)
                 self.bucket_cache.set(key, star)
-            stars.append((star, zone, number))
+            stars.append((star, zone, run_nr))
         # logging.debug(f"read ucac4 star: {star}")
         return stars
+
 
     @staticmethod
     def _get_n0_and_nn(index_cache):
@@ -227,18 +230,20 @@ class UCAC4:
                     the_stars = self.get_ucac4_details_raw(zone, the_range)
                     self.zone_bucket_cache.set(cache_key, the_stars)
                 for sd in the_stars:
-                    dist = np.linalg.norm(np.array((UCAC4.get_real_ra_dec(sd[0].ra, sd[0].spd))-target_np))
+                    dist = np.linalg.norm(np.array((UCAC4.get_real_ra_dec(sd[0].ra, sd[0].spd)) - target_np))
                     if dist < smallest_dist:
                         smallest_dist = dist
                         best = sd
         if best is None:
             logging.warning(f"Did not find a UCAC4 match for {ra}, {dec}, {tolerance_deg}. Buckets: {buckets}, "
                             f"zones: {zones},smallest dist: {smallest_dist}")
+            return best
+        logging.debug(f"Best distance is: {smallest_dist}")
         return self.get_ucac4_star_description_fromtuple(*best)
 
 
     @staticmethod
-    def get_zone_for_dec(dec: float):
+    def get_zone_for_dec(dec: float) -> int:
         dec_0 = dec + 90
         index = round(dec_0 / 0.2, 1)
         return math.ceil(index) if index != 0 else 1
@@ -251,16 +256,16 @@ class UCAC4:
 
 
     @staticmethod
-    def name_to_zone_and_run_nr(ucac_id: str):
+    def id_to_zone_and_run_nr(ucac_id: str):
         full_id = ucac_id[6:]
-        zone = full_id[:3]
+        zone = int(full_id[:3])
         run_nr = int(full_id[4:].lstrip("0"))
         return zone, run_nr
 
 
     @staticmethod
-    def zone_and_run_nr_to_name(zone: str, run_nr: int):
-        return f"UCAC4 {zone}-{run_nr:06}"
+    def zone_and_run_nr_to_name(zone: int, run_nr: int):
+        return f"UCAC4 {zone:03}-{run_nr:06}"
 
 
     def get_ucac4_star_description_fromid(self, ucac4_id) -> StarDescription:
@@ -277,16 +282,18 @@ class UCAC4:
 
 
     @staticmethod
-    def get_ucac4_star_description_fromtuple(star: StarTuple, zone: str, run_nr: int):
+    def get_ucac4_star_description_fromtuple(star: StarTuple, zone: int, run_nr: int):
         ra, dec = UCAC4.get_real_ra_dec(star.ra, star.spd)
         sd = StarDescription(coords=SkyCoord(ra, dec, unit='deg'),
                              vmag=star.apass_mag_V / 1000, e_vmag=abs(star.apass_mag_sigma_V / 100),
                              aavso_id=UCAC4.zone_and_run_nr_to_name(zone, run_nr))
         return sd
 
+
     @staticmethod
     def get_real_ra_dec(ra, spd) -> Tuple[float, float]:
         return ra / 1000 / 3600, (spd - 324000000) / 1000 / 3600
+
 
     @staticmethod
     def make_star(result: List):
@@ -297,13 +304,15 @@ class UCAC4:
         star = star._replace(pm_dec_sigma=star.pm_dec_sigma + 128)
         return star
 
+
     def add_ucac4_to_sd(self, stars: List[StarDescription]):
         with tqdm.tqdm(total=len(stars), desc='Adding UCAC4', unit='stars') as pbar:
             for star in stars:
                 if not star.has_metadata("UCAC4"):
                     sd = self.get_ucac4_sd_from_ra_dec(star.coords.ra.deg, star.coords.dec.deg)
-                    do_calibration.add_info_to_star_description(star, sd.vmag, sd.e_vmag, sd.aavso_id, "UCAC4",
-                                                                sd.coords)
+                    if sd is not None:
+                        do_calibration.add_info_to_star_description(star, sd.vmag, sd.e_vmag, sd.aavso_id, "UCAC4",
+                                                                    sd.coords)
                 pbar.update(1)
 
     # >>> ra=140361
@@ -313,8 +322,6 @@ class UCAC4:
     # >>> (dec-324000000)/1000/60/60
     # 0.0015277777777777776
     # >>>
-
-
 
 
 if __name__ == '__main__':
