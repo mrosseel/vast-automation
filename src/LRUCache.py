@@ -20,6 +20,6 @@ class LRUCache:
             self.cache.pop(key)
         except KeyError:
             if len(self.cache) >= self.capacity:
-                logging.info(f"CACHE IS AT CAPACITY !!!!!!!!!!!!, key: {key}")
+                logging.info(f"CACHE IS AT CAPACITY !!!!!!!!!!!!, key: {key}, max is {self.capacity}")
                 self.cache.popitem(last=False)
         self.cache[key] = value
