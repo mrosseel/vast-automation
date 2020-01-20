@@ -49,7 +49,7 @@ def run_do_rest(args):
     logging.info(f"Dir with VaST files: '{vastdir}', results dir: '{resultdir}'")
     wcs_file = Path(vastdir, 'new-image.fits')
     ref_jd, _, _, reference_frame = extract_reference_frame(vastdir)
-    first_frame = extract_first_frame(vastdir)
+    _, _, _, first_frame = extract_first_frame(vastdir)
     frames_used = int(extract_images_used(vastdir))
     logging.info(f"{frames_used} frames were used for photometry")
     logging.info(f"The reference frame is '{reference_frame}'")
@@ -317,16 +317,20 @@ def write_augmented_starfile(resultdir: str, starfile_stars: List[StarDescriptio
                 return toml[arg]
             return f"{toml[arg]:.{precision}f}"
 
+
         def format_float_5(toml, arg: str):
             format_float_arg(toml, arg, 5)
 
+
         def format_float_1(toml, arg: str):
             format_float_arg(toml, arg, 1)
+
 
         def format_string(arg: str, toml):
             if arg in toml:
                 return toml[arg]
             return ''
+
 
         for star in sorted_stars:
             metadata: SiteData = star.get_metadata("SITE")
@@ -562,6 +566,8 @@ def construct_vsx_mag_range(entry):
         if type(x) is str:
             return x
         return "" if np.isnan(x) else x
+
+
     return f"{empty_if_nan(entry['f_min'])} {empty_if_nan(entry['l_min'])} {empty_if_nan(entry['l_max'])} " \
            f"{empty_if_nan(entry['max'])} {empty_if_nan(entry['u_max'])} {empty_if_nan(entry['n_max'])} " \
            f"{empty_if_nan(entry['min'])} {empty_if_nan(entry['u_min'])} {empty_if_nan(entry['n_min'])}"
