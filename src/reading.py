@@ -72,6 +72,21 @@ def read_world_positions(the_path):
     return results
 
 
+# get all possible stars with dict: JD, (mag, error)
+def read_magdict_for_star(vastdir, star_id):
+    stardict = {}
+    starfile = f"{vastdir}{star_to_dat(star_id)}"
+    with open(starfile) as file:
+        for line in file:
+            splitline = line.split()
+            # {JD, (mag, magerr)}
+            stardict[str(splitline[0])] = (float(splitline[1]), float(splitline[2]))
+    return stardict
+
+
+def star_to_dat(star: int):
+    return f"out{star:05}.dat"
+
 # Select files conforming to the match_pattern using percentage which is between 0 and 1
 def file_selector(the_dir, match_pattern, percentage=1) -> List[str]:
     matched_files = glob.glob(the_dir + match_pattern)

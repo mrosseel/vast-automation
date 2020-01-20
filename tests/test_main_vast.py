@@ -46,6 +46,12 @@ class TestMainVast(unittest.TestCase):
         self.assertEqual(180.238, result)
 
 
+    def test_extract_frame_from_summary_helper(self):
+        result = main_vast.extract_frame_from_summary_helper('./tests/data/', "Ref.  image")
+        self.assertEqual(('2458836.58742', '19.12.2019', '02:05:23',
+                          '../data/ASASSN-V_J060000.76-310027.83/cleaned/2019/ASASSN-V_060000.76-310027.83#60V_000783664_FLAT.fit'), result)
+
+
     def stardesc(self, id, ra, dec):
         return StarDescription(local_id=id,
                                coords=SkyCoord(ra, dec, unit='deg'))

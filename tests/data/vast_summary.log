@@ -1,0 +1,27 @@
+Images processed 750
+Images used for photometry 749
+Ref.  image: 2458836.58742 19.12.2019 02:05:23   ../data/ASASSN-V_J060000.76-310027.83/cleaned/2019/ASASSN-V_060000.76-310027.83#60V_000783664_FLAT.fit
+First image: 2458829.82906 12.12.2019 07:53:21   ../data/ASASSN-V_J060000.76-310027.83/cleaned/2019/ASASSN-V_060000.76-310027.83#60V_000778002_FLAT.fit
+Last  image: 2458849.82420 01.01.2020 07:46:21   ../data/ASASSN-V_J060000.76-310027.83/cleaned/2019/ASASSN-V__060000.76-310027.83#60V_000793380_FLAT.fit
+JD time system (TT/UTC/UNKNOWN): UTC
+Magnitude-Size filter: Enabled
+For each source choose aperture with the smallest scatter: YES
+Photometric errors rescaling: YES
+Number of identified bad images: 6
+Number of SysRem iterations: 3
+Computation time: 669 seconds
+Number of parallel threads: 8
+SExtractor parameter file: default.sex
+Total objects detected (at least 2 times):  7364
+Objects passed selection criteria:  1623
+Measurements per detected object (mean, median, min, max):  120.5    3.0    2  743
+Measurements per selected object (mean, median, min, max):  534.3  672.0   40  743
+Average stars detected per image: 1531.3
+Average stars matched: 1490.74 (97.3512 %)
+Memory usage VmPeak:	 1162700 kB
+Software: VaST 1.0rc85 compiled with gcc (Ubuntu 7.4.0-1ubuntu1~18.04.1) 7.4.0
+VaST compiled on  Wed Oct  9 07:18:04 UTC 2019
+SExtractor version 2.19.5 (2019-10-09)
+GNU bash, version 4.4.20(1)-release (x86_64-pc-linux-gnu)
+Processing completed on  Wed Jan 15 12:40:00 UTC 2020
+Host name: ns313855

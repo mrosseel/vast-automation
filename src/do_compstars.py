@@ -15,6 +15,7 @@ from pathlib import PurePath
 import operator
 from pandas import DataFrame
 import tqdm
+import reading
 
 StarDict = Dict[int, StarDescription]
 
@@ -43,15 +44,22 @@ def get_fixed_compstars(star_descriptions: List[StarDescription], comparison_sta
     return [x.local_id for x in star_desc_result], star_desc_result
 
 
-def get_calculated_compstars(vastdir, stardict: StarDict, maglimit=15, starlimit=1000):
+def get_calculated_compstars(vastdir, stardict: StarDict, ref_jd, maglimit=15, starlimit=1000, ):
     likely = _get_list_of_likely_constant_stars(vastdir)
-    stars: List[StarDescription] = [stardict[x] for x in likely if x in stardict]
+    likely_sd: List[StarDescription] = [stardict[x] for x in likely if x in stardict]
+
+    star_realmag = {}
+    for star in likely_sd:
+        comp_magdict = reading.read_magdict_for_star(vastdir, star.local_id)
+        # logging.info(f"Read comp magdict for {star}: {read_comp_magdict}")
+        if ref_jd in comp_magdict:
+            star_realmag[star.local_id] = comp_magdict[ref_jd]
 
     # restrict to maglimit
-    mag_list = list(filter(lambda x: x.vmag < maglimit, stars))
+    mag_list = list(filter(lambda x: x.vmag < maglimit, likely_sd))
     # only want the best stars with max possible observations
     max_obs_sorted = sorted(mag_list, key=lambda x: x.obs, reverse=True)
-    max_obs = np.max([x.obs for x in stars])
+    max_obs = np.max([x.obs for x in likely_sd])
     max_obs_clipped = max_obs_sorted[:starlimit]
     logging.info(f"Picked {len(max_obs_clipped)} stars with last star having "
                  f"{max_obs_clipped[-2:-1][0].obs * 100 / max_obs:.2f} % of max observations ({max_obs})")
@@ -61,11 +69,14 @@ def get_calculated_compstars(vastdir, stardict: StarDict, maglimit=15, starlimit
         return min(len(array), max_size)
 
 
-    # stars are sorted according to their magnitude
-    min_err_stars = sorted(max_obs_clipped, key=operator.attrgetter('vmag'))
+    # stars are sorted according to their magnitude error
+    min_err_stars = sorted(max_obs_clipped, key=lambda entry: star_realmag[entry.local_id][
+        1] if entry.local_id in star_realmag else 1000)
     # only first 100 are kept
     min_err_stars_clipped = min_err_stars[:limit(min_err_stars, 100)]
     return [x.local_id for x in min_err_stars_clipped], min_err_stars_clipped
+
+
 
 
 def _get_list_of_likely_constant_stars(vastdir):

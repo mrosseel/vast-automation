@@ -48,7 +48,7 @@ def run_do_rest(args):
     do_aavso = args.aavso
     logging.info(f"Dir with VaST files: '{vastdir}', results dir: '{resultdir}'")
     wcs_file = Path(vastdir, 'new-image.fits')
-    reference_frame = extract_reference_frame(vastdir)
+    ref_jd, _, _, reference_frame = extract_reference_frame(vastdir)
     first_frame = extract_first_frame(vastdir)
     frames_used = int(extract_images_used(vastdir))
     logging.info(f"{frames_used} frames were used for photometry")
@@ -103,7 +103,8 @@ def run_do_rest(args):
         selected_stars = utils.concat_sd_lists(selected_stars, vsx_stars)
     logging.info(f"There are {len(selected_stars)} selected stars")
     compstar_needing_stars = utils.concat_sd_lists(selected_stars, vsx_stars, candidate_stars, owncatalog)
-    comp_stars = set_comp_stars_and_ucac4(star_descriptions, selected_stars, args.checkstarfile, vastdir, stardict)
+    comp_stars = set_comp_stars_and_ucac4(star_descriptions, selected_stars, args.checkstarfile, vastdir, stardict,
+                                          ref_jd)
 
     # Set comp stars for all interesting stars (stars which are interesting enough to measure)
     logging.info("Setting per star comparison stars...")
@@ -146,7 +147,7 @@ def run_do_rest(args):
 
 # Either read UCAC4 check stars from a file, or calculate our own comparison stars
 def set_comp_stars_and_ucac4(star_descriptions: List[StarDescription], selectedstars: List[StarDescription],
-                             checkstarfile: str, vastdir: str, stardict: StarDict) -> ComparisonStars:
+                             checkstarfile: str, vastdir: str, stardict: StarDict, ref_jd: str) -> ComparisonStars:
     ucac4 = UCAC4()
     if checkstarfile:
         # load comparison stars
@@ -155,10 +156,12 @@ def set_comp_stars_and_ucac4(star_descriptions: List[StarDescription], selecteds
         comparison_stars_ids, comparison_stars_1_sds = do_compstars.get_fixed_compstars(star_descriptions, checkstars)
     else:
         ucac4.add_ucac4_to_sd(star_descriptions)
-        comparison_stars_ids, comparison_stars_1_sds = do_compstars.get_calculated_compstars(vastdir, stardict)
+        comparison_stars_ids, comparison_stars_1_sds = do_compstars.get_calculated_compstars(vastdir, stardict,
+                                                                                             ref_jd)
+    # get all observations for the comparison stars
     comp_observations = []
     for star in comparison_stars_ids:
-        comp_magdict = read_magdict_for_star(vastdir, star)
+        comp_magdict = reading.read_magdict_for_star(vastdir, star)
         # logging.info(f"Read comp magdict for {star}: {read_comp_magdict}")
         comp_observations.append(comp_magdict)
     comp_catalogmags = []
@@ -213,13 +216,15 @@ def extract_first_frame(from_dir):
 
 
 def extract_images_used(from_dir):
-    result = [re.findall(r'Images used for photometry (.*)', line) for line in open(from_dir + 'vast_summary.log')]
+    with open(from_dir + 'vast_summary.log') as file:
+        result = [re.findall(r'Images used for photometry (.*)', line) for line in file]
     return [x for x in result if x != []][0][0]
 
 
 def extract_frame_from_summary_helper(from_dir, marker):
     # Ref.  image: 2458586.50154 13.04.2019 00:00:41   ../../inputfiles/TXCar/fits/TXCar#45V_000601040_FLAT.fit
-    result = [re.findall(marker + r': (?:.*) (.*)', line) for line in open(from_dir + 'vast_summary.log')]
+    with open(from_dir + 'vast_summary.log') as file:
+        result = [re.findall(marker + r':\s+(\d+\.\d+)\s+([\d|\.]+)\s+([\d|\:]+)\s+(.*)', line) for line in file]
     return [x for x in result if x != []][0][0]
 
 
@@ -227,25 +232,11 @@ def extract_frame_from_summary_helper(from_dir, marker):
 def read_stardict(vastdir: str) -> StarPosDict:
     stardict = {}
     PixelPos = namedtuple('PixelPos', 'x y afile')
-    for line in open(vastdir + 'vast_list_of_all_stars.log'):
-        splitline = line.split()
-        stardict[int(splitline[0])] = PixelPos(splitline[1], splitline[2], f"out{splitline[0]}.dat")
+    with open(vastdir + 'vast_list_of_all_stars.log') as file:
+        for line in file:
+            splitline = line.split()
+            stardict[int(splitline[0])] = PixelPos(splitline[1], splitline[2], f"out{splitline[0]}.dat")
     return stardict
-
-
-# get all possible stars with dict: JD, (mag, error)
-def read_magdict_for_star(vastdir, star_id):
-    stardict = {}
-    starfile = f"{vastdir}{star_to_dat(star_id)}"
-    for line in open(starfile):
-        splitline = line.split()
-        # {JD, (mag, magerr)}
-        stardict[str(splitline[0])] = (float(splitline[1]), float(splitline[2]))
-    return stardict
-
-
-def star_to_dat(star: int):
-    return f"out{star:05}.dat"
 
 
 # Note: this file seems to give incorrect xy positions wrt reference frame
@@ -254,17 +245,19 @@ def star_to_dat(star: int):
 def read_data_m_sigma(vastdir) -> Dict[int, Tuple[int, int]]:
     stardict = {}
     PixelPos = namedtuple('PixelPos', 'x y afile')
-    for line in open(vastdir + 'data.m_sigma'):
-        splitline = line.split()
-        star_id = utils.get_starid_from_outfile(splitline[4])
-        stardict[star_id] = PixelPos(float(splitline[2]), float(splitline[3]), splitline[4])
+    with open(vastdir + 'data.m_sigma') as file:
+        for line in file:
+            splitline = line.split()
+            star_id = utils.get_starid_from_outfile(splitline[4])
+            stardict[star_id] = PixelPos(float(splitline[2]), float(splitline[3]), splitline[4])
     return stardict
 
 
 def read_checkstars(checkstar_file: str) -> List[str]:
     result = []
-    for line in open(checkstar_file):
-        result.append(line.strip())
+    with open(checkstar_file) as file:
+        for line in file:
+            result.append(line.strip())
     return result
 
 
@@ -598,7 +591,8 @@ def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
 
 
 def set_lines(star: StarDescription):
-    star.obs = sum(1 for line in open(star.path) if line.rstrip())
+    with open(star.path) as file:
+        star.obs = sum(1 for line in file if line.rstrip())
     return star
 
 

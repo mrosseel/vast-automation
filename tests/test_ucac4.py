@@ -25,7 +25,7 @@ class TestUcac4(unittest.TestCase):
 
     def test_get_ucac4_details_raw(self):
         # ucac4.get_ucac4_star_description_raw('UCAC4 001-000003')
-        result = self.ucac4.get_ucac4_details_raw('001', [3])
+        result = self.ucac4.get_ucac4_details_raw(1, [3])
         self.assertEqual(result[0][0].ra, 18290451)
 
 
@@ -46,13 +46,13 @@ class TestUcac4(unittest.TestCase):
 
 
     def test_name_to_zone_and_run_nr(self):
-        zone, runnr = self.ucac4.name_to_zone_and_run_nr(self.UCAC4_ID)
-        self.assertEqual(zone, '001')
+        zone, runnr = self.ucac4.id_to_zone_and_run_nr(self.UCAC4_ID)
+        self.assertEqual(zone, 1)
         self.assertEqual(runnr, 3)
 
 
     def test_zone_and_run_nr_to_name(self):
-        ucac4_id = self.ucac4.zone_and_run_nr_to_name('001', 3)
+        ucac4_id = self.ucac4.zone_and_run_nr_to_name(1, 3)
         self.assertEqual(ucac4_id, self.UCAC4_ID)
 
 
@@ -70,11 +70,13 @@ class TestUcac4(unittest.TestCase):
         self.assertEqual("UCAC4 232-147677", result.aavso_id)
         self.assertEqual(12.314, result.vmag)
         print("diff is ", target.separation(result.coords))
-        # ra:274.26921036101504, dec:-88.73827035367276, tolerance:0.01
+        # WARNING Did not find a UCAC4 match for 274.26921036101504, -88.73827035367276, 0.02.
+        # Buckets: range(1098, 1099), zones: [7],smallest dist: 1000
         ra, dec = 274.26921036101504, -88.73827035367276
-        result = self.ucac4.get_ucac4_sd_from_ra_dec(ra, dec, tolerance_deg=0.1)
-        self.assertEqual("UCAC4 232-147677", result.aavso_id)
-        self.assertEqual(12.314, result.vmag)
+        result = self.ucac4.get_ucac4_sd_from_ra_dec(ra, dec, tolerance_deg=0.19)
+
+        self.assertEqual("UCAC4 007-002358", result.aavso_id)
+        self.assertEqual(20.0, result.vmag)
         print("diff is ", target.separation(result.coords))
 
 
@@ -95,7 +97,7 @@ class TestUcac4(unittest.TestCase):
         # 'UCAC4 232-146904'
         # <SkyCoord (ICRS): (ra, dec) in deg (270.91140731, -43.64018836)>
         # sd: StarDescription = self.ucac4.get_ucac4_sd(270.91140731, -43.64018836)
-        raw = self.ucac4.get_ucac4_details_raw('232', [146904])
+        raw = self.ucac4.get_ucac4_details_raw(232, [146904])
         # Vmag	11.957 	mag, e_Vmag	01 cmag
         self.assertEqual(-1, raw[0][0].apass_mag_sigma_V)
         sd: StarDescription = self.ucac4.get_ucac4_star_description_fromtuple(*raw[0])
