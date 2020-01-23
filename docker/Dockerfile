@@ -1,5 +1,4 @@
-FROM jupyter/scipy-notebook:2662627f26e0
-
+FROM jupyter/scipy-notebook:7a0c7325e470
 MAINTAINER Mike Rosseel version: 0.1
 ENV CMUNIPACK_VERSION 2.1.27
 
@@ -18,7 +17,8 @@ RUN pip install --upgrade pip && \
     pip install numpy && \
     pip install astropy pyreadline pyfftw tqdm photutils gatspy astroquery toml hanging_threads # hanging_threads is for debugging
 # needs at least scikit 0.18.1
-RUN conda update -y scikit-learn matplotlib pandas && \
+RUN conda install matplotlib
+RUN conda update -y scikit-learn pandas && \
 #RUN git clone https://github.com/mrosseel/upsilon.git
     git clone https://github.com/dwkim78/upsilon.git  && \
     mkdir -p .jupyter
