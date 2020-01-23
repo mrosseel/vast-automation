@@ -508,8 +508,8 @@ def tag_selected(selectedstarfile: str, stardict: StarDict):
                                          var_max=row['max'],
                                          var_type=row['var_type'],
                                          our_name=row['our_name'],
-                                         period=float(row['period']) if row['period'] is not None else None,
-                                         period_err=float(row['period_err']) if row['period_err'] is not None else None,
+                                         period=float(row['period']) if row['period'] is not None or 'None' else None,
+                                         period_err=float(row['period_err']) if row['period_err'] is not None or 'None' else None,
                                          source="OWN",
                                          epoch=row['epoch'])
             the_star.metadata = SelectedFileData()
@@ -612,8 +612,8 @@ def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
                                      var_max=row['max'],
                                      var_type=row['var_type'],
                                      our_name=row['our_name'],
-                                     period=float(row['period']) if row['period'] is not None else None,
-                                     period_err=float(row['period_err']) if row['period_err'] is not None else None,
+                                     period=float(row['period']) if row['period'] is not None or 'None' else None,
+                                     period_err=float(row['period_err']) if row['period_err'] is not None or 'None' else None,
                                      source="OWN",
                                      epoch=row['epoch'])
 
