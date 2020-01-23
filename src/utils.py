@@ -122,7 +122,6 @@ class MetadataSorter:
         """ gets the value to sort, works with mixed int/str types """
         idx, star = startuple
         name = names[idx]
-        result = None
         if name is None:
             result = -1, -1
         elif isinstance(name, int) or name.isdigit():

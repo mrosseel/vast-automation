@@ -494,7 +494,7 @@ def tag_selected(selectedstarfile: str, stardict: StarDict):
         df = pd.read_csv(selectedstarfile, delimiter=',', comment='#',
                          names=['our_name', 'local_id', 'minmax', 'min', 'max', 'var_type', 'period', 'period_err',
                                 'epoch'],
-                         dtype={'local_id': int, 'minmax': str, 'period': float, 'period_err': float},
+                         dtype={'local_id': int, 'minmax': str},
                          skipinitialspace=True, warn_bad_lines=True)
         df = df.replace({np.nan: None})
         logging.info(f"Selecting {len(df)} stars added by {selectedstarfile}: {df['local_id'].to_numpy()}")
@@ -507,8 +507,10 @@ def tag_selected(selectedstarfile: str, stardict: StarDict):
                                          var_min=row['min'],
                                          var_max=row['max'],
                                          var_type=row['var_type'],
-                                         our_name=row['our_name'], period=row['period'],
-                                         period_err=row['period_err'], source="OWN",
+                                         our_name=row['our_name'],
+                                         period=float(row['period']) if row['period'] is not None else None,
+                                         period_err=row['period_err'] if row['period_err'] is not None else None,
+                                         source="OWN",
                                          epoch=row['epoch'])
             the_star.metadata = SelectedFileData()
             logging.debug(f"starfile {the_star.local_id} metadata: {the_star.metadata}, "
@@ -591,7 +593,7 @@ def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
     df = pd.read_csv(owncatalog, delimiter=',', comment='#',
                      names=['our_name', 'ra', 'dec', 'minmax', 'min', 'max', 'var_type', 'period', 'period_err',
                             'epoch'],
-                     dtype={'ra': float, 'dec': float, 'minmax': str, 'period': float, 'period_err': float},
+                     dtype={'ra': float, 'dec': float, 'minmax': str},
                      skipinitialspace=True, warn_bad_lines=True)
     df = df.replace({np.nan: None})
     skycoord: SkyCoord = do_calibration.create_generic_astropy_catalog(df['ra'], df['dec'])
@@ -609,8 +611,10 @@ def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
                                      var_min=row['min'],
                                      var_max=row['max'],
                                      var_type=row['var_type'],
-                                     our_name=row['our_name'], period=row['period'],
-                                     period_err=row['period_err'], source="OWN",
+                                     our_name=row['our_name'],
+                                     period=row['period'] if row['period'] is not None else None,
+                                     period_err=row['period_err'] if row['period_err'] is not None else None,
+                                     source="OWN",
                                      epoch=row['epoch'])
 
         if d2d[count].degree > 0.01:
