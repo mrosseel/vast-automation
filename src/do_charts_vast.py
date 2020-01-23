@@ -180,7 +180,7 @@ def calculate_min_max_epochs(t_np, y_np):
     return ymin, ymax, epoch_min, epoch_max
 
 
-def write_toml(filename_no_ext, fullphasedir, period, star, points_removed, ymin, ymax):
+def write_toml(filename_no_ext, fullphasedir, period, star, points_removed):
     tomldict = {}
     tomldict['period'] = float(period.period)
     tomldict['period_origin'] = period.origin
