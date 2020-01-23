@@ -197,16 +197,16 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
     save(fig, fieldchartsdirs + f'vsx_{len(vsx_labeled)}_and_candidates_{len(candidate_labeled)}')
 
     # field chart with all vsx stars + starfile + owncatalog
-    logging.info(f"Plotting field chart with all VSX variable stars + {len(starfile_count)} selected vars...")
+    logging.info(f"Plotting field chart with all VSX variable stars + {starfile_count} selected vars...")
     fig = plot_it([vsx_labeled, starfile_labeled, owncatalog_labeled], [10., 5., 4.], [False, True, True],
                   reference_fits_frame, wcs, "VSX stars + selected stars + own catalog", PADDING)
-    save(fig, fieldchartsdirs + 'vsx_{}_and_selected_{}'.format(len(vsx_labeled), len(starfile_count)))
+    save(fig, fieldchartsdirs + 'vsx_{}_and_selected_{}'.format(len(vsx_labeled), starfile_count))
 
     # compstars get their vmag as label
     # comp_stars_descr = comp_stars.star_descriptions
     # comp_stars_labeled = set_custom_label(comp_stars_descr, [x.vmag for x in comp_stars_descr])
 
-    logging.info(f"Plotting field chart for each of the {len(starfile_count)} selected stars")
+    logging.info(f"Plotting field chart for each of the {starfile_count} selected stars")
     # field charts for each individually selected starfile star
     for star in tqdm.tqdm(starfile_labeled):
         filtered_compstars, check_star = do_compstars.filter_comparison_stars(star, comp_stars)
