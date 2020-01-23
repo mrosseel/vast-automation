@@ -494,7 +494,7 @@ def tag_selected(selectedstarfile: str, stardict: StarDict):
         df = pd.read_csv(selectedstarfile, delimiter=',', comment='#',
                          names=['our_name', 'local_id', 'minmax', 'min', 'max', 'var_type', 'period', 'period_err',
                                 'epoch'],
-                         dtype={'local_id': int, 'minmax': str},
+                         dtype={'local_id': int, 'minmax': str, 'period': float, 'period_err': float},
                          skipinitialspace=True)
         df = df.replace({np.nan: None})
         logging.info(f"Selecting {len(df)} stars added by {selectedstarfile}: {df['local_id'].to_numpy()}")
@@ -591,7 +591,7 @@ def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
     df = pd.read_csv(owncatalog, delimiter=',', comment='#',
                      names=['our_name', 'ra', 'dec', 'minmax', 'min', 'max', 'var_type', 'period', 'period_err',
                             'epoch'],
-                     dtype={'ra': float, 'dec': float, 'minmax': str},
+                     dtype={'ra': float, 'dec': float, 'minmax': str, 'period': float, 'period_err': float},
                      skipinitialspace=True)
     df = df.replace({np.nan: None})
     skycoord: SkyCoord = do_calibration.create_generic_astropy_catalog(df['ra'], df['dec'])
