@@ -341,7 +341,6 @@ def write_own_catalog(resultdir: str, selected_stars: List[StarDescription]):
                             filename_no_ext + '.txt')
             try:
                 parsed_toml = toml.load(txt_path)
-                print("pritning parsed toml", parsed_toml)
                 outowncatalog.write(
                     f"{metadata.our_name},{star.coords.ra.deg:.5f},{star.coords.dec.deg:.5f},"
                     f"{format_string('minmax', parsed_toml)},{format_float_1(parsed_toml, 'min')},"
