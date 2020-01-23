@@ -66,8 +66,8 @@ def copy_files(post_name: str, resultdir: str, sitedir: str):
     logging.info(f"Copying {len(fieldcharts_glob)} field charts from {fieldcharts}...")
     for file in fieldcharts_glob:
         copy(file, imagesdir)
-    copy(f"{resultdir}starfile.txt", imagesdir)
-    logging.info(f"Copying starfile.txt...")
+    copy(f"{resultdir}selected_radec.txt", imagesdir)
+    logging.info(f"Copying selected_radec.txt...")
     logging.info(f"Copying done.")
 
 
@@ -78,7 +78,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         is_candidate = star.has_metadata("CANDIDATE")
         sitedata: SiteData = star.get_metadata("SITE")
 
-        vsx_name, separation, extradata, filename_no_ext = utils.get_star_or_catalog_name(star, suffix="")
+        _, _, extradata, filename_no_ext = utils.get_star_or_catalog_name(star, suffix="")
         filename_no_ext_phase = filename_no_ext + "_phase"
         if is_vsx:
             txt_path = PurePath(resultdir, 'phase_vsx/txt', filename_no_ext + '.txt')
@@ -97,7 +97,8 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             ucac4_name = f"{star.coords}"
         else:
             ucac4_name = ucac4.catalog_id if not None else UNKNOWN
-        name = f"{parsed_toml['our_name']}" if 'our_name' in parsed_toml else f"OUR_NAME_{star.local_id}"
+        nl = '\n'
+        name = f"{nl.join(parsed_toml['our_name'])}" if 'our_name' in parsed_toml else f"OUR_NAME_{star.local_id}"
         period = f"{float(parsed_toml['period']):.5f}"
         phase_url = f"{images_prefix}{filename_no_ext_phase}.png"
         epoch = f"{parsed_toml['epoch']}" if 'epoch' in parsed_toml else UNKNOWN
@@ -108,7 +109,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         var_type_link = f"<a href='https://www.aavso.org/vsx/index.php?view=help.vartype&nolayout=1&abbrev=" \
                         f"{var_type}'>{var_type}</a>" if var_type != UNKNOWN else var_type
         mag_range = f"{parsed_toml['range']}"
-        minmax = f"<li>VSX minmax: {parsed_toml['minmax']}</li>" if 'minmax' in parsed_toml else ""
+        minmax = f"<li>minmax: {parsed_toml['minmax']}</li>" if 'minmax' in parsed_toml else ""
         vsx_link = f'<li><a target="_blank" rel="noopener noreferrer" ' \
                    f'href="https://www.aavso.org/vsx/index.php?view=detail.top&oid={extradata["OID"]}"' \
                    f'>VSX link</a></li>' if is_vsx else ""
@@ -125,7 +126,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             <li>period (d): {period}</li>{minmax}
             <li>mag. range: {mag_range}</li>
             <li><a target="_blank" rel="noopener noreferrer" href="
-            https://www.aavso.org/vsx/index.php?view=about.vartypes">type</a>: {var_type_link}{vsx_var_flag}</li>{vsx_link}{vsx_separation}
+            https://www.aavso.org/vsx/index.php?view=about.vartypessort">type</a>: {var_type_link}{vsx_var_flag}</li>{vsx_link}{vsx_separation}
             <li>epoch: {epoch}</li>
             <li>coords: {utils.get_hms_dms(star.coords)}</li>{points_removed}
             <li><a href="{images_prefix}vsx_and_star_{star.local_id:05}.png">finder chart</a></li>
@@ -161,7 +162,7 @@ def get_starfile_preamble(images_prefix: str, len_selected: int, len_vsx: int, l
            f'<div class="fl w-100 pa2 ba">' \
            f'Images by Josch Hambsch, Data processing by Mike Rosseel, Josch Hambsch and ' \
            f'<a href="http://scan.sai.msu.ru/vast/">VaST</a></div>' \
-           f'<a href="{images_prefix}starfile.txt">CSV file of all stars on this page</a><br/>' \
+           f'<a href="{images_prefix}selected_radec.txt">CSV file of all stars on this page</a><br/>' \
            f'<a href="{images_prefix}vsx_{len_vsx}_and_selected_{len_selected}.png">' \
            f'Finder chart with VSX and selected new stars</a><br/>' \
            f'Periods are derived using Lomb-Scargle (LS), Peranso (OWN) or from the VSX database (VSX)</div></div>\n'

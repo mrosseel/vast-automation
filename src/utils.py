@@ -2,12 +2,12 @@ import glob
 from functools import partial
 from os import listdir
 from os.path import isfile, join
-from subprocess import call
+import sys
 
 import numpy as np
 import star_description
 from star_description import StarDescription, StarMetaData
-from typing import List, Dict
+from typing import List, Dict, Tuple
 import multiprocessing as mp
 from multiprocessing import cpu_count
 import re
@@ -90,7 +90,7 @@ def add_metadata(stars: List[star_description.StarDescription], metadata: StarMe
 
 
 def get_stars_with_metadata(stars: List[star_description.StarMetaData], catalog_name: str,
-                            exclude=[]) -> List[star_description.StarDescription]:
+                            exclude: List[str] = []) -> List[star_description.StarDescription]:
     # gets all stars which have a catalog of name catalog_name
     assert isinstance(exclude, list) and isinstance(stars, list)
     return list(filter(partial(metadata_filter, catalog_name=catalog_name, exclude=exclude), stars))
@@ -118,43 +118,56 @@ class MetadataSorter:
     pattern = re.compile(r'.*?(\d+)$')  # finding the number in our name
 
 
-    def get_name_to_sort(self, star: StarDescription, metadata_id, name_extract, default_value, warnings):
-        metadata_entry = star.get_metadata(metadata_id)
-
-        if metadata_entry is None or name_extract(metadata_entry) is None:
-            if warnings:
-                logging.warning(
-                    f"Lookup with {metadata_id} id gave name "
-                    f"'{name_extract(metadata_entry) if metadata_entry is not None else 'None'}' "
-                    f"can't be parsed for sorting, won't be sorted, star: {star}")
-            return default_value
-        return name_extract(metadata_entry)
-
-
-    def get_int_sort_value(self, star: StarDescription, metadata_id, name_extract, warnings):
-        return self.get_metadata_name_number_part(
-            self.get_name_to_sort(star, metadata_id, name_extract, "ERR-999999999",
-                                  warnings))
+    def get_mixed_sort_value(self, startuple: Tuple[int, StarDescription], names: List[str]):
+        """ gets the value to sort, works with mixed int/str types """
+        idx, star = startuple
+        name = names[idx]
+        result = None
+        if name is None:
+            result = -1, -1
+        elif isinstance(name, int) or name.isdigit():
+            result = 0, int(name)
+        else:
+            result = 1, self.get_string_number_part_or_default(name)
+        return result
 
 
-    def get_metadata_name_number_part(self, star_name: str):
+    def get_string_number_part_or_default(self, star_name: str, default_value: int = sys.maxsize):
         match = re.match(self.pattern, star_name)
-        return int(match.group(1)) if match is not None else None
+        return int(match.group(1)) if match is not None else default_value
 
 
-    def get_str_sort_value(self, star: StarDescription, metadata_id, name_extract, warnings):
-        return self.get_name_to_sort(star, metadata_id, name_extract, "ZZZZZZZZZZZ", warnings)
+    @staticmethod
+    def get_metadata_from_star(star: StarDescription, metadata_id: str, warnings: bool = False):
+        result = star.get_metadata(metadata_id)
+        if result is None and warnings:
+            logging.warning(
+                f"The metadata {metadata_id} for star {star.local_id} does not exist")
+        return result
 
 
-    def sort_metadata_name(self, stars: List[StarDescription], metadata_id, name_extract, get_sort_value, warnings):
-        sort_value = partial(get_sort_value, metadata_id=metadata_id, name_extract=name_extract, warnings=warnings)
-        return sorted(stars, key=sort_value)
+    @staticmethod
+    def get_name_from_metadata(obj, name_var: str, warning: bool = False):
+        try:
+            return getattr(obj, name_var)
+        except AttributeError:
+            if warning:
+                logging.warning(
+                    f"The metadata {obj} does not have a name variable called {name_var}")
+            return None
 
 
-    def __call__(self, stars: List[StarDescription], metadata_id='SITE', name_extract=lambda x: x.our_name,
-                 get_sort_value=None, warnings=True):
-        if get_sort_value is None: get_sort_value = self.get_int_sort_value
-        return self.sort_metadata_name(stars, metadata_id, name_extract, get_sort_value, warnings)
+    def mixed_name_extract(self, the_star):
+        star_name = the_star.our_name
+        assert star_name is not None, f"{the_star} contains None as our_name"
+        return (0, self.get_metadata_name_number_part(star_name)) if isinstance(star_name, str) else (1, star_name)
+
+
+    def __call__(self, stars: List[StarDescription], metadata_id='SITE', name_variable='name', warnings=True):
+        metadata = [MetadataSorter.get_metadata_from_star(x, metadata_id, warnings) for x in stars]
+        names = [MetadataSorter.get_name_from_metadata(x, name_variable, warnings) for x in metadata]
+        sorted_stars = [x[1] for x in sorted(enumerate(stars), key=partial(self.get_mixed_sort_value, names=names))]
+        return sorted_stars
 
 
 metadata_sorter = MetadataSorter()
@@ -164,8 +177,8 @@ def sort_selected(stars: List[StarDescription]) -> List[StarDescription]:
     non_vsx = get_stars_with_metadata(stars, "SITE", exclude=["VSX"])
     vsx = get_stars_with_metadata(stars, "VSX")
     assert len(stars) == len(non_vsx) + len(vsx)
-    non_vsx_sorted_stars = metadata_sorter(non_vsx, metadata_id="SITE")
-    vsx_sorted_stars = metadata_sorter(vsx, metadata_id="SITE", get_sort_value=metadata_sorter.get_str_sort_value)
+    non_vsx_sorted_stars = metadata_sorter(non_vsx, metadata_id="SITE", name_variable='our_name')
+    vsx_sorted_stars = metadata_sorter(vsx, metadata_id="SITE", name_variable='our_name')
     return non_vsx_sorted_stars + vsx_sorted_stars
 
 
@@ -197,6 +210,22 @@ def get_star_or_catalog_name(star: StarDescription, suffix: str):
         catalog_name, separation = None, None
     filename_no_ext = f"{catalog_name}{suffix}" if catalog_name is not None else f"{star.local_id:05}{suffix}"
     return catalog_name, separation, extradata, replace_spaces(filename_no_ext)
+
+
+def get_star_names(star: StarDescription) -> List[str]:
+    def unique_append(alist, new):
+        if new not in alist:
+            alist.append(new)
+
+
+    names = []
+    if star.has_metadata("VSX"):
+        unique_append(names, star.get_metadata("VSX").name)
+    if star.has_metadata("SITE"):
+        unique_append(names, star.get_metadata("SITE").our_name)
+    if star.has_metadata("OWNCATALOG"):
+        unique_append(names, star.get_metadata("OWNCATALOG").name)
+    return names if len(names) > 0 else None
 
 
 def get_ucac4_of_sd(star: StarDescription):

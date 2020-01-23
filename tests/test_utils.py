@@ -1,6 +1,6 @@
 # from .context import src
 import unittest
-from functools import partial
+import sys
 
 import star_metadata
 import utils
@@ -36,9 +36,10 @@ class TestUtils(unittest.TestCase):
 
     def test_metadata_sorter(self):
 
-        self.assertEqual(15, utils.metadata_sorter.get_metadata_name_number_part("oenutheo15"))
-        self.assertEqual(1, utils.metadata_sorter.get_metadata_name_number_part("RMH-HMB-1"))
-        self.assertEqual(7, utils.metadata_sorter.get_metadata_name_number_part("RMH-NEW-7"))
+        self.assertEqual(15, utils.metadata_sorter.get_string_number_part_or_default("oenutheo15"))
+        self.assertEqual(1, utils.metadata_sorter.get_string_number_part_or_default("RMH-HMB-1"))
+        self.assertEqual(7, utils.metadata_sorter.get_string_number_part_or_default("RMH-NEW-7"))
+        self.assertEqual(sys.maxsize, utils.metadata_sorter.get_string_number_part_or_default("RMH-NEW"))
 
         stars = []
         for idx in range(1, 101):
@@ -47,8 +48,7 @@ class TestUtils(unittest.TestCase):
                                                            name=f'RMH-HMB-{idx}', coords=curr_star.coords, separation=0)
             stars.append(curr_star)
         random.shuffle(stars)
-        name_extractor = lambda x: x.name
-        result = utils.metadata_sorter(stars, metadata_id='RMH-HMB', name_extract=name_extractor)
+        result = utils.metadata_sorter(stars, metadata_id='RMH-HMB', name_variable='name')
         self.assertEqual("RMH-HMB-1", result[0].get_metadata("RMH-HMB").name)
         self.assertEqual("RMH-HMB-10", result[9].get_metadata("RMH-HMB").name)
         self.assertEqual("RMH-HMB-100", result[99].get_metadata("RMH-HMB").name)
@@ -59,7 +59,8 @@ class TestUtils(unittest.TestCase):
             curr_star.metadata = star_metadata.CatalogData(key="RMH-HMB", catalog_id='', name='',
                                                            coords=curr_star.coords, separation=0)
             stars.append(curr_star)
-        utils.metadata_sorter(stars)  # expect no exception
+        utils.metadata_sorter(stars, metadata_id="DOESNOTEXIST")  # expect no exception
+        utils.metadata_sorter(stars, metadata_id="RMH-HMB")  # expect no exception
 
         stars = []
         for idx in range(1, 101):
@@ -68,10 +69,27 @@ class TestUtils(unittest.TestCase):
                                                            name=f'RMH-NEW{idx}', coords=curr_star.coords, separation=0)
             stars.append(curr_star)
         random.shuffle(stars)
-        result = utils.metadata_sorter(stars, metadata_id='RMH-HMB', name_extract=name_extractor)
+        result = utils.metadata_sorter(stars, metadata_id='RMH-HMB')
         self.assertEqual("RMH-NEW1", result[0].get_metadata("RMH-HMB").name)
         self.assertEqual("RMH-NEW10", result[9].get_metadata("RMH-HMB").name)
         self.assertEqual("RMH-NEW100", result[99].get_metadata("RMH-HMB").name)
+
+        # MIXED stars
+        stars = []
+        random.seed(42)
+        for idx in range(1, 101):
+            curr_star = self.stardesc(idx, random.random() * 360, random.random() * 90)
+            starname = f"RMH-HMB-{idx}" if random.random() < 0.5 else idx
+            curr_star.metadata = star_metadata.\
+                CatalogData(key="RMH-HMB", catalog_id=starname, name=starname,
+                            coords=curr_star.coords, separation=0)
+            stars.append(curr_star)
+        stars[0].get_metadata("RMH-HMB").name="RMH-HMB"
+        result = utils.metadata_sorter(stars, metadata_id="RMH-HMB")  # expect no exception
+        self.assertEqual(2, result[0].get_metadata("RMH-HMB").name)
+        self.assertEqual(91, result[47].get_metadata("RMH-HMB").name)
+        self.assertEqual("RMH-HMB-3", result[49].get_metadata("RMH-HMB").name)
+        self.assertEqual("RMH-HMB-15", result[53].get_metadata("RMH-HMB").name)
 
 
     def test_reject_outliers_iqr(self):
@@ -134,6 +152,7 @@ class TestUtils(unittest.TestCase):
     def stardesc(id, ra, dec):
         return StarDescription(local_id=id,
                                coords=SkyCoord(ra, dec, unit='deg'))
+
 
     @staticmethod
     def set_catalog(star, catalog_name: str):

@@ -62,7 +62,7 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
         vsx_name, separation, extradata, filename_no_ext = utils.get_star_or_catalog_name(star, suffix=suffix)
         var_type = f"Type: {extradata['Type']}" if extradata is not None and 'Type' in extradata else ""
         vsx_title = '' if vsx_name is None else f"{vsx_name} {var_type}"
-        vsx_dist = '' if separation is None else f"(+/- {separation*3600:.0f} arcsec)"
+        vsx_dist = '' if separation is None else f"(+/- {separation * 3600:.0f} arcsec)"
         save_location = PurePath(chartsdir, filename_no_ext + '.png')
         start = timer()
         upsilon_match = star.get_metadata('UPSILON') if star.has_metadata('UPSILON') else None
@@ -138,8 +138,10 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
     assert period is not None
     try:
         logging.debug(f"Starting plot phase diagram with {star} and {fullphasedir}")
-        vsx_name, separation, extradata, filename_no_ext = utils.get_star_or_catalog_name(star, suffix=f"_phase{suffix}")
-        catalog_title = f"{vsx_name}" if vsx_name is not None else ''
+        vsx_name, separation, extradata, filename_no_ext = utils.get_star_or_catalog_name(star,
+                                                                                          suffix=f"_phase{suffix}")
+        names = utils.get_star_names(star)
+        catalog_title = f"{names[0]}" if names is not None else ''
 
         save_location = PurePath(fullphasedir, filename_no_ext + '.png')
         upsilon_match = star.get_metadata('UPSILON')
@@ -158,10 +160,10 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         phased_t_final = np.append(phased_t.subtract(1), phased_t)
         phased_lc_final = np.append(phased_lc, phased_lc)
         phased_err = np.clip(np.append(dy_np, dy_np), -0.5, 0.5)  # error values are clipped to +0.5 and -0.5
-        plt = _plot_phase_diagram(phased_t_final, phased_lc_final, phased_err, write_plot, save_location, star,
-                                  catalog_title, period, upsilon_text)
+        plt_result = _plot_phase_diagram(phased_t_final, phased_lc_final, phased_err, write_plot, save_location, star,
+                                         catalog_title, period, upsilon_text)
         if not write_plot:
-            return plt, t_np, y_np
+            return plt_result, t_np, y_np
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
@@ -180,59 +182,44 @@ def calculate_min_max_epochs(t_np, y_np):
 
 def write_toml(filename_no_ext, fullphasedir, period, star, points_removed, ymin, ymax, epoch_min, epoch_max):
     tomldict = {}
-    var_range = f'{ymin:.1f}-{ymax:.1f}'
-    epoch = None
-    minmax = None
-    vsx_var_flag = None
-    vsx_separation = None
+    tomldict['period'] = float(period.period)
+    tomldict['period_origin'] = period.origin
+    tomldict['range'] = f'{ymin:.1f}-{ymax:.1f} (LS)'
+    tomldict['coords'] = [star.coords.ra.deg, star.coords.dec.deg]
+    tomldict['points_removed'] = points_removed
+    tomldict['our_name'] = f"{star.local_id}"
     if star.has_metadata('SITE'):
         sitedata: SiteData = star.get_metadata('SITE')
         assert sitedata is not None
         tomldict['var_type'] = sitedata.var_type
-        tomldict['our_name'] = sitedata.our_name
-        minmax = sitedata.minmax
-        vsx_var_flag = sitedata.vsx_var_flag
-        vsx_separation = sitedata.vsx_separation
+        tomldict['our_name'] = utils.get_star_names(star)
+        tomldict['minmax'] = sitedata.minmax
+        tomldict['min'] = sitedata.var_min
+        tomldict['max'] = sitedata.var_max
+        if sitedata.vsx_var_flag is not None:
+            tomldict['vsx_var_flag'] = int(sitedata.vsx_var_flag)
+        if sitedata.vsx_separation is not None:
+            tomldict['vsx_separation'] = float(sitedata.vsx_separation)
         if sitedata.var_min and sitedata.var_max:
-            var_range = f'{sitedata.var_min:.2f}-{sitedata.var_max:.2f} {sitedata.source}'
-        if sitedata.var_type is not None \
-            and ("RR" in sitedata.var_type or "W Uma" in sitedata.var_type):
-            if "RR" in sitedata.var_type:
-                epoch = epoch_max
-                minmax = f"max: {ymax:.1f}"
-            elif "W Uma" in sitedata.var_type:
-                epoch = epoch_min
-                minmax = f"min: {ymin:.1f}"
+            tomldict['range'] = f'{sitedata.var_min:.2f}-{sitedata.var_max:.2f} ({sitedata.source})'
         if sitedata.period_err is not None:
             tomldict['period_err'] = sitedata.period_err
-    tomldict['period'] = float(period.period)
-    tomldict['period_origin'] = period.origin
-    tomldict['min'] = float(ymin)
-    tomldict['max'] = float(ymax)
-    tomldict['range'] = var_range
-    tomldict['coords'] = [star.coords.ra.deg, star.coords.dec.deg]
-    tomldict['points_removed'] = points_removed
-    if minmax:
-        tomldict['minmax'] = minmax
-    if epoch:
-        tomldict['epoch'] = float(epoch)
-    if vsx_var_flag:
-        tomldict['vsx_var_flag'] = int(vsx_var_flag)
-    if vsx_separation:
-        tomldict['vsx_separation'] = float(vsx_separation)
+        if sitedata.epoch:
+            tomldict['epoch'] = float(sitedata.epoch)
+
     outputfile = f"{fullphasedir}/txt/{filename_no_ext}.txt"
     logging.debug(f"Writing toml to {outputfile}")
     toml.dump(tomldict, open(outputfile, "w"))
 
 
 # plotting of 'double' phase diagram from -1 to 1
-def _plot_phase_diagram(phased_t_final, phased_lc_final, phased_err, write_plot, save_location, star, vsx_title,
+def _plot_phase_diagram(phased_t_final, phased_lc_final, phased_err, write_plot, save_location, star, catalog_title,
                         period: Period, upsilon_text):
     fig = plt.figure(figsize=(18, 16), dpi=80, facecolor='w', edgecolor='k')
     plt.xlabel("Phase", labelpad=TITLE_PAD)
     plt.ylabel("Magnitude", labelpad=TITLE_PAD)
     plt.title(
-        f"{vsx_title}\nStar {star.local_id}, p: {period.period:.5f} d ({period.origin}) "
+        f"{catalog_title}\nStar {star.local_id}, p: {period.period:.5f} d ({period.origin}) "
         f"{upsilon_text}\n{utils.get_hms_dms_matplotlib(star.coords)}", pad=TITLE_PAD)
     plt.ticklabel_format(style='plain', axis='x')
     plt.tight_layout()
@@ -328,9 +315,9 @@ def phase_dependent_outlier_removal(df: DataFrame, period: Period) -> Tuple[Data
         bucket = bucket_all['realV']
         bucketmean = bucket.median()
         bucketstd = bucket.std()
-        mask = abs(bucket - bucketmean) < 5*bucketstd
+        mask = abs(bucket - bucketmean) < 5 * bucketstd
         maskresult = maskresult.append(bucket_all[mask])
-    return maskresult, len(df)-len(maskresult)
+    return maskresult, len(df) - len(maskresult)
 
 
 def determine_period(df: DataFrame, star: StarDescription):

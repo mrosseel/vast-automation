@@ -135,7 +135,7 @@ def run_do_rest(args):
                                'aavso_selected', do_phase=do_phase, do_light=do_light, do_light_raw=do_light,
                                do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of selected stars")
     # starfiledata is filled in during the phase plotting, so should come after it. Without phase it will be incomplete
-    write_augmented_starfile(resultdir, selected_stars)
+    write_own_catalog(resultdir, selected_stars)
     if args.field:
         do_charts_field.run_standard_field_charts(star_descriptions, wcs, fieldchartsdir, wcs_file, comp_stars)
 
@@ -302,33 +302,34 @@ def write_augmented_all_stars(readdir: str, writedir: str, stardict: StarDict):
 
 
 # naam, ra, dec, max, min, type, periode, epoch?
-def write_augmented_starfile(resultdir: str, starfile_stars: List[StarDescription]):
-    newname = f"{resultdir}starfile.txt"
-    logging.info(f"Writing {newname} with {len(starfile_stars)}...")
-    sorted_stars = utils.sort_selected(starfile_stars)
-    with open(newname, 'w') as outfile:
-        outfile.write(f"# our_name,ra,dec,minmax,min,max,var_type,period,period_err,epoch\n")
+def write_own_catalog(resultdir: str, selected_stars: List[StarDescription]):
+    owncatalog = f"{resultdir}selected_radec.txt"
+    selectedstars = f"{resultdir}selected_localid.txt"
+    logging.info(f"Writing {owncatalog} and {selectedstars} with {len(selected_stars)} stars...")
+    sorted_stars = utils.sort_selected(selected_stars)
+    with open(owncatalog, 'w') as outowncatalog, open(selectedstars, 'w') as outselected:
+        outowncatalog.write(f"# our_name,ra,dec,minmax,min,max,var_type,period,period_err,epoch\n")
+        outselected.write(f"# our_name,local_id,minmax,min,max,var_type,period,period_err,epoch\n")
 
-
-        def format_float_arg(toml, arg: str, precision):
-            if arg is None or arg not in toml:
+        def format_float_arg(atoml, arg: str, precision):
+            if arg is None or arg not in atoml:
                 return ''
-            if not isinstance(toml[arg], float):
-                return toml[arg]
-            return f"{toml[arg]:.{precision}f}"
+            if not isinstance(atoml[arg], float):
+                return atoml[arg]
+            return f"{atoml[arg]:.{precision}f}"
 
 
-        def format_float_5(toml, arg: str):
-            format_float_arg(toml, arg, 5)
+        def format_float_5(atoml, arg: str):
+            return format_float_arg(atoml, arg, 5)
 
 
-        def format_float_1(toml, arg: str):
-            format_float_arg(toml, arg, 1)
+        def format_float_1(atoml, arg: str):
+            return format_float_arg(atoml, arg, 1)
 
 
-        def format_string(arg: str, toml):
-            if arg in toml:
-                return toml[arg]
+        def format_string(arg: str, atoml):
+            if arg in atoml:
+                return atoml[arg]
             return ''
 
 
@@ -340,8 +341,15 @@ def write_augmented_starfile(resultdir: str, starfile_stars: List[StarDescriptio
                             filename_no_ext + '.txt')
             try:
                 parsed_toml = toml.load(txt_path)
-                outfile.write(
+                print("pritning parsed toml", parsed_toml)
+                outowncatalog.write(
                     f"{metadata.our_name},{star.coords.ra.deg:.5f},{star.coords.dec.deg:.5f},"
+                    f"{format_string('minmax', parsed_toml)},{format_float_1(parsed_toml, 'min')},"
+                    f"{format_float_1(parsed_toml, 'max')},{metadata.var_type},"
+                    f"{format_float_5(parsed_toml, 'period')},{format_float_5(parsed_toml, 'period_err')},"
+                    f"{format_string('epoch', parsed_toml)}\n")
+                outselected.write(
+                    f"{metadata.our_name},{star.local_id},"
                     f"{format_string('minmax', parsed_toml)},{format_float_1(parsed_toml, 'min')},"
                     f"{format_float_1(parsed_toml, 'max')},{metadata.var_type},"
                     f"{format_float_5(parsed_toml, 'period')},{format_float_5(parsed_toml, 'period_err')},"
@@ -485,8 +493,9 @@ def tag_candidates(vastdir: str, star_descriptions: List[StarDescription]):
 def tag_selected(selectedstarfile: str, stardict: StarDict):
     try:
         df = pd.read_csv(selectedstarfile, delimiter=',', comment='#',
-                         names=['local_id', 'var_type', 'our_name', 'period', 'period_err'],
-                         dtype={'local_id': int, 'period': float, 'period_err': float},
+                         names=['our_name', 'local_id', 'minmax', 'min', 'max', 'var_type', 'period', 'period_err',
+                                'epoch'],
+                         dtype={'local_id': int, 'minmax': str},
                          skipinitialspace=True)
         df = df.replace({np.nan: None})
         logging.info(f"Selecting {len(df)} stars added by {selectedstarfile}: {df['local_id'].to_numpy()}")
@@ -495,9 +504,13 @@ def tag_selected(selectedstarfile: str, stardict: StarDict):
             if the_star is None:
                 logging.error(f"Could not find star {row['local_id']}, consider removing it from your txt file")
                 continue
-            the_star.metadata = SiteData(var_type=row['var_type'],
+            the_star.metadata = SiteData(minmax=row['minmax'],
+                                         var_min=row['min'],
+                                         var_max=row['max'],
+                                         var_type=row['var_type'],
                                          our_name=row['our_name'], period=row['period'],
-                                         period_err=row['period_err'], source="file")
+                                         period_err=row['period_err'], source="OWN",
+                                         epoch=row['epoch'])
             the_star.metadata = SelectedFileData()
             logging.debug(f"starfile {the_star.local_id} metadata: {the_star.metadata}, "
                           f"{the_star.get_metadata('SELECTEDFILE')}")
@@ -549,9 +562,9 @@ def tag_candidates_as_selected(candidate_stars: List[StarDescription]):
     for the_star in candidate_stars:
         if the_star.has_metadata("SITE"):  # don't overwrite the SITE entry of SELECTEDFILE or VSX which has priority
             continue
-        extradata = the_star.get_metadata("CANDIDATE")
-        if extradata is None:
-            logging.error(f"Could not find extradata for star {the_star.local_id}")
+        candidate_metadata = the_star.get_metadata("CANDIDATE")
+        if candidate_metadata is None:
+            logging.error(f"Could not find CANDIDATE metadata for star {the_star.local_id}")
             continue
         the_star.metadata = SiteData(our_name=str(the_star.local_id), source='CANDIDATE')
         the_star.metadata = SelectedFileData()
@@ -586,11 +599,21 @@ def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
     star_catalog = do_calibration.create_star_descriptions_catalog(stars)
     idx, d2d, d3d = match_coordinates_sky(skycoord, star_catalog, nthneighbor=1)
     for count, index in enumerate(idx):
-        entry = df.iloc[count]
-        stars[index].metadata = CatalogData(key="OWNCATALOG", catalog_id=entry['our_name'],
-                                            name=entry['our_name'],
-                                            coords=SkyCoord(entry['ra'], entry['dec'], unit="deg"),
-                                            separation=d2d[count].degree)
+        row = df.iloc[count]
+        star = stars[index]
+        star.metadata = CatalogData(key="OWNCATALOG", catalog_id=row['our_name'],
+                                    name=row['our_name'],
+                                    coords=SkyCoord(row['ra'], row['dec'], unit="deg"),
+                                    separation=d2d[count].degree)
+        if not star.has_metadata("SITE"):
+            star.metadata = SiteData(minmax=row['minmax'],
+                                     var_min=row['min'],
+                                     var_max=row['max'],
+                                     var_type=row['var_type'],
+                                     our_name=row['our_name'], period=row['period'],
+                                     period_err=row['period_err'], source="OWN",
+                                     epoch=row['epoch'])
+
         if d2d[count].degree > 0.01:
             logging.warning(f"Separation between {df.iloc[count]['our_name']} "
                             f"and {stars[index].local_id} is {d2d[count]}")
