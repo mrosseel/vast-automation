@@ -311,6 +311,7 @@ def write_own_catalog(resultdir: str, selected_stars: List[StarDescription]):
         outowncatalog.write(f"# our_name,ra,dec,minmax,min,max,var_type,period,period_err,epoch\n")
         outselected.write(f"# our_name,local_id,minmax,min,max,var_type,period,period_err,epoch\n")
 
+
         def format_float_arg(atoml, arg: str, precision):
             if arg is None or arg not in atoml:
                 return ''
@@ -508,8 +509,10 @@ def tag_selected(selectedstarfile: str, stardict: StarDict):
                                          var_max=row['max'],
                                          var_type=row['var_type'],
                                          our_name=row['our_name'],
-                                         period=float(row['period']) if row['period'] is not None or 'None' else None,
-                                         period_err=float(row['period_err']) if row['period_err'] is not None or 'None' else None,
+                                         period=float(row['period'])
+                                            if row['period'] is not None and row['period'] is not 'None' else None,
+                                         period_err=float(row['period_err'])
+                                            if row['period_err'] is not None and row['period_err'] is not 'None' else None,
                                          source="OWN",
                                          epoch=row['epoch'])
             the_star.metadata = SelectedFileData()
@@ -612,8 +615,8 @@ def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
                                      var_max=row['max'],
                                      var_type=row['var_type'],
                                      our_name=row['our_name'],
-                                     period=float(row['period']) if row['period'] is not None or 'None' else None,
-                                     period_err=float(row['period_err']) if row['period_err'] is not None or 'None' else None,
+                                     period=float(row['period']) if row['period'] is not None and row['period'] is not 'None' else None,
+                                     period_err=float(row['period_err']) if row['period_err'] is not None and row['period_err'] is not 'None' else None,
                                      source="OWN",
                                      epoch=row['epoch'])
 
