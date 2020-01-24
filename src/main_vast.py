@@ -610,14 +610,19 @@ def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
                                     coords=SkyCoord(row['ra'], row['dec'], unit="deg"),
                                     separation=d2d[count].degree)
         if not the_star.has_metadata("SITE"):
-            logging.info(f"Converting owncatalog for star {the_star.local_id}, period: <{row['period']}>")
+            logging.info(f"Converting owncatalog for star {the_star.local_id}, period: <{row['period']}>, "
+                         f"{type(row['period'])}")
+            period = float(row['period']) if (period in row and row['period'] is not None
+                                              and row['period'] is not 'None') else None,
+            period_err = float(row['period_err']) if (row['period_err'] is not None
+                                                      and row['period_err'] is not 'None') else None,
             the_star.metadata = SiteData(minmax=row['minmax'],
                                      var_min=row['min'],
                                      var_max=row['max'],
                                      var_type=row['var_type'],
                                      our_name=row['our_name'],
-                                     period=float(row['period']) if row['period'] is not None and row['period'] is not 'None' else None,
-                                     period_err=float(row['period_err']) if (row['period_err'] is not None and row['period_err'] is not 'None') else None,
+                                     period=period,
+                                     period_err=period_err,
                                      source="OWN",
                                      epoch=row['epoch'])
             the_star.metadata = SelectedFileData()
