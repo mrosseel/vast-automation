@@ -171,7 +171,7 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
                                                       [x.get_metadata("SITE").our_name for x in selected_no_vsx_no_own_descr])
 
     # owncatalog stars get their local id label
-    owncatalog_descr = utils.get_stars_with_metadata(star_descriptions, "OWNCATALOG", exclude="VSX")
+    owncatalog_descr = utils.get_stars_with_metadata(star_descriptions, "OWNCATALOG", exclude=["VSX"])
     owncatalog_labeled = set_custom_label(owncatalog_descr, [x.get_metadata("OWNCATALOG").name for x in owncatalog_descr])
 
     # field chart with all detections
@@ -221,7 +221,8 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
         fig = plot_it([[star], vsx_labeled, compstars_labeled, checkstar_labeled], [10., 5., 3., 4.],
                       [True, False, True, False],
                       reference_fits_frame, wcs, f"VSX stars + star {star.local_id}", PADDING)
-        save(fig, f"{fieldchartsdirs}vsx_and_star_{star.local_id:05}")
+        _, _, _, filename_no_ext = utils.get_star_or_catalog_name(star, suffix="")
+        save(fig, f"{fieldchartsdirs}vsx_and_star_{filename_no_ext}")
         gc.collect()
 
 

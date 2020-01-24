@@ -207,7 +207,7 @@ def get_star_or_catalog_name(star: StarDescription, suffix: str = ""):
         catalog_name, separation = catalog.name, catalog.separation
     else:
         catalog_name, separation = star.local_id, None
-    filename_no_ext = f"{catalog_name:05}{suffix}" if isinstance(catalog_name, int) or catalog_name.isdigit() \
+    filename_no_ext = f"{int(catalog_name):05}{suffix}" if isinstance(catalog_name, int) or catalog_name.isdigit() \
         else f"{catalog_name}{suffix}"
     return catalog_name, separation, extradata, replace_spaces(filename_no_ext)
 

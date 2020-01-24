@@ -130,7 +130,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             https://www.aavso.org/vsx/index.php?view=about.vartypessort">type</a>: {var_type_link}{vsx_var_flag}</li>{vsx_link}{vsx_separation}
             <li>epoch: {epoch}</li>
             <li>coords: {utils.get_hms_dms(star.coords)}</li>{points_removed}
-            <li><a href="{images_prefix}vsx_and_star_{star.local_id:05}.png">finder chart</a></li>
+            <li><a href="{images_prefix}vsx_and_star_{filename_no_ext}.png">finder chart</a></li>
             <li><a href="{images_prefix}{filename_no_ext}_ext.txt">observations</a></li>
             <li><a href="{images_prefix}{filename_no_ext}_light.png">light curve</a></li>
             <li><a href="{images_prefix}{filename_no_ext}_lightpa.png">light curve PA</a></li>
