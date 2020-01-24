@@ -171,7 +171,7 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
                                                       [x.get_metadata("SITE").our_name for x in selected_no_vsx_no_own_descr])
 
     # owncatalog stars get their local id label
-    owncatalog_descr = utils.get_stars_with_metadata(star_descriptions, "OWNCATALOG")
+    owncatalog_descr = utils.get_stars_with_metadata(star_descriptions, "OWNCATALOG", exclude="VSX")
     owncatalog_labeled = set_custom_label(owncatalog_descr, [x.get_metadata("OWNCATALOG").name for x in owncatalog_descr])
 
     # field chart with all detections

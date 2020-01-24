@@ -42,7 +42,8 @@ def report(star: StarDescription, df_curve: DataFrame, comp_stars: ComparisonSta
     star_match_vsx = star.get_metadata("VSX").name if star.has_metadata("VSX") else None
     var_display_name = star_match_ucac4 if star_match_vsx is None else star_match_vsx
     var_display_name = var_display_name if var_display_name is not None else f"Star_{star.local_id}"
-    filename = utils.replace_spaces(f"{star.local_id:05}" if star.aavso_id is None else star.aavso_id)
+    # utils.replace_spaces(f"{star.local_id:05}" if star.aavso_id is None else star.aavso_id)
+    _, _, _, filename_no_ext = utils.get_star_or_catalog_name(star)
     earth_location = EarthLocation(lat=sitelat, lon=sitelong, height=sitealt * u.m)
     logging.debug(f"Starting aavso report with star:{star}")
     if chunk_size is None:
@@ -64,7 +65,7 @@ def report(star: StarDescription, df_curve: DataFrame, comp_stars: ComparisonSta
     for chunk in star_chunks:
         chunk_counters += 1
         suffix = f"_{chunk_counters}.txt" if len(star_chunks) != 1 else ".txt"
-        with open(Path(target_dir, f"{filename}_ext{suffix}"), 'w') as fp:
+        with open(Path(target_dir, f"{filename_no_ext}_ext{suffix}"), 'w') as fp:
             writer = aavso.ExtendedFormatWriter(fp, observer, location=(sitelat, sitelong, sitealt),
                                                 software='https://github.com/mrosseel/vast-automation',
                                                 type='EXTENDED', obstype='CCD')
@@ -73,7 +74,7 @@ def report(star: StarDescription, df_curve: DataFrame, comp_stars: ComparisonSta
                 jd = row['JD']
                 if jd in check_star.observations[0]:
                     # adding an offset of 30 to get instrumental mags to be positive (recommended by aavso)
-                    check_mag = f"{check_star.observations[0][jd][0]+30:.3f}"
+                    check_mag = f"{check_star.observations[0][jd][0] + 30:.3f}"
                 else:
                     check_mag = "na"
 

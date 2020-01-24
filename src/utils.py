@@ -196,7 +196,7 @@ def reject_outliers_iqr(df, column, cut=5):
     return df[(df[column] < upper_bound) & (df[column] > lower_bound)]
 
 
-def get_star_or_catalog_name(star: StarDescription, suffix: str):
+def get_star_or_catalog_name(star: StarDescription, suffix: str = ""):
     extradata = None
     if star.has_metadata("VSX"):
         catalog = star.get_metadata("VSX")
@@ -206,8 +206,9 @@ def get_star_or_catalog_name(star: StarDescription, suffix: str):
         catalog = star.get_metadata("OWNCATALOG")
         catalog_name, separation = catalog.name, catalog.separation
     else:
-        catalog_name, separation = None, None
-    filename_no_ext = f"{catalog_name}{suffix}" if catalog_name is not None else f"{star.local_id:05}{suffix}"
+        catalog_name, separation = star.local_id, None
+    filename_no_ext = f"{catalog_name:05}{suffix}" if isinstance(catalog_name, int) or catalog_name.isdigit() \
+        else f"{catalog_name}{suffix}"
     return catalog_name, separation, extradata, replace_spaces(filename_no_ext)
 
 
