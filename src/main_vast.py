@@ -99,8 +99,8 @@ def run_do_rest(args):
     vsx_stars = utils.get_stars_with_metadata(star_descriptions, "VSX")
     logging.info(f"There are {len(vsx_stars)} vsx stars")
     selected_stars = utils.get_stars_with_metadata(star_descriptions, "SELECTEDFILE")
-    if args.selectvsx:
-        selected_stars = utils.concat_sd_lists(selected_stars, vsx_stars)
+    # if args.selectvsx:
+    #     selected_stars = utils.concat_sd_lists(selected_stars, vsx_stars)
     logging.info(f"There are {len(selected_stars)} selected stars")
     compstar_needing_stars = utils.concat_sd_lists(selected_stars, vsx_stars, candidate_stars, owncatalog)
     comp_stars = set_comp_stars_and_ucac4(star_descriptions, selected_stars, args.checkstarfile, vastdir, stardict,
@@ -510,9 +510,9 @@ def tag_selected(selectedstarfile: str, stardict: StarDict):
                                          var_type=row['var_type'],
                                          our_name=row['our_name'],
                                          period=float(row['period'])
-                                            if row['period'] is not None and row['period'] is not 'None' else None,
+                                         if row['period'] is not None and row['period'] is not 'None' else None,
                                          period_err=float(row['period_err'])
-                                            if row['period_err'] is not None and row['period_err'] is not 'None' else None,
+                                         if row['period_err'] is not None and row['period_err'] is not 'None' else None,
                                          source="OWN",
                                          epoch=row['epoch'])
             the_star.metadata = SelectedFileData()
@@ -604,22 +604,23 @@ def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
     idx, d2d, d3d = match_coordinates_sky(skycoord, star_catalog, nthneighbor=1)
     for count, index in enumerate(idx):
         row = df.iloc[count]
-        star = stars[index]
-        star.metadata = CatalogData(key="OWNCATALOG", catalog_id=row['our_name'],
+        the_star = stars[index]
+        the_star.metadata = CatalogData(key="OWNCATALOG", catalog_id=row['our_name'],
                                     name=row['our_name'],
                                     coords=SkyCoord(row['ra'], row['dec'], unit="deg"),
                                     separation=d2d[count].degree)
-        if not star.has_metadata("SITE"):
-            star.metadata = SiteData(minmax=row['minmax'],
+        if not the_star.has_metadata("SITE"):
+            logging.info(f"Converting owncatalog for star {the_star.local_id}, period: <{row['period']}>")
+            the_star.metadata = SiteData(minmax=row['minmax'],
                                      var_min=row['min'],
                                      var_max=row['max'],
                                      var_type=row['var_type'],
                                      our_name=row['our_name'],
                                      period=float(row['period']) if row['period'] is not None and row['period'] is not 'None' else None,
-                                     period_err=float(row['period_err']) if row['period_err'] is not None and row['period_err'] is not 'None' else None,
+                                     period_err=float(row['period_err']) if (row['period_err'] is not None and row['period_err'] is not 'None') else None,
                                      source="OWN",
                                      epoch=row['epoch'])
-
+            the_star.metadata = SelectedFileData()
         if d2d[count].degree > 0.01:
             logging.warning(f"Separation between {df.iloc[count]['our_name']} "
                             f"and {stars[index].local_id} is {d2d[count]}")

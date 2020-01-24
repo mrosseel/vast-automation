@@ -22,7 +22,8 @@ def run(post_name: str, selected_stars: List[StarDescription], len_vsx: int, len
     images_prefix = f"/images/{post_name}/"
     copy_files(post_name, resultdir, sitedir)
     result = get_header(post_name)
-    result += get_starfile_preamble(images_prefix, len(selected_stars), len_vsx, len_candidates)
+    result += get_starfile_preamble(images_prefix, len([x for x in selected_stars if not x.has_metadata("VSX")]),
+                                    len_vsx, len_candidates)
     sorted_stars = utils.sort_selected(selected_stars)
     part_block = partial(block, resultdir=resultdir, images_prefix=images_prefix)
     for star in sorted_stars:

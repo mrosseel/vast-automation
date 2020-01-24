@@ -162,9 +162,9 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
     candidate_labeled = set_local_id_label(candidate_descr)
 
     # starfile stars get their local id label
-    starfile_count = len(utils.get_stars_with_metadata(star_descriptions, "SITE"))
-    starfile_descr = utils.get_stars_with_metadata(star_descriptions, "SITE", exclude=["VSX"])
-    starfile_labeled = set_custom_label(starfile_descr, [x.get_metadata("SITE").our_name for x in starfile_descr])
+    selected_descr = utils.get_stars_with_metadata(star_descriptions, "SITE", exclude=["VSX"])
+    selected_count = len(selected_descr)
+    selected_labeled = set_custom_label(selected_descr, [x.get_metadata("SITE").our_name for x in selected_descr])
 
     # owncatalog stars get their local id label
     owncatalog_descr = utils.get_stars_with_metadata(star_descriptions, "OWNCATALOG")
@@ -197,18 +197,18 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
     save(fig, fieldchartsdirs + f'vsx_{len(vsx_labeled)}_and_candidates_{len(candidate_labeled)}')
 
     # field chart with all vsx stars + starfile + owncatalog
-    logging.info(f"Plotting field chart with all VSX variable stars + {starfile_count} selected vars...")
-    fig = plot_it([vsx_labeled, starfile_labeled, owncatalog_labeled], [10., 5., 4.], [False, True, True],
+    logging.info(f"Plotting field chart with all VSX variable stars + {selected_count} selected vars...")
+    fig = plot_it([vsx_labeled, selected_labeled, owncatalog_labeled], [10., 5., 4.], [False, True, True],
                   reference_fits_frame, wcs, "VSX stars + selected stars + own catalog", PADDING)
-    save(fig, fieldchartsdirs + 'vsx_{}_and_selected_{}'.format(len(vsx_labeled), starfile_count))
+    save(fig, fieldchartsdirs + 'vsx_{}_and_selected_{}'.format(len(vsx_labeled), selected_count))
 
     # compstars get their vmag as label
     # comp_stars_descr = comp_stars.star_descriptions
     # comp_stars_labeled = set_custom_label(comp_stars_descr, [x.vmag for x in comp_stars_descr])
 
-    logging.info(f"Plotting field chart for each of the {starfile_count} selected stars")
+    logging.info(f"Plotting field chart for each of the {selected_count} selected stars")
     # field charts for each individually selected starfile star
-    for star in tqdm.tqdm(starfile_labeled):
+    for star in tqdm.tqdm(selected_labeled):
         filtered_compstars, check_star = do_compstars.filter_comparison_stars(star, comp_stars)
         filtered_compstars_sds = filtered_compstars.star_descriptions
         check_star_sd = check_star.star_descriptions

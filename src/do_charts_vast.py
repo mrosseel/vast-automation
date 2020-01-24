@@ -180,7 +180,7 @@ def calculate_min_max_epochs(t_np, y_np):
     return ymin, ymax, epoch_min, epoch_max
 
 
-def write_toml(filename_no_ext, fullphasedir, period, star, points_removed):
+def write_toml(filename_no_ext, fullphasedir, period, star, points_removed, ymin, ymax, epoch_min, epoch_max):
     tomldict = {}
     tomldict['period'] = float(period.period)
     tomldict['period_origin'] = period.origin
@@ -276,8 +276,8 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_lig
         period = determine_period(df, star)
         df, points_removed = phase_dependent_outlier_removal(df, period)
         write_compstars(star, filename_no_ext, phasedir, filtered_compstars, check_star)
-        write_toml(filename_no_ext, phasedir, period, star, points_removed)
-                   # *calculate_min_max_epochs(df['floatJD'], df['realV']))
+        write_toml(filename_no_ext, phasedir, period, star, points_removed,
+                   *calculate_min_max_epochs(df['floatJD'], df['realV']))
 
         if do_phase:
             plot_phase_diagram(star, df.copy(), phasedir, period=period, suffix="")
@@ -329,7 +329,7 @@ def determine_period(df: DataFrame, star: StarDescription):
     sitedata = star.get_metadata("SITE")
     source = sitedata.source
     period: Period = Period(sitedata.period, source)
-    logging.info(f"Using {source} period for star {star.local_id}: {period.period}")
+    logging.debug(f"Using {source} period for star {star.local_id}: {period.period}")
     return period
 
 
