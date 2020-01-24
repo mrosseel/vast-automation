@@ -162,6 +162,7 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
     candidate_labeled = set_local_id_label(candidate_descr)
 
     # starfile stars get their local id label
+    selected_desc = utils.get_stars_with_metadata(star_descriptions, "SITE")
     selected_no_vsx_descr = utils.get_stars_with_metadata(star_descriptions, "SITE", exclude=["VSX"])
     selected_no_vsx_no_own_descr = utils.get_stars_with_metadata(star_descriptions, "SITE", exclude=["VSX", "OWNCATALOG"])
     selected_count = len(selected_no_vsx_descr)
@@ -212,7 +213,7 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
 
     logging.info(f"Plotting field chart for each of the {selected_count} selected stars")
     # field charts for each individually selected starfile star
-    for star in tqdm.tqdm(selected_no_vsx_labeled):
+    for star in tqdm.tqdm(selected_desc):
         filtered_compstars, check_star = do_compstars.filter_comparison_stars(star, comp_stars)
         filtered_compstars_sds = filtered_compstars.star_descriptions
         check_star_sd = check_star.star_descriptions
@@ -222,6 +223,7 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
                       [True, False, True, False],
                       reference_fits_frame, wcs, f"VSX stars + star {star.local_id}", PADDING)
         _, _, _, filename_no_ext = utils.get_star_or_catalog_name(star, suffix="")
+        logging.info(f"Saving {fieldchartsdirs}vsx_and_star_{filename_no_ext}")
         save(fig, f"{fieldchartsdirs}vsx_and_star_{filename_no_ext}")
         gc.collect()
 

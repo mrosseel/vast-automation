@@ -610,19 +610,25 @@ def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
                                     coords=SkyCoord(row['ra'], row['dec'], unit="deg"),
                                     separation=d2d[count].degree)
         if not the_star.has_metadata("SITE"):
-            logging.info(f"Converting owncatalog for star {the_star.local_id}, period: <{row['period']}>, "
-                         f"{type(row['period'])}")
             try:
-                period = float(row['period'])
+                period = float(row['period']) if row['period'] is not None else None
             except ValueError:
                 period = None
             try:
-                period_err = float(row['period_err'])
+                period_err = float(row['period_err']) if row['period_err'] is not None else None
             except ValueError:
                 period_err = None
+            try:
+                min = float(row['min']) if row['min'] is not None else None
+            except ValueError:
+                min = None
+            try:
+                max = float(row['max']) if row['max'] is not None else None
+            except ValueError:
+                max = None
             the_star.metadata = SiteData(minmax=row['minmax'],
-                                     var_min=row['min'],
-                                     var_max=row['max'],
+                                     var_min=min,
+                                     var_max=max,
                                      var_type=row['var_type'],
                                      our_name=row['our_name'],
                                      period=period,
