@@ -209,7 +209,7 @@ def get_star_or_catalog_name(star: StarDescription, suffix: str = ""):
         catalog_name, separation = star.local_id, None
     filename_no_ext = f"{int(catalog_name):05}{suffix}" if isinstance(catalog_name, int) or catalog_name.isdigit() \
         else f"{catalog_name}{suffix}"
-    return catalog_name, separation, extradata, replace_spaces_and_dots(filename_no_ext)
+    return catalog_name, separation, extradata, replace_spaces(replace_dots(filename_no_ext))
 
 
 def get_star_names(star: StarDescription) -> List[str]:
@@ -234,5 +234,10 @@ def get_ucac4_of_sd(star: StarDescription):
 
 
 # replace spaces with underscores
-def replace_spaces_and_dots(a_string: str):
-    return a_string.replace(' ', '_').replace('.', '-')
+def replace_dots(a_string: str):
+    return a_string.replace('.', '-')
+
+
+# replace spaces with underscores
+def replace_spaces(a_string: str):
+    return a_string.replace(' ', '_')

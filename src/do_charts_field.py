@@ -219,11 +219,10 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
         check_star_sd = check_star.star_descriptions
         compstars_labeled = set_custom_label(filtered_compstars_sds, [x.vmag for x in filtered_compstars_sds])
         checkstar_labeled = set_custom_label(check_star_sd, f"Kmag={check_star_sd[0].vmag}")
+        catalog_name, _, _, filename_no_ext = utils.get_star_or_catalog_name(star, suffix="")
         fig = plot_it([[star], vsx_labeled, compstars_labeled, checkstar_labeled], [10., 5., 3., 4.],
                       [True, False, True, False],
-                      reference_fits_frame, wcs, f"VSX stars + star {star.local_id}", PADDING)
-        _, _, _, filename_no_ext = utils.get_star_or_catalog_name(star, suffix="")
-        logging.info(f"Saving {fieldchartsdirs}vsx_and_star_{filename_no_ext}")
+                      reference_fits_frame, wcs, f"VSX stars + {catalog_name} (star {star.local_id})", PADDING)
         save(fig, f"{fieldchartsdirs}vsx_and_star_{filename_no_ext}")
         gc.collect()
 
