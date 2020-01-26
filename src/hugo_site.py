@@ -105,7 +105,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         epoch = f"{parsed_toml['epoch']}" if 'epoch' in parsed_toml else UNKNOWN
         var_type = f"{parsed_toml['var_type']}" if 'var_type' in parsed_toml else UNKNOWN
         vsx_var_flag = f" ({parsed_toml['vsx_var_flag']})" if 'vsx_var_flag' in parsed_toml else ""
-        separation = f"<li>separation: +/- {parsed_toml['separation']*3600:.3f} arcsec</li>" \
+        separation = f"<li>separation: +/- {parsed_toml['separation']*3600:.0f} arcsec</li>" \
             if 'separation' in parsed_toml else ""
         var_type_link = f"<a href='https://www.aavso.org/vsx/index.php?view=help.vartype&nolayout=1&abbrev=" \
                         f"{var_type}'>{var_type}</a>" if var_type != UNKNOWN else var_type
