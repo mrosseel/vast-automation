@@ -198,8 +198,8 @@ def write_toml(filename_no_ext, fullphasedir, period, star, points_removed, ymin
         tomldict['max'] = sitedata.var_max
         if sitedata.vsx_var_flag is not None:
             tomldict['vsx_var_flag'] = int(sitedata.vsx_var_flag)
-        if sitedata.vsx_separation is not None:
-            tomldict['vsx_separation'] = float(sitedata.vsx_separation)
+        if sitedata.separation is not None:
+            tomldict['separation'] = float(sitedata.separation)
         if sitedata.var_min and sitedata.var_max:
             tomldict['range'] = f'{sitedata.var_min:.2f}-{sitedata.var_max:.2f} ({sitedata.source})'
         if sitedata.period_err is not None:

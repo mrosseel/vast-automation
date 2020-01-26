@@ -130,7 +130,7 @@ def run_do_rest(args):
             do_charts_vast.run(vsx_stars, comp_stars, vastdir, resultdir, 'phase_vsx/', 'light_vsx/', 'aavso_vsx/',
                                do_phase=do_phase, do_light=do_light, do_light_raw=do_light,
                                do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of VSX stars")
-        if args.selectedstarfile:
+        if args.selectedstarfile or args.owncatalog:
             do_charts_vast.run(selected_stars, comp_stars, vastdir, resultdir, 'phase_selected/', 'light_selected/',
                                'aavso_selected', do_phase=do_phase, do_light=do_light, do_light_raw=do_light,
                                do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of selected stars")
@@ -543,7 +543,7 @@ def tag_vsx_as_selected(vsx_stars: List[StarDescription]):
         # 'l_Period': row['l_Period'], 'Period': row['Period'], 'u_Period': row['u_Period']})
         the_star.metadata = SiteData(var_type=str(extradata['Type']),
                                      vsx_var_flag=str(extradata['V']),
-                                     vsx_separation=float(vsx_metadata.separation),
+                                     separation=float(vsx_metadata.separation),
                                      our_name=str(extradata['Name']),
                                      period=float(extradata['Period'])
                                      if not np.isnan(extradata['Period']) else None,
@@ -627,14 +627,15 @@ def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
             except ValueError:
                 max = None
             the_star.metadata = SiteData(minmax=row['minmax'],
-                                     var_min=min,
-                                     var_max=max,
-                                     var_type=row['var_type'],
-                                     our_name=row['our_name'],
-                                     period=period,
-                                     period_err=period_err,
-                                     source="OWN",
-                                     epoch=row['epoch'])
+                                         var_min=min,
+                                         var_max=max,
+                                         var_type=row['var_type'],
+                                         our_name=row['our_name'],
+                                         period=period,
+                                         period_err=period_err,
+                                         separation=d2d[count].degree,
+                                         source="OWN",
+                                         epoch=row['epoch'])
             the_star.metadata = SelectedFileData()
         if d2d[count].degree > 0.01:
             logging.warning(f"Separation between {df.iloc[count]['our_name']} "

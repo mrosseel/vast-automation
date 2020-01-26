@@ -26,7 +26,7 @@ class StarDescription:
         self.local_id = local_id
         # id used to identify to aavso (could be real variable name or UCAC4?)
         self.aavso_id = aavso_id
-        # coords as measured by munipack
+        # coords as measured by vast
         self.coords = coords
         # vmag as provided by one of the matching catalogs
         self.vmag = vmag

@@ -105,8 +105,8 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         epoch = f"{parsed_toml['epoch']}" if 'epoch' in parsed_toml else UNKNOWN
         var_type = f"{parsed_toml['var_type']}" if 'var_type' in parsed_toml else UNKNOWN
         vsx_var_flag = f" ({parsed_toml['vsx_var_flag']})" if 'vsx_var_flag' in parsed_toml else ""
-        vsx_separation = f"<li>VSX separation: +/- {parsed_toml['vsx_separation']*3600:.0f} arcsec</li>" \
-            if 'vsx_separation' in parsed_toml else ""
+        separation = f"<li>separation: +/- {parsed_toml['separation']*3600:.3f} arcsec</li>" \
+            if 'separation' in parsed_toml else ""
         var_type_link = f"<a href='https://www.aavso.org/vsx/index.php?view=help.vartype&nolayout=1&abbrev=" \
                         f"{var_type}'>{var_type}</a>" if var_type != UNKNOWN else var_type
         mag_range = f"{parsed_toml['range']}"
@@ -127,7 +127,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             <li>period (d): {period}</li>{minmax}
             <li>mag. range: {mag_range}</li>
             <li><a target="_blank" rel="noopener noreferrer" href="
-            https://www.aavso.org/vsx/index.php?view=about.vartypessort">type</a>: {var_type_link}{vsx_var_flag}</li>{vsx_link}{vsx_separation}
+            https://www.aavso.org/vsx/index.php?view=about.vartypessort">type</a>: {var_type_link}{vsx_var_flag}</li>{vsx_link}{separation}
             <li>epoch: {epoch}</li>
             <li>coords: {utils.get_hms_dms(star.coords)}</li>{points_removed}
             <li><a href="{images_prefix}vsx_and_star_{filename_no_ext}.png">finder chart</a></li>
