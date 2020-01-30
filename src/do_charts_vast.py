@@ -114,6 +114,7 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
         logging.debug(f"timing saving fig {end - start}")
         plt.close(fig)
         plt.clf()
+        return save_location
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
@@ -164,6 +165,7 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
                                          catalog_title, period, upsilon_text)
         if not write_plot:
             return plt_result, t_np, y_np
+        return save_location
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
@@ -251,6 +253,9 @@ def write_compstars(star, filename_no_ext, fullphasedir, compstars, check_star):
 def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_light_raw, do_phase, do_aavso,
                           aavso_limit, basedir: str, chartsdir: PurePath, phasedir: PurePath, aavsodir: PurePath):
     start = timer()
+    if star.local_id not in star_result_dict:
+        star_result_dict[star.local_id] = {}
+    temp_dict = star_result_dict[star.local_id]
     if star.path is '':
         logging.debug(f"Path for {star.local_id} is empty")
         return
@@ -287,11 +292,11 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_lig
             plot_lightcurve_raw(star, df.copy(), chartsdir)
         if do_aavso:
             settings = toml.load('settings.txt')
-            do_aavso_report.report(star, df.copy(), filtered_compstars, check_star, target_dir=aavsodir,
-                                   sitelat=settings['sitelat'], sitelong=settings['sitelong'],
-                                   sitealt=settings['sitealt'], camera_filter='V', observer=settings['observer'],
-                                   chunk_size=aavso_limit)
+            temp_dict['aavso'] = do_aavso_report.report(star, df.copy(), filtered_compstars, check_star, target_dir=aavsodir,
+                        sitelat=settings['sitelat'], sitelong=settings['sitelong'], sitealt=settings['sitealt'],
+                        camera_filter='V', observer=settings['observer'], chunk_size=aavso_limit)
         filtered_compstars = None
+        star_result_dict[star.local_id] = temp_dict
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
@@ -370,14 +375,25 @@ def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir:
         trash_and_recreate_dir(chartsdir)
     if do_aavso:
         trash_and_recreate_dir(aavsodir)
-    comp_stars_proxy = Manager().Value('comp_stars', comp_stars)
+    with Manager() as manager:
+        comp_stars_proxy = manager.Value('comp_stars', comp_stars)
+        star_result_dict = manager.dict({})
 
-    func = partial(read_vast_lightcurves, basedir=basedir, compstarproxy=comp_stars_proxy, do_light=do_light,
-                   do_light_raw=do_light_raw, do_phase=do_phase, do_aavso=do_aavso, aavso_limit=aavsolimit,
-                   phasedir=phasedir, chartsdir=chartsdir, aavsodir=aavsodir)
-    with tqdm.tqdm(total=len(star_descriptions), desc=desc, unit='stars') as pbar:
-        for _ in pool.imap_unordered(func, star_descriptions, chunksize=chunk):
-            pbar.update(1)
-            pass
-    pool.close()
-    pool.join()
+        func = partial(read_vast_lightcurves, basedir=basedir, compstarproxy=comp_stars_proxy,
+                       star_result_dict=star_result_dict, do_light=do_light, do_light_raw=do_light_raw,
+                       do_phase=do_phase, do_aavso=do_aavso, aavso_limit=aavsolimit, phasedir=phasedir,
+                       chartsdir=chartsdir, aavsodir=aavsodir)
+        with tqdm.tqdm(total=len(star_descriptions), desc=desc, unit='stars') as pbar:
+            for _ in pool.imap_unordered(func, star_descriptions, chunksize=chunk):
+                pbar.update(1)
+                pass
+        pool.close()
+        pool.join()
+        stardict = main_vast.get_star_description_cache(star_descriptions)
+        for key, value in star_result_dict.items():
+            star_result = stardict[key].result
+            for key2, value2 in value.items():
+                if key2 not in star_result:
+                    star_result[key2] = value2
+
+

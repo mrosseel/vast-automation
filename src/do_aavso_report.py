@@ -96,6 +96,7 @@ def report(star: StarDescription, df_curve: DataFrame, comp_stars: ComparisonSta
                     'notes': notes
                 })
             writer.flush()
+    return Path(target_dir, f"{filename_no_ext}_ext.txt")
 
 
 if __name__ == '__main__':

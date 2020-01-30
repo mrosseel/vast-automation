@@ -135,7 +135,9 @@ def run_do_rest(args):
                                'aavso_selected', do_phase=do_phase, do_light=do_light, do_light_raw=do_light,
                                do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of selected stars")
     # starfiledata is filled in during the phase plotting, so should come after it. Without phase it will be incomplete
-    write_own_catalog(resultdir, selected_stars)
+    ids = [x.local_id for x in selected_stars]
+    logging.info(f"Writing selected files with {len(selected_stars)}  selected stars: {ids}")
+    write_selected_files(resultdir, vastdir, selected_stars)
     if args.field:
         do_charts_field.run_standard_field_charts(star_descriptions, wcs, fieldchartsdir, wcs_file, comp_stars)
 
@@ -302,14 +304,18 @@ def write_augmented_all_stars(readdir: str, writedir: str, stardict: StarDict):
 
 
 # naam, ra, dec, max, min, type, periode, epoch?
-def write_own_catalog(resultdir: str, selected_stars: List[StarDescription]):
+def write_selected_files(resultdir: str, vastdir: str, selected_stars: List[StarDescription]):
     owncatalog = f"{resultdir}selected_radec.txt"
     selectedstars = f"{resultdir}selected_localid.txt"
     logging.info(f"Writing {owncatalog} and {selectedstars} with {len(selected_stars)} stars...")
     sorted_stars = utils.sort_selected(selected_stars)
+    vsx_stars_len = len(utils.get_stars_with_metadata(selected_stars, "VSX"))
+    no_vsx_len = len(utils.get_stars_with_metadata(selected_stars, "SELECTEDFILE", exclude=["VSX"]))
     with open(owncatalog, 'w') as outowncatalog, open(selectedstars, 'w') as outselected:
-        outowncatalog.write(f"# our_name,ra,dec,minmax,min,max,var_type,period,period_err,epoch\n")
-        outselected.write(f"# our_name,local_id,minmax,min,max,var_type,period,period_err,epoch\n")
+        preamble = f"# resultdir: {resultdir}, vastdir: {vastdir}, vsx stars: {vsx_stars_len}, " \
+                   f"other stars: {no_vsx_len}\n"
+        outowncatalog.write(f"{preamble}# our_name,ra,dec,minmax,min,max,var_type,period,period_err,epoch\n")
+        outselected.write(f"{preamble}# our_name,local_id,minmax,min,max,var_type,period,period_err,epoch\n")
 
 
         def format_float_arg(atoml, arg: str, precision):
@@ -605,6 +611,7 @@ def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
     for count, index in enumerate(idx):
         row = df.iloc[count]
         the_star = stars[index]
+        logging.info(f"Matching {row['our_name']} to {the_star.local_id} with sep {d2d[count].degree}")
         the_star.metadata = CatalogData(key="OWNCATALOG", catalog_id=row['our_name'],
                                     name=row['our_name'],
                                     coords=SkyCoord(row['ra'], row['dec'], unit="deg"),
