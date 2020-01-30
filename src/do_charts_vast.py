@@ -325,7 +325,7 @@ def phase_dependent_outlier_removal(df: DataFrame, period: Period) -> Tuple[Data
     return maskresult, len(df) - len(maskresult)
 
 
-def determine_period_and_epoch(df: DataFrame, star: StarDescription):
+def determine_period_and_epoch(df: DataFrame, star: StarDescription) -> Tuple[Period, float]:
     if not star.has_metadata("SITE") or star.get_metadata("SITE").period is None:
         period: Period = calculate_ls_period_from_df(df.copy())
         logging.debug(f"Using LS period for star {star.local_id}: {period.period}")
@@ -334,7 +334,7 @@ def determine_period_and_epoch(df: DataFrame, star: StarDescription):
     source = sitedata.source
     period: Period = Period(sitedata.period, source)
     epoch = sitedata.epoch
-    logging.debug(f"Using {source} period for star {star.local_id}: {period.period}")
+    logging.info(f"Using {source} period for star {star.local_id}: {period.period}, epoch: {epoch}")
     return period, epoch
 
 
