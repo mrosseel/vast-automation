@@ -119,12 +119,6 @@ def run_do_rest(args):
                            do_phase=do_phase, do_light=do_light, do_aavso=do_aavso, nr_threads=thread_count,
                            desc="Phase/light/aavso of ALL stars")
     else:
-        if args.candidates:
-            logging.info(f"Plotting {len(candidate_stars)} candidates...")
-            do_charts_vast.run(candidate_stars, comp_stars, vastdir, resultdir, 'phase_candidates/',
-                               'light_candidates/', 'aavso_candidates/', do_phase=do_phase, do_light=do_light,
-                               do_light_raw=do_light, do_aavso=do_aavso, nr_threads=thread_count,
-                               desc="Phase/light/aavso of candidates")
         if args.vsx:
             logging.info(f"Plotting {len(vsx_stars)} vsx stars...")
             do_charts_vast.run(vsx_stars, comp_stars, vastdir, resultdir, 'phase_vsx/', 'light_vsx/', 'aavso_vsx/',
@@ -134,6 +128,13 @@ def run_do_rest(args):
             do_charts_vast.run(selected_stars, comp_stars, vastdir, resultdir, 'phase_selected/', 'light_selected/',
                                'aavso_selected', do_phase=do_phase, do_light=do_light, do_light_raw=do_light,
                                do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of selected stars")
+        if args.candidates:
+            logging.info(f"Plotting {len(candidate_stars)} candidates...")
+            do_charts_vast.run(candidate_stars, comp_stars, vastdir, resultdir, 'phase_candidates/',
+                               'light_candidates/', 'aavso_candidates/', do_phase=do_phase, do_light=do_light,
+                               do_light_raw=do_light, do_aavso=do_aavso, nr_threads=thread_count,
+                               desc="Phase/light/aavso of candidates")
+
     # starfiledata is filled in during the phase plotting, so should come after it. Without phase it will be incomplete
     ids = [x.local_id for x in selected_stars]
     logging.info(f"Writing selected files with {len(selected_stars)}  selected stars: {ids}")
@@ -343,9 +344,7 @@ def write_selected_files(resultdir: str, vastdir: str, selected_stars: List[Star
         for star in sorted_stars:
             metadata: SiteData = star.get_metadata("SITE")
             _, _, _, filename_no_ext = utils.get_star_or_catalog_name(star, '')
-            txt_path = Path(resultdir,
-                            f"phase_{'vsx' if star.has_metadata('VSX') else 'candidates'}/txt",
-                            filename_no_ext + '.txt')
+            txt_path = Path(Path(star.result['phase']).parent, "txt", filename_no_ext + '.txt')
             try:
                 parsed_toml = toml.load(txt_path)
                 outowncatalog.write(
@@ -361,7 +360,7 @@ def write_selected_files(resultdir: str, vastdir: str, selected_stars: List[Star
                     f"{format_float_5(parsed_toml, 'period')},{format_float_5(parsed_toml, 'period_err')},"
                     f"{format_string('epoch', parsed_toml)}\n")
             except FileNotFoundError:
-                logging.error(f"While writing augmented starfile, Could not find {txt_path}")
+                logging.error(f"While writing selected files, Could not find {txt_path}")
 
 
 # write file with vsx local id, name and ra/dec, and write file to be used as 'selected star' file

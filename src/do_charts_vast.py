@@ -135,7 +135,7 @@ def phase_lock_lightcurve(series: Series, period: Period):
 
 
 def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, suffix='', period: Period = None,
-                       write_plot=True, filter_func=None):
+                       epoch: float = None, write_plot=True, filter_func=None):
     assert period is not None
     try:
         logging.debug(f"Starting plot phase diagram with {star} and {fullphasedir}")
@@ -278,14 +278,14 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, star_result_dict
             df, filtered_compstars, do_compstars.weighted_value_ensemble_method)
         df['floatJD'] = df['JD'].astype(np.float)
         _, _, _, filename_no_ext = utils.get_star_or_catalog_name(star, suffix="")
-        period = determine_period(df, star)
+        period, epoch = determine_period_and_epoch(df, star)
         df, points_removed = phase_dependent_outlier_removal(df, period)
         write_compstars(star, filename_no_ext, phasedir, filtered_compstars, check_star)
         write_toml(filename_no_ext, phasedir, period, star, points_removed,
                    *calculate_min_max_epochs(df['floatJD'], df['realV']))
 
         if do_phase and 'phase' not in star.result:
-            temp_dict['phase'] = plot_phase_diagram(star, df.copy(), phasedir, period=period, suffix="")
+            temp_dict['phase'] = plot_phase_diagram(star, df.copy(), phasedir, period=period, epoch=epoch, suffix="")
         if do_light and 'lightpa' not in star.result:
             temp_dict['lightpa'] = plot_lightcurve_pa(star, df.copy(), chartsdir, period)
         if do_light_raw and 'light' not in star.result:
@@ -325,17 +325,17 @@ def phase_dependent_outlier_removal(df: DataFrame, period: Period) -> Tuple[Data
     return maskresult, len(df) - len(maskresult)
 
 
-def determine_period(df: DataFrame, star: StarDescription):
+def determine_period_and_epoch(df: DataFrame, star: StarDescription):
     if not star.has_metadata("SITE") or star.get_metadata("SITE").period is None:
         period: Period = calculate_ls_period_from_df(df.copy())
         logging.debug(f"Using LS period for star {star.local_id}: {period.period}")
         return period
-
     sitedata = star.get_metadata("SITE")
     source = sitedata.source
     period: Period = Period(sitedata.period, source)
+    epoch = sitedata.epoch
     logging.debug(f"Using {source} period for star {star.local_id}: {period.period}")
-    return period
+    return period, epoch
 
 
 def calculate_ls_period_from_df(df: DataFrame) -> Period:

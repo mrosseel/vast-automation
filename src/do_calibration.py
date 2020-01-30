@@ -321,11 +321,11 @@ def add_vizier_ucac4_to_star(star: StarDescription, radius_angle):
 def add_info_to_star_description(star, vmag, e_vmag, catalog_id, catalog_name, coord_catalog):
     star.vmag = vmag
     star.e_vmag = e_vmag
-    mindist = star.coords.separation(coord_catalog)
+    star_to_catalog_dist = star.coords.separation(coord_catalog)
     star.metadata = CatalogData(key=catalog_name, catalog_id=catalog_id,
-                                name=catalog_id, coords=coord_catalog, separation=mindist)
+                                name=catalog_id, coords=coord_catalog, separation=star_to_catalog_dist)
     logging.debug("Add info: Star {} has vmag={}, error={}, dist={}".format(star.local_id, star.vmag, star.e_vmag,
-                                                                            mindist))
+                                                                            star_to_catalog_dist))
     return star
 
 
