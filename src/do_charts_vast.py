@@ -26,7 +26,7 @@ from gatspy.periodic import TrendedLombScargle
 from reading import trash_and_recreate_dir
 from timeit import default_timer as timer
 from star_description import StarDescription
-from pathlib import PurePath
+from pathlib import Path
 import pandas as pd
 from pandas import DataFrame, Series
 
@@ -63,7 +63,7 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
         var_type = f"Type: {extradata['Type']}" if extradata is not None and 'Type' in extradata else ""
         vsx_title = '' if vsx_name is None else f"{vsx_name} {var_type}"
         vsx_dist = '' if separation is None else f"(+/- {separation * 3600:.0f} arcsec)"
-        save_location = PurePath(chartsdir, filename_no_ext + '.png')
+        save_location = Path(chartsdir, filename_no_ext + '.png')
         start = timer()
         upsilon_match = star.get_metadata('UPSILON') if star.has_metadata('UPSILON') else None
         upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
@@ -114,6 +114,7 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
         logging.debug(f"timing saving fig {end - start}")
         plt.close(fig)
         plt.clf()
+        return save_location
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
@@ -143,7 +144,7 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         names = utils.get_star_names(star)
         catalog_title = f"{names[0]}" if names is not None else ''
 
-        save_location = PurePath(fullphasedir, filename_no_ext + '.png')
+        save_location = Path(fullphasedir, filename_no_ext + '.png')
         upsilon_match = star.get_metadata('UPSILON')
         upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
         # print("Calculating phase diagram for", star)
@@ -164,6 +165,7 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
                                          catalog_title, period, upsilon_text)
         if not write_plot:
             return plt_result, t_np, y_np
+        return save_location
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
@@ -227,8 +229,8 @@ def _plot_phase_diagram(phased_t_final, phased_lc_final, phased_err, write_plot,
     plt.gca().invert_yaxis()
     plt.errorbar(phased_t_final, phased_lc_final, yerr=phased_err, linestyle='none', marker='o', ecolor='gray',
                  elinewidth=1)
-    logging.debug(f"Saving phase plot to {save_location}")
     if write_plot:
+        logging.debug(f"Saving phase plot to {save_location}")
         fig.savefig(save_location, format='png')
         plt.close(fig)
         plt.clf()
@@ -248,9 +250,12 @@ def write_compstars(star, filename_no_ext, fullphasedir, compstars, check_star):
                 fp.write(f"{ucac4_id},{mag:.3f},{err:.5f}\n")
 
 
-def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_light_raw, do_phase, do_aavso,
-                          aavso_limit, basedir: str, chartsdir: PurePath, phasedir: PurePath, aavsodir: PurePath):
+def read_vast_lightcurves(star: StarDescription, compstarproxy, star_result_dict, do_light, do_light_raw, do_phase,
+                          do_aavso, aavso_limit, basedir: str, chartsdir: Path, phasedir: Path, aavsodir: Path):
     start = timer()
+    if star.local_id not in star_result_dict:
+        star_result_dict[star.local_id] = {}
+    temp_dict = star_result_dict[star.local_id]
     if star.path is '':
         logging.debug(f"Path for {star.local_id} is empty")
         return
@@ -279,19 +284,19 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, do_light, do_lig
         write_toml(filename_no_ext, phasedir, period, star, points_removed,
                    *calculate_min_max_epochs(df['floatJD'], df['realV']))
 
-        if do_phase:
-            plot_phase_diagram(star, df.copy(), phasedir, period=period, suffix="")
-        if do_light:
-            plot_lightcurve_pa(star, df.copy(), chartsdir, period)
-        if do_light_raw:
-            plot_lightcurve_raw(star, df.copy(), chartsdir)
-        if do_aavso:
+        if do_phase and 'phase' not in star.result:
+            temp_dict['phase'] = plot_phase_diagram(star, df.copy(), phasedir, period=period, suffix="")
+        if do_light and 'lightpa' not in star.result:
+            temp_dict['lightpa'] = plot_lightcurve_pa(star, df.copy(), chartsdir, period)
+        if do_light_raw and 'light' not in star.result:
+            temp_dict['light'] = plot_lightcurve_raw(star, df.copy(), chartsdir)
+        if do_aavso and 'aavso' not in star.result:
             settings = toml.load('settings.txt')
-            do_aavso_report.report(star, df.copy(), filtered_compstars, check_star, target_dir=aavsodir,
-                                   sitelat=settings['sitelat'], sitelong=settings['sitelong'],
-                                   sitealt=settings['sitealt'], camera_filter='V', observer=settings['observer'],
-                                   chunk_size=aavso_limit)
+            temp_dict['aavso'] = do_aavso_report.report(star, df.copy(), filtered_compstars, check_star, target_dir=aavsodir,
+                        sitelat=settings['sitelat'], sitelong=settings['sitelong'], sitealt=settings['sitealt'],
+                        camera_filter='V', observer=settings['observer'], chunk_size=aavso_limit)
         filtered_compstars = None
+        star_result_dict[star.local_id] = temp_dict
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
@@ -358,26 +363,37 @@ def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir:
     chunk: int = 1  # max(1, len(star_descriptions) // nr_threads*10)
     set_seaborn_style()
     pool = mp.Pool(nr_threads, maxtasksperchild=10)
-    phasedir = PurePath(resultdir, phasepart)
-    chartsdir = PurePath(resultdir, chartspart)
-    aavsodir = PurePath(resultdir, aavso_part)
+    phasedir = Path(resultdir, phasepart)
+    chartsdir = Path(resultdir, chartspart)
+    aavsodir = Path(resultdir, aavso_part)
     logging.debug(f"Using {nr_threads} threads for lightcurve, phase plotting and aavso reporting.")
 
     if do_phase:
         trash_and_recreate_dir(phasedir)
-        trash_and_recreate_dir(PurePath(phasedir, PurePath('txt')))
+        trash_and_recreate_dir(Path(phasedir, Path('txt')))
     if do_light or do_light_raw:
         trash_and_recreate_dir(chartsdir)
     if do_aavso:
         trash_and_recreate_dir(aavsodir)
-    comp_stars_proxy = Manager().Value('comp_stars', comp_stars)
+    with Manager() as manager:
+        comp_stars_proxy = manager.Value('comp_stars', comp_stars)
+        star_result_dict = manager.dict({})
 
-    func = partial(read_vast_lightcurves, basedir=basedir, compstarproxy=comp_stars_proxy, do_light=do_light,
-                   do_light_raw=do_light_raw, do_phase=do_phase, do_aavso=do_aavso, aavso_limit=aavsolimit,
-                   phasedir=phasedir, chartsdir=chartsdir, aavsodir=aavsodir)
-    with tqdm.tqdm(total=len(star_descriptions), desc=desc, unit='stars') as pbar:
-        for _ in pool.imap_unordered(func, star_descriptions, chunksize=chunk):
-            pbar.update(1)
-            pass
-    pool.close()
-    pool.join()
+        func = partial(read_vast_lightcurves, basedir=basedir, compstarproxy=comp_stars_proxy,
+                       star_result_dict=star_result_dict, do_light=do_light, do_light_raw=do_light_raw,
+                       do_phase=do_phase, do_aavso=do_aavso, aavso_limit=aavsolimit, phasedir=phasedir,
+                       chartsdir=chartsdir, aavsodir=aavsodir)
+        with tqdm.tqdm(total=len(star_descriptions), desc=desc, unit='stars') as pbar:
+            for _ in pool.imap_unordered(func, star_descriptions, chunksize=chunk):
+                pbar.update(1)
+                pass
+        pool.close()
+        pool.join()
+        stardict = main_vast.get_star_description_cache(star_descriptions)
+        for key, value in star_result_dict.items():
+            star_result = stardict[key].result
+            for key2, value2 in value.items():
+                if key2 not in star_result:
+                    star_result[key2] = value2
+
+

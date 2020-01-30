@@ -65,7 +65,8 @@ def report(star: StarDescription, df_curve: DataFrame, comp_stars: ComparisonSta
     for chunk in star_chunks:
         chunk_counters += 1
         suffix = f"_{chunk_counters}.txt" if len(star_chunks) != 1 else ".txt"
-        with open(Path(target_dir, f"{filename_no_ext}_ext{suffix}"), 'w') as fp:
+        filename = Path(target_dir, f"{filename_no_ext}_ext{suffix}")
+        with open(filename, 'w') as fp:
             writer = aavso.ExtendedFormatWriter(fp, observer, location=(sitelat, sitelong, sitealt),
                                                 software='https://github.com/mrosseel/vast-automation',
                                                 type='EXTENDED', obstype='CCD')
@@ -96,6 +97,7 @@ def report(star: StarDescription, df_curve: DataFrame, comp_stars: ComparisonSta
                     'notes': notes
                 })
             writer.flush()
+    return Path(target_dir, f"{filename_no_ext}_ext.txt")
 
 
 if __name__ == '__main__':

@@ -44,6 +44,8 @@ class StarDescription:
         self.path = path
         # the number of observations for this star
         self.obs = obs
+        # where can the result files be found. {"phase": "/data/result/bla.png", "light": "...", "lightpa": "..."}
+        self.result = {}
 
 
     @property

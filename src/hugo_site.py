@@ -20,7 +20,8 @@ UNKNOWN = "Unknown"
 def run(post_name: str, selected_stars: List[StarDescription], len_vsx: int, len_candidates: int, resultdir: str):
     sitedir = f"{os.getcwd()}/site/vsx/"
     images_prefix = f"/images/{post_name}/"
-    copy_files(post_name, resultdir, sitedir)
+    # copy_files(post_name, resultdir, sitedir)
+    selective_copy_files(selected_stars, post_name, resultdir, sitedir)
     result = get_header(post_name)
     result += get_starfile_preamble(images_prefix, len([x for x in selected_stars if not x.has_metadata("VSX")]),
                                     len_vsx, len_candidates)
@@ -32,6 +33,23 @@ def run(post_name: str, selected_stars: List[StarDescription], len_vsx: int, len
     create_dir(postdir)
     with open(f"{postdir}/{post_name}.md", 'w') as outfile:
         outfile.write(result)
+
+
+def selective_copy_files(stars: List[StarDescription], post_name: str, resultdir: str, sitedir: str):
+    imagesdir = f"{sitedir}static/images/{post_name}/"
+    trash_and_recreate_dir(imagesdir)
+    for astar in stars:
+        copy(astar.result['phase'], imagesdir)
+        copy(astar.result['light'], imagesdir)
+        copy(astar.result['lightpa'], imagesdir)
+        copy(astar.result['aavso'], imagesdir)
+    fieldcharts = f'{resultdir}fieldcharts/*.png'
+    fieldcharts_glob = glob.glob(fieldcharts)
+    logging.info(f"Copying {len(fieldcharts_glob)} field charts from {fieldcharts}...")
+    for file in fieldcharts_glob:
+        copy(file, imagesdir)
+    copy(f"{resultdir}selected_radec.txt", imagesdir)
+    logging.info(f"Copying done.")
 
 
 def copy_files(post_name: str, resultdir: str, sitedir: str):
@@ -165,5 +183,5 @@ def get_starfile_preamble(images_prefix: str, len_selected: int, len_vsx: int, l
            f'<a href="http://scan.sai.msu.ru/vast/">VaST</a></div>' \
            f'<a href="{images_prefix}selected_radec.txt">CSV file of all stars on this page</a><br/>' \
            f'<a href="{images_prefix}vsx_{len_vsx}_and_selected_{len_selected}.png">' \
-           f'Finder chart with VSX and selected new stars</a><br/>' \
+           f'Finder chart with {len_vsx} VSX and {len_selected} new stars</a><br/>' \
            f'Periods are derived using Lomb-Scargle (LS), Peranso (OWN) or from the VSX database (VSX)</div></div>\n'
