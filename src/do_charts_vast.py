@@ -152,10 +152,9 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
             logging.info("Curve of star {} is None".format(star.local_id))
             return
         t_np = curve['floatJD']
-        t_str = curve['JD'].to_numpy()
         y_np = curve['realV'].to_numpy()
         dy_np = curve['realErr'].to_numpy()
-        t_np_zeroed = shift_to_epoch(epoch, t_np, t_str)
+        t_np_zeroed = shift_to_epoch(epoch, t_np)
         phased_t = np.mod(t_np_zeroed / period.period, 1)
         phased_lc = y_np[:]
 
@@ -178,12 +177,12 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         logging.error(f"Error during plot phase: {star.local_id}")
 
 
-def shift_to_epoch(epoch: str, t_np, t_str):
+def shift_to_epoch(epoch: float, t_np):
     """ shift the """
     if not epoch:
         return t_np
-    assert isinstance(epoch, str)
-    t_epoch_location = np.where(t_str == epoch)[0][0]
+    assert isinstance(epoch, float)
+    t_epoch_location = (np.abs(t_np - epoch)).argmin()
     t_np_zeroed = t_np - t_np[t_epoch_location]
     return t_np_zeroed
 
