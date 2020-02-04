@@ -61,8 +61,6 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
         logging.debug(f"Plotting lightcurve for {star_id}")
         vsx_name, separation, extradata, filename_no_ext = utils.get_star_or_catalog_name(star, suffix=suffix)
         var_type = f"Type: {extradata['Type']}" if extradata is not None and 'Type' in extradata else ""
-        vsx_title = '' if vsx_name is None else f"{vsx_name} {var_type}"
-        vsx_dist = '' if separation is None else f"(+/- {separation * 3600:.0f} arcsec)"
         save_location = Path(chartsdir, filename_no_ext + '.png')
         start = timer()
         upsilon_match = star.get_metadata('UPSILON') if star.has_metadata('UPSILON') else None
@@ -70,8 +68,9 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
         end = timer()
         logging.debug(f"timing upsilon stuff {end - start}")
         coord = star.coords
-        plot_title = f"{vsx_title}\nStar {star.local_id}  {vsx_dist}\n" \
-                     f"{utils.get_hms_dms_matplotlib(coord)}{upsilon_text}"
+        names = utils.get_star_names(star)
+        catalog_title = f"{names[0]}" if names is not None and names is not star.local_id else ''
+        plot_title = f"{catalog_title}\nStar {star.local_id}"
 
         if curve is None:
             logging.info(f"Curve is None for star {star_id}")
@@ -92,11 +91,6 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
         plot_max = curve_max + 0.1
         plot_min = curve_min - 0.1
         plt.ylim(plot_min, plot_max)
-        # if curve['realJD'].isna().any():
-        #     print("we have a nan", jd_adjusting_func)
-        #     print("star: ", star)
-        #     if star.has_metadata("VSX"):
-        #         print("extradata", star.get_metadata("VSX").extradata)
         nop = lambda *a, **k: None
         print("limits are here:", star_id, "min:", curve['realJD'].min(), "max", curve['realJD'].max(),
               "first 10", curve['realJD'][:10], "first 10 orig:", curve['floatJD'][:10], "len", len(curve['realJD']),

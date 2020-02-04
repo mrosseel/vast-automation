@@ -64,12 +64,12 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
 
         ucac4 = star.get_metadata("UCAC4")
         if ucac4 is None:
-            ucac4_name = f"{star.coords}"
-            ucac4_coords = ""
+            ucac4_name = f"no UCAC4 match !!!"
+            ucac4_coords = f"<li>coords: {utils.get_hms_dms_sober(star.coords)}</li>"
 
         else:
             ucac4_name = ucac4.catalog_id if not None else UNKNOWN
-            ucac4_coords = f"<li>coords: {utils.get_hms_dms(ucac4.coords)} (UCAC4)</li>"
+            ucac4_coords = f"<li>coords: {utils.get_hms_dms_sober(ucac4.coords)}</li>"
         nl = '\n'
         name = f"{nl.join(parsed_toml['our_name'])}" if 'our_name' in parsed_toml else f"OUR_NAME_{star.local_id}"
         period = f"{float(parsed_toml['period']):.5f}"
@@ -77,8 +77,10 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         epoch = f"{parsed_toml['epoch']}" if 'epoch' in parsed_toml else UNKNOWN
         var_type = f"{parsed_toml['var_type']}" if 'var_type' in parsed_toml else UNKNOWN
         vsx_var_flag = f" ({parsed_toml['vsx_var_flag']})" if 'vsx_var_flag' in parsed_toml else ""
-        separation = f"<li>separation: +/- {parsed_toml['separation']*3600:.0f} arcsec</li>" \
-            if 'separation' in parsed_toml else ""
+        tomlseparation = parsed_toml['separation'] if 'separation' in parsed_toml else None
+        ucacseparation = star.coords.separation(star.get_metadata("UCAC4").coords).degree if star.has_metadata("UCAC4") else None
+        realseparation = ucacseparation if ucacseparation is not None else tomlseparation if tomlseparation is not None else None
+        separation = f"<li>separation: +/- {realseparation*3600:.0f} arcsec</li>" if realseparation is not None else ""
         var_type_link = f"<a href='https://www.aavso.org/vsx/index.php?view=help.vartype&nolayout=1&abbrev=" \
                         f"{var_type}'>{var_type}</a>" if var_type != UNKNOWN else var_type
         mag_range = f"{parsed_toml['range']}"
@@ -95,8 +97,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         <div class="fl w-30 pa2 ba">
             <ul>
             <li>{ucac4_name}</li>
-            <li>name: {name}</li>{ucac4_coords}
-            <li>coords: {utils.get_hms_dms(star.coords)} (ours)</li>{separation}{points_removed}
+            <li>name: {name}</li>{ucac4_coords}{separation}{points_removed}
             <li>period (d): {period}</li>{minmax}
             <li>mag. range: {mag_range}</li>
             <li><a target="_blank" rel="noopener noreferrer" href="
