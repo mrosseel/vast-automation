@@ -137,7 +137,6 @@ def phase_lock_lightcurve(series: Series, period: Period):
 def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, suffix='', period: Period = None,
                        epoch: str = None, write_plot=True, filter_func=None):
     assert period is not None
-    assert isinstance(epoch, str)
     try:
         logging.debug(f"Starting plot phase diagram with {star} and {fullphasedir}")
         vsx_name, separation, extradata, filename_no_ext = utils.get_star_or_catalog_name(star,
@@ -183,6 +182,7 @@ def shift_to_epoch(epoch: str, t_np, t_str):
     """ shift the """
     if not epoch:
         return t_np
+    assert isinstance(epoch, str)
     t_epoch_location = np.where(t_str == epoch)[0][0]
     t_np_zeroed = t_np - t_np[t_epoch_location]
     return t_np_zeroed
@@ -342,13 +342,14 @@ def phase_dependent_outlier_removal(df: DataFrame, period: Period) -> Tuple[Data
 def determine_period_and_epoch(df: DataFrame, star: StarDescription) -> Tuple[Period, str]:
     if not star.has_metadata("SITE") or star.get_metadata("SITE").period is None:
         period: Period = calculate_ls_period_from_df(df.copy())
-        logging.debug(f"Using LS period for star {star.local_id}: {period.period}")
-        return period
-    sitedata = star.get_metadata("SITE")
-    source = sitedata.source
-    period: Period = Period(sitedata.period, source)
-    epoch = sitedata.epoch
-    logging.info(f"Using {source} period for star {star.local_id}: {period.period}, epoch: {epoch}")
+        logging.debug(f"Using LS period for star {star.local_id}: {period}")
+        epoch = None
+    else:
+        sitedata = star.get_metadata("SITE")
+        source = sitedata.source
+        period: Period = Period(sitedata.period, source)
+        epoch = sitedata.epoch
+        logging.debug(f"Using {source} period for star {star.local_id}: {period}, epoch: {epoch}")
     return period, epoch
 
 

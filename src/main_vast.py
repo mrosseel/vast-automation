@@ -601,7 +601,7 @@ def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
     df = pd.read_csv(owncatalog, delimiter=',', comment='#',
                      names=['our_name', 'ra', 'dec', 'minmax', 'min', 'max', 'var_type', 'period', 'period_err',
                             'epoch'],
-                     dtype={'ra': float, 'dec': float, 'minmax': str},
+                     dtype={'ra': float, 'dec': float, 'minmax': str, 'epoch': str},
                      skipinitialspace=True, warn_bad_lines=True)
     df = df.replace({np.nan: None})
     skycoord: SkyCoord = do_calibration.create_generic_astropy_catalog(df['ra'], df['dec'])
