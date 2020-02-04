@@ -135,14 +135,15 @@ def phase_lock_lightcurve(series: Series, period: Period):
 
 
 def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, suffix='', period: Period = None,
-                       epoch: float = None, write_plot=True, filter_func=None):
+                       epoch: str = None, write_plot=True, filter_func=None):
     assert period is not None
+    assert isinstance(epoch, str)
     try:
         logging.debug(f"Starting plot phase diagram with {star} and {fullphasedir}")
         vsx_name, separation, extradata, filename_no_ext = utils.get_star_or_catalog_name(star,
                                                                                           suffix=f"_phase{suffix}")
         names = utils.get_star_names(star)
-        catalog_title = f"{names[0]}" if names is not None else ''
+        catalog_title = f"{names[0]}" if names is not None and names is not star.local_id else ''
 
         save_location = Path(fullphasedir, filename_no_ext + '.png')
         upsilon_match = star.get_metadata('UPSILON')
@@ -152,10 +153,13 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
             logging.info("Curve of star {} is None".format(star.local_id))
             return
         t_np = curve['floatJD']
+        t_str = curve['JD'].to_numpy()
         y_np = curve['realV'].to_numpy()
         dy_np = curve['realErr'].to_numpy()
-        phased_t = np.fmod(t_np / period.period, 1)
+        t_np_zeroed = shift_to_epoch(epoch, t_np, t_str)
+        phased_t = np.mod(t_np_zeroed / period.period, 1)
         phased_lc = y_np[:]
+
         if filter_func is not None:
             phased_t, phased_lc = filter_func(phased_t, phased_lc)
         phased_t_final = np.append(phased_t.subtract(1), phased_t)
@@ -173,6 +177,15 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
         print(traceback.print_exc())
         logging.error(message)
         logging.error(f"Error during plot phase: {star.local_id}")
+
+
+def shift_to_epoch(epoch: str, t_np, t_str):
+    """ shift the """
+    if not epoch:
+        return t_np
+    t_epoch_location = np.where(t_str == epoch)[0][0]
+    t_np_zeroed = t_np - t_np[t_epoch_location]
+    return t_np_zeroed
 
 
 def calculate_min_max_epochs(t_np, y_np):
@@ -207,7 +220,7 @@ def write_toml(filename_no_ext, fullphasedir, period, star, points_removed, ymin
         if sitedata.period_err is not None:
             tomldict['period_err'] = sitedata.period_err
         if sitedata.epoch:
-            tomldict['epoch'] = float(sitedata.epoch)
+            tomldict['epoch'] = sitedata.epoch
 
     outputfile = f"{fullphasedir}/txt/{filename_no_ext}.txt"
     logging.debug(f"Writing toml to {outputfile}")
@@ -222,7 +235,8 @@ def _plot_phase_diagram(phased_t_final, phased_lc_final, phased_err, write_plot,
     plt.ylabel("Magnitude", labelpad=TITLE_PAD)
     plt.title(
         f"{catalog_title}\nStar {star.local_id}, p: {period.period:.5f} d ({period.origin}) "
-        f"{upsilon_text}\n{utils.get_hms_dms_matplotlib(star.coords)}", pad=TITLE_PAD)
+        # f"{upsilon_text}\n{utils.get_hms_dms_matplotlib(star.coords)}", pad=TITLE_PAD)
+        f"{upsilon_text}", pad=TITLE_PAD)
     plt.ticklabel_format(style='plain', axis='x')
     plt.tight_layout()
 
@@ -325,7 +339,7 @@ def phase_dependent_outlier_removal(df: DataFrame, period: Period) -> Tuple[Data
     return maskresult, len(df) - len(maskresult)
 
 
-def determine_period_and_epoch(df: DataFrame, star: StarDescription) -> Tuple[Period, float]:
+def determine_period_and_epoch(df: DataFrame, star: StarDescription) -> Tuple[Period, str]:
     if not star.has_metadata("SITE") or star.get_metadata("SITE").period is None:
         period: Period = calculate_ls_period_from_df(df.copy())
         logging.debug(f"Using LS period for star {star.local_id}: {period.period}")

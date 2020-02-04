@@ -500,7 +500,7 @@ def tag_selected(selectedstarfile: str, stardict: StarDict):
         df = pd.read_csv(selectedstarfile, delimiter=',', comment='#',
                          names=['our_name', 'local_id', 'minmax', 'min', 'max', 'var_type', 'period', 'period_err',
                                 'epoch'],
-                         dtype={'local_id': int, 'minmax': str},
+                         dtype={'local_id': int, 'minmax': str, 'epoch': str},
                          skipinitialspace=True, warn_bad_lines=True)
         df = df.replace({np.nan: None})
         logging.info(f"Selecting {len(df)} stars added by {selectedstarfile}: {df['local_id'].to_numpy()}")
