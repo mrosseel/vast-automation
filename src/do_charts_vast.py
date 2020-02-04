@@ -182,7 +182,7 @@ def shift_to_epoch(epoch: float, t_np):
     if not epoch:
         return t_np
     assert isinstance(epoch, float)
-    t_epoch_location = (np.abs(t_np - epoch)).argmin()
+    t_epoch_location = (np.abs(t_np - epoch)).idxmin()
     t_np_zeroed = t_np - t_np[t_epoch_location]
     return t_np_zeroed
 
