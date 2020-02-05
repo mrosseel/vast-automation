@@ -97,7 +97,8 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         <div class="fl w-30 pa2 ba">
             <ul>
             <li>{ucac4_name}</li>
-            <li>name: {name}</li>{ucac4_coords}{separation}{points_removed}
+            <li>name: {name}</li>{ucac4_coords}
+            <li>coords: {utils.get_hms_dms_sober(star.coords)} (ours)</li>{separation}{points_removed}
             <li>period (d): {period}</li>{minmax}
             <li>mag. range: {mag_range}</li>
             <li><a target="_blank" rel="noopener noreferrer" href="
