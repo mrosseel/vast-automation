@@ -39,7 +39,7 @@ def plot_star_fluctuations(chartsdir: str, filename_no_ext: str, dfs, labels: Li
         ymax = max(ymax, frame['Vrelrel'].max())
         ymin = min(ymin, frame['Vrelrel'].min())
         plt.plot(frame['JDF'], frame['Vrelrel'])
-    fig.legend(labels, loc='upper center')
+    fig.legend(labels, loc='upper right')
     plt.xlim(xmin, xmax)
     plt.ylim(ymin, ymax)
     plt.xlabel('JD')
