@@ -10,6 +10,7 @@ from collections import namedtuple
 import do_calibration
 import do_charts_vast
 import do_charts_field
+import do_charts_stats
 import do_compstars
 import reading
 import utils
@@ -141,6 +142,9 @@ def run_do_rest(args):
     write_selected_files(resultdir, vastdir, selected_stars)
     if args.field:
         do_charts_field.run_standard_field_charts(star_descriptions, wcs, fieldchartsdir, wcs_file, comp_stars)
+
+    if args.stats:
+        do_charts_stats.plot_comparison_stars(fieldchartsdir, selected_stars, stardict)
 
     if args.site:
         ids = [x.local_id for x in selected_stars]

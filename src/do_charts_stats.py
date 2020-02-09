@@ -6,14 +6,54 @@ import glob
 from tqdm import tqdm
 import logging
 import multiprocessing as mp
+import reading
+from pathlib import Path
+from typing import List, Dict
+import utils
+from star_description import StarDescription
+from star_metadata import CompStarData
+
+StarDict = Dict[int, StarDescription]
 
 
 #### Create charts showing statistics on the detected stars, variables, ...
 
+
+def plot_comparison_stars(chartsdir: str, stars: List[StarDescription], stardict):
+    # for every selected star make one chart
+    for star in stars:
+        _, _, _, filename_no_ext = utils.get_star_or_catalog_name(star, suffix='_compstars')
+        compstars: CompStarData = star.get_metadata('COMPSTARS')
+        compstar_ids = compstars.compstar_ids + [compstars.extra_id]
+        labels = compstars.compstar_ids + ['K']
+        dfs = read_lightcurves(compstar_ids, stardict)
+        plot_star_fluctuations(chartsdir, filename_no_ext, dfs, labels)
+
+
+def plot_star_fluctuations(chartsdir: str, filename_no_ext: str, dfs, labels: List[str]):
+    fig = plt.figure(figsize=(20, 12), dpi=150)
+    xmax, xmin, ymax, ymin = float('-inf'), float('inf'), float('-inf'), float('inf')
+    for frame in dfs:
+        xmax = max(xmax, frame['JDF'].max())
+        xmin = min(xmin, frame['JDF'].min())
+        ymax = max(ymax, frame['Vrelrel'].max())
+        ymin = min(ymin, frame['Vrelrel'].min())
+        plt.plot(frame['JDF'], frame['Vrelrel'])
+    fig.legend(labels, loc='upper center')
+    plt.xlim(xmin, xmax)
+    plt.ylim(ymin, ymax)
+    plt.xlabel('JD')
+    plt.ylabel('Variation around mean')
+    save_location = Path(chartsdir, filename_no_ext + '.png')
+    print(f"writing {save_location}")
+    fig.savefig(save_location)
+    plt.close(fig)
+
+
 def plot_cumul_histo_detections(savefig=True):
     result = read_lightcurves()
     matplotlib.rcParams.update({'font.size': 38})
-    fig_size = (36, 32)
+    fig_size = (38, 32)
     dpi = 100
     # print(len(result))
     keys = result.keys()
@@ -77,7 +117,7 @@ def plot_fwhm(fwhm):
     save(fig, settings.fieldchartsdirs + 'fwhm.png')
 
 
-def read_lightcurves(lightcurvedir: str, nr_threads):
+def old_read_lightcurves(lightcurvedir: str, nr_threads):
     files = glob.glob(lightcurvedir + '*.txt')
     result = {}
     pool = mp.Pool(nr_threads * 2, maxtasksperchild=None)
@@ -86,6 +126,17 @@ def read_lightcurves(lightcurvedir: str, nr_threads):
                                      desc='Reading all lightcurves'):
         result[file] = partial_result
 
+    return result
+
+
+def read_lightcurves(star_ids: List[int], stardict: StarDict):
+    result = []
+    for star_id in star_ids:
+        df = reading.read_lightcurve_vast(stardict[star_id].path)
+        # df['JDF'] = df['JD'].astype(float).to_numpy()
+        df['JDF'] = np.arange(0, len(df['JD']))
+        df['Vrelrel'] = df['Vrel'] - df['Vrel'].mean()
+        result.append(df)
     return result
 
 

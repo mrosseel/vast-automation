@@ -31,6 +31,7 @@ if __name__ == '__main__':
     parser.add_argument('-!', '--allstars', help="Generate phase/light/aavso for all stars. WARNING: takes long",
                         action="store_true")
     parser.add_argument('-f', '--field', help="Generate field charts (finder charts)", action="store_true")
+    parser.add_argument('--stats', help="Generate stats charts", action="store_true")
     parser.add_argument('-p', '--phase', help="Generate phase charts", action="store_true")
     parser.add_argument('-i', '--light', help="Generate lightcurve charts", action="store_true")
     parser.add_argument('-c', '--candidates', help="Generate phase diagrams for autocandidates", action="store_true")

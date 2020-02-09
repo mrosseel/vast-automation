@@ -31,13 +31,17 @@ This will generate many vast files in the vast directory
 
 ### run the command
 
-Make sure you have all the necessary python dependencies by running this command once:
+Install a virtual environment (do this once):
 
-`python -m pip install -r requirements.txt`
+`python3 -m venv .venv`
 
-Run this command every time to activate a python virtual environment:
+Activate a python virtual environment (do this every time):
 
 `source .venv/bin/activate`
+
+Make sure you have all the necessary python dependencies (do this once):
+
+`python -m pip install -r requirements.txt`
 
 Run the actual processing software to get all options:
 
