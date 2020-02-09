@@ -1,6 +1,7 @@
 import matplotlib
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.font_manager import FontProperties
 import pandas as pd
 import glob
 from tqdm import tqdm
@@ -27,24 +28,40 @@ def plot_comparison_stars(chartsdir: str, stars: List[StarDescription], stardict
         compstar_ids = compstars.compstar_ids + [compstars.extra_id]
         labels = compstars.compstar_ids + ['K']
         dfs = read_lightcurves(compstar_ids, stardict)
-        plot_star_fluctuations(chartsdir, filename_no_ext, dfs, labels)
+        plot_star_fluctuations(chartsdir, filename_no_ext, dfs, labels, use_mean=False)
+        plot_star_fluctuations(chartsdir, filename_no_ext, dfs, labels, use_mean=True)
 
 
-def plot_star_fluctuations(chartsdir: str, filename_no_ext: str, dfs, labels: List[str]):
+def plot_star_fluctuations(chartsdir: str, filename_no_ext: str, dfs, labels: List[str], use_mean: bool = False):
     fig = plt.figure(figsize=(20, 12), dpi=150)
+    ax = plt.subplot(111)
     xmax, xmin, ymax, ymin = float('-inf'), float('inf'), float('-inf'), float('inf')
-    for frame in dfs:
-        xmax = max(xmax, frame['JDF'].max())
-        xmin = min(xmin, frame['JDF'].min())
-        ymax = max(ymax, frame['Vrelrel'].max())
-        ymin = min(ymin, frame['Vrelrel'].min())
-        plt.plot(frame['JDF'], frame['Vrelrel'])
-    fig.legend(labels, loc='upper right')
+    for df in dfs:
+        df['JDF'] = df['JD'].astype(float).to_numpy()
+        # df['JDF'] = np.arange(0, len(df['JD']))
+        df['Vrelrel'] = df['Vrel'] - df['Vrel'].mean() if use_mean else df['Vrel'] + 30
+        xmax = max(xmax, df['JDF'].max())
+        xmin = min(xmin, df['JDF'].min())
+        ymax = max(ymax, df['Vrelrel'].max())
+        ymin = min(ymin, df['Vrelrel'].min())
+        ax.errorbar(df['JDF'], df['Vrelrel'], yerr=df['err'], linestyle='none')
+        # ax.plot(df['JDF'], df['Vrelrel'])
+    fontp = FontProperties()
+    fontp.set_size('20')
+    # Shrink current axis's height by 10% on the bottom
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0 + box.height * 0.1,
+                     box.width, box.height * 0.9])
+    # Put a legend below current axis
+    print(f"labels size is {len(labels)}")
+    ax.legend(labels, loc='upper center', bbox_to_anchor=(0.5, -0.18), fancybox=True, shadow=True, ncol=len(labels),
+              prop=fontp)
     plt.xlim(xmin, xmax)
-    plt.ylim(ymin, ymax)
+    plt.ylim(ymin - 0.5, ymax + 0.5)
     plt.xlabel('JD')
-    plt.ylabel('Variation around mean')
-    save_location = Path(chartsdir, filename_no_ext + '.png')
+    plt.ylabel('Instr. mag')
+    ax.invert_yaxis()
+    save_location = Path(chartsdir, filename_no_ext + f"{'A' if use_mean else 'B'}.png")
     print(f"writing {save_location}")
     fig.savefig(save_location)
     plt.close(fig)
@@ -133,9 +150,6 @@ def read_lightcurves(star_ids: List[int], stardict: StarDict):
     result = []
     for star_id in star_ids:
         df = reading.read_lightcurve_vast(stardict[star_id].path)
-        # df['JDF'] = df['JD'].astype(float).to_numpy()
-        df['JDF'] = np.arange(0, len(df['JD']))
-        df['Vrelrel'] = df['Vrel'] - df['Vrel'].mean()
         result.append(df)
     return result
 
