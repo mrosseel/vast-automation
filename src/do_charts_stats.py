@@ -13,6 +13,7 @@ from typing import List, Dict
 import utils
 from star_description import StarDescription
 from star_metadata import CompStarData
+import tqdm
 
 StarDict = Dict[int, StarDescription]
 
@@ -22,30 +23,36 @@ StarDict = Dict[int, StarDescription]
 
 def plot_comparison_stars(chartsdir: str, stars: List[StarDescription], stardict):
     # for every selected star make one chart
-    for star in stars:
+    for star in tqdm.tqdm(stars, desc="Plotting comparison stars", unit="stars"):
         _, _, _, filename_no_ext = utils.get_star_or_catalog_name(star, suffix='_compstars')
         compstars: CompStarData = star.get_metadata('COMPSTARS')
-        compstar_ids = compstars.compstar_ids + [compstars.extra_id]
+        compstar_ids = compstars.compstar_ids + [compstars.extra_id, star.local_id]
         labels = compstars.compstar_ids + ['K']
         dfs = read_lightcurves(compstar_ids, stardict)
-        plot_star_fluctuations(chartsdir, filename_no_ext, dfs, labels, use_mean=False)
-        plot_star_fluctuations(chartsdir, filename_no_ext, dfs, labels, use_mean=True)
+        plot_star_fluctuations(chartsdir, filename_no_ext, dfs[:-1], labels, show_error=True)
+        plot_star_fluctuations(chartsdir, filename_no_ext, dfs, labels + ['V'], show_error=False)
 
 
-def plot_star_fluctuations(chartsdir: str, filename_no_ext: str, dfs, labels: List[str], use_mean: bool = False):
+def plot_star_fluctuations(chartsdir: str, filename_no_ext: str, dfs, labels: List[str], show_error: bool = False):
     fig = plt.figure(figsize=(20, 12), dpi=150)
     ax = plt.subplot(111)
     xmax, xmin, ymax, ymin = float('-inf'), float('inf'), float('-inf'), float('inf')
-    for df in dfs:
+    cmap = plt.get_cmap('Set1')
+    number = 11
+    colors = [cmap(i) for i in np.linspace(0, 1, number)]
+    title = filename_no_ext if show_error else filename_no_ext + ' + V'
+    for idx, df in enumerate(dfs):
         df['JDF'] = df['JD'].astype(float).to_numpy()
-        # df['JDF'] = np.arange(0, len(df['JD']))
-        df['Vrelrel'] = df['Vrel'] - df['Vrel'].mean() if use_mean else df['Vrel'] + 30
+        df['Vrelrel'] = df['Vrel'] + 30
         xmax = max(xmax, df['JDF'].max())
         xmin = min(xmin, df['JDF'].min())
         ymax = max(ymax, df['Vrelrel'].max())
         ymin = min(ymin, df['Vrelrel'].min())
-        ax.errorbar(df['JDF'], df['Vrelrel'], yerr=df['err'], linestyle='none')
-        # ax.plot(df['JDF'], df['Vrelrel'])
+        if show_error:
+            ax.errorbar(df['JDF'], df['Vrelrel'], yerr=df['err'], linestyle='', color=colors[idx], ms=2)
+        else:
+            fmt = '*r' if labels[idx] == 'K' else '^b' if labels[idx] == 'V' else '.'
+            ax.plot(df['JDF'], df['Vrelrel'], fmt, color=colors[idx], markersize=2)
     fontp = FontProperties()
     fontp.set_size('20')
     # Shrink current axis's height by 10% on the bottom
@@ -53,16 +60,15 @@ def plot_star_fluctuations(chartsdir: str, filename_no_ext: str, dfs, labels: Li
     ax.set_position([box.x0, box.y0 + box.height * 0.1,
                      box.width, box.height * 0.9])
     # Put a legend below current axis
-    print(f"labels size is {len(labels)}")
     ax.legend(labels, loc='upper center', bbox_to_anchor=(0.5, -0.18), fancybox=True, shadow=True, ncol=len(labels),
               prop=fontp)
+    ax.set_title(title)
     plt.xlim(xmin, xmax)
-    plt.ylim(ymin - 0.5, ymax + 0.5)
+    plt.ylim(ymin - 0.05, ymax + 0.05)
     plt.xlabel('JD')
     plt.ylabel('Instr. mag')
     ax.invert_yaxis()
-    save_location = Path(chartsdir, filename_no_ext + f"{'A' if use_mean else 'B'}.png")
-    print(f"writing {save_location}")
+    save_location = Path(chartsdir, filename_no_ext + f"{'A' if show_error else 'B'}.png")
     fig.savefig(save_location)
     plt.close(fig)
 
