@@ -11,9 +11,13 @@ import reading
 from pathlib import Path
 from typing import List, Dict
 import utils
+import do_aavso_report
 from star_description import StarDescription
 from star_metadata import CompStarData
 import re
+import toml
+from astropy.coordinates import SkyCoord, EarthLocation
+from astropy import units as u
 
 StarDict = Dict[int, StarDescription]
 
@@ -76,14 +80,8 @@ def plot_star_fluctuations(chartsdir: str, filename_no_ext: str, dfs, labels: Li
 # read all image.cat.info files
 # get JD and aperture via regex
 # plot
-def plot_apertures(chartsdir: str, vastdir: str):
-    catinfo_files = get_catinfo_files(vastdir)
-    x = []
-    y = []
-    for file in tqdm(catinfo_files, desc="Reading apertures per image", unit="image"):
-        a, b = get_jd_aperture_from_catinfo(file)
-        x.append(float(a))
-        y.append(float(b))
+def plot_aperture_vs_jd(chartsdir: str, vastdir: str):
+    x, y = get_aperture_and_jd(vastdir)
     fig = plt.figure(figsize=(20, 12), dpi=150)
     ax = plt.subplot(111)
     ax.plot(x, y, '*r', markersize=2)
@@ -93,6 +91,17 @@ def plot_apertures(chartsdir: str, vastdir: str):
     save_location = Path(chartsdir, 'aperture_vs_jd' + '.png')
     fig.savefig(save_location)
     plt.close(fig)
+
+
+def get_aperture_and_jd(vastdir: str):
+    catinfo_files = get_catinfo_files(vastdir)
+    x = []
+    y = []
+    for file in tqdm(catinfo_files, desc="Reading apertures per image", unit="image"):
+        a, b = get_jd_aperture_from_catinfo(file)
+        x.append(float(a))
+        y.append(float(b))
+    return x, y
 
 
 # part of plot_apertures
@@ -110,6 +119,32 @@ def get_jd_aperture_from_catinfo(filename):
             if thesearch:
                 return thesearch.group(1), thesearch.group(2)
     return None
+
+
+def plot_aperture_vs_airmass(chartsdir: str, vastdir: str, wcs):
+    x, y = get_aperture_and_jd(vastdir)
+    settings = toml.load('settings.txt')
+    sitelat = settings['sitelat']
+    sitelong = settings['sitelong']
+    sitealt = settings['sitealt']
+    earth_location = EarthLocation(lat=sitelat, lon=sitelong, height=sitealt * u.m)
+
+    xair = []
+    central_coord = SkyCoord.from_pixel(wcs.pixel_shape[0] / 2.0, wcs.pixel_shape[1] / 2.0, wcs=wcs, origin=0)
+    for entry in tqdm(x, total=len(x), desc="Calculating airmass", unit="JD"):
+        result = do_aavso_report.calculate_airmass(central_coord, earth_location, entry).value
+        xair.append(result)
+
+    fig = plt.figure(figsize=(20, 12), dpi=150)
+    ax = plt.subplot(111)
+    ax.plot(xair, y, '*r', markersize=2)
+    ax.tick_params(axis='x', which='minor', bottom=False)
+    ax.set_title('Aperture vs Airmass')
+    plt.xlabel(f'Airmass of central point: {utils.get_hms_dms(central_coord)}')
+    plt.ylabel('Aperture (px)')
+    save_location = Path(chartsdir, 'aperture_vs_airmass' + '.png')
+    fig.savefig(save_location)
+    plt.close(fig)
 
 
 def plot_cumul_histo_detections(savefig=True):

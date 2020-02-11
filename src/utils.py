@@ -12,7 +12,7 @@ import multiprocessing as mp
 from multiprocessing import cpu_count
 import re
 import logging
-
+from astropy.coordinates import SkyCoord
 from star_metadata import CatalogData
 
 
@@ -56,25 +56,25 @@ def catalog_filter(star: StarDescription, catalog_name):
     return star.has_metadata(catalog_name)
 
 
-def get_hms_dms(coord):
+def get_hms_dms(coord: SkyCoord):
     return "{:2.0f}h {:02.0f}m {:02.2f}s  {:2.0f}d {:02.0f}' {:02.2f}\"" \
         .format(coord.ra.hms.h, abs(coord.ra.hms.m), abs(coord.ra.hms.s),
                 coord.dec.dms.d, abs(coord.dec.dms.m), abs(coord.dec.dms.s))
 
 
-def get_hms_dms_sober(coord):
+def get_hms_dms_sober(coord: SkyCoord):
     return "{:2.0f} {:02.0f} {:02.2f}  {:2.0f} {:02.0f} {:02.2f}" \
         .format(coord.ra.hms.h, abs(coord.ra.hms.m), abs(coord.ra.hms.s),
                 coord.dec.dms.d, abs(coord.dec.dms.m), abs(coord.dec.dms.s))
 
 
-def get_hms_dms_matplotlib(coord):
+def get_hms_dms_matplotlib(coord: SkyCoord):
     return "{:2.0f}$^h$ {:02.0f}$^m$ {:02.2f}$^s$ | {:2.0f}$\degree$ {:02.0f}$'$ {:02.2f}$''$" \
         .format(coord.ra.hms.h, abs(coord.ra.hms.m), abs(coord.ra.hms.s),
                 coord.dec.dms.d, abs(coord.dec.dms.m), abs(coord.dec.dms.s))
 
 
-def get_lesve_coords(coord):
+def get_lesve_coords(coord: SkyCoord):
     return "{:2.0f} {:02.0f} {:02.2f} {:2.0f} {:02.0f} {:02.2f}" \
         .format(coord.ra.hms.h, abs(coord.ra.hms.m), abs(coord.ra.hms.s),
                 coord.dec.dms.d, abs(coord.dec.dms.m), abs(coord.dec.dms.s))
@@ -247,3 +247,4 @@ def replace_dots(a_string: str):
 # replace spaces with underscores
 def replace_spaces(a_string: str):
     return a_string.replace(' ', '_')
+

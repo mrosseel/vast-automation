@@ -145,7 +145,8 @@ def run_do_rest(args):
 
     if args.stats:
         do_charts_stats.plot_comparison_stars(fieldchartsdir, selected_stars, stardict)
-        do_charts_stats.plot_apertures(fieldchartsdir, vastdir)
+        do_charts_stats.plot_aperture_vs_jd(fieldchartsdir, vastdir)
+        do_charts_stats.plot_aperture_vs_airmass(fieldchartsdir, vastdir, wcs)
 
     if args.site:
         ids = [x.local_id for x in selected_stars]
