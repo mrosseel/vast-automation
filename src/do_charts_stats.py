@@ -13,7 +13,7 @@ from typing import List, Dict
 import utils
 from star_description import StarDescription
 from star_metadata import CompStarData
-import tqdm
+import re
 
 StarDict = Dict[int, StarDescription]
 
@@ -23,7 +23,7 @@ StarDict = Dict[int, StarDescription]
 
 def plot_comparison_stars(chartsdir: str, stars: List[StarDescription], stardict):
     # for every selected star make one chart
-    for star in tqdm.tqdm(stars, desc="Plotting comparison stars", unit="stars"):
+    for star in tqdm(stars, desc="Plotting comparison stars", unit="star"):
         _, _, _, filename_no_ext = utils.get_star_or_catalog_name(star, suffix='_compstars')
         compstars: CompStarData = star.get_metadata('COMPSTARS')
         compstar_ids = compstars.compstar_ids + [compstars.extra_id, star.local_id]
@@ -71,6 +71,45 @@ def plot_star_fluctuations(chartsdir: str, filename_no_ext: str, dfs, labels: Li
     save_location = Path(chartsdir, filename_no_ext + f"{'A' if show_error else 'B'}.png")
     fig.savefig(save_location)
     plt.close(fig)
+
+
+# read all image.cat.info files
+# get JD and aperture via regex
+# plot
+def plot_apertures(chartsdir: str, vastdir: str):
+    catinfo_files = get_catinfo_files(vastdir)
+    x = []
+    y = []
+    for file in tqdm(catinfo_files, desc="Reading apertures per image", unit="image"):
+        a, b = get_jd_aperture_from_catinfo(file)
+        x.append(float(a))
+        y.append(float(b))
+    fig = plt.figure(figsize=(20, 12), dpi=150)
+    ax = plt.subplot(111)
+    ax.plot(x, y, '*r', markersize=2)
+    ax.set_title('Aperture vs JD')
+    plt.xlabel('JD')
+    plt.ylabel('Aperture (px)')
+    save_location = Path(chartsdir, 'aperture_vs_jd' + '.png')
+    fig.savefig(save_location)
+    plt.close(fig)
+
+
+# part of plot_apertures
+def get_catinfo_files(vastdir):
+    return [Path(f) for f in glob.glob(vastdir + '/*.cat.info')]
+
+
+# part of plot_apertures
+def get_jd_aperture_from_catinfo(filename):
+    the_regex = re.compile(r'^write_string_to_log_file\(\): JD=\s*(.*)\s*ap=\s*(\S*)\s*.*$')
+    catalog_dict = {}
+    with open(filename, 'r') as infile:
+        for line in infile:
+            thesearch = the_regex.search(line)
+            if thesearch:
+                return thesearch.group(1), thesearch.group(2)
+    return None
 
 
 def plot_cumul_histo_detections(savefig=True):
