@@ -57,7 +57,7 @@ def animate(vastdir: str, resultdir: str, afitsdir: str, starid: int, acrop: int
     ani = animation.FuncAnimation(fig, update_img, frames=sorted_images, interval=30, init_func=init)
     writer = animation.writers['ffmpeg'](fps=30)
 
-    ani.save(Path(resultdir, f'demo.mp4'), writer=writer, dpi=dpi)
+    ani.save(Path(resultdir, f'movie-{starid:05}.mp4'), writer=writer, dpi=dpi)
     pbar.close()
 
 
