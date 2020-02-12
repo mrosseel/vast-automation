@@ -19,8 +19,8 @@ import utils
 def read_lightcurve_vast(starpath: str):
     logging.debug(f"Read lightcurve at path {starpath}")
     return pd.read_csv(starpath, delim_whitespace=True,
-                       names=['JD', 'Vrel', 'err', 'X', 'Y', 'unknown', 'file'],
-                       usecols=['JD', 'Vrel', 'err', 'X', 'Y', 'unknown', 'file'], dtype={'JD': str})
+                       names=['JD', 'Vrel', 'err', 'X', 'Y', 'aperture?', 'file'],
+                       usecols=['JD', 'Vrel', 'err', 'X', 'Y', 'aperture?', 'file'], dtype={'JD': str})
 
 
 def read_aavso_lightcurve(aavso_file: str):
