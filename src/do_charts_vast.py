@@ -119,7 +119,7 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
 
 
 def phase_lock_lightcurve(series: Series, period: Period):
-    jds = series.to_numpy()
+    jds = np.sort(series.to_numpy())
     jds_norm_orig = np.subtract(jds, jds.min())
     jds_norm = np.diff(jds_norm_orig)
     jds_norm = np.mod(jds_norm, period.period)
