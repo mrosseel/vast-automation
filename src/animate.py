@@ -26,7 +26,7 @@ padding = 200
 fullcrop = 0
 
 
-def animate(vastdir: str, resultdir: str, afitsdir: str, starid: int, acrop: int):
+def animate(vastdir: str, resultdir: str, afitsdir: str, starid: int, acrop: int, afps: int):
     global fitsdir
     global crop
     global im
@@ -41,7 +41,8 @@ def animate(vastdir: str, resultdir: str, afitsdir: str, starid: int, acrop: int
 
     # read the lightcurve of the chosen star
     lightcurvefile = f'out{starid:05}.dat'
-    logging.info(f"starid {starid}, file is {lightcurvefile}")
+    savefile = Path(resultdir, f'movie-{starid:05}.mp4')
+    logging.info(f"starid {starid}, file is {lightcurvefile}, crop is {acrop}x{acrop} pixels, saving to {savefile}")
     df = reading.read_lightcurve_vast(Path(vastdir, lightcurvefile))
     image_records = []
     rotation_dict = extract_frame_rotation_dict(vastdir)
@@ -55,9 +56,9 @@ def animate(vastdir: str, resultdir: str, afitsdir: str, starid: int, acrop: int
 
     pbar = tqdm(total=len(sorted_images))
     ani = animation.FuncAnimation(fig, update_img, frames=sorted_images, interval=30, init_func=init)
-    writer = animation.writers['ffmpeg'](fps=30)
+    writer = animation.writers['ffmpeg'](fps=afps)
 
-    ani.save(Path(resultdir, f'movie-{starid:05}.mp4'), writer=writer, dpi=dpi)
+    ani.save(savefile, writer=writer, dpi=dpi)
     pbar.close()
 
 
@@ -112,7 +113,6 @@ def update_img(record: ImageRecord):
     rotcrop = ndimage.interpolation.rotate(cropdata, record.rotation)
     rotcrop = crop_center(rotcrop, crop, crop)
     #fig = plt.figure(figsize=(15, 15), dpi=80, facecolor='w', edgecolor='k')
-
     # rotx, roty = rotcrop.shape
     # target_app = CircularAperture((rotx // 2, roty // 2), r=5.)
     # target_app.plot()
@@ -143,6 +143,9 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--crop',
                         help="The width of",
                         nargs='?', required=True)
+    parser.add_argument('-f', '--fps',
+                        help="Fps of the movie",
+                        nargs='?', required=False, default=30)
     # parser.add_argument('-s', '--start',
     #                     help="The start Julian Date",
     #                     nargs='?', required=True)
@@ -167,4 +170,4 @@ if __name__ == '__main__':
     # assert os.path.exists(args.resultdir), "resultdir does not exist" ==> this dir is created
     assert os.path.exists(args.resultdir), "resultdir does not exist"
     assert os.path.exists(args.fitsdir), "fitsdir does not exist"
-    animate(datadir, args.resultdir, args.fitsdir, int(args.star), int(args.crop))
+    animate(datadir, args.resultdir, args.fitsdir, int(args.star), int(args.crop), int(args.fps))

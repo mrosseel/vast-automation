@@ -1,6 +1,6 @@
 from typing import List
 from star_description import StarDescription
-from pathlib import Path, PurePath
+from pathlib import Path
 from functools import partial
 import toml
 import os
@@ -20,10 +20,11 @@ def run(post_name: str, selected_stars: List[StarDescription], len_vsx: int, len
     sitedir = f"{os.getcwd()}/site/vsx/"
     images_prefix = f"/images/{post_name}/"
     # copy_files(post_name, resultdir, sitedir)
-    selective_copy_files(selected_stars, post_name, resultdir, sitedir)
+    destdir = f"{sitedir}static/images{images_prefix}"
+    selective_copy_files(selected_stars, destdir, resultdir)
     result = get_header(post_name)
     result += get_starfile_preamble(images_prefix, len([x for x in selected_stars if not x.has_metadata("VSX")]),
-                                    len_vsx, len_candidates)
+                                    len_vsx, get_optional_preamble(images_prefix, destdir))
     sorted_stars = utils.sort_selected(selected_stars)
     part_block = partial(block, resultdir=resultdir, images_prefix=images_prefix)
     for star in sorted_stars:
@@ -34,20 +35,32 @@ def run(post_name: str, selected_stars: List[StarDescription], len_vsx: int, len
         outfile.write(result)
 
 
-def selective_copy_files(stars: List[StarDescription], post_name: str, resultdir: str, sitedir: str):
-    imagesdir = f"{sitedir}static/images/{post_name}/"
-    trash_and_recreate_dir(imagesdir)
+def get_optional_preamble(images_prefix: str, destdir: str):
+    ap_air = 'aperture_vs_airmass.png'
+    ap_jd = 'aperture_vs_jd.png'
+    ap_air_img = Path(destdir, ap_air)
+    ap_jd_img = Path(destdir, ap_jd)
+    optionalpreamble = ''
+    if ap_air_img.is_file() and ap_jd_img.is_file():
+        optionalpreamble = f'<a href="{images_prefix}/{ap_air}">Aperture vs Airmass</a> and '
+        optionalpreamble += f'<a href="{images_prefix}/{ap_jd}">Aperture vs JD</a><br/>'
+    return optionalpreamble + '<br/>'
+
+
+def selective_copy_files(stars: List[StarDescription], destdir: str, resultdir: str):
+    trash_and_recreate_dir(destdir)
     for astar in stars:
-        copy(astar.result['phase'], imagesdir) if 'phase' in astar.result else None
-        copy(astar.result['light'], imagesdir) if 'light' in astar.result else None
-        copy(astar.result['lightpa'], imagesdir) if 'lightpa' in astar.result else None
-        copy(astar.result['aavso'], imagesdir) if 'aavso' in astar.result else None
+        copy(astar.result['phase'], destdir) if 'phase' in astar.result else None
+        copy(astar.result['light'], destdir) if 'light' in astar.result else None
+        copy(astar.result['lightpa'], destdir) if 'lightpa' in astar.result else None
+        copy(astar.result['lightcont'], destdir) if 'lightcont' in astar.result else None
+        copy(astar.result['aavso'], destdir) if 'aavso' in astar.result else None
     fieldcharts = f'{resultdir}fieldcharts/*.png'
     fieldcharts_glob = glob.glob(fieldcharts)
     logging.info(f"Copying {len(fieldcharts_glob)} field charts from {fieldcharts}...")
     for file in fieldcharts_glob:
-        copy(file, imagesdir)
-    copy(f"{resultdir}selected_radec.txt", imagesdir)
+        copy(file, destdir)
+    copy(f"{resultdir}selected_radec.txt", destdir)
     logging.info(f"Copying done.")
 
 
@@ -78,9 +91,10 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         var_type = f"{parsed_toml['var_type']}" if 'var_type' in parsed_toml else UNKNOWN
         vsx_var_flag = f" ({parsed_toml['vsx_var_flag']})" if 'vsx_var_flag' in parsed_toml else ""
         tomlseparation = parsed_toml['separation'] if 'separation' in parsed_toml else None
-        ucacseparation = star.coords.separation(star.get_metadata("UCAC4").coords).degree if star.has_metadata("UCAC4") else None
+        ucacseparation = star.coords.separation(star.get_metadata("UCAC4").coords).degree if star.has_metadata(
+            "UCAC4") else None
         realseparation = ucacseparation if ucacseparation is not None else tomlseparation if tomlseparation is not None else None
-        separation = f"<li>separation: +/- {realseparation*3600:.0f} arcsec</li>" if realseparation is not None else ""
+        separation = f"<li>separation: +/- {realseparation * 3600:.0f} arcsec</li>" if realseparation is not None else ""
         var_type_link = f"<a href='https://www.aavso.org/vsx/index.php?view=help.vartype&nolayout=1&abbrev=" \
                         f"{var_type}'>{var_type}</a>" if var_type != UNKNOWN else var_type
         mag_range = f"{parsed_toml['range']}"
@@ -106,8 +120,8 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             <li>epoch: {epoch}</li> 
             <li><a href="{images_prefix}vsx_and_star_{filename_no_ext}.png">finder chart</a></li>
             <li><a href="{images_prefix}{filename_no_ext}_ext.txt">observations</a></li>
-            <li><a href="{images_prefix}{filename_no_ext}_light.png">light curve</a></li>
-            <li><a href="{images_prefix}{filename_no_ext}_lightpa.png">light curve PA</a></li>
+            <li>light curve: <a href="{images_prefix}{filename_no_ext}_light.png">Normal</a>,  
+            <a href="{images_prefix}{filename_no_ext}_lightpa.png">PA</a>, <a href="{images_prefix}{filename_no_ext}_lightcont.png">Continuous</a></li>
             </ul>
         </div>
     </div>
@@ -132,12 +146,12 @@ def get_date_time():
     return pytz.utc.localize(datetime.utcnow()).isoformat()
 
 
-def get_starfile_preamble(images_prefix: str, len_selected: int, len_vsx: int, len_candidates: int):
+def get_starfile_preamble(images_prefix: str, len_selected: int, len_vsx: int, optionalpreamble: str):
     return f'<div class="bb-l b--black-10 w-100">' \
            f'<div class="fl w-100 pa2 ba">' \
            f'Images by Josch Hambsch, Data processing by Mike Rosseel, Josch Hambsch and ' \
            f'<a href="http://scan.sai.msu.ru/vast/">VaST</a></div>' \
            f'<a href="{images_prefix}selected_radec.txt">CSV file of all stars on this page</a><br/>' \
            f'<a href="{images_prefix}vsx_{len_vsx}_and_selected_{len_selected}.png">' \
-           f'Finder chart with {len_vsx} VSX and {len_selected} new stars</a><br/>' \
+           f'Finder chart with {len_vsx} VSX and {len_selected} new stars</a><br/>{optionalpreamble}' \
            f'Periods are derived using Lomb-Scargle (LS), Peranso (OWN) or from the VSX database (VSX)</div></div>\n'

@@ -51,7 +51,15 @@ def plot_lightcurve_raw(star: StarDescription, curve: DataFrame, chartsdir):
 def plot_lightcurve_pa(star: StarDescription, curve: DataFrame, chartsdir, period: Period):
     logging.debug(f"Plotting phase adjusted lightcurve for {star.local_id}")
     convert_func = partial(phase_lock_lightcurve, period=period)
+    curve = curve.sort_values(by=['floatJD'])  # sort by JD so the phase adjusted thing works
     return _plot_lightcurve(star, curve, chartsdir, f"_lightpa", convert_func, xlabel='phase-adjusted JD')
+
+
+def plot_lightcurve_continuous(star: StarDescription, curve: DataFrame, chartsdir):
+    logging.debug(f"Plotting continuous lightcurve for {star.local_id}")
+    convert_func = continuous_lightcurve
+    curve = curve.sort_values(by=['floatJD'])  # sort by JD so the phase adjusted thing works
+    return _plot_lightcurve(star, curve, chartsdir, f"_lightcont", convert_func, xlabel='All obs, one after the other')
 
 
 def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=f"_light",
@@ -119,13 +127,17 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
 
 
 def phase_lock_lightcurve(series: Series, period: Period):
-    jds = np.sort(series.to_numpy())
+    jds = series.to_numpy()
     jds_norm_orig = np.subtract(jds, jds.min())
     jds_norm = np.diff(jds_norm_orig)
     jds_norm = np.mod(jds_norm, period.period)
     jds_norm = np.concatenate(([jds_norm_orig[0]], jds_norm))
     jds_norm = np.cumsum(jds_norm)
     return jds_norm
+
+
+def continuous_lightcurve(series: Series):
+    return np.arange(series.size)
 
 
 def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, suffix='', period: Period = None,
@@ -295,13 +307,17 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, star_result_dict
             temp_dict['phase'] = plot_phase_diagram(star, df.copy(), phasedir, period=period, epoch=epoch, suffix="")
         if do_light and 'lightpa' not in star.result:
             temp_dict['lightpa'] = plot_lightcurve_pa(star, df.copy(), chartsdir, period)
+            temp_dict['lightcont'] = plot_lightcurve_continuous(star, df.copy(), chartsdir)
         if do_light_raw and 'light' not in star.result:
             temp_dict['light'] = plot_lightcurve_raw(star, df.copy(), chartsdir)
         if do_aavso and 'aavso' not in star.result:
             settings = toml.load('settings.txt')
-            temp_dict['aavso'] = do_aavso_report.report(star, df.copy(), filtered_compstars, check_star, target_dir=aavsodir,
-                        sitelat=settings['sitelat'], sitelong=settings['sitelong'], sitealt=settings['sitealt'],
-                        camera_filter='V', observer=settings['observer'], chunk_size=aavso_limit)
+            temp_dict['aavso'] = do_aavso_report.report(star, df.copy(), filtered_compstars, check_star,
+                                                        target_dir=aavsodir,
+                                                        sitelat=settings['sitelat'], sitelong=settings['sitelong'],
+                                                        sitealt=settings['sitealt'],
+                                                        camera_filter='V', observer=settings['observer'],
+                                                        chunk_size=aavso_limit)
         filtered_compstars = None
         star_result_dict[star.local_id] = temp_dict
     except Exception as ex:
@@ -403,5 +419,3 @@ def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir:
             for key2, value2 in value.items():
                 if key2 not in star_result:
                     star_result[key2] = value2
-
-
