@@ -239,7 +239,7 @@ def get_ucac4_of_sd(star: StarDescription):
     return catdata.catalog_id if catdata is not None else "Unknown"
 
 
-# replace spaces with underscores
+# replace spaces with dashes
 def replace_dots(a_string: str):
     return a_string.replace('.', '-')
 
@@ -247,4 +247,9 @@ def replace_dots(a_string: str):
 # replace spaces with underscores
 def replace_spaces(a_string: str):
     return a_string.replace(' ', '_')
+
+
+# replace spaces with underscores
+def replace_underscores(a_string: str):
+    return a_string.replace('_', ' ')
 

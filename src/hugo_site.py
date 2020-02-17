@@ -51,6 +51,9 @@ def selective_copy_files(stars: List[StarDescription], destdir: str, resultdir: 
     trash_and_recreate_dir(destdir)
     for astar in stars:
         copy(astar.result['phase'], destdir) if 'phase' in astar.result else None
+        copy(astar.result['compstars'], destdir) if 'compstars' in astar.result else None
+        copy(astar.result['compA'], destdir) if 'compA' in astar.result else None
+        copy(astar.result['compB'], destdir) if 'compB' in astar.result else None
         copy(astar.result['light'], destdir) if 'light' in astar.result else None
         copy(astar.result['lightpa'], destdir) if 'lightpa' in astar.result else None
         copy(astar.result['lightcont'], destdir) if 'lightcont' in astar.result else None
@@ -104,6 +107,9 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
                    f'>VSX link</a></li>' if is_vsx else ""
         points_removed = f"<li>Outliers removed: {parsed_toml['points_removed']}</li>" \
             if parsed_toml['points_removed'] > 0 else ""
+        optional_compstars = f'<a href="{images_prefix}{filename_no_ext}_compstarsA.png">C</a>, ' \
+                             f'<a href="{images_prefix}{filename_no_ext}_compstarsB.png">C+V</a>, ' \
+            if 'compA' in star.result else ''
         result = f'''<div class="bb-l b--black-10 w-100">
         <div class="fl w-70 pa2 ba">
             <img class="special-img-class" src="{phase_url}" alt="{phase_url}"/>
@@ -122,6 +128,8 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             <li><a href="{images_prefix}{filename_no_ext}_ext.txt">observations</a></li>
             <li>light curve: <a href="{images_prefix}{filename_no_ext}_light.png">Normal</a>,  
             <a href="{images_prefix}{filename_no_ext}_lightpa.png">PA</a>, <a href="{images_prefix}{filename_no_ext}_lightcont.png">Continuous</a></li>
+            <li>comparison stars: {optional_compstars}<a href="{images_prefix}{filename_no_ext}_comps.txt">list</a>
+            </li>
             </ul>
         </div>
     </div>

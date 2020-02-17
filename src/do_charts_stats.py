@@ -33,32 +33,35 @@ def plot_comparison_stars(chartsdir: str, stars: List[StarDescription], stardict
         compstar_ids = compstars.compstar_ids + [compstars.extra_id, star.local_id]
         labels = compstars.compstar_ids + ['K']
         dfs = read_lightcurves(compstar_ids, stardict)
-        plot_star_fluctuations(chartsdir, filename_no_ext, dfs[:-1], labels, show_error=True)
-        plot_star_fluctuations(chartsdir, filename_no_ext, dfs, labels + ['V'], show_error=False)
+        star.result['compA'] = plot_star_fluctuations(star, chartsdir, filename_no_ext, dfs[:-1], labels,
+                                                      show_error=True)
+        star.result['compB'] = plot_star_fluctuations(star, chartsdir, filename_no_ext, dfs, labels + ['V'],
+                                                      show_error=False)
 
 
-def plot_star_fluctuations(chartsdir: str, filename_no_ext: str, dfs, labels: List[str], show_error: bool = False):
+def plot_star_fluctuations(star: StarDescription, chartsdir: str, filename_no_ext: str, dfs: List[pd.DataFrame],
+                           labels: List[str], show_error: bool = False):
     fig = plt.figure(figsize=(20, 12), dpi=150)
     ax = plt.subplot(111)
     xmax, xmin, ymax, ymin = float('-inf'), float('inf'), float('-inf'), float('inf')
     cmap = plt.get_cmap('Set1')
-    number = 11
+    number = len(dfs)
     colors = [cmap(i) for i in np.linspace(0, 1, number)]
-    title = filename_no_ext if show_error else filename_no_ext + ' + V'
+    title = f"Star {star.local_id} comparisons {'V' if not show_error else ''}"
     for idx, df in enumerate(dfs):
-        df['JDF'] = df['JD'].astype(float).to_numpy()
-        df['Vrelrel'] = df['Vrel'] + 30
-        xmax = max(xmax, df['JDF'].max())
-        xmin = min(xmin, df['JDF'].min())
-        ymax = max(ymax, df['Vrelrel'].max())
-        ymin = min(ymin, df['Vrelrel'].min())
+        df['floatJD'] = df['JD'].astype(float).to_numpy()
+        df['Vrel30'] = df['Vrel'] + 30
+        xmax = max(xmax, df['floatJD'].max())
+        xmin = min(xmin, df['floatJD'].min())
+        ymax = max(ymax, df['Vrel30'].max())
+        ymin = min(ymin, df['Vrel30'].min())
         if show_error:
-            ax.errorbar(df['JDF'], df['Vrelrel'], yerr=df['err'], linestyle='', color=colors[idx], ms=2)
+            ax.errorbar(df['floatJD'], df['Vrel30'], yerr=df['err'], linestyle='', color=colors[idx], ms=2)
         else:
             fmt = '*r' if labels[idx] == 'K' else '^b' if labels[idx] == 'V' else '.'
-            ax.plot(df['JDF'], df['Vrelrel'], fmt, color=colors[idx], markersize=2)
+            ax.plot(df['floatJD'], df['Vrel30'], fmt, color=colors[idx], markersize=2)
     fontp = FontProperties()
-    fontp.set_size('20')
+    fontp.set_size('18')
     # Shrink current axis's height by 10% on the bottom
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.1,
@@ -75,6 +78,7 @@ def plot_star_fluctuations(chartsdir: str, filename_no_ext: str, dfs, labels: Li
     save_location = Path(chartsdir, filename_no_ext + f"{'A' if show_error else 'B'}.png")
     fig.savefig(save_location)
     plt.close(fig)
+    return save_location
 
 
 # read all image.cat.info files

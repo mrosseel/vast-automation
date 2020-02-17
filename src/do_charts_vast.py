@@ -59,11 +59,12 @@ def plot_lightcurve_continuous(star: StarDescription, curve: DataFrame, chartsdi
     logging.debug(f"Plotting continuous lightcurve for {star.local_id}")
     convert_func = continuous_lightcurve
     curve = curve.sort_values(by=['floatJD'])  # sort by JD so the phase adjusted thing works
-    return _plot_lightcurve(star, curve, chartsdir, f"_lightcont", convert_func, xlabel='All obs, one after the other')
+    return _plot_lightcurve(star, curve, chartsdir, f"_lightcont", convert_func, xlabel='All obs, one after the other',
+                            markersize=5, errorbars=False)
 
 
 def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=f"_light",
-                     jd_adjusting_func=None, xlabel='JD'):
+                     jd_adjusting_func=None, xlabel='JD', markersize=6, errorbars=True):
     try:
         star_id = star.local_id
         logging.debug(f"Plotting lightcurve for {star_id}")
@@ -89,10 +90,11 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
         else:
             curve['realJD'] = jd_adjusting_func(curve['floatJD'])
         fig = plt.figure(figsize=(20, 12), dpi=150, facecolor='w', edgecolor='k')
-        plt.errorbar(curve['realJD'], curve['realV'], yerr=curve['realErr'], linestyle='none', marker='o',
-                     ecolor='gray',
-                     elinewidth=1)
-
+        if errorbars:
+            plt.errorbar(curve['realJD'], curve['realV'], yerr=curve['realErr'], linestyle='none', marker='o',
+                         ecolor='gray', elinewidth=1, ms=markersize)
+        else:
+            plt.plot(curve['realJD'], curve['realV'], linestyle='dashed', linewidth="1", marker='o', ms=markersize)
         plt.xlabel(xlabel, labelpad=TITLE_PAD)
         curve_max = curve['realV'].max()
         curve_min = curve['realV'].min()
@@ -257,16 +259,19 @@ def _plot_phase_diagram(phased_t_final, phased_lc_final, phased_err, write_plot,
         return plt
 
 
-def write_compstars(star, filename_no_ext, fullphasedir, compstars, check_star):
+def write_compstars(star, filename_no_ext, fullphasedir, compstars, check_star) -> str:
     if compstars:
         outputfile = f"{fullphasedir}/txt/{filename_no_ext}_comps.txt"
-        extra_id_ucac4 = utils.get_ucac4_of_sd(check_star.star_descriptions[0])
+        kstar_sd = check_star.star_descriptions[0]
+        extra_id_ucac4 = utils.get_ucac4_of_sd(kstar_sd)
         with open(outputfile, "wt") as fp:
-            fp.write(f"# K star: {extra_id_ucac4},{check_star.comp_catalogmags[0]:.3f},"
+            fp.write(f"# local star id, UCAC4 id, mag, mag err\n"
+                     f"# K star: {kstar_sd.local_id},{extra_id_ucac4},{check_star.comp_catalogmags[0]:.3f},"
                      f"{check_star.comp_catalogerr[0]:.5f}\n")
             for sd, mag, err in zip(compstars.star_descriptions, compstars.comp_catalogmags, compstars.comp_catalogerr):
                 ucac4_id = utils.get_ucac4_of_sd(sd)
-                fp.write(f"{ucac4_id},{mag:.3f},{err:.5f}\n")
+                fp.write(f"{sd.local_id},{ucac4_id},{mag:.3f},{err:.5f}\n")
+        return outputfile
 
 
 def read_vast_lightcurves(star: StarDescription, compstarproxy, star_result_dict, do_light, do_light_raw, do_phase,
@@ -299,7 +304,7 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, star_result_dict
         _, _, _, filename_no_ext = utils.get_star_or_catalog_name(star, suffix="")
         period, epoch = determine_period_and_epoch(df, star)
         df, points_removed = phase_dependent_outlier_removal(df, period)
-        write_compstars(star, filename_no_ext, phasedir, filtered_compstars, check_star)
+        temp_dict['compstars'] = write_compstars(star, filename_no_ext, phasedir, filtered_compstars, check_star)
         write_toml(filename_no_ext, phasedir, period, star, points_removed,
                    *calculate_min_max_epochs(df['floatJD'], df['realV']))
 
