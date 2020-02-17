@@ -20,7 +20,7 @@ def run(post_name: str, selected_stars: List[StarDescription], len_vsx: int, len
     sitedir = f"{os.getcwd()}/site/vsx/"
     images_prefix = f"/images/{post_name}/"
     # copy_files(post_name, resultdir, sitedir)
-    destdir = f"{sitedir}static/images{images_prefix}"
+    destdir = f"{sitedir}static/{images_prefix}"
     selective_copy_files(selected_stars, destdir, resultdir)
     result = get_header(post_name)
     result += get_starfile_preamble(images_prefix, len([x for x in selected_stars if not x.has_metadata("VSX")]),
