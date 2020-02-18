@@ -60,7 +60,7 @@ def plot_lightcurve_continuous(star: StarDescription, curve: DataFrame, chartsdi
     convert_func = continuous_lightcurve
     curve = curve.sort_values(by=['floatJD'])  # sort by JD so the phase adjusted thing works
     return _plot_lightcurve(star, curve, chartsdir, f"_lightcont", convert_func, xlabel='All obs, one after the other',
-                            markersize=5, errorbars=False)
+                            markersize=6, errorbars=False)
 
 
 def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=f"_light",
@@ -95,7 +95,7 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
             plt.errorbar(curve['realJD'], curve['realV'], yerr=curve['realErr'], linestyle='none', marker='o',
                          ecolor='gray', elinewidth=1, ms=markersize)
         else:
-            plt.plot(curve['realJD'], curve['realV'], linestyle='dashed', linewidth="1", marker='o', ms=markersize)
+            plt.plot(curve['realJD'], curve['realV'], linestyle='none', linewidth="1", marker='o', ms=markersize)
         plt.xlabel(xlabel, labelpad=TITLE_PAD)
         curve_max = curve['realV'].max()
         curve_min = curve['realV'].min()
