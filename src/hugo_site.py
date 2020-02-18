@@ -20,11 +20,11 @@ def run(post_name: str, selected_stars: List[StarDescription], len_vsx: int, len
     sitedir = f"{os.getcwd()}/site/vsx/"
     images_prefix = f"/images/{post_name}/"
     # copy_files(post_name, resultdir, sitedir)
-    destdir = f"{sitedir}static/{images_prefix}"
-    selective_copy_files(selected_stars, destdir, resultdir)
+    staticimagesdir = f"{sitedir}static/{images_prefix}"
+    selective_copy_files(selected_stars, staticimagesdir, resultdir)
     result = get_header(post_name)
     result += get_starfile_preamble(images_prefix, len([x for x in selected_stars if not x.has_metadata("VSX")]),
-                                    len_vsx, get_optional_preamble(images_prefix, destdir))
+                                    len_vsx, get_optional_preamble(images_prefix, staticimagesdir))
     sorted_stars = utils.sort_selected(selected_stars)
     part_block = partial(block, resultdir=resultdir, images_prefix=images_prefix)
     for star in sorted_stars:
@@ -70,9 +70,8 @@ def selective_copy_files(stars: List[StarDescription], destdir: str, resultdir: 
 def block(star: StarDescription, resultdir: str, images_prefix: str):
     try:
         is_vsx = star.has_metadata("VSX")
-        _, _, extradata, filename_no_ext = utils.get_star_or_catalog_name(star, suffix="")
-        filename_no_ext_phase = filename_no_ext + "_phase"
-        txt_path = Path(Path(star.result['phase']).parent, "txt", filename_no_ext + '.txt')
+        starui: utils.StarUI = utils.get_star_or_catalog_name(star, suffix="_phase")
+        txt_path = Path(Path(star.result['phase']).parent, "txt", starui.filename_no_suff_no_ext + '.txt')
         try:
             parsed_toml = toml.load(txt_path)
         except FileNotFoundError:
@@ -89,7 +88,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         nl = '\n'
         name = f"{nl.join(parsed_toml['our_name'])}" if 'our_name' in parsed_toml else f"OUR_NAME_{star.local_id}"
         period = f"{float(parsed_toml['period']):.5f}"
-        phase_url = f"{images_prefix}{filename_no_ext_phase}.png"
+        phase_url = f"{images_prefix}{starui.filename_no_ext}.png"
         epoch = f"{parsed_toml['epoch']}" if 'epoch' in parsed_toml else UNKNOWN
         var_type = f"{parsed_toml['var_type']}" if 'var_type' in parsed_toml else UNKNOWN
         vsx_var_flag = f" ({parsed_toml['vsx_var_flag']})" if 'vsx_var_flag' in parsed_toml else ""
@@ -107,9 +106,11 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
                    f'>VSX link</a></li>' if is_vsx else ""
         points_removed = f"<li>Outliers removed: {parsed_toml['points_removed']}</li>" \
             if parsed_toml['points_removed'] > 0 else ""
-        optional_compstars = f'<a href="{images_prefix}{filename_no_ext}_compstarsA.png">C</a>, ' \
-                             f'<a href="{images_prefix}{filename_no_ext}_compstarsB.png">C+V</a>, ' \
+        optional_compstars = f'<a href="{images_prefix}{starui.filename_no_suff_no_ext}_compstarsA.png">C</a>, ' \
+                             f'<a href="{images_prefix}{starui.filename_no_suff_no_ext}_compstarsB.png">C+V</a>, ' \
             if 'compA' in star.result else ''
+        optional_stats = f'<li>stats: <a href="{images_prefix}{starui.filename_no_suff_no_ext}_merr_vs_jd.png">' \
+                         f'merr_vs_jd</a></li>' if 'merr_vs_jd' in star.result else ''
         result = f'''<div class="bb-l b--black-10 w-100">
         <div class="fl w-70 pa2 ba">
             <img class="special-img-class" src="{phase_url}" alt="{phase_url}"/>
@@ -121,15 +122,15 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             <li>coords: {utils.get_hms_dms_sober(star.coords)} (ours)</li>{separation}{points_removed}
             <li>period (d): {period}</li>{minmax}
             <li>mag. range: {mag_range}</li>
-            <li><a target="_blank" rel="noopener noreferrer" href="
-            https://www.aavso.org/vsx/index.php?view=about.vartypessort">type</a>: {var_type_link}{vsx_var_flag}</li>{vsx_link}
-            <li>epoch: {epoch}</li> 
-            <li><a href="{images_prefix}vsx_and_star_{filename_no_ext}.png">finder chart</a></li>
-            <li><a href="{images_prefix}{filename_no_ext}_ext.txt">observations</a></li>
-            <li>light curve: <a href="{images_prefix}{filename_no_ext}_light.png">Normal</a>,  
-            <a href="{images_prefix}{filename_no_ext}_lightpa.png">PA</a>, <a href="{images_prefix}{filename_no_ext}_lightcont.png">Continuous</a></li>
-            <li>comparison stars: {optional_compstars}<a href="{images_prefix}{filename_no_ext}_comps.txt">list</a>
-            </li>
+            <li><a target="_blank" rel="noopener noreferrer" href="https://www.aavso.org/vsx/index.php?view=about.vartypessort">type</a>: {var_type_link}{vsx_var_flag}</li>
+            {vsx_link}<li>epoch: {epoch}</li> 
+            <li><a href="{images_prefix}vsx_and_star_{starui.filename_no_suff_no_ext}.png">finder chart</a></li>
+            <li><a href="{images_prefix}{starui.filename_no_suff_no_ext}_ext.txt">observations</a></li>
+            <li>light curve: <a href="{images_prefix}{starui.filename_no_suff_no_ext}_light.png">Normal</a>,  
+            <a href="{images_prefix}{starui.filename_no_suff_no_ext}_lightpa.png">PA</a>, 
+            <a href="{images_prefix}{starui.filename_no_suff_no_ext}_lightcont.png">Continuous</a></li>
+            <li>comparison stars: {optional_compstars}<a href="{images_prefix}{starui.filename_no_suff_no_ext}_comps.txt">list</a></li>
+            {optional_stats}
             </ul>
         </div>
     </div>

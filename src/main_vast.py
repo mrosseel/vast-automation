@@ -29,12 +29,12 @@ import pandas as pd
 import toml
 import subprocess
 from star_metadata import CatalogData, SiteData, CompStarData, SelectedFileData
+from utils import StarDict
 
 vsx_catalog_name = "vsx_catalog.bin"
 vsxcatalogdir = PurePath(os.getcwd(), vsx_catalog_name)
 # star id -> xpos, ypos, filename
 StarPosDict = Dict[str, Tuple[float, float, str]]
-StarDict = Dict[int, StarDescription]
 STAR_KEEPER_PERCENTAGE = 0.1
 
 
@@ -147,6 +147,7 @@ def run_do_rest(args):
         do_charts_stats.plot_comparison_stars(fieldchartsdir, selected_stars, stardict)
         do_charts_stats.plot_aperture_vs_jd(fieldchartsdir, vastdir)
         do_charts_stats.plot_aperture_vs_airmass(fieldchartsdir, vastdir, wcs)
+        do_charts_stats.plot_merr_vs_jd(fieldchartsdir, selected_stars)
 
     if args.site:
         ids = [x.local_id for x in selected_stars]
@@ -349,8 +350,8 @@ def write_selected_files(resultdir: str, vastdir: str, selected_stars: List[Star
 
         for star in sorted_stars:
             metadata: SiteData = star.get_metadata("SITE")
-            _, _, _, filename_no_ext = utils.get_star_or_catalog_name(star, '')
-            txt_path = Path(Path(star.result['phase']).parent, "txt", filename_no_ext + '.txt')
+            starui: utils.StarUI = utils.get_star_or_catalog_name(star)
+            txt_path = Path(Path(star.result['phase']).parent, "txt", starui.filename_no_ext + '.txt')
             try:
                 parsed_toml = toml.load(txt_path)
                 outowncatalog.write(

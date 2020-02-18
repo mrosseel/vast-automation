@@ -6,11 +6,14 @@ import errno
 import re
 import glob
 import logging
-import utils
+
+from utils import StarDict
+from star_description import StarDescription
 
 
 # - 1st column - JD(TT) (default) or JD(UTC) (if VaST was started with "-u" flag)
-# - 2nd column - magnitude (with respect to the background level on the reference image if an absolute calibration was not done yet)
+# - 2nd column - magnitude (with respect to the background level on the reference image if an
+#                absolute calibration was not done yet)
 # - 3rd column - estimated magnitude error
 # - 4th column - X position of the star on the current frame (in pixels)
 # - 5th column - Y position of the star on the current frame (in pixels)
@@ -23,24 +26,39 @@ def read_lightcurve_vast(starpath: str):
                        usecols=['JD', 'Vrel', 'err', 'X', 'Y', 'aperture?', 'file'], dtype={'JD': str})
 
 
+def read_lightcurve_ids(star_ids: List[int], stardict: StarDict):
+    result = []
+    for star_id in star_ids:
+        df = read_lightcurve_vast(stardict[star_id].path)
+        result.append(df)
+    return result
+
+
+def read_lightcurve_sds(sds: List[StarDescription]):
+    return list(map(lambda x: read_lightcurve_vast(x.path), sds))
+
+
 def read_aavso_lightcurve(aavso_file: str):
     return pd.read_csv(aavso_file, sep=',', header=None, index_col=False, comment='#',
                        names=['NAME', 'DATE', 'MAG', 'MERR', 'FILT', 'TRANS', 'MTYPE', 'CNAME', 'CMAG', 'KNAME',
                               'KMAG', 'AMASS', 'GROUP', 'CHART', 'NOTES'], dtype={'DATE': str})
 
 
-def trash_and_recreate_dir(dir):
-    os.system('rm -fr "%s"' % dir)
+def trash_and_recreate_dir(adir: str):
+    os.system('rm -fr "%s"' % adir)
     # shutil.rmtree(dir, ignore_errors=True)
-    create_dir(dir)
+    create_dir(adir)
 
 
-def create_dir(dir):
-    os.makedirs(dir, exist_ok=True)
+def create_dir(adir: str):
+    os.makedirs(adir, exist_ok=True)
 
 
-# takes a star_list and a dir, and returns a reduced star list - all stars which already have a file in that dir are removed
 def reduce_star_list(star_list_1, the_path):
+    """
+    takes a star_list and a dir, and returns a reduced star list - all stars which already have a file in that dir are
+    removed
+    """
     the_dir = os.listdir(the_path)
     the_dir.sort()
     found = []
@@ -86,6 +104,7 @@ def read_magdict_for_star(vastdir, star_id):
 
 def star_to_dat(star: int):
     return f"out{star:05}.dat"
+
 
 # Select files conforming to the match_pattern using percentage which is between 0 and 1
 def file_selector(the_dir, match_pattern, percentage=1) -> List[str]:

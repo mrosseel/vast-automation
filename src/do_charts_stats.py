@@ -18,25 +18,24 @@ import re
 import toml
 from astropy.coordinates import SkyCoord, EarthLocation
 from astropy import units as u
-
-StarDict = Dict[int, StarDescription]
+from utils import StarDict
 
 
 #### Create charts showing statistics on the detected stars, variables, ...
 
 
-def plot_comparison_stars(chartsdir: str, stars: List[StarDescription], stardict):
+def plot_comparison_stars(chartsdir: str, stars: List[StarDescription], stardict: StarDict):
     # for every selected star make one chart
     for star in tqdm(stars, desc="Plotting comparison stars", unit="star"):
-        _, _, _, filename_no_ext = utils.get_star_or_catalog_name(star, suffix='_compstars')
+        starui: utils.StarUI = utils.get_star_or_catalog_name(star)
         compstars: CompStarData = star.get_metadata('COMPSTARS')
         compstar_ids = compstars.compstar_ids + [compstars.extra_id, star.local_id]
         labels = compstars.compstar_ids + ['K']
-        dfs = read_lightcurves(compstar_ids, stardict)
-        star.result['compA'] = plot_star_fluctuations(star, chartsdir, filename_no_ext, dfs[:-1], labels,
-                                                      show_error=True)
-        star.result['compB'] = plot_star_fluctuations(star, chartsdir, filename_no_ext, dfs, labels + ['V'],
-                                                      show_error=False)
+        dfs = reading.read_lightcurve_ids(compstar_ids, stardict)
+        star.result['compA'] = plot_star_fluctuations(star, chartsdir, starui.filename_orig_no_ext, dfs[:-1],
+                                                      labels, show_error=True)
+        star.result['compB'] = plot_star_fluctuations(star, chartsdir, starui.filename_orig_no_ext, dfs,
+                                                      labels + ['V'], show_error=False)
 
 
 def plot_star_fluctuations(star: StarDescription, chartsdir: str, filename_no_ext: str, dfs: List[pd.DataFrame],
@@ -47,7 +46,7 @@ def plot_star_fluctuations(star: StarDescription, chartsdir: str, filename_no_ex
     cmap = plt.get_cmap('Set1')
     number = len(dfs)
     colors = [cmap(i) for i in np.linspace(0, 1, number)]
-    title = f"Star {star.local_id} comparisons {'V' if not show_error else ''}"
+    title = f"Star {star.local_id} comparisons{' + V' if not show_error else ''}"
     for idx, df in enumerate(dfs):
         df['floatJD'] = df['JD'].astype(float).to_numpy()
         df['Vrel30'] = df['Vrel'] + 30
@@ -75,7 +74,7 @@ def plot_star_fluctuations(star: StarDescription, chartsdir: str, filename_no_ex
     plt.xlabel('JD')
     plt.ylabel('Instr. mag')
     ax.invert_yaxis()
-    save_location = Path(chartsdir, filename_no_ext + f"{'A' if show_error else 'B'}.png")
+    save_location = Path(chartsdir, filename_no_ext + f"_compstars{'A' if show_error else 'B'}.png")
     fig.savefig(save_location)
     plt.close(fig)
     return save_location
@@ -107,6 +106,24 @@ def get_aperture_and_jd(vastdir: str):
         x.append(float(a))
         y.append(float(b))
     return x, y
+
+
+def plot_merr_vs_jd(chartsdir: str, stars: List[StarDescription]):
+    dfs = reading.read_lightcurve_sds(stars)
+    for star, df in tqdm(zip(stars, dfs), desc="Plotting magnitude error vs jd", unit="star", total=len(stars)):
+        df['floatJD'] = df['JD'].astype(np.float)
+        starui: utils.StarUI = utils.get_star_or_catalog_name(star)
+        fig = plt.figure(figsize=(20, 12), dpi=150)
+        ax = plt.subplot(111)
+        ax.plot(df['floatJD'], df['err'], '*r', markersize=2)
+        ax.set_title('Magnitude error vs JD')
+        plt.xlabel('JD (day)')
+        plt.ylabel('Mag error (mag)')
+        plt.minorticks_on()
+        save_location = Path(chartsdir, f'{starui.filename_no_ext}_merr_vs_jd' + '.png')
+        fig.savefig(save_location)
+        plt.close(fig)
+        star.result['merr_vs_jd'] = save_location
 
 
 # part of plot_apertures
@@ -154,7 +171,7 @@ def plot_aperture_vs_airmass(chartsdir: str, vastdir: str, wcs):
 
 
 def plot_cumul_histo_detections(savefig=True):
-    result = read_lightcurves()
+    result = reading.read_lightcurve_ids()
     matplotlib.rcParams.update({'font.size': 38})
     fig_size = (38, 32)
     dpi = 100
@@ -218,35 +235,6 @@ def plot_fwhm(fwhm):
     plt.bar(x=xaxis, height=np.take(fwhm, 1, axis=1), width=1)
     plt.show()
     save(fig, settings.fieldchartsdirs + 'fwhm.png')
-
-
-def old_read_lightcurves(lightcurvedir: str, nr_threads):
-    files = glob.glob(lightcurvedir + '*.txt')
-    result = {}
-    pool = mp.Pool(nr_threads * 2, maxtasksperchild=None)
-
-    for file, partial_result in tqdm(pool.imap_unordered(read_lightcurve, files), total=len(files),
-                                     desc='Reading all lightcurves'):
-        result[file] = partial_result
-
-    return result
-
-
-def read_lightcurves(star_ids: List[int], stardict: StarDict):
-    result = []
-    for star_id in star_ids:
-        df = reading.read_lightcurve_vast(stardict[star_id].path)
-        result.append(df)
-    return result
-
-
-def read_lightcurve(file):
-    df = pd.read_csv(file, skiprows=[1], sep=' ')
-    length = len(df.index)
-    df = df[df['V-C'] < 99]
-    filterlength = len(df.index)
-    # print (filterlength/length)
-    return file, [filterlength, length]
 
 
 def save(fig, path):

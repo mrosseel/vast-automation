@@ -16,8 +16,8 @@ import operator
 from pandas import DataFrame
 import tqdm
 import reading
+from utils import StarDict
 
-StarDict = Dict[int, StarDescription]
 
 
 # receives ucac numbers, fetches ucac coords and compares them to world_position coords

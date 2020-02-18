@@ -14,6 +14,12 @@ import re
 import logging
 from astropy.coordinates import SkyCoord
 from star_metadata import CatalogData
+from collections import namedtuple
+
+# all info needed for ui purposes
+StarUI = namedtuple('StarInfo', 'catalog_name, separation, extradata, filename_orig_no_ext, filename_no_ext, '
+                                'filename_orig_no_suff_no_ext, filename_no_suff_no_ext')
+StarDict = Dict[int, StarDescription]
 
 
 def find_index_of_file(the_dir, the_file, the_filter='*'):
@@ -202,7 +208,7 @@ def reject_outliers_iqr(df, column, cut=5):
     return df[(df[column] < upper_bound) & (df[column] > lower_bound)]
 
 
-def get_star_or_catalog_name(star: StarDescription, suffix: str = ""):
+def get_star_or_catalog_name(star: StarDescription, suffix: str = "") -> StarUI:
     extradata = None
     if star.has_metadata("VSX"):
         catalog = star.get_metadata("VSX")
@@ -213,9 +219,17 @@ def get_star_or_catalog_name(star: StarDescription, suffix: str = ""):
         catalog_name, separation = catalog.name, catalog.separation
     else:
         catalog_name, separation = star.local_id, None
-    filename_no_ext = f"{int(catalog_name):05}{suffix}" if isinstance(catalog_name, int) or catalog_name.isdigit() \
-        else f"{catalog_name}{suffix}"
-    return catalog_name, separation, extradata, replace_spaces(replace_dots(filename_no_ext))
+    filename_no_suff_no_ext = f"{int(catalog_name):05}" \
+        if isinstance(catalog_name, int) or catalog_name.isdigit() else f"{catalog_name}"
+    filename_no_ext = f"{filename_no_suff_no_ext}{suffix}"
+
+    filename_orig_no_ext = filename_no_ext
+    filename_no_ext = replace_spaces(replace_dots(filename_orig_no_ext))
+
+    filename_orig_no_suff_no_ext = filename_no_suff_no_ext
+    filename_no_suff_no_ext = replace_spaces(replace_dots(filename_orig_no_suff_no_ext))
+    return StarUI(catalog_name, separation, extradata, filename_orig_no_ext, filename_no_ext,
+                  filename_orig_no_suff_no_ext, filename_no_suff_no_ext)
 
 
 def get_star_names(star: StarDescription) -> List[str]:

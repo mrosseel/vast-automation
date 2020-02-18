@@ -41,7 +41,7 @@ def save_results(result_list, output_file):
 def predict_star(star, limit=-1):
     #print("star:",star)
     try:
-        df = reading.read_lightcurve(star)
+        df = reading.read_lightcurve_file(star)
         if(limit > 0):
             df = df[:limit]
         mag = df['V-C'].to_numpy()

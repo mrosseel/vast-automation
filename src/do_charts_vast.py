@@ -68,9 +68,10 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
     try:
         star_id = star.local_id
         logging.debug(f"Plotting lightcurve for {star_id}")
-        vsx_name, separation, extradata, filename_no_ext = utils.get_star_or_catalog_name(star, suffix=suffix)
-        var_type = f"Type: {extradata['Type']}" if extradata is not None and 'Type' in extradata else ""
-        save_location = Path(chartsdir, filename_no_ext + '.png')
+        starui: utils.StarUI = utils.get_star_or_catalog_name(star, suffix=suffix)
+        var_type = f"Type: {starui.extradata['Type']}" \
+            if starui.extradata is not None and 'Type' in starui.extradata else ""
+        save_location = Path(chartsdir, starui.filename_no_ext + '.png')
         start = timer()
         upsilon_match = star.get_metadata('UPSILON') if star.has_metadata('UPSILON') else None
         upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
@@ -147,12 +148,11 @@ def plot_phase_diagram(star: StarDescription, curve: DataFrame, fullphasedir, su
     assert period is not None
     try:
         logging.debug(f"Starting plot phase diagram with {star} and {fullphasedir}")
-        vsx_name, separation, extradata, filename_no_ext = utils.get_star_or_catalog_name(star,
-                                                                                          suffix=f"_phase{suffix}")
+        starui: utils.StarUI = utils.get_star_or_catalog_name(star, suffix=f"_phase{suffix}")
         names = utils.get_star_names(star)
         catalog_title = f"{names[0]}" if names is not None and names is not star.local_id else ''
 
-        save_location = Path(fullphasedir, filename_no_ext + '.png')
+        save_location = Path(fullphasedir, starui.filename_no_ext + '.png')
         upsilon_match = star.get_metadata('UPSILON')
         upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
         # print("Calculating phase diagram for", star)
@@ -301,11 +301,11 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, star_result_dict
         df['realV'], df['realErr'] = do_compstars.calculate_ensemble_photometry(
             df, filtered_compstars, do_compstars.weighted_value_ensemble_method)
         df['floatJD'] = df['JD'].astype(np.float)
-        _, _, _, filename_no_ext = utils.get_star_or_catalog_name(star, suffix="")
+        starui: utils.StarUI = utils.get_star_or_catalog_name(star, suffix="")
         period, epoch = determine_period_and_epoch(df, star)
         df, points_removed = phase_dependent_outlier_removal(df, period)
-        temp_dict['compstars'] = write_compstars(star, filename_no_ext, phasedir, filtered_compstars, check_star)
-        write_toml(filename_no_ext, phasedir, period, star, points_removed,
+        temp_dict['compstars'] = write_compstars(star, starui.filename_no_ext, phasedir, filtered_compstars, check_star)
+        write_toml(starui.filename_no_ext, phasedir, period, star, points_removed,
                    *calculate_min_max_epochs(df['floatJD'], df['realV']))
 
         if do_phase and 'phase' not in star.result:
