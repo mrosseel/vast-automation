@@ -102,7 +102,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         mag_range = f"{parsed_toml['range']}"
         minmax = f"<li>minmax: {parsed_toml['minmax']}</li>" if 'minmax' in parsed_toml else ""
         vsx_link = f'<li><a target="_blank" rel="noopener noreferrer" ' \
-                   f'href="https://www.aavso.org/vsx/index.php?view=detail.top&oid={extradata["OID"]}"' \
+                   f'href="https://www.aavso.org/vsx/index.php?view=detail.top&oid={starui.extradata["OID"]}"' \
                    f'>VSX link</a></li>' if is_vsx else ""
         points_removed = f"<li>Outliers removed: {parsed_toml['points_removed']}</li>" \
             if parsed_toml['points_removed'] > 0 else ""

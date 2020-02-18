@@ -20,25 +20,25 @@ from astropy.coordinates import SkyCoord, EarthLocation
 from astropy import units as u
 from utils import StarDict
 
-
-#### Create charts showing statistics on the detected stars, variables, ...
+""" Create charts showing statistics on the detected stars, variables, ... """
 
 
 def plot_comparison_stars(chartsdir: str, stars: List[StarDescription], stardict: StarDict):
     # for every selected star make one chart
     for star in tqdm(stars, desc="Plotting comparison stars", unit="star"):
-        starui: utils.StarUI = utils.get_star_or_catalog_name(star)
         compstars: CompStarData = star.get_metadata('COMPSTARS')
         compstar_ids = compstars.compstar_ids + [compstars.extra_id, star.local_id]
         labels = compstars.compstar_ids + ['K']
         dfs = reading.read_lightcurve_ids(compstar_ids, stardict)
-        star.result['compA'] = plot_star_fluctuations(star, chartsdir, starui.filename_orig_no_ext, dfs[:-1],
-                                                      labels, show_error=True)
-        star.result['compB'] = plot_star_fluctuations(star, chartsdir, starui.filename_orig_no_ext, dfs,
-                                                      labels + ['V'], show_error=False)
+        star.result['compA'] = \
+            plot_star_fluctuations(star, chartsdir, utils.get_star_or_catalog_name(star, suffix="_compstarsA"),
+                                   dfs[:-1], labels, show_error=True)
+        star.result['compB'] = \
+            plot_star_fluctuations(star, chartsdir,  utils.get_star_or_catalog_name(star, suffix="_compstarsB"), dfs,
+                                   labels + ['V'], show_error=False)
 
 
-def plot_star_fluctuations(star: StarDescription, chartsdir: str, filename_no_ext: str, dfs: List[pd.DataFrame],
+def plot_star_fluctuations(star: StarDescription, chartsdir: str, starui: utils.StarUI, dfs: List[pd.DataFrame],
                            labels: List[str], show_error: bool = False):
     fig = plt.figure(figsize=(20, 12), dpi=150)
     ax = plt.subplot(111)
@@ -46,7 +46,7 @@ def plot_star_fluctuations(star: StarDescription, chartsdir: str, filename_no_ex
     cmap = plt.get_cmap('Set1')
     number = len(dfs)
     colors = [cmap(i) for i in np.linspace(0, 1, number)]
-    title = f"Star {star.local_id} comparisons{' + V' if not show_error else ''}"
+    title = f"{starui.filename_no_suff_no_ext} comp. stars{' + V' if not show_error else ''}"
     for idx, df in enumerate(dfs):
         df['floatJD'] = df['JD'].astype(float).to_numpy()
         df['Vrel30'] = df['Vrel'] + 30
@@ -74,7 +74,7 @@ def plot_star_fluctuations(star: StarDescription, chartsdir: str, filename_no_ex
     plt.xlabel('JD')
     plt.ylabel('Instr. mag')
     ax.invert_yaxis()
-    save_location = Path(chartsdir, filename_no_ext + f"_compstars{'A' if show_error else 'B'}.png")
+    save_location = Path(chartsdir, starui.filename_no_ext + ".png")
     fig.savefig(save_location)
     plt.close(fig)
     return save_location
