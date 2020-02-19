@@ -45,7 +45,7 @@ def set_seaborn_style():
 
 def plot_lightcurve_raw(star: StarDescription, curve: DataFrame, chartsdir):
     logging.debug(f"Plotting raw lightcurve for {star.local_id}")
-    return _plot_lightcurve(star, curve, chartsdir)
+    return _plot_lightcurve(star, curve, chartsdir, rotate=True)
 
 
 def plot_lightcurve_pa(star: StarDescription, curve: DataFrame, chartsdir, period: Period):
@@ -64,7 +64,7 @@ def plot_lightcurve_continuous(star: StarDescription, curve: DataFrame, chartsdi
 
 
 def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=f"_light",
-                     jd_adjusting_func=None, xlabel='JD', markersize=6, errorbars=True):
+                     jd_adjusting_func=None, xlabel='JD', markersize=6, errorbars=True, rotate=False):
     try:
         star_id = star.local_id
         logging.debug(f"Plotting lightcurve for {star_id}")
@@ -112,6 +112,8 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
         plt.gca().invert_yaxis()
         # plt.ticklabel_format(style='plain', axis='x')
         plt.title(plot_title, pad=TITLE_PAD)
+        if rotate:
+            plt.xticks(rotation=25)
         plt.tight_layout()
         start = timer()
         fig.savefig(save_location)

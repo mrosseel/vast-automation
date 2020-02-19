@@ -23,6 +23,12 @@ from utils import StarDict
 """ Create charts showing statistics on the detected stars, variables, ... """
 
 
+def get_fig_and_ax():
+    fig = plt.figure(figsize=(20, 12), dpi=150)
+    plt.rcParams['figure.constrained_layout.use'] = True
+    ax = plt.subplot(111)
+    return fig, ax
+
 def plot_comparison_stars(chartsdir: str, stars: List[StarDescription], stardict: StarDict):
     # for every selected star make one chart
     for star in tqdm(stars, desc="Plotting comparison stars", unit="star"):
@@ -34,18 +40,17 @@ def plot_comparison_stars(chartsdir: str, stars: List[StarDescription], stardict
             plot_star_fluctuations(star, chartsdir, utils.get_star_or_catalog_name(star, suffix="_compstarsA"),
                                    dfs[:-1], labels, show_error=True)
         star.result['compB'] = \
-            plot_star_fluctuations(star, chartsdir,  utils.get_star_or_catalog_name(star, suffix="_compstarsB"), dfs,
+            plot_star_fluctuations(star, chartsdir, utils.get_star_or_catalog_name(star, suffix="_compstarsB"), dfs,
                                    labels + ['V'], show_error=False)
 
 
 def plot_star_fluctuations(star: StarDescription, chartsdir: str, starui: utils.StarUI, dfs: List[pd.DataFrame],
                            labels: List[str], show_error: bool = False):
-    fig = plt.figure(figsize=(20, 12), dpi=150)
-    ax = plt.subplot(111)
+    fig, ax = get_fig_and_ax()
     xmax, xmin, ymax, ymin = float('-inf'), float('inf'), float('-inf'), float('inf')
     cmap = plt.get_cmap('Set1')
     number = len(dfs)
-    colors = [cmap(i) for i in np.linspace(0, 1, number+1)]
+    colors = [cmap(i) for i in np.linspace(0, 1, number + 1)]
     title = f"{starui.filename_no_suff_no_ext} comp. stars{' + V' if not show_error else ''}"
     for idx, df in enumerate(dfs):
         df['floatJD'] = df['JD'].astype(float).to_numpy()
@@ -73,7 +78,9 @@ def plot_star_fluctuations(star: StarDescription, chartsdir: str, starui: utils.
     plt.ylim(ymin - 0.05, ymax + 0.05)
     plt.xlabel('JD')
     plt.ylabel('Instr. mag')
+    plt.xticks(rotation=25)
     ax.invert_yaxis()
+    plt.autoscale()
     save_location = Path(chartsdir, starui.filename_no_ext + ".png")
     fig.savefig(save_location)
     plt.close(fig)
@@ -85,13 +92,14 @@ def plot_star_fluctuations(star: StarDescription, chartsdir: str, starui: utils.
 # plot
 def plot_aperture_vs_jd(chartsdir: str, vastdir: str):
     x, y = get_aperture_and_jd(vastdir)
-    fig = plt.figure(figsize=(20, 12), dpi=150)
-    ax = plt.subplot(111)
+    fig, ax = get_fig_and_ax()
     ax.plot(x, y, '*r', markersize=2)
     ax.set_title('Aperture vs JD')
     plt.xlabel('JD')
     plt.ylabel('Aperture (px)')
+    plt.xticks(rotation=25)
     plt.minorticks_on()
+    plt.autoscale()
     save_location = Path(chartsdir, 'aperture_vs_jd' + '.png')
     fig.savefig(save_location)
     plt.close(fig)
@@ -113,13 +121,14 @@ def plot_merr_vs_jd(chartsdir: str, stars: List[StarDescription]):
     for star, df in tqdm(zip(stars, dfs), desc="Plotting magnitude error vs jd", unit="star", total=len(stars)):
         df['floatJD'] = df['JD'].astype(np.float)
         starui: utils.StarUI = utils.get_star_or_catalog_name(star)
-        fig = plt.figure(figsize=(20, 12), dpi=150)
-        ax = plt.subplot(111)
+        fig, ax = get_fig_and_ax()
         ax.plot(df['floatJD'], df['err'], '*r', markersize=2)
         ax.set_title('Magnitude error vs JD')
         plt.xlabel('JD (day)')
         plt.ylabel('Mag error (mag)')
+        plt.xticks(rotation=25)
         plt.minorticks_on()
+        plt.autoscale()
         save_location = Path(chartsdir, f'{starui.filename_no_ext}_merr_vs_jd' + '.png')
         fig.savefig(save_location)
         plt.close(fig)
@@ -157,14 +166,14 @@ def plot_aperture_vs_airmass(chartsdir: str, vastdir: str, wcs):
         result = do_aavso_report.calculate_airmass(central_coord, earth_location, entry).value
         xair.append(result)
 
-    fig = plt.figure(figsize=(20, 12), dpi=150)
-    ax = plt.subplot(111)
+    fig, ax = get_fig_and_ax()
     ax.plot(xair, y, '*r', markersize=2)
     ax.tick_params(axis='x', which='minor', bottom=False)
     ax.set_title('Aperture vs Airmass')
     plt.xlabel(f'Airmass of central point: {utils.get_hms_dms(central_coord)}')
     plt.ylabel('Aperture (px)')
     plt.minorticks_on()
+    plt.autoscale()
     save_location = Path(chartsdir, 'aperture_vs_airmass' + '.png')
     fig.savefig(save_location)
     plt.close(fig)
