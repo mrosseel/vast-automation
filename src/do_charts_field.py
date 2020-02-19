@@ -15,7 +15,6 @@ import random
 import do_compstars
 import gc
 import tqdm
-from matplotlib.colors import LogNorm
 StarDescriptionList = List[StarDescription]
 gc.enable()
 PADDING = 200
@@ -117,7 +116,7 @@ def get_plot_with_background(fits_file: str, padding: int, title: str, plot_fits
     if not plot_fits:
         data = np.zeros(data.shape)
     data = np.pad(data, (padding, padding), 'constant', constant_values=(100, 100))
-    plt.imshow(data, cmap='gray_r', origin='lower', norm=LogNorm())
+    plt.imshow(data, cmap='gray_r', origin='lower', vmin=0, vmax=2500)
 
     return fig, data
 
