@@ -45,7 +45,7 @@ def plot_star_fluctuations(star: StarDescription, chartsdir: str, starui: utils.
     xmax, xmin, ymax, ymin = float('-inf'), float('inf'), float('-inf'), float('inf')
     cmap = plt.get_cmap('Set1')
     number = len(dfs)
-    colors = [cmap(i) for i in np.linspace(0, 1, number)]
+    colors = [cmap(i) for i in np.linspace(0, 1, number+1)]
     title = f"{starui.filename_no_suff_no_ext} comp. stars{' + V' if not show_error else ''}"
     for idx, df in enumerate(dfs):
         df['floatJD'] = df['JD'].astype(float).to_numpy()
