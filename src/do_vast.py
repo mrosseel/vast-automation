@@ -65,6 +65,13 @@ if __name__ == '__main__':
     assert os.path.exists(args.checkstarfile) if args.checkstarfile else True, "checkstarfile does not exist"
     assert os.path.exists(args.owncatalog) if args.owncatalog else True, "owncatalog does not exist"
     assert os.path.exists(args.selectedstarfile) if args.selectedstarfile else True, "selectedstarfile does not exist"
+    if args.selectcandidates and not args.candidates:
+        logging.warning("--selectcandidates was selected, but --candidates was absent. Corrected.")
+        args.candidates = True
+
+    if args.selectvsx and not args.vsx:
+        logging.warning("--selectvsx was selected, but --vsx was absent. Corrected.")
+        args.vsx = True
 
     # monitoring_thread = start_monitoring(seconds_frozen=15, test_interval=1000)
     if args.verbose:

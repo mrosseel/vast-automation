@@ -113,11 +113,11 @@ def get_plot_with_background(fits_file: str, padding: int, title: str, plot_fits
     plt.title(title, fontsize=40)
     hdulist = fits.open(fits_file)
     data = hdulist[0].data.astype(float)
+    median = np.median(data)
     if not plot_fits:
         data = np.zeros(data.shape)
     data = np.pad(data, (padding, padding), 'constant', constant_values=(100, 100))
-    plt.imshow(data, cmap='gray_r', origin='lower', vmin=0, vmax=2500)
-
+    plt.imshow(data, cmap='gray_r', origin='lower', vmin=0, vmax=min(median*5, 65536))
     return fig, data
 
 

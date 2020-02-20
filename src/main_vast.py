@@ -52,16 +52,14 @@ def run_do_rest(args):
     ref_jd, _, _, reference_frame = extract_reference_frame(vastdir)
     _, _, _, first_frame = extract_first_frame(vastdir)
     frames_used = int(extract_images_used(vastdir))
+    referene_frame_path = Path(reference_frame)
+    reference_frame_filename = referene_frame_path.name
     logging.info(f"{frames_used} frames were used for photometry")
     logging.info(f"The reference frame is '{reference_frame}'")
     logging.info(f"The first frame is '{first_frame}'")
     logging.info(f"Reference header is '{wcs_file}'")
     #################################################################################################################
     if not os.path.isfile(wcs_file):
-        from scipy import ndimage
-        from astropy.io import fits
-
-        reference_frame_filename = Path(reference_frame).name
         full_ref_path = Path(args.fitsdir) / reference_frame_filename
         if not args.fitsdir and args.apikey:
             logging.error("There is no plate-solved reference frame {wcs_file}, please specify both --apikey "
@@ -152,7 +150,7 @@ def run_do_rest(args):
     if args.site:
         ids = [x.local_id for x in selected_stars]
         logging.info(f"Creating HTML site with {len(selected_stars)} selected stars: {ids}")
-        hugo_site.run(args.site, selected_stars, len(vsx_stars), len(candidate_stars), resultdir)
+        hugo_site.run(args.site, selected_stars, len(vsx_stars), referene_frame_path, resultdir)
 
 
 # Either read UCAC4 check stars from a file, or calculate our own comparison stars

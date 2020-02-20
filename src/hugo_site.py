@@ -16,13 +16,13 @@ from star_metadata import SiteData
 UNKNOWN = "Unknown"
 
 
-def run(post_name: str, selected_stars: List[StarDescription], len_vsx: int, len_candidates: int, resultdir: str):
+def run(post_name: str, selected_stars: List[StarDescription], len_vsx: int, reference_frame: Path, resultdir: str):
     sitedir = f"{os.getcwd()}/site/vsx/"
     images_prefix = f"/images/{post_name}/"
     # copy_files(post_name, resultdir, sitedir)
     staticimagesdir = f"{sitedir}static/{images_prefix}"
     selective_copy_files(selected_stars, staticimagesdir, resultdir)
-    result = get_header(post_name)
+    result = get_header(post_name, reference_frame.name)
     result += get_starfile_preamble(images_prefix, len([x for x in selected_stars if not x.has_metadata("VSX")]),
                                     len_vsx, get_optional_preamble(images_prefix, staticimagesdir))
     sorted_stars = utils.sort_selected(selected_stars)
@@ -42,8 +42,8 @@ def get_optional_preamble(images_prefix: str, destdir: str):
     ap_jd_img = Path(destdir, ap_jd)
     optionalpreamble = ''
     if ap_air_img.is_file() and ap_jd_img.is_file():
-        optionalpreamble = f'<a href="{images_prefix}/{ap_air}">Aperture vs Airmass</a> and '
-        optionalpreamble += f'<a href="{images_prefix}/{ap_jd}">Aperture vs JD</a><br/>'
+        optionalpreamble = f'<a href="{images_prefix}/{ap_air}" alt="Plot of aperture vs airmass">Aperture vs Airmass</a> and '
+        optionalpreamble += f'<a href="{images_prefix}/{ap_jd}" alt="Plot of aperture vs Julian Day">Aperture vs JD</a><br/>'
     return optionalpreamble + '<br/>'
 
 
@@ -106,11 +106,13 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
                    f'>VSX link</a></li>' if is_vsx else ""
         points_removed = f"<li>Outliers removed: {parsed_toml['points_removed']}</li>" \
             if parsed_toml['points_removed'] > 0 else ""
-        optional_compstars = f'<a href="{images_prefix}{starui.filename_no_suff_no_ext}_compstarsA.png">C</a>, ' \
-                             f'<a href="{images_prefix}{starui.filename_no_suff_no_ext}_compstarsB.png">C+V</a>, ' \
+        optional_compstars = f'<a href="{images_prefix}{starui.filename_no_suff_no_ext}_compstarsA.png" ' \
+                             f'alt="Plot of all comparison stars used to measure this star">C</a>, ' \
+                             f'<a href="{images_prefix}{starui.filename_no_suff_no_ext}_compstarsB.png" ' \
+                             f'alt="Plot of all comparison stars used to measure this star + the star itself">C+V</a>, ' \
             if 'compA' in star.result else ''
-        optional_stats = f'<li>stats: <a href="{images_prefix}{starui.filename_no_suff_no_ext}_merr_vs_jd.png">' \
-                         f'merr_vs_jd</a></li>' if 'merr_vs_jd' in star.result else ''
+        optional_stats = f'<li>stats: <a href="{images_prefix}{starui.filename_no_suff_no_ext}_merr_vs_jd.png"  ' \
+                         f'alt="Plot of magnitude error vs JD">merr_vs_jd</a></li>' if 'merr_vs_jd' in star.result else ''
         result = f'''<div class="bb-l b--black-10 w-100">
         <div class="fl w-70 pa2 ba">
             <img class="special-img-class" src="{phase_url}" alt="{phase_url}"/>
@@ -146,9 +148,9 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         return f'<div class="fl w-100 pa2 ba">Could not load {txt_path}</div>'
 
 
-def get_header(title: str):
+def get_header(title: str, ref_frame: str):
     return f'---\ntitle: "{title}"\ndate: {get_date_time()}\ndraft: false\n' \
-           f'summary: "Batch of new variable stars, created at {datetime.now()}"\n---\n'
+           f'summary: "Using ref frame {ref_frame}\ncreated at {datetime.now()}"\n---\n'
 
 
 def get_date_time():

@@ -25,9 +25,11 @@ from utils import StarDict
 
 def get_fig_and_ax():
     fig = plt.figure(figsize=(20, 12), dpi=150)
-    plt.rcParams['figure.constrained_layout.use'] = True
+    # plt.rcParams['figure.constrained_layout.use'] = True
+    plt.gcf().subplots_adjust(bottom=0.2)
     ax = plt.subplot(111)
     return fig, ax
+
 
 def plot_comparison_stars(chartsdir: str, stars: List[StarDescription], stardict: StarDict):
     # for every selected star make one chart
@@ -71,7 +73,7 @@ def plot_star_fluctuations(star: StarDescription, chartsdir: str, starui: utils.
     ax.set_position([box.x0, box.y0 + box.height * 0.1,
                      box.width, box.height * 0.9])
     # Put a legend below current axis
-    ax.legend(labels, loc='upper center', bbox_to_anchor=(0.5, -0.18), fancybox=True, shadow=True, ncol=len(labels),
+    ax.legend(labels, loc='lower center', bbox_to_anchor=(0.5, -0.4), fancybox=True, shadow=True, ncol=len(labels),
               prop=fontp)
     ax.set_title(title)
     plt.xlim(xmin, xmax)
