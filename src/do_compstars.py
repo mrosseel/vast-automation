@@ -115,7 +115,7 @@ def calculate_ensemble_photometry(df: DataFrame, comp_stars: ComparisonStars, en
             realV.append(v)
             realErr.append(err)
         else:  # error in the comparison stars
-            logging.error(f"len comp obs: {len(comp_obs)}, len(comperr): {len(comp_err)}, obs:{comp_obs}, err:{comp_err} ")
+            logging.error(f"len comp obs: {len(comp_obs)}, len(comperr): {len(comp_err)}, obs:{comp_obs}, err:{comp_err}, index:{index} , row:{row}, df: {df.describe()}, df: {df.info()}, comp_stars: {comp_stars}")
             #realV.append(row['Vrel'])
             #realErr.append(row['err'])
     return realV, realErr
