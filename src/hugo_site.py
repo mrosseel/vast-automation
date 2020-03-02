@@ -150,7 +150,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
 
 def get_header(title: str, ref_frame: str):
     return f'---\ntitle: "{title}"\ndate: {get_date_time()}\ndraft: false\n' \
-           f'summary: "Using ref frame {ref_frame}\ncreated at {datetime.now()}"\n---\n'
+           f'summary: "Using ref frame '{ref_frame}' - created at {datetime.now()}"\n---\n'
 
 
 def get_date_time():
