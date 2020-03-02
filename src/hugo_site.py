@@ -125,11 +125,11 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             <li>period (d): {period}</li>{minmax}
             <li>mag. range: {mag_range}</li>
             <li><a target="_blank" rel="noopener noreferrer" href="https://www.aavso.org/vsx/index.php?view=about.vartypessort">type</a>: {var_type_link}{vsx_var_flag}</li>
-            {vsx_link}<li>epoch: {epoch}</li> 
+            {vsx_link}<li>epoch: {epoch}</li>
             <li><a href="{images_prefix}vsx_and_star_{starui.filename_no_suff_no_ext}.png">finder chart</a></li>
             <li><a href="{images_prefix}{starui.filename_no_suff_no_ext}_ext.txt">observations</a></li>
-            <li>light curve: <a href="{images_prefix}{starui.filename_no_suff_no_ext}_light.png">Normal</a>,  
-            <a href="{images_prefix}{starui.filename_no_suff_no_ext}_lightpa.png">PA</a>, 
+            <li>light curve: <a href="{images_prefix}{starui.filename_no_suff_no_ext}_light.png">Normal</a>,
+            <a href="{images_prefix}{starui.filename_no_suff_no_ext}_lightpa.png">PA</a>,
             <a href="{images_prefix}{starui.filename_no_suff_no_ext}_lightcont.png">Continuous</a></li>
             <li>comparison stars: {optional_compstars}<a href="{images_prefix}{starui.filename_no_suff_no_ext}_comps.txt">list</a></li>
             {optional_stats}
@@ -150,7 +150,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
 
 def get_header(title: str, ref_frame: str):
     return f'---\ntitle: "{title}"\ndate: {get_date_time()}\ndraft: false\n' \
-           f'summary: "Using ref frame '{ref_frame}' - created at {datetime.now()}"\n---\n'
+           f'summary: "Using ref frame `{ref_frame}` - created at {datetime.now()}"\n---\n'
 
 
 def get_date_time():
