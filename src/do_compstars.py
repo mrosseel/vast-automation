@@ -77,8 +77,6 @@ def get_calculated_compstars(vastdir, stardict: StarDict, ref_jd, maglimit=15, s
     return [x.local_id for x in min_err_stars_clipped], min_err_stars_clipped
 
 
-
-
 def _get_list_of_likely_constant_stars(vastdir):
     result = []
     with open(PurePath(vastdir, 'vast_list_of_likely_constant_stars.log'), 'r') as infile:
@@ -115,10 +113,13 @@ def calculate_ensemble_photometry(df: DataFrame, comp_stars: ComparisonStars, en
             realV.append(v)
             realErr.append(err)
         else:  # error in the comparison stars
-            logging.error(f"len comp obs: {len(comp_obs)}, len(comperr): {len(comp_err)}, obs:{comp_obs}, err:{comp_err}, index:{index} , row:{row},\ndf.describe: {df.describe()}, df.info: {df.info()}, comp_stars: {comp_stars}")
-            #realV.append(row['Vrel'])
-            #realErr.append(row['err'])
-    logging.info(f"Returning realv and realErr: {len(realV)}, {len(realErr)}")
+            #logging.error(f"len comp obs: {len(comp_obs)}, len(comperr): {len(comp_err)}, obs:{comp_obs},
+            # err:{comp_err}, index:{index} , row:{row},\ndf.describe: {df.describe()}, df.info: {df.info()},
+            # comp_stars: {comp_stars}")
+            logging.warning(f'During ensemble, all comparison stars {comp_stars.ids} for JD {jd} have no observations.')
+            realV.append(None)
+            realErr.append(None)
+    logging.debug(f"Returning realv and realErr: {len(realV)}, {len(realErr)}")
     return realV, realErr
 
 

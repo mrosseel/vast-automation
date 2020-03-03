@@ -302,6 +302,7 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, star_result_dict
         comp_stars = None
         df['realV'], df['realErr'] = do_compstars.calculate_ensemble_photometry(
             df, filtered_compstars, do_compstars.weighted_value_ensemble_method)
+        df = df.dropna(subset=['realV', 'realErr']) # drop rows where the ensemble photometry failed
         df['floatJD'] = df['JD'].astype(np.float)
         starui: utils.StarUI = utils.get_star_or_catalog_name(star, suffix="")
         period, epoch = determine_period_and_epoch(df, star)
