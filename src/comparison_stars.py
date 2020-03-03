@@ -32,3 +32,8 @@ class ComparisonStars:
 
     def get_star_id_index(self, star_id):
         return np.where(self.ids == star_id)[0][0]
+
+    def __str__(self):
+        return f'ComparisonStars class: ids={self.ids}, #sds={len(self.star_descriptions)}, ' \
+               f'#observations={len(self.observations)}, #catalogmags={len(self.comp_catalogmags)}, ' \
+               f'#catalogerr={len(self.comp_catalogerr)}.'
