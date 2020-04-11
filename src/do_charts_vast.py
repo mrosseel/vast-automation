@@ -29,7 +29,7 @@ from star_description import StarDescription
 from pathlib import Path
 import pandas as pd
 from pandas import DataFrame, Series
-
+# from aovgui import aovcli
 from star_metadata import SiteData, CatalogData, CompStarData
 
 gc.enable()
@@ -306,6 +306,7 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, star_result_dict
         df['floatJD'] = df['JD'].astype(np.float)
         starui: utils.StarUI = utils.get_star_or_catalog_name(star, suffix="")
         period, epoch = determine_period_and_epoch(df, star)
+
         df, points_removed = phase_dependent_outlier_removal(df, period)
         temp_dict['compstars'] = write_compstars(star, starui.filename_no_ext, phasedir, filtered_compstars, check_star)
         write_toml(starui.filename_no_ext, phasedir, period, star, points_removed,
@@ -313,6 +314,10 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, star_result_dict
 
         if do_phase and 'phase' not in star.result:
             temp_dict['phase'] = plot_phase_diagram(star, df.copy(), phasedir, period=period, epoch=epoch, suffix="")
+            # anova_period, epoch = determine_period_and_epoch(df, star, method=anova_period_calculate)
+            # logging.info(f"anova period is {anova_period}")
+            # temp_dict['phase'] = plot_phase_diagram(star, df.copy(), phasedir, period=anova_period,
+            #                                         epoch=epoch, suffix="b")
         if do_light and 'lightpa' not in star.result:
             temp_dict['lightpa'] = plot_lightcurve_pa(star, df.copy(), chartsdir, period)
             temp_dict['lightcont'] = plot_lightcurve_continuous(star, df.copy(), chartsdir)
@@ -356,17 +361,33 @@ def phase_dependent_outlier_removal(df: DataFrame, period: Period) -> Tuple[Data
     return maskresult, len(df) - len(maskresult)
 
 
-def determine_period_and_epoch(df: DataFrame, star: StarDescription) -> Tuple[Period, str]:
-    if not star.has_metadata("SITE") or star.get_metadata("SITE").period is None:
-        period: Period = calculate_ls_period_from_df(df.copy())
-        logging.debug(f"Using LS period for star {star.local_id}: {period}")
-        epoch = None
-    else:
-        sitedata = star.get_metadata("SITE")
-        source = sitedata.source
-        period: Period = Period(sitedata.period, source)
-        epoch = sitedata.epoch
-        logging.debug(f"Using {source} period for star {star.local_id}: {period}, epoch: {epoch}")
+def lombscargle_period_calculate(df: DataFrame, star: StarDescription) -> Tuple[Period, str]:
+    period: Period = calculate_ls_period_from_df(df.copy())
+    logging.debug(f"Using LS period for star {star.local_id}: {period}")
+    epoch = None
+    return period, epoch
+
+
+# def anova_period_calculate(df: DataFrame, star: StarDescription) -> Tuple[Period, str]:
+#     aov = aovcli.AOVClass()
+#     period: Period = Period(aov.run(df.copy())[0], 'ANOVA')
+#     logging.debug(f"Using ANOVA period for star {star.local_id}: {period}")
+#     epoch = None
+#     return period, epoch
+
+
+def determine_period_and_epoch(df: DataFrame, star: StarDescription, method=lombscargle_period_calculate) -> Tuple[Period, str]:
+    if star.has_metadata("SITE") and star.get_metadata("SITE").period is not None:
+        return _preset_period(star)
+    return method(df.copy(), star)
+
+
+def _preset_period(star):
+    sitedata = star.get_metadata("SITE")
+    source = sitedata.source
+    period: Period = Period(sitedata.period, source)
+    epoch = sitedata.epoch
+    logging.debug(f"Using {source} period for star {star.local_id}: {period}, epoch: {epoch}")
     return period, epoch
 
 

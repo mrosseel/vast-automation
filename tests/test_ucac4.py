@@ -12,6 +12,7 @@ from pathlib import Path
 from astropy.coordinates import SkyCoord
 
 test_file_path = PurePath(os.getcwd(), 'tests', 'data')
+epsilon = 0.0000001
 
 
 class TestUcac4(unittest.TestCase):
@@ -36,17 +37,17 @@ class TestUcac4(unittest.TestCase):
 
     def test_get_ucac4_star_description(self):
         result = self.ucac4.get_ucac4_star_description_fromid(self.UCAC4_ID)
-        print(result)
+        logging.debug(f"test_get_ucac4_star_description result: {result}")
         #     local_id: None, aavso_id: UCAC4 001-000003, coords: <SkyCoord (ICRS): (ra, dec) in deg
         # (5.08068083, -89.81054306)>, xy: None, None, vmag: 10.986, nr matches: 0, matches: [], path: None
         self.assertEqual(result.aavso_id, self.UCAC4_ID)
-        self.assertEqual(round(result.coords.ra.deg, 8), 5.08068083)
-        self.assertEqual(round(result.coords.dec.deg, 8), -89.81054306)
+        self.assertTrue(result.coords.ra.deg - 5.08068083 < epsilon)
+        self.assertTrue(result.coords.dec.deg - -89.81054306 < epsilon)
         self.assertEqual(result.vmag, 10.986)
 
 
     def test_name_to_zone_and_run_nr(self):
-        zone, runnr = self.ucac4.id_to_zone_and_run_nr(self.UCAC4_ID)
+        zone, runnr = self.ucac4.ucac_id_to_zone_and_run_nr(self.UCAC4_ID)
         self.assertEqual(zone, 1)
         self.assertEqual(runnr, 3)
 
@@ -59,38 +60,45 @@ class TestUcac4(unittest.TestCase):
     def test_get_ucac4_id(self):
         # Compstar match: UCAC4 231-154752 with 3174 (271.2347344444444 deg, -43.84581611111111 deg)
         # Compstar match: UCAC4 232-147677 with 2620 (271.2807819444444 deg, -43.77729194444444 deg)
-        ra, dec = 271.2347344444444, -43.84581611111111
+        ra, dec = 271.23473, -43.845816
         target = SkyCoord(ra, dec, unit='deg')
         result = self.ucac4.get_ucac4_sd_from_ra_dec(ra, dec)
         self.assertEqual("UCAC4 231-154752", result.aavso_id)
         self.assertEqual(12.107, result.vmag)
         print("diff is ", target.separation(result.coords))
-        ra, dec = 271.2807819444444, -43.77729194444444
+        ra, dec = 271.28078, -43.77729
         result = self.ucac4.get_ucac4_sd_from_ra_dec(ra, dec)
         self.assertEqual("UCAC4 232-147677", result.aavso_id)
         self.assertEqual(12.314, result.vmag)
         print("diff is ", target.separation(result.coords))
         # WARNING Did not find a UCAC4 match for 274.26921036101504, -88.73827035367276, 0.02.
         # Buckets: range(1098, 1099), zones: [7],smallest dist: 1000
-        ra, dec = 274.26921036101504, -88.73827035367276
+        # ra, dec = 274.26921036101504, -88.73827035367276
+        ra, dec = 274.2390118,	-88.7390245
         result = self.ucac4.get_ucac4_sd_from_ra_dec(ra, dec, tolerance_deg=0.19)
 
         self.assertEqual("UCAC4 007-002358", result.aavso_id)
+        # line 9738 (1 based)
+        # 2358    0   7 1098
+        # 2358    0   7 1099
+        # 2358    2   7 1100
         self.assertEqual(20.0, result.vmag)
         print("diff is ", target.separation(result.coords))
 
 
     def test_get_zone_for_dec(self):
         self.assertEqual(1, self.ucac4.get_zone_for_dec(-90))
-        self.assertEqual(1, self.ucac4.get_zone_for_dec(-89.8))
-        self.assertEqual(3, self.ucac4.get_zone_for_dec(-89.5))
+        self.assertEqual(2, self.ucac4.get_zone_for_dec(-89.8))
+        self.assertEqual(3, self.ucac4.get_zone_for_dec(-89.6))
+        self.assertEqual(4, self.ucac4.get_zone_for_dec(-89.4))
+        self.assertEqual(5, self.ucac4.get_zone_for_dec(-89.2))
         self.assertEqual(900, self.ucac4.get_zone_for_dec(90))
 
 
     def test_get_ra_bucket(self):
-        self.assertEqual(1440, self.ucac4.get_ra_bucket(360))
-        self.assertEqual(1, self.ucac4.get_ra_bucket(0))
-        self.assertEqual(720, self.ucac4.get_ra_bucket(180))
+        self.assertEqual(1440, self.ucac4.ra_bin_index(360))  # 1440 but zero based
+        self.assertEqual(1, self.ucac4.ra_bin_index(0))
+        self.assertEqual(720, self.ucac4.ra_bin_index(180))  # 720 but zero based
 
 
     def test_mag_error(self):

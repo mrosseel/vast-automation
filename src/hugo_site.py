@@ -131,8 +131,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             <li>light curve: <a href="{images_prefix}{starui.filename_no_suff_no_ext}_light.png">Normal</a>,
             <a href="{images_prefix}{starui.filename_no_suff_no_ext}_lightpa.png">PA</a>,
             <a href="{images_prefix}{starui.filename_no_suff_no_ext}_lightcont.png">Continuous</a></li>
-            <li>comparison stars: {optional_compstars}<a href="{images_prefix}{starui.filename_no_suff_no_ext}_comps.txt">list</a></li>
-            {optional_stats}
+            <li>comparison stars: {optional_compstars}<a href="{images_prefix}{starui.filename_no_suff_no_ext}_comps.txt">list</a></li>{optional_stats}
             </ul>
         </div>
     </div>

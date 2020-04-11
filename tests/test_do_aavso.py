@@ -117,6 +117,7 @@ class TestDoAAVSO(unittest.TestCase):
         # def report(star: StarDescription, df_curve: DataFrame, target_dir: Path, vastdir: str, sitelat, sitelong,
         #            sitealt, filter=None, observer='RMH', chunk_size=None):
         do_aavso_report.report(self.sd, massage_df_for_phase_plot(self.df), self.comp_stars, './tests/data',
+                               target_dir='./tests/data',
                                sitelat=self.settings['sitelat'], sitelong=self.settings['sitelong'],
                                sitealt=self.settings['sitealt'], observer=self.settings['observer'], camera_filter='V')
 

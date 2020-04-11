@@ -44,7 +44,7 @@ def get_fixed_compstars(star_descriptions: List[StarDescription], comparison_sta
     return [x.local_id for x in star_desc_result], star_desc_result
 
 
-def get_calculated_compstars(vastdir, stardict: StarDict, ref_jd, maglimit=15, starlimit=1000, ):
+def get_calculated_compstars(vastdir, stardict: StarDict, ref_jd, maglimit=15, starlimit=1000):
     likely = _get_list_of_likely_constant_stars(vastdir)
     likely_sd: List[StarDescription] = [stardict[x] for x in likely if x in stardict]
 

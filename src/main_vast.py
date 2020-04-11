@@ -615,11 +615,12 @@ def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
     for count, index in enumerate(idx):
         row = df.iloc[count]
         the_star = stars[index]
-        logging.info(f"Matching {row['our_name']} to {the_star.local_id} with sep {d2d[count].degree}")
         the_star.metadata = CatalogData(key="OWNCATALOG", catalog_id=row['our_name'],
-                                    name=row['our_name'],
-                                    coords=SkyCoord(row['ra'], row['dec'], unit="deg"),
-                                    separation=d2d[count].degree)
+                                        name=row['our_name'],
+                                        coords=SkyCoord(row['ra'], row['dec'], unit="deg"),
+                                        separation=d2d[count].degree)
+        logging.info(f"Matching {row['our_name']} to {the_star.local_id} with sep {d2d[count].degree} "
+                     f"at coords {the_star.coords}")
         if not the_star.has_metadata("SITE"):
             try:
                 period = float(row['period']) if row['period'] is not None else None
