@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, List
 
 import toml
 
@@ -43,28 +43,29 @@ def set_seaborn_style():
     sns.set_style("ticks")
 
 
-def plot_lightcurve_raw(star: StarDescription, curve: DataFrame, chartsdir):
+def plot_lightcurve_raw(star: StarDescription, curve: DataFrame, chartsdir, write_plot=True):
     logging.debug(f"Plotting raw lightcurve for {star.local_id}")
-    return _plot_lightcurve(star, curve, chartsdir, rotate=True)
+    return _plot_lightcurve(star, curve, chartsdir, rotate=True, write_plot=write_plot)
 
 
-def plot_lightcurve_pa(star: StarDescription, curve: DataFrame, chartsdir, period: Period):
+def plot_lightcurve_pa(star: StarDescription, curve: DataFrame, chartsdir, period: Period, write_plot=True):
     logging.debug(f"Plotting phase adjusted lightcurve for {star.local_id}")
     convert_func = partial(phase_lock_lightcurve, period=period)
     curve = curve.sort_values(by=['floatJD'])  # sort by JD so the phase adjusted thing works
-    return _plot_lightcurve(star, curve, chartsdir, f"_lightpa", convert_func, xlabel='phase-adjusted JD')
+    return _plot_lightcurve(star, curve, chartsdir, f"_lightpa", convert_func, xlabel='phase-adjusted JD',
+                            write_plot=write_plot)
 
 
-def plot_lightcurve_continuous(star: StarDescription, curve: DataFrame, chartsdir):
+def plot_lightcurve_continuous(star: StarDescription, curve: DataFrame, chartsdir, write_plot=True):
     logging.debug(f"Plotting continuous lightcurve for {star.local_id}")
     convert_func = continuous_lightcurve
     curve = curve.sort_values(by=['floatJD'])  # sort by JD so the phase adjusted thing works
     return _plot_lightcurve(star, curve, chartsdir, f"_lightcont", convert_func, xlabel='All obs, one after the other',
-                            markersize=6, errorbars=False)
+                            markersize=6, errorbars=False, write_plot=write_plot)
 
 
 def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=f"_light",
-                     jd_adjusting_func=None, xlabel='JD', markersize=6, errorbars=True, rotate=False):
+                     jd_adjusting_func=None, xlabel='JD', markersize=6, errorbars=True, rotate=False, write_plot=True):
     try:
         star_id = star.local_id
         logging.debug(f"Plotting lightcurve for {star_id}")
@@ -115,13 +116,16 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
         if rotate:
             plt.xticks(rotation=25)
         plt.tight_layout()
-        start = timer()
-        fig.savefig(save_location)
-        end = timer()
-        logging.debug(f"timing saving fig {end - start}")
-        plt.close(fig)
-        plt.clf()
-        return save_location
+
+        if write_plot:
+            start = timer()
+            fig.savefig(save_location)
+            end = timer()
+            logging.debug(f"timing saving fig {end - start}")
+            plt.close(fig)
+            plt.clf()
+            return save_location
+        return plt, curve['realJD'], curve['realV']
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
@@ -277,7 +281,8 @@ def write_compstars(star, filename_no_ext, fullphasedir, compstars, check_star) 
 
 
 def read_vast_lightcurves(star: StarDescription, compstarproxy, star_result_dict, do_light, do_light_raw, do_phase,
-                          do_aavso, aavso_limit, basedir: str, chartsdir: Path, phasedir: Path, aavsodir: Path):
+                          do_aavso, aavso_limit, basedir: str, chartsdir: Path, phasedir: Path, aavsodir: Path,
+                          jdfilter: List[float] = None, jd_excl_stop: float = None):
     start = timer()
     if star.local_id not in star_result_dict:
         star_result_dict[star.local_id] = {}
@@ -294,6 +299,9 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, star_result_dict
 
     try:
         df = reading.read_lightcurve_vast(star.path)
+        df['floatJD'] = df['JD'].astype(np.float)
+        if jdfilter is not None:
+            df = df[(df.floatJD <= jdfilter[0]) | (df.floatJD >= jdfilter[1])]
         if df is None or len(df) == 0:
             logging.info(f"No lightcurve found for {star.path}")
             return
@@ -302,8 +310,8 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, star_result_dict
         comp_stars = None
         df['realV'], df['realErr'] = do_compstars.calculate_ensemble_photometry(
             df, filtered_compstars, do_compstars.weighted_value_ensemble_method)
-        df = df.dropna(subset=['realV', 'realErr']) # drop rows where the ensemble photometry failed
-        df['floatJD'] = df['JD'].astype(np.float)
+        df = df.dropna(subset=['realV', 'realErr'])  # drop rows where the ensemble photometry failed
+
         starui: utils.StarUI = utils.get_star_or_catalog_name(star, suffix="")
         period, epoch = determine_period_and_epoch(df, star)
 
@@ -376,7 +384,8 @@ def lombscargle_period_calculate(df: DataFrame, star: StarDescription) -> Tuple[
 #     return period, epoch
 
 
-def determine_period_and_epoch(df: DataFrame, star: StarDescription, method=lombscargle_period_calculate) -> Tuple[Period, str]:
+def determine_period_and_epoch(df: DataFrame, star: StarDescription, method=lombscargle_period_calculate) -> Tuple[
+    Period, str]:
     if star.has_metadata("SITE") and star.get_metadata("SITE").period is not None:
         return _preset_period(star)
     return method(df.copy(), star)
@@ -412,7 +421,7 @@ def calculate_ls_period(t_np, y_np, dy_np) -> Period:
 # reads lightcurves and passes them to lightcurve plot or phase plot
 def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir: str, phasepart: str, chartspart: str,
         aavso_part: str, do_light=False, do_light_raw=False, do_phase=True, do_aavso=False, aavsolimit=None,
-        nr_threads=cpu_count(), desc="Writing light curve charts/phase diagrams"):
+        nr_threads=cpu_count(), jdfilter=None, desc="Writing light curve charts/phase diagrams"):
     chunk: int = 1  # max(1, len(star_descriptions) // nr_threads*10)
     set_seaborn_style()
     pool = mp.Pool(nr_threads, maxtasksperchild=10)
@@ -435,7 +444,7 @@ def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir:
         func = partial(read_vast_lightcurves, basedir=basedir, compstarproxy=comp_stars_proxy,
                        star_result_dict=star_result_dict, do_light=do_light, do_light_raw=do_light_raw,
                        do_phase=do_phase, do_aavso=do_aavso, aavso_limit=aavsolimit, phasedir=phasedir,
-                       chartsdir=chartsdir, aavsodir=aavsodir)
+                       chartsdir=chartsdir, aavsodir=aavsodir, jdfilter=jdfilter)
         with tqdm.tqdm(total=len(star_descriptions), desc=desc, unit='stars') as pbar:
             for _ in pool.imap_unordered(func, star_descriptions, chunksize=chunk):
                 pbar.update(1)

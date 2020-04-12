@@ -49,6 +49,7 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--laststars', help="Use the star descriptions of the previous run to do the charting",
                         action="store_true")
     parser.add_argument('-u', '--upsilon', help="Add upsilon star info to charting", action="store_true")
+    parser.add_argument('--jdfilter', help="Filters out a range of JD's", nargs='+', type=float, required=False)
     args = parser.parse_args()
     datadir = utils.add_trailing_slash(args.datadir)
     datenow = datetime.now()

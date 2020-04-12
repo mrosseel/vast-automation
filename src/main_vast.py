@@ -58,6 +58,8 @@ def run_do_rest(args):
     logging.info(f"The reference frame is '{reference_frame}'")
     logging.info(f"The first frame is '{first_frame}'")
     logging.info(f"Reference header is '{wcs_file}'")
+    if args.jdfilter:
+        logging.info(f"Filtering JD's: {args.jdfilter}")
     #################################################################################################################
     if not os.path.isfile(wcs_file):
         full_ref_path = Path(args.fitsdir) / reference_frame_filename
@@ -116,23 +118,26 @@ def run_do_rest(args):
     if args.allstars:
         do_charts_vast.run(star_descriptions, comp_stars, vastdir, resultdir, 'phase_all/', 'light_all/', 'aavso_all/',
                            do_phase=do_phase, do_light=do_light, do_aavso=do_aavso, nr_threads=thread_count,
-                           desc="Phase/light/aavso of ALL stars")
+                           jdfilter=args.jdfilter, desc="Phase/light/aavso of ALL stars")
     else:
         if args.vsx:
             logging.info(f"Plotting {len(vsx_stars)} vsx stars...")
             do_charts_vast.run(vsx_stars, comp_stars, vastdir, resultdir, 'phase_vsx/', 'light_vsx/', 'aavso_vsx/',
                                do_phase=do_phase, do_light=do_light, do_light_raw=do_light,
-                               do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of VSX stars")
+                               do_aavso=do_aavso, nr_threads=thread_count,
+                               jdfilter=args.jdfilter, desc="Phase/light/aavso of VSX stars")
         if args.selectedstarfile or args.owncatalog:
             do_charts_vast.run(selected_stars, comp_stars, vastdir, resultdir, 'phase_selected/', 'light_selected/',
                                'aavso_selected', do_phase=do_phase, do_light=do_light, do_light_raw=do_light,
-                               do_aavso=do_aavso, nr_threads=thread_count, desc="Phase/light/aavso of selected stars")
+                               do_aavso=do_aavso, nr_threads=thread_count,
+                               jdfilter=args.jdfilter,
+                               desc="Phase/light/aavso of selected stars")
         if args.candidates:
             logging.info(f"Plotting {len(candidate_stars)} candidates...")
             do_charts_vast.run(candidate_stars, comp_stars, vastdir, resultdir, 'phase_candidates/',
                                'light_candidates/', 'aavso_candidates/', do_phase=do_phase, do_light=do_light,
                                do_light_raw=do_light, do_aavso=do_aavso, nr_threads=thread_count,
-                               desc="Phase/light/aavso of candidates")
+                               jdfilter=args.jdfilter, desc="Phase/light/aavso of candidates")
 
     # starfiledata is filled in during the phase plotting, so should come after it. Without phase it will be incomplete
     ids = [x.local_id for x in selected_stars]
