@@ -38,6 +38,7 @@ def calculate_airmass(coord, location, jd):
 
 def report(star: StarDescription, df_curve: DataFrame, comp_stars: ComparisonStars, check_star: ComparisonStars,
            target_dir: Path, sitelat, sitelong, sitealt, camera_filter=None, observer='RMH', chunk_size=None):
+    df = df_curve.sort_values('JD')
     star_match_ucac4 = star.get_metadata("UCAC4").name if star.has_metadata("UCAC4") else None
     star_match_vsx = star.get_metadata("VSX").name if star.has_metadata("VSX") else None
     var_display_name = star_match_ucac4 if star_match_vsx is None else star_match_vsx
@@ -47,8 +48,8 @@ def report(star: StarDescription, df_curve: DataFrame, comp_stars: ComparisonSta
     earth_location = EarthLocation(lat=sitelat, lon=sitelong, height=sitealt * u.m)
     logging.debug(f"Starting aavso report with star:{star}")
     if chunk_size is None:
-        chunk_size = df_curve.shape[0]
-    star_chunks = [df_curve[i:i + chunk_size] for i in range(0, df_curve.shape[0], chunk_size)]
+        chunk_size = df.shape[0]
+    star_chunks = [df[i:i + chunk_size] for i in range(0, df.shape[0], chunk_size)]
     chunk_counters = 0
     kname = check_star.star_descriptions[0].get_metadata("UCAC4").catalog_id
     notes = f"Standard mag: K = {check_star.comp_catalogmags[0]:.3f}"

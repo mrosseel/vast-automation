@@ -50,6 +50,7 @@ if __name__ == '__main__':
                         action="store_true")
     parser.add_argument('-u', '--upsilon', help="Add upsilon star info to charting", action="store_true")
     parser.add_argument('--jdfilter', help="Filters out a range of JD's", nargs='+', type=float, required=False)
+    parser.add_argument('--jdrefignore', help="Igone that the ref frame jd is inside of the filter", action="store_true")
     args = parser.parse_args()
     datadir = utils.add_trailing_slash(args.datadir)
     datenow = datetime.now()

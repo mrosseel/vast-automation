@@ -58,10 +58,13 @@ def run_do_rest(args):
     logging.info(f"The reference frame is '{reference_frame}' at JD: {ref_jd}")
     logging.info(f"The first frame is '{first_frame}'")
     logging.info(f"Reference header is '{wcs_file}'")
+    # Log filtering settings + check that reference frame is not inside of filter
     if args.jdfilter:
         logging.info(f"Filtering JD's: {args.jdfilter}")
-        assert float(ref_jd) > args.jdfilter[0] and float(ref_jd) > args.jdfilter[1]
-    #################################################################################################################
+        if not args.jdrefignore:
+            assert float(ref_jd) > args.jdfilter[0] and float(ref_jd) > args.jdfilter[1], \
+                "Reference frame JD is filtered"
+
     if not os.path.isfile(wcs_file):
         full_ref_path = Path(args.fitsdir) / reference_frame_filename
         if not args.fitsdir and args.apikey:
