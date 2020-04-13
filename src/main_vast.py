@@ -55,11 +55,12 @@ def run_do_rest(args):
     referene_frame_path = Path(reference_frame)
     reference_frame_filename = referene_frame_path.name
     logging.info(f"{frames_used} frames were used for photometry")
-    logging.info(f"The reference frame is '{reference_frame}'")
+    logging.info(f"The reference frame is '{reference_frame}' at JD: {ref_jd}")
     logging.info(f"The first frame is '{first_frame}'")
     logging.info(f"Reference header is '{wcs_file}'")
     if args.jdfilter:
         logging.info(f"Filtering JD's: {args.jdfilter}")
+        assert ref_jd > args.jdfilter[0] and ref_jd > args.jdfilter[1]
     #################################################################################################################
     if not os.path.isfile(wcs_file):
         full_ref_path = Path(args.fitsdir) / reference_frame_filename

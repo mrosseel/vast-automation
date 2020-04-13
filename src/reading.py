@@ -6,6 +6,7 @@ import errno
 import re
 import glob
 import logging
+from pathlib import Path
 
 from utils import StarDict
 from star_description import StarDescription
@@ -93,7 +94,7 @@ def read_world_positions(the_path):
 # get all possible stars with dict: JD, (mag, error)
 def read_magdict_for_star(vastdir, star_id):
     stardict = {}
-    starfile = f"{vastdir}{star_to_dat(star_id)}"
+    starfile = Path(vastdir, star_to_dat(star_id))
     with open(starfile) as file:
         for line in file:
             splitline = line.split()
