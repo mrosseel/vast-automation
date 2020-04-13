@@ -60,7 +60,7 @@ def run_do_rest(args):
     logging.info(f"Reference header is '{wcs_file}'")
     if args.jdfilter:
         logging.info(f"Filtering JD's: {args.jdfilter}")
-        assert ref_jd > args.jdfilter[0] and ref_jd > args.jdfilter[1]
+        assert float(ref_jd) > args.jdfilter[0] and float(ref_jd) > args.jdfilter[1]
     #################################################################################################################
     if not os.path.isfile(wcs_file):
         full_ref_path = Path(args.fitsdir) / reference_frame_filename
