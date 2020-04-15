@@ -186,10 +186,14 @@ metadata_sorter = MetadataSorter()
 
 def sort_selected(stars: List[StarDescription]) -> List[StarDescription]:
     non_vsx = get_stars_with_metadata(stars, "SITE", exclude=["VSX"])
+    logging.info(f"Non vsx stars: {[x.our_name for x in non_vsx]}")
     vsx = get_stars_with_metadata(stars, "VSX")
+    logging.info(f"Vsx stars: {[x.our_name for x in non_vsx]}")
     assert len(stars) == len(non_vsx) + len(vsx)
     non_vsx_sorted_stars = metadata_sorter(non_vsx, metadata_id="SITE", name_variable='our_name')
+    logging.info(f"Non vsx stars sorted: {[x.our_name for x in non_vsx_sorted_stars]}")
     vsx_sorted_stars = metadata_sorter(vsx, metadata_id="SITE", name_variable='our_name')
+    logging.info(f"Vsx stars sorted: {[x.our_name for x in vsx_sorted_stars]}")
     return non_vsx_sorted_stars + vsx_sorted_stars
 
 

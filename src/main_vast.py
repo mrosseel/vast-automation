@@ -61,9 +61,13 @@ def run_do_rest(args):
     # Log filtering settings + check that reference frame is not inside of filter
     if args.jdfilter:
         logging.info(f"Filtering JD's: {args.jdfilter}")
-        if not args.jdrefignore:
-            assert float(ref_jd) > args.jdfilter[0] and float(ref_jd) > args.jdfilter[1], \
-                "Reference frame JD is filtered"
+        ref_inside_filter = float(ref_jd) > args.jdfilter[0] and float(ref_jd) > args.jdfilter[1]
+        if ref_inside_filter:
+            if not args.jdrefignore:
+                assert float(ref_jd) > args.jdfilter[0] and float(ref_jd) > args.jdfilter[1], \
+                    "Reference frame JD is filtered"
+            else:
+                logging.info("Reference frame JD is inside of the JD filter")
 
     if not os.path.isfile(wcs_file):
         full_ref_path = Path(args.fitsdir) / reference_frame_filename

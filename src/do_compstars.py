@@ -45,11 +45,12 @@ def get_fixed_compstars(star_descriptions: List[StarDescription], comparison_sta
 
 
 def get_calculated_compstars(vastdir, stardict: StarDict, ref_jd, maglimit=15, starlimit=1000):
+    logging.info("Getting calculated compstars...")
     likely = _get_list_of_likely_constant_stars(vastdir)
     likely_sd: List[StarDescription] = [stardict[x] for x in likely if x in stardict]
 
     star_realmag = {}
-    for star in likely_sd:
+    for star in tqdm.tqdm(likely_sd, desc="Getting real magnitudes of likely comparison stars", unit='stars'):
         comp_magdict = reading.read_magdict_for_star(vastdir, star.local_id)
         # logging.info(f"Read comp magdict for {star}: {read_comp_magdict}")
         if ref_jd in comp_magdict:
