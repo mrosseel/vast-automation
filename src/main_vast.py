@@ -332,7 +332,7 @@ def write_selected_files(resultdir: str, vastdir: str, selected_stars: List[Star
     with open(owncatalog, 'w') as outowncatalog, open(selectedstars, 'w') as outselected:
         preamble = f"# resultdir: {resultdir}, vastdir: {vastdir}, vsx stars: {vsx_stars_len}, " \
                    f"other stars: {no_vsx_len}\n"
-        outowncatalog.write(f"{preamble}# our_name,ra,dec,ucac4_ra,ucac4_dec,minmax,min,max,var_type,"
+        outowncatalog.write(f"{preamble}# our_name,ra,dec,ucac4_name,ucac4_ra,ucac4_dec,minmax,min,max,var_type,"
                             f"period,period_err,epoch\n")
         outselected.write(f"{preamble}# our_name,local_id,minmax,min,max,var_type,period,period_err,epoch\n")
 
@@ -362,13 +362,14 @@ def write_selected_files(resultdir: str, vastdir: str, selected_stars: List[Star
         for star in sorted_stars:
             metadata: SiteData = star.get_metadata("SITE")
             ucac4: CatalogData = utils.get_ucac4_of_sd(star)
-            ucac4_coords = ",," if not ucac4 else f"{ucac4.coords.ra.deg:.7f},{ucac4.coords.dec.deg:.7f},"
+            ucac4_name = "" if not ucac4 else f"{ucac4.name}"
+            ucac4_coords = "," if not ucac4 else f"{ucac4.coords.ra.deg:.7f},{ucac4.coords.dec.deg:.7f}"
             starui: utils.StarUI = utils.get_star_or_catalog_name(star)
             txt_path = Path(Path(star.result['phase']).parent, "txt", starui.filename_no_ext + '.txt')
             try:
                 parsed_toml = toml.load(txt_path)
                 outowncatalog.write(
-                    f"{metadata.our_name},{star.coords.ra.deg:.7f},{star.coords.dec.deg:.7f},{ucac4_coords}"
+                    f"{metadata.our_name},{star.coords.ra.deg:.7f},{star.coords.dec.deg:.7f},{ucac4_name},{ucac4_coords},"
                     f"{format_string('minmax', parsed_toml)},{format_float_1(parsed_toml, 'min')},"
                     f"{format_float_1(parsed_toml, 'max')},{metadata.var_type},"
                     f"{format_float_5(parsed_toml, 'period')},{format_float_5(parsed_toml, 'period_err')},"
@@ -619,12 +620,13 @@ def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
     # outfile.write(f"# our_name,ra,dec,minmax,var_type,period,epoch\n")
     logging.info(f"Using owncatalog: {owncatalog}")
     df = pd.read_csv(owncatalog, delimiter=',', comment='#',
-                     names=['our_name', 'ra', 'dec', 'minmax', 'min', 'max', 'var_type', 'period', 'period_err',
+                     names=['our_name', 'ra', 'dec', 'ucac4_name', 'ucac4_ra', 'ucac4_dec', 'minmax', 'min', 'max', 'var_type', 'period', 'period_err',
                             'epoch'],
-                     dtype={'ra': float, 'dec': float, 'minmax': str, 'epoch': float},
+                     dtype={'ra': float, 'dec': float, 'ucac4_ra': float, 'ucac4_dec': float, 'minmax': str, 'epoch': float},
                      skipinitialspace=True, warn_bad_lines=True)
     df = df.replace({np.nan: None})
-    skycoord: SkyCoord = do_calibration.create_generic_astropy_catalog(df['ra'], df['dec'])
+    ra, dec = (df['ra'], df['dec']) if df['ucac4_ra'] is None else (df['ucac4_ra'], df['ucac4_dec'])
+    skycoord: SkyCoord = do_calibration.create_generic_astropy_catalog(ra, dec)
     star_catalog = do_calibration.create_star_descriptions_catalog(stars)
     idx, d2d, d3d = match_coordinates_sky(skycoord, star_catalog, nthneighbor=1)
     for count, index in enumerate(idx):

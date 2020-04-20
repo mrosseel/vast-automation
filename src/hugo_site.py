@@ -80,11 +80,11 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         ucac4 = star.get_metadata("UCAC4")
         if ucac4 is None:
             ucac4_name = f"no UCAC4 match !!!"
-            ucac4_coords = f"<li>coords: {utils.get_hms_dms_sober(star.coords)}</li>"
+            ucac4_coords = f""
 
         else:
             ucac4_name = ucac4.catalog_id if not None else UNKNOWN
-            ucac4_coords = f"<li>coords: {utils.get_hms_dms_sober(ucac4.coords)}</li>"
+            ucac4_coords = f"<li>coords: {utils.get_hms_dms_sober(ucac4.coords)} (ucac4)</li>"
         nl = '\n'
         name = f"{nl.join(parsed_toml['our_name'])}" if 'our_name' in parsed_toml else f"OUR_NAME_{star.local_id}"
         period = f"{float(parsed_toml['period']):.5f}"
