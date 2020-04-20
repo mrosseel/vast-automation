@@ -186,14 +186,14 @@ metadata_sorter = MetadataSorter()
 
 def sort_selected(stars: List[StarDescription]) -> List[StarDescription]:
     non_vsx = get_stars_with_metadata(stars, "SITE", exclude=["VSX"])
-    logging.info(f"Non vsx stars: {[x.our_name for x in non_vsx]}")
+    # logging.info(f"Non vsx stars: {[x for x in non_vsx]}")
     vsx = get_stars_with_metadata(stars, "VSX")
-    logging.info(f"Vsx stars: {[x.our_name for x in non_vsx]}")
+    # logging.info(f"Vsx stars: {[x for x in non_vsx]}")
     assert len(stars) == len(non_vsx) + len(vsx)
     non_vsx_sorted_stars = metadata_sorter(non_vsx, metadata_id="SITE", name_variable='our_name')
-    logging.info(f"Non vsx stars sorted: {[x.our_name for x in non_vsx_sorted_stars]}")
+    # logging.info(f"Non vsx stars sorted: {[x for x in non_vsx_sorted_stars]}")
     vsx_sorted_stars = metadata_sorter(vsx, metadata_id="SITE", name_variable='our_name')
-    logging.info(f"Vsx stars sorted: {[x.our_name for x in vsx_sorted_stars]}")
+    # logging.info(f"Vsx stars sorted: {[x for x in vsx_sorted_stars]}")
     return non_vsx_sorted_stars + vsx_sorted_stars
 
 
@@ -252,9 +252,14 @@ def get_star_names(star: StarDescription) -> List[str]:
     return names if len(names) > 0 else None
 
 
-def get_ucac4_of_sd(star: StarDescription):
-    catdata: CatalogData = star.get_metadata("UCAC4")
+def get_pretty_ucac4_of_sd(star: StarDescription):
+    catdata: CatalogData = get_ucac4_of_sd(star)
     return catdata.catalog_id if catdata is not None else "Unknown"
+
+
+def get_ucac4_of_sd(star: StarDescription) -> CatalogData:
+    catdata: CatalogData = star.get_metadata("UCAC4")
+    return catdata
 
 
 # replace spaces with dashes

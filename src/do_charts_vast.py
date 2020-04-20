@@ -1,6 +1,7 @@
 from typing import Tuple, List
 
 import toml
+from matplotlib.ticker import FormatStrFormatter
 
 import main_vast
 import do_compstars
@@ -214,6 +215,9 @@ def write_toml(filename_no_ext, fullphasedir, period, star, points_removed, ymin
     tomldict['period_origin'] = period.origin
     tomldict['range'] = f'{ymin:.1f}-{ymax:.1f} (LS)'
     tomldict['coords'] = [star.coords.ra.deg, star.coords.dec.deg]
+    if star.has_metadata("UCAC4"):
+        ucac4 = star.get_metadata("UCAC4")
+        tomldict['ucac4_coords'] = [ucac4.coords.ra.deg, ucac4.coords.dec.deg]
     tomldict['points_removed'] = points_removed
     tomldict['our_name'] = f"{star.local_id}"
     if star.has_metadata('SITE'):
@@ -269,13 +273,13 @@ def write_compstars(star, filename_no_ext, fullphasedir, compstars, check_star) 
     if compstars:
         outputfile = f"{fullphasedir}/txt/{filename_no_ext}_comps.txt"
         kstar_sd = check_star.star_descriptions[0]
-        extra_id_ucac4 = utils.get_ucac4_of_sd(kstar_sd)
+        extra_id_ucac4 = utils.get_pretty_ucac4_of_sd(kstar_sd)
         with open(outputfile, "wt") as fp:
             fp.write(f"# local star id, UCAC4 id, mag, mag err\n"
                      f"# K star: {kstar_sd.local_id},{extra_id_ucac4},{check_star.comp_catalogmags[0]:.3f},"
                      f"{check_star.comp_catalogerr[0]:.5f}\n")
             for sd, mag, err in zip(compstars.star_descriptions, compstars.comp_catalogmags, compstars.comp_catalogerr):
-                ucac4_id = utils.get_ucac4_of_sd(sd)
+                ucac4_id = utils.get_pretty_ucac4_of_sd(sd)
                 fp.write(f"{sd.local_id},{ucac4_id},{mag:.3f},{err:.5f}\n")
         return outputfile
 
