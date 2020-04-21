@@ -624,8 +624,13 @@ def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
                             'epoch'],
                      dtype={'ra': float, 'dec': float, 'ucac4_ra': float, 'ucac4_dec': float, 'minmax': str, 'epoch': float},
                      skipinitialspace=True, warn_bad_lines=True)
+    df.loc[df['ucac4_ra'].notnull(), 'chosenRA'] = df['ucac4_ra']
+    df.loc[df['ucac4_ra'].isnull(), 'chosenRA'] = df['ra']
+    df.loc[df['ucac4_dec'].notnull(), 'chosenDEC'] = df['ucac4_dec']
+    df.loc[df['ucac4_dec'].isnull(), 'chosenDEC'] = df['dec']
+    logging.info(f"tag_owncatalog: {df}")
+    ra, dec = (df['chosenRA'], df['chosenDEC'])
     df = df.replace({np.nan: None})
-    ra, dec = (df['ra'], df['dec']) if df['ucac4_ra'] is None else (df['ucac4_ra'], df['ucac4_dec'])
     skycoord: SkyCoord = do_calibration.create_generic_astropy_catalog(ra, dec)
     star_catalog = do_calibration.create_star_descriptions_catalog(stars)
     idx, d2d, d3d = match_coordinates_sky(skycoord, star_catalog, nthneighbor=1)
