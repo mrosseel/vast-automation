@@ -120,7 +120,7 @@ def calculate_ensemble_photometry(df: DataFrame, comp_stars: ComparisonStars, en
             logging.warning(f'During ensemble, all comparison stars {comp_stars.ids} for JD {jd} have no observations.')
             realV.append(None)
             realErr.append(None)
-    logging.debug(f"Returning realv and realErr: {len(realV)}, {len(realErr)}")
+    logging.debug(f"Returning len(realv) and len(realErr): {len(realV)}, {len(realErr)}")
     return realV, realErr
 
 

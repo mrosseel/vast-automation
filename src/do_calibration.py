@@ -231,6 +231,7 @@ def find_star_for_known_vsx(vsx, detections_catalog, max_separation=0.01):
 
 
 def create_generic_astropy_catalog(ra_deg_np, dec_deg_np):
+    """ Creates a SkyCoord catalog with an array of ra's and dec's. Works also with single ra dec """
     logging.debug("Creating generic astropy Catalog with " + str(len(ra_deg_np)) + " objects...")
     return SkyCoord(ra=ra_deg_np, dec=dec_deg_np, unit='deg')
 
