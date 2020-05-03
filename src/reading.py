@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 import os
 import pandas as pd
 import numpy as np
@@ -7,6 +7,7 @@ import re
 import glob
 import logging
 from pathlib import Path
+from astropy.io import fits
 
 from utils import StarDict
 from star_description import StarDescription
@@ -101,6 +102,29 @@ def read_magdict_for_star(vastdir, star_id):
             # {JD, (mag, magerr)}
             stardict[str(splitline[0])] = (float(splitline[1]), float(splitline[2]))
     return stardict
+
+
+#  blank_data is false if no background needs to be plotted, in that case all zeros are used as data
+def get_fits_data(fits_file: str, blank_data: bool = False):
+    hdulist = fits.open(fits_file)
+    data = hdulist[0].data.astype(float)
+    if blank_data:
+        data = np.zeros(data.shape)
+    return data
+
+
+# get the mapping 'fits file' -> rotation
+def extract_frame_rotation_dict(vastdir) -> Dict[str, float]:
+    filename = Path(vastdir, 'vast_image_details.log')
+    the_regex = re.compile(r'^.*rotation=\s*([0-9,.,-]+).*\s+(.+)$')
+    rotation_dict = {}
+    with open(filename, 'r') as infile:
+        for line in infile:
+            thesearch = the_regex.search(line)
+            if thesearch:
+                path = Path(thesearch.group(2))
+                rotation_dict[path.name] = float(thesearch.group(1).strip())
+    return rotation_dict
 
 
 def star_to_dat(star: int):

@@ -18,7 +18,7 @@ if __name__ == '__main__':
                         required=True)
     parser.add_argument('-k', '--checkstarfile', help="The bright and stable stars used to do ensemble photometry",
                         required=False)
-    parser.add_argument('-o', '--owncatalog', help="Supply a file to identify stars known to you",
+    parser.add_argument('-o', '--owncatalog', help="Supply a file to identify stars known to you by RA/DEC",
                         required=False)
     # parser.add_argument('--owncatalogasselected', help="The owncatalog stars are added to the selection",
     #                     action="store_true")

@@ -1,8 +1,9 @@
 from astropy.coordinates import SkyCoord
-from astropy.io import fits
 import matplotlib.pyplot as plt
 from photutils import CircularAperture
 import numpy as np
+
+import reading
 import star_metadata
 import utils
 from comparison_stars import ComparisonStars
@@ -84,9 +85,9 @@ def get_cmap(n, name='hsv'):
     return plt.cm.get_cmap(name, n)
 
 
-def plot_it(star_lists: List[StarDescriptionList], sizes: List[float], random_offset: List[bool], fits_file: str, wcs, title,
-            padding: int = PADDING, plot_fits: bool = True):
-    fig, data = get_plot_with_background(fits_file, padding, title, plot_fits)
+def plot_it(star_lists: List[StarDescriptionList], sizes: List[float], random_offset: List[bool],
+            fits_data: List[float], wcs, title, padding: int = PADDING):
+    fig, data = get_plot_with_background_data(fits_data, padding, title)
     logging.debug(f"plotting {[len(x) for x in star_lists]} stars per color")
     positions = []
     for stars in star_lists:
@@ -108,17 +109,13 @@ def plot_it(star_lists: List[StarDescriptionList], sizes: List[float], random_of
 
 
 #  plot_fits is false if no background needs to be plotted, in that case all zeros are used as data
-def get_plot_with_background(fits_file: str, padding: int, title: str, plot_fits: bool = True):
+def get_plot_with_background_data(fits_data: List[float], padding: int, title: str):
     fig = plt.figure(figsize=(36, 32), dpi=80, facecolor='w', edgecolor='k')
     plt.title(title, fontsize=40)
-    hdulist = fits.open(fits_file)
-    data = hdulist[0].data.astype(float)
-    median = np.median(data)
-    if not plot_fits:
-        data = np.zeros(data.shape)
-    data = np.pad(data, (padding, padding), 'constant', constant_values=(100, 100))
-    plt.imshow(data, cmap='gray_r', origin='lower', vmin=0, vmax=min(median*5, 65536))
-    return fig, data
+    median = np.median(fits_data)
+    fits_data = np.pad(fits_data, (padding, padding), 'constant', constant_values=(100, 100))
+    plt.imshow(fits_data, cmap='gray_r', origin='lower', vmin=0, vmax=min(median * 5, 65536))
+    return fig, fits_data
 
 
 def save(fig, path):
@@ -126,13 +123,14 @@ def save(fig, path):
     plt.close(fig)
 
 
-def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, fieldchartsdirs, reference_header,
+def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, fieldchartsdirs, reference_fits_frame,
                               comp_stars: ComparisonStars):
     trash_and_recreate_dir(fieldchartsdirs)
 
     # setting the font size for titles/axes
     plt.rcParams.update({'axes.titlesize': 'large', 'axes.labelsize': 'large'})
-    reference_fits_frame = reference_header
+    fits_data = reading.get_fits_data(reference_fits_frame)
+    fits_data_blank = reading.get_fits_data(reference_fits_frame, blank_data=True)
     SHOW_UPSILON = False
 
     # if SHOW_UPSILON:
@@ -177,34 +175,34 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
 
     # field chart with all detections
     logging.info("Plotting field chart with all detected stars...")
-    fig = plot_it([all_stars_no_label], [5.], [False], reference_fits_frame, wcs, "All detected stars", PADDING)
+    fig = plot_it([all_stars_no_label], [5.], [False], fits_data, wcs, "All detected stars", PADDING)
     save(fig, fieldchartsdirs + 'all_detections_{}_stars'.format(len(all_stars_no_label)))
 
     # field chart with all vsx stars
     logging.info("Plotting field chart with all VSX variable stars...")
-    fig = plot_it([vsx_labeled], [10.], [False], reference_fits_frame, wcs, "All VSX stars", PADDING)
+    fig = plot_it([vsx_labeled], [10.], [False], fits_data, wcs, "All VSX stars", PADDING)
     save(fig, fieldchartsdirs + 'vsx_stars_{}'.format(len(vsx_labeled)))
 
     # field chart with all vsx stars without the background
     logging.info("Plotting field chart with all VSX variable stars without reference field...")
-    fig = plot_it([vsx_labeled], [10.], [False], reference_fits_frame, wcs, "VSX without background", PADDING, plot_fits=False)
+    fig = plot_it([vsx_labeled], [10.], [False], fits_data_blank, wcs, "VSX without background", PADDING)
     save(fig, fieldchartsdirs + 'vsx_stars_no_ref_{}'.format(len(vsx_labeled)))
 
     # field chart with only the background
     logging.info("Plotting field chart with only the reference field...")
-    fig, _ = get_plot_with_background(reference_fits_frame, 0, "Reference frame")
+    fig, _ = get_plot_with_background_data(fits_data, 0, "Reference frame")
     save(fig, fieldchartsdirs + 'only_ref')
 
     # field chart with all vsx stars + candidates + owncatalog
     logging.info("Plotting field chart with all VSX variable stars + candidate vars...")
     fig = plot_it([vsx_labeled, candidate_labeled, owncatalog_labeled], [10., 5., 4.], [False, True, True],
-                  reference_fits_frame, wcs, "VSX stars + candidate stars + own catalog", PADDING)
+                  fits_data, wcs, "VSX stars + candidate stars + own catalog", PADDING)
     save(fig, fieldchartsdirs + f'vsx_{len(vsx_labeled)}_and_candidates_{len(candidate_labeled)}')
 
     # field chart with all vsx stars + starfile + owncatalog
     logging.info(f"Plotting field chart with all VSX variable stars + {selected_count} selected vars...")
     fig = plot_it([vsx_labeled, selected_no_vsx_no_own_labeled, owncatalog_labeled], [10., 5., 4.], [False, True, True],
-                  reference_fits_frame, wcs, "VSX stars + selected stars + own catalog", PADDING)
+                  fits_data, wcs, "VSX stars + selected stars + own catalog", PADDING)
     save(fig, fieldchartsdirs + 'vsx_{}_and_selected_{}'.format(len(vsx_labeled), selected_count))
 
     # compstars get their vmag as label
@@ -212,6 +210,7 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
     # comp_stars_labeled = set_custom_label(comp_stars_descr, [x.vmag for x in comp_stars_descr])
 
     logging.info(f"Plotting field chart for each of the {selected_count} selected stars")
+    # Plotting finder charts for the site
     # field charts for each individually selected starfile star
     for star in tqdm.tqdm(selected_desc):
         filtered_compstars, check_star = do_compstars.filter_comparison_stars(star, comp_stars)
@@ -220,9 +219,9 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
         compstars_labeled = set_custom_label(filtered_compstars_sds, [x.vmag for x in filtered_compstars_sds])
         checkstar_labeled = set_custom_label(check_star_sd, f"Kmag={check_star_sd[0].vmag}")
         starui: utils.StarUI = utils.get_star_or_catalog_name(star, suffix="")
-        fig = plot_it([[star], vsx_labeled, compstars_labeled, checkstar_labeled], [10., 5., 3., 4.],
+        fig = plot_it([[star], vsx_labeled, compstars_labeled, checkstar_labeled], [7., 5., 3., 4.],
                       [True, False, True, False],
-                      reference_fits_frame, wcs, f"VSX stars + {starui.catalog_name} (star {star.local_id})", PADDING)
+                      fits_data, wcs, f"VSX stars + {starui.catalog_name} (star {star.local_id})", PADDING)
         save(fig, f"{fieldchartsdirs}vsx_and_star_{starui.filename_no_ext}")
         gc.collect()
 
