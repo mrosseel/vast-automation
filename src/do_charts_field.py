@@ -86,7 +86,7 @@ def get_cmap(n, name='hsv'):
 
 
 def plot_it(star_lists: List[StarDescriptionList], sizes: List[float], random_offset: List[bool],
-            fits_data: List[float], wcs, title, padding: int = PADDING):
+            fits_data: List[float], wcs, title, padding: int = PADDING, annotate=True):
     fig, data = get_plot_with_background_data(fits_data, padding, title)
     logging.debug(f"plotting {[len(x) for x in star_lists]} stars per color")
     positions = []
@@ -102,9 +102,9 @@ def plot_it(star_lists: List[StarDescriptionList], sizes: List[float], random_of
             apps.plot(color=next(cycol), lw=1.5, alpha=0.5)
     random.seed(42)
 
-    for idx, star in enumerate(star_lists):
-        # annotate_it(big_green, 0, -20, size=12)
-        annotate_it(star, -10, 15, random_offset=random_offset[idx], size=10)
+    if annotate:
+        for idx, star in enumerate(star_lists):
+            annotate_it(star, -10, 15, random_offset=random_offset[idx], size=10)
     return fig
 
 
@@ -148,12 +148,34 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
     #     big_green = set_aavso_id_label(vsx_star_descr)
     #     small_red = set_local_id_label(hand_candidates_descr)
 
+
+
     # all stars get a blank label
     all_stars_no_label = set_custom_label(all_stars_descr, '')
+
+    # field chart with all detections
+    logging.info("Plotting field chart with all detected stars...")
+    fig = plot_it([all_stars_no_label], [4.], [False], fits_data, wcs, "All detected stars", PADDING)
+    save(fig, fieldchartsdirs + 'all_detections_{}_stars'.format(len(all_stars_no_label)))
 
     # vsx stars get their aavso id label
     vsx_descr = utils.get_stars_with_metadata(star_descriptions, "VSX")
     vsx_labeled = set_aavso_id_label(vsx_descr)
+
+    # field chart with all vsx stars
+    logging.info("Plotting field chart with all VSX variable stars...")
+    fig = plot_it([vsx_labeled], [10.], [False], fits_data, wcs, "All VSX stars", PADDING)
+    save(fig, fieldchartsdirs + 'vsx_stars_{}'.format(len(vsx_labeled)))
+
+    # field chart with all vsx stars without the background
+    logging.info("Plotting field chart with all VSX variable stars without reference field...")
+    fig = plot_it([vsx_labeled], [10.], [False], fits_data_blank, wcs, "VSX without background", PADDING)
+    save(fig, fieldchartsdirs + 'vsx_stars_no_ref_{}'.format(len(vsx_labeled)))
+
+    # field chart with only the background
+    logging.info("Plotting field chart with only the reference field...")
+    fig, _ = get_plot_with_background_data(fits_data, 0, "Reference frame")
+    save(fig, fieldchartsdirs + 'only_ref')
 
     # candidate stars get their local id label
     candidate_descr = utils.get_stars_with_metadata(star_descriptions, "CANDIDATE", exclude=["VSX"])
@@ -173,25 +195,6 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
     owncatalog_descr = utils.get_stars_with_metadata(star_descriptions, "OWNCATALOG", exclude=["VSX"])
     owncatalog_labeled = set_custom_label(owncatalog_descr, [x.get_metadata("OWNCATALOG").name for x in owncatalog_descr])
 
-    # field chart with all detections
-    logging.info("Plotting field chart with all detected stars...")
-    fig = plot_it([all_stars_no_label], [5.], [False], fits_data, wcs, "All detected stars", PADDING)
-    save(fig, fieldchartsdirs + 'all_detections_{}_stars'.format(len(all_stars_no_label)))
-
-    # field chart with all vsx stars
-    logging.info("Plotting field chart with all VSX variable stars...")
-    fig = plot_it([vsx_labeled], [10.], [False], fits_data, wcs, "All VSX stars", PADDING)
-    save(fig, fieldchartsdirs + 'vsx_stars_{}'.format(len(vsx_labeled)))
-
-    # field chart with all vsx stars without the background
-    logging.info("Plotting field chart with all VSX variable stars without reference field...")
-    fig = plot_it([vsx_labeled], [10.], [False], fits_data_blank, wcs, "VSX without background", PADDING)
-    save(fig, fieldchartsdirs + 'vsx_stars_no_ref_{}'.format(len(vsx_labeled)))
-
-    # field chart with only the background
-    logging.info("Plotting field chart with only the reference field...")
-    fig, _ = get_plot_with_background_data(fits_data, 0, "Reference frame")
-    save(fig, fieldchartsdirs + 'only_ref')
 
     # field chart with all vsx stars + candidates + owncatalog
     logging.info("Plotting field chart with all VSX variable stars + candidate vars...")

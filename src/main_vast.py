@@ -355,7 +355,7 @@ def count_dat_entries(afile):
 
 
 def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, args):
-    star_descriptions = utils_sd.construct_raw_star_descriptions(vastdir, wcs, STAR_KEEPER_PERCENTAGE)
+    star_descriptions = utils_sd.construct_raw_star_descriptions(vastdir, wcs, None, STAR_KEEPER_PERCENTAGE)
     logging.info(f"Number of stars on more than {STAR_KEEPER_PERCENTAGE:.0%} of frames: {len(star_descriptions)}")
     stardict = get_localid_to_sd_dict(star_descriptions)
 

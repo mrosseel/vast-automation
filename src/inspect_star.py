@@ -31,33 +31,51 @@ dpi = 100
 
 
 def inspect(vastdir, resultdir, fitsdir, apikey, stars):
-    _, _, _, reference_frame = reading.extract_reference_frame(vastdir)
+    ref_jd, _, _, reference_frame = reading.extract_reference_frame(vastdir)
     _, shapex, shapey = reading.get_fits_data(Path(fitsdir, Path(reference_frame).name))
     stars = list(map(lambda x: int(x), stars))
     for starid in stars:
-        process(vastdir, resultdir, fitsdir, apikey, shapex, shapey, starid)
+        process(vastdir, resultdir, fitsdir, apikey, shapex, shapey, starid, ref_jd, reference_frame)
 
 
-def process(vastdir, resultdir, fitsdir, apikey, shapex, shapey, starid):
+def process(vastdir, resultdir, fitsdir, apikey, shapex, shapey, starid, ref_jd, reference_frame):
     logging.info(f"Processing star {starid}")
     # getting the image records and rotation dict for star X
     image_records, rotation_dict = reading.get_star_jd_xy_rot(starid, vastdir)
     logging.debug(f"rotation dict has {len(rotation_dict)} entries")
     logging.debug(f"imagerecords has {len(image_records)} entries")
     df = pd.DataFrame(image_records)
-    df = df[(df.x > 0) & (df.x < shapex) & (df.y > 0) & (df.y < shapey)]
-    df['borderdistance'] = abs(shapex / 2 - df.x) + abs(shapey / 2 - df.y)
-    logging.debug(df['borderdistance'].idxmin())
-    logging.debug(df.iloc[df['borderdistance'].idxmin()])
-    chosen_row = df.iloc[df['borderdistance'].idxmin()]
-    chosen_jd = chosen_row.jd
-    chosen_record = ImageRecord(chosen_jd, chosen_row.x, chosen_row.y, chosen_row.file, chosen_row.rotation)
-    logging.info(chosen_record)
+
+    # check if reference frame is good enough
     jddict = reading.jd_to_fitsfile_dict(vastdir)
-    chosen_fits = jddict[chosen_jd]
+    refdf = df[df.jd == float(ref_jd)]
+    if len(refdf) == 1 and (abs(shapex / 2 - refdf.iloc[0].x) < shapex / 2 * 0.95) and (
+        abs(shapey / 2 - refdf.iloc[0].y) < shapey / 2 * 0.95):
+        logging.info("Choosing original refframe because star is on it.")
+        refrow = refdf.iloc[0]
+        chosen_record = ImageRecord(refrow.jd, refrow.x, refrow.y, refrow.file, 0.0)
+        wcs_file, _ = reading.read_wcs_file(vastdir)
+        platesolved_file =  wcs_file
+        chosen_fits = jddict[float(ref_jd)]
+    else:
+        logging.info("Choosing other fits frame because star is on it.")
+        df = df[(df.x > 0) & (df.x < shapex) & (df.y > 0) & (df.y < shapey)]
+        df['borderdistance'] = abs(shapex / 2 - df.x) + abs(shapey / 2 - df.y)
+        logging.debug(df['borderdistance'].idxmin())
+        logging.debug(df.iloc[df['borderdistance'].idxmin()])
+        chosen_row = df.iloc[df['borderdistance'].idxmin()]
+        chosen_jd = chosen_row.jd
+        chosen_record = ImageRecord(chosen_jd, chosen_row.x, chosen_row.y, chosen_row.file, chosen_row.rotation)
+        chosen_fits = jddict[chosen_jd]
+        platesolved_file = Path(vastdir) / f'platesolve_{starid}.fits'
     chosen_fits_fullpath = Path(fitsdir, chosen_fits)
     chosen_rotation = rotation_dict[chosen_fits]
-    logging.info(f"chosen fits: {chosen_fits}, {chosen_fits_fullpath}, rotation: {chosen_rotation}")
+    logging.info(f"platesolved file: {platesolved_file}, chosen fits: {chosen_fits}, {chosen_fits_fullpath}, "
+                 f"rotation: {chosen_rotation}")
+    if not os.path.isfile(platesolved_file):
+        plate_solve(apikey, chosen_fits_fullpath, platesolved_file)
+    else:
+        logging.info("Found platesolved file.")
     # construct star descriptions
     sds = utils_sd.construct_star_descriptions(vastdir, None)
     star_catalog = do_calibration.create_star_descriptions_catalog(sds)
@@ -71,15 +89,13 @@ def process(vastdir, resultdir, fitsdir, apikey, shapex, shapey, starid):
         neighbours.append(sds[idx])
     add_ucac4(neighbours)
     add_ucac4([chosen_star_sd])
-    output_file = Path(vastdir) / f'platesolve_{starid}.fits'
-    if not os.path.isfile(output_file):
-        plate_solve(apikey, chosen_fits_fullpath, output_file)
-    update_img(chosen_star_sd, chosen_record, neighbours, resultdir, output_file)
+    update_img(chosen_star_sd, chosen_record, neighbours, resultdir, platesolved_file)
 
 
 def add_ucac4(stars: List[StarDescription]):
     ucac4 = UCAC4()
     ucac4.add_ucac4_to_sd(stars)
+
 
 # platesolve the best frame for this star
 def plate_solve(apikey, chosen_fits_fullpath, output_file):
@@ -92,7 +108,7 @@ def plate_solve(apikey, chosen_fits_fullpath, output_file):
 
 def update_img(star: StarDescription, record: ImageRecord, neighbours: List[StarDescription], resultdir: str,
                output_file: str):
-    fig = plt.figure(figsize=(15, 15), dpi=80, facecolor='w', edgecolor='k')
+    fig = plt.figure(figsize=(36, 32), dpi=160, facecolor='w', edgecolor='k')
     wcs = do_calibration.get_wcs(output_file)
     data, shapex, shapey = reading.get_fits_data(output_file)
     backgr = data.mean()
@@ -100,10 +116,14 @@ def update_img(star: StarDescription, record: ImageRecord, neighbours: List[Star
     data = np.pad(data, (padding, padding), 'constant', constant_values=(backgr, backgr))
     # add main target
     add_circle(record.x, record.y, 4, 'b')
-    random_offset = True
-    log_star(star)
+    log_star(star, -1)
+
+    random_offset = False
+    offset1 = 70
+    offset2 = 10
+
     # add neighbours
-    for nstar in neighbours:
+    for idx, nstar in enumerate(neighbours):
         add_pixels(nstar, wcs, 0)
         add_circle(nstar.xpos, nstar.ypos, 5, 'g')
         if random_offset:
@@ -113,9 +133,9 @@ def update_img(star: StarDescription, record: ImageRecord, neighbours: List[Star
             ysignrand = random.choice([-1.0, 1.0])
             offset1 = xsignrand * xrandoffset
             offset2 = ysignrand * yrandoffset
-        plt.annotate(f'{nstar.local_id}', xy=(round(nstar.xpos), round(nstar.ypos)), xycoords='data',
-                     xytext=(offset1, offset2), textcoords='offset points', size=16, arrowprops=dict(arrowstyle="-"))
-        log_star(nstar)
+        plt.annotate(f'{idx}', xy=(round(nstar.xpos), round(nstar.ypos)), xycoords='data',
+                     xytext=(offset1, offset2), textcoords='offset points', size=12, arrowprops=dict(arrowstyle="-"))
+        log_star(nstar, idx)
 
     median = np.median(data)
     print(data.max())
@@ -128,9 +148,9 @@ def update_img(star: StarDescription, record: ImageRecord, neighbours: List[Star
     plt.clf()
 
 
-def log_star(star):
+def log_star(star, idx):
     star_ucac4 = star.get_metadata("UCAC4")
-    logging.info(f'Star: {star.local_id} with ucac4: {star_ucac4.name}, vmag: '
+    logging.info(f'IDX: {idx}, Star: {star.local_id} with ucac4: {star_ucac4.name}, vmag: '
                  f'{star.vmag}, coords: {star_ucac4.coords}')
 
 

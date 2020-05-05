@@ -154,7 +154,7 @@ def fitsfile_to_rotation_dict(vastdir) -> Dict[str, float]:
     return rotation_dict
 
 
-def jd_to_fitsfile_dict(vastdir) -> Dict[str, float]:
+def jd_to_fitsfile_dict(vastdir) -> Dict[float, str]:
     df = read_vast_image_details_log(vastdir)
     jd_to_file_dict = {}
     for index, row in df.iterrows():
@@ -174,6 +174,7 @@ def extract_reference_frame(from_dir):
 
 
 # Get info from 'vast_summary.log'
+# ref_jd, date, time, reference_frame
 def extract_frame_from_summary_helper(from_dir, marker) -> Tuple[str, str, str, str]:
     # Ref.  image: 2458586.50154 13.04.2019 00:00:41   ../../inputfiles/TXCar/fits/TXCar#45V_000601040_FLAT.fit
     with open(Path(from_dir, 'vast_summary.log')) as file:
