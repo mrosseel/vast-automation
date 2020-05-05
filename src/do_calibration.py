@@ -27,23 +27,10 @@ from star_metadata import StarMetaData
 
 def get_wcs(wcs_file):
     hdulist = fits.open(wcs_file)
-    data = hdulist[0].data.astype(float)
+    # data = hdulist[0].data.astype(float)
     header = hdulist[0].header
     wcs = WCS(header)
     return wcs
-
-
-def calibrate():
-    w = WCS(settings.reference_header)
-    return w
-
-
-def old_find_reference_frame_index():
-    the_dir = os.listdir(init.reference_dir)
-    the_dir.sort()
-    reference_frame_index = the_dir.index(init.reference_frame)
-    assert the_dir[reference_frame_index] == init.reference_frame
-    return reference_frame_index
 
 
 ############# star description utils #################
@@ -51,15 +38,6 @@ def old_find_reference_frame_index():
 
 def select_star_descriptions(star_id_list: List[int], stars: List[StarDescription]):
     return [x for x in stars if x.local_id in star_id_list]
-
-
-# returns list of star descriptions
-def get_empty_star_descriptions(star_id_list=None):
-    # returns {'name': [ra.deg, dec.deg ]}
-    result = []
-    for star in star_id_list:
-        result.append(StarDescription(local_id=star))
-    return result
 
 
 # for testinsg
@@ -79,23 +57,6 @@ def log_star_descriptions(star_descriptions: StarDescription, star_id_list):
 
 
 ############# star description utils #################
-
-
-# returns new list of StarDescription s with filled in local_id, upsilon match, coord
-def get_candidates(threshold_prob=0.5, check_flag=False):
-    result = []
-    df = get_upsilon_candidates_raw(threshold_prob, check_flag)
-    if df is None:
-        return result
-    positions = reading.read_world_positions(settings.worldposdir)
-    for index, row in df.iterrows():
-        upsilon_match = UpsilonData(var_type=row['label'], probability=row['probability'],
-                                    flag=row['flag'], period=row['period'])
-        result.append(
-            StarDescription(local_id=index, metadata={'UPSILON': upsilon_match},
-                            coords=SkyCoord(positions[int(index)][0], positions[int(index)][1], unit='deg')))
-    return result
-
 
 # adds UpsilonMatch to existing StarDescription
 def add_candidates_to_star_descriptions(stars: List[StarDescription], threshold_prob=0.5, check_flag=False):
@@ -152,7 +113,7 @@ def add_vsx_names_to_star_descriptions(star_descriptions: List[StarDescription],
                 star_id = star_descriptions[index_star_catalog].local_id
                 results_dict[index_vsx] = VsxInfo(star_id, index_vsx, entry.value)
                 logging.debug(f"Adding {results_dict[index_vsx]} to VSX results")
-    cachedict = utils.get_star_description_cache(star_descriptions)
+    cachedict = utils.get_localid_to_sd_dict(star_descriptions)
     # loop over dict and add the new vsx matches to the star descriptions
     for keys, vsxinfo in results_dict.items():
         logging.debug(f"len sd is {len(star_descriptions)}, vsxinfo.starid is {vsxinfo.starid_0}")
@@ -240,18 +201,6 @@ def create_vsx_astropy_catalog(vsx_catalog_location):
     vsx_dict = vsx_pickle.read(vsx_catalog_location)
     logging.info(f"Creating VSX star catalog with {len(vsx_dict['ra_deg_np'])} stars using '{vsx_catalog_location}'")
     return create_generic_astropy_catalog(vsx_dict['ra_deg_np'], vsx_dict['dec_deg_np']), vsx_dict
-
-
-# NO LONGER USED
-def create_upsilon_astropy_catalog(threshold_prob_candidates=0.5):
-    logging.info("Creating upsilon star catalog...")
-    ra2 = np.array([])
-    dec2 = np.array([])
-    candidates_array = get_candidates(threshold_prob_candidates)
-    for candidate in candidates_array:
-        ra2 = np.append(ra2, [candidate.coord.ra.deg])
-        dec2 = np.append(dec2, [candidate.coord.dec.deg])
-    return create_generic_astropy_catalog(ra2, dec2), candidates_array
 
 
 def create_star_descriptions_catalog(star_descriptions):

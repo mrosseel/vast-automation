@@ -14,8 +14,8 @@ import do_charts_stats
 import do_compstars
 import reading
 import utils
-from utils import get_star_description_cache
-from reading import file_selector
+import utils_sd
+from utils import get_localid_to_sd_dict
 from star_description import StarDescription
 from astropy.coordinates import SkyCoord
 from astropy.coordinates import match_coordinates_sky
@@ -33,8 +33,6 @@ from utils import StarDict
 
 vsx_catalog_name = "vsx_catalog.bin"
 vsxcatalogdir = PurePath(os.getcwd(), vsx_catalog_name)
-# star id -> xpos, ypos, filename
-StarPosDict = Dict[str, Tuple[float, float, str]]
 STAR_KEEPER_PERCENTAGE = 0.1
 
 
@@ -43,18 +41,16 @@ def run_do_rest(args):
     vastdir = utils.add_trailing_slash(args.datadir)
     resultdir = clean_and_create_resultdir(args.resultdir, vastdir)
     fieldchartsdir = resultdir + 'fieldcharts/'
-    aavsodir = resultdir + 'aavso/'
     do_light = args.light
     do_phase = args.phase
     do_aavso = args.aavso
     logging.info(f"Dir with VaST files: '{vastdir}', results dir: '{resultdir}'")
-    wcs_file = Path(vastdir, 'new-image.fits')
-    ref_jd, _, _, reference_frame = extract_reference_frame(vastdir)
-    _, _, _, first_frame = extract_first_frame(vastdir)
-    frames_used = int(extract_images_used(vastdir))
+    # get wcs model from the reference header. Used in writing world positions and field charts
+    wcs_file, wcs = reading.read_wcs_file(vastdir)
+    ref_jd, _, _, reference_frame = reading.extract_reference_frame(vastdir)
+    _, _, _, first_frame = reading.extract_first_frame(vastdir)
     referene_frame_path = Path(reference_frame)
     reference_frame_filename = referene_frame_path.name
-    logging.info(f"{frames_used} frames were used for photometry")
     logging.info(f"The reference frame is '{reference_frame}' at JD: {ref_jd}")
     logging.info(f"The first frame is '{first_frame}'")
     logging.info(f"Reference header is '{wcs_file}'")
@@ -75,7 +71,7 @@ def run_do_rest(args):
             logging.error("There is no plate-solved reference frame {wcs_file}, please specify both --apikey "
                           "and --fitsdir.")
             sys.exit(0)
-        rotation = extract_reference_frame_rotation(vastdir, reference_frame_filename)
+        rotation = reading.extract_reference_frame_rotation(vastdir, reference_frame_filename)
         assert rotation == 0.0, f"Error: rotation is {rotation} and should always be 0.0"
         subprocess.Popen(f"python3 ./src/astrometry_api.py --apikey={args.apikey} "
                          f"--upload={full_ref_path} --newfits={wcs_file} --private --no_commercial", shell=True)
@@ -83,16 +79,8 @@ def run_do_rest(args):
             logging.info(f"Waiting for the astrometry.net plate solve...")
             time.sleep(10)
 
-    # get wcs model from the reference header. Used in writing world positions and field charts
-    wcs = do_calibration.get_wcs(wcs_file)
-    #################################################################################################################
-    all_stardict = read_stardict(vastdir)
-    list_of_dat_files = file_selector(the_dir=vastdir, match_pattern="*.dat")
-    logging.info(
-        f"Number of found lightcurves: {len(list_of_dat_files)}, number of identified stars: {len(all_stardict.keys())}")
-    star_descriptions = construct_star_descriptions(vastdir, resultdir, wcs, all_stardict, list_of_dat_files,
-                                                    frames_used, args)
-    stardict = get_star_description_cache(star_descriptions)
+    star_descriptions = construct_star_descriptions(vastdir, resultdir, wcs, args)
+    stardict = get_localid_to_sd_dict(star_descriptions)
     logging.debug(f"First (max) 10 star descriptions: "
                   f"{star_descriptions[:10] if (len(star_descriptions) >= 10) else star_descriptions}")
     write_augmented_autocandidates(vastdir, resultdir, stardict)
@@ -216,63 +204,6 @@ def wcs_test_pattern(wcs):
         logging.info(f"result: {result[0]}, {result[1]}")
 
 
-def extract_reference_frame(from_dir):
-    return extract_frame_from_summary_helper(from_dir, "Ref.  image")
-
-
-def extract_reference_frame_rotation(vastdir, reference_frame) -> float:
-    filename = Path(vastdir, 'vast_image_details.log')
-    the_regex = re.compile(r'^.*rotation=\s*([0-9,.,-]+).*\s+(.+)$')
-    with open(filename, 'r') as infile:
-        for line in infile:
-            thesearch = the_regex.search(line)
-            if thesearch and reference_frame in thesearch.group(2):
-                return float(thesearch.group(1).strip())
-    return 0.0
-
-
-def extract_first_frame(from_dir):
-    return extract_frame_from_summary_helper(from_dir, "First image")
-
-
-def extract_images_used(from_dir):
-    with open(from_dir + 'vast_summary.log') as file:
-        result = [re.findall(r'Images used for photometry (.*)', line) for line in file]
-    return [x for x in result if x != []][0][0]
-
-
-def extract_frame_from_summary_helper(from_dir, marker):
-    # Ref.  image: 2458586.50154 13.04.2019 00:00:41   ../../inputfiles/TXCar/fits/TXCar#45V_000601040_FLAT.fit
-    with open(from_dir + 'vast_summary.log') as file:
-        result = [re.findall(marker + r':\s+(\d+\.\d+)\s+([\d|\.]+)\s+([\d|\:]+)\s+(.*)', line) for line in file]
-    return [x for x in result if x != []][0][0]
-
-
-# get a dict with star_id -> xpos ypos filename
-def read_stardict(vastdir: str) -> StarPosDict:
-    stardict = {}
-    PixelPos = namedtuple('PixelPos', 'x y afile')
-    with open(vastdir + 'vast_list_of_all_stars.log') as file:
-        for line in file:
-            splitline = line.split()
-            stardict[int(splitline[0])] = PixelPos(splitline[1], splitline[2], f"out{splitline[0]}.dat")
-    return stardict
-
-
-# Note: this file seems to give incorrect xy positions wrt reference frame
-# get all possible stars with their x/y position from a log file
-# 14.460155 0.031190   215.230    19.626 out00007.dat
-def read_data_m_sigma(vastdir) -> Dict[int, Tuple[int, int]]:
-    stardict = {}
-    PixelPos = namedtuple('PixelPos', 'x y afile')
-    with open(vastdir + 'data.m_sigma') as file:
-        for line in file:
-            splitline = line.split()
-            star_id = utils.get_starid_from_outfile(splitline[4])
-            stardict[star_id] = PixelPos(float(splitline[2]), float(splitline[3]), splitline[4])
-    return stardict
-
-
 def read_checkstars(checkstar_file: str) -> List[str]:
     result = []
     with open(checkstar_file) as file:
@@ -281,10 +212,10 @@ def read_checkstars(checkstar_file: str) -> List[str]:
     return result
 
 
-def get_autocandidates(dir: str) -> List[int]:
+def get_autocandidates(vastdir: str) -> List[int]:
     origname = 'vast_autocandidates.log'
     result = []
-    with open(PurePath(dir, origname), 'r', encoding='utf-8') as infile:
+    with open(Path(vastdir, origname), 'r', encoding='utf-8') as infile:
         for line in infile:
             linetext = line.rstrip()
             star_id = utils.get_starid_from_outfile(linetext)
@@ -390,7 +321,7 @@ def write_vsx_stars(resultdir, results_ids, stars: List[StarDescription]):
     selected_file = f"{resultdir}vsx_stars_selected.txt"
     logging.info(f"Writing {newname}...")
     total_found = 0
-    stardict = utils.get_star_description_cache(stars)
+    stardict = utils.get_localid_to_sd_dict(stars)
     logging.debug(f"Receiving {len(stardict.keys())} as vsx input")
     with open(newname, 'wt') as fp, open(selected_file, 'wt') as selected:
         for number, vsx_id in enumerate(results_ids):
@@ -410,7 +341,7 @@ def write_candidate_stars(resultdir, stars: List[StarDescription]):
     newname = f"{resultdir}candidate_stars.txt"
     logging.info(f"Writing {newname}...")
     total_found = 0
-    stardict = utils.get_star_description_cache(stars)
+    stardict = utils.get_localid_to_sd_dict(stars)
     logging.debug(f"Receiving {len(stardict.keys())} as vsx input")
     with open(newname, 'wt') as fp:
         for index, current_sd in enumerate(candidates):
@@ -423,58 +354,10 @@ def count_dat_entries(afile):
     return sum(1 for line in open(afile, 'r') if line.rstrip())
 
 
-# constructs a list of star descriptions with catalog matches according to args
-def count_number_of_observations(vastdir):
-    logging.info("Counting number of observations per star ...")
-    obsdict = {}
-    columns = ['Median magnitude', 'idx00_STD', 'X position of the star on the reference image [pix]',
-               'Y position of the star on the reference image [pix]',
-               'lightcurve file name', 'idx01_wSTD', 'idx02_skew', 'idx03_kurt', 'idx04_I', 'idx05_J', 'idx06_K',
-               'idx07_L', 'idx08_Npts', 'idx09_MAD',
-               'idx10_lag1', 'idx11_RoMS', 'idx12_rCh2', 'idx13_Isgn', 'idx14_Vp2p', 'idx15_Jclp', 'idx16_Lclp',
-               'idx17_Jtim', 'idx18_Ltim', 'idx19_N3',
-               'idx20_excr', 'idx21_eta', 'idx22_E_A', 'idx23_S_B', 'idx24_NXS', 'idx25_IQR', 'idx26_A01', 'idx27_A02',
-               'idx28_A03', 'idx29_A04', 'idx30_A05',
-               ]
-    df = pd.read_csv(Path(vastdir, 'vast_lightcurve_statistics.log'), names=columns, delim_whitespace=True)
-    for index, row in df.iterrows():
-        obsdict[row['lightcurve file name']] = row['idx08_Npts']
-    return obsdict
-
-
-def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, all_stardict: StarPosDict,
-                                list_of_dat_files: List[str], frames_used: int, args):
-    # Start with the list of all measured stars
-    stars_with_file_dict = {}
-    list_of_dat_files.sort()
-    for afile in list_of_dat_files:
-        star_id = utils.get_starid_from_outfile(afile)
-        stars_with_file_dict[star_id] = afile
-
-    # intersect dict, results in starid -> (xpos, ypos, shortfile, longfile),
-    # example:  42445: ('175.948', '1194.074', 'out42445.dat', 'support/vast-1.0rc84/out42445.dat')
-    intersect_dict = {x: (*all_stardict[x], stars_with_file_dict[x]) for x in all_stardict if
-                      x in stars_with_file_dict}
-    logging.info(
-        f"Calculating the intersect between all stars and measured stars, result has {len(intersect_dict)} entries.")
-
-    # get SD's for all stars which are backed by a file with measurements
-    star_descriptions = do_calibration.get_empty_star_descriptions(intersect_dict)
-    obsdict = count_number_of_observations(vastdir)
-    for sd in star_descriptions:
-        sd.path = '' if sd.local_id not in intersect_dict else intersect_dict[sd.local_id][3]
-        sd.xpos = intersect_dict[int(sd.local_id)][0]
-        sd.ypos = intersect_dict[int(sd.local_id)][1]
-        path_filename = Path(sd.path).name
-        sd.obs = obsdict[path_filename] if path_filename in obsdict else -1
-        world_coords = wcs.all_pix2world(float(sd.xpos), float(sd.ypos), 0, ra_dec_order=True)
-        # logging.debug(f"world coords for star {sd.local_id}, {world_coords}")
-        sd.coords = SkyCoord(world_coords[0], world_coords[1], unit='deg')
-
-    # only keep stars which are present on at least 10% of the images
-    star_descriptions = list(filter(lambda x: x.obs > frames_used * STAR_KEEPER_PERCENTAGE, star_descriptions))
+def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, args):
+    star_descriptions = utils_sd.construct_raw_star_descriptions(vastdir, wcs, STAR_KEEPER_PERCENTAGE)
     logging.info(f"Number of stars on more than {STAR_KEEPER_PERCENTAGE:.0%} of frames: {len(star_descriptions)}")
-    stardict = get_star_description_cache(star_descriptions)
+    stardict = get_localid_to_sd_dict(star_descriptions)
 
     # Add VSX information to SDs
     star_descriptions, results_ids = do_calibration.add_vsx_names_to_star_descriptions(star_descriptions,
@@ -620,9 +503,11 @@ def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
     # outfile.write(f"# our_name,ra,dec,minmax,var_type,period,epoch\n")
     logging.info(f"Using owncatalog: {owncatalog}")
     df = pd.read_csv(owncatalog, delimiter=',', comment='#',
-                     names=['our_name', 'ra', 'dec', 'ucac4_name', 'ucac4_ra', 'ucac4_dec', 'minmax', 'min', 'max', 'var_type', 'period', 'period_err',
+                     names=['our_name', 'ra', 'dec', 'ucac4_name', 'ucac4_ra', 'ucac4_dec', 'minmax', 'min', 'max',
+                            'var_type', 'period', 'period_err',
                             'epoch'],
-                     dtype={'ra': float, 'dec': float, 'ucac4_ra': float, 'ucac4_dec': float, 'minmax': str, 'epoch': float},
+                     dtype={'ra': float, 'dec': float, 'ucac4_ra': float, 'ucac4_dec': float, 'minmax': str,
+                            'epoch': float},
                      skipinitialspace=True, warn_bad_lines=True)
     df.loc[df['ucac4_ra'].notnull(), 'chosenRA'] = df['ucac4_ra']
     df.loc[df['ucac4_ra'].isnull(), 'chosenRA'] = df['ra']

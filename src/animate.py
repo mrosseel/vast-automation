@@ -1,21 +1,18 @@
 import numpy as np
 from astropy.io import fits
 import matplotlib.pyplot as plt
-import re
 from pathlib import Path
 import matplotlib.animation as animation
 from tqdm import tqdm
 from scipy import ndimage
-from matplotlib.colors import LogNorm
 import reading
-from collections import namedtuple
+from reading import ImageRecord
 from datetime import datetime
 import logging
 import argparse
 import os
 import utils
 
-ImageRecord = namedtuple('ImageRecord', 'jd, x, y, file, rotation')
 im = []
 fitsdir = ""
 crop = 0
@@ -39,18 +36,10 @@ def animate(vastdir: str, resultdir: str, afitsdir: str, starid: int, acrop: int
     fullcrop = crop + border
     dpi = 100
 
-    # read the lightcurve of the chosen star
-    lightcurvefile = f'out{starid:05}.dat'
+    # read the xy position+rotation of each observation of the chosen star
     savefile = Path(resultdir, f'movie-{starid:05}.mp4')
-    logging.info(f"starid {starid}, file is {lightcurvefile}, crop is {acrop}x{acrop} pixels, saving to {savefile}")
-    df = reading.read_lightcurve_vast(Path(vastdir, lightcurvefile))
-    image_records = []
-    rotation_dict = extract_frame_rotation_dict(vastdir)
-    for index, row in df.iterrows():
-        filename = Path(row['file']).name
-        image_records.append(ImageRecord(float(row['JD']), round(row['X']), round(row['Y']), filename, float(rotation_dict[filename])))
-
-    logging.info(f"rotation dict has {len(rotation_dict)} entries")
+    logging.info(f"starid {starid}, crop is {acrop}x{acrop} pixels, saving to {savefile}")
+    image_records, rotation_dict = reading.get_star_jd_xy_rot(starid, vastdir)
     logging.info(f"imagerecords has {len(image_records)} entries")
     sorted_images = sorted(image_records, key=lambda x: x.jd)
 
@@ -60,34 +49,6 @@ def animate(vastdir: str, resultdir: str, afitsdir: str, starid: int, acrop: int
 
     ani.save(savefile, writer=writer, dpi=dpi)
     pbar.close()
-
-
-# get the mapping fits file -> rotation
-def extract_frame_rotation_dict(vastdir) -> float:
-    filename = Path(vastdir, 'vast_image_details.log')
-    the_regex = re.compile(r'^.*rotation=\s*([0-9,.,-]+).*\s+(.+)$')
-    rotation_dict = {}
-    with open(filename, 'r') as infile:
-        for line in infile:
-            thesearch = the_regex.search(line)
-            if thesearch:
-                path = Path(thesearch.group(2))
-                rotation_dict[path.name] = float(thesearch.group(1).strip())
-    return rotation_dict
-
-
-# make a dict with mapping fits file -> image00007.cat
-def extract_image_catalog(vastdir) -> float:
-    filename = Path(vastdir, 'vast_images_catalogs.log')
-    the_regex = re.compile(r'^(.*) (.*)$')
-    catalog_dict = {}
-    with open(filename, 'r') as infile:
-        for line in infile:
-            thesearch = the_regex.search(line)
-            if thesearch:
-                path = Path(thesearch.group(2))
-                catalog_dict[path.name] = thesearch.group(1)
-    return catalog_dict
 
 
 def crop_center(img, cropx, cropy):
@@ -102,9 +63,7 @@ def init():
 
 
 def update_img(record: ImageRecord):
-    hdulist = fits.open(Path(fitsdir, record.file))
-    data = hdulist[0].data.astype(float)
-    shapex, shapey = hdulist[0].shape
+    data, shapex, shapey = reading.get_fits_data(Path(fitsdir, record.file))
     backgr = data.mean()
     data = data.reshape(shapex, shapey)
     data = np.pad(data, (padding, padding), 'constant', constant_values=(backgr, backgr))

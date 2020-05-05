@@ -129,8 +129,8 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
 
     # setting the font size for titles/axes
     plt.rcParams.update({'axes.titlesize': 'large', 'axes.labelsize': 'large'})
-    fits_data = reading.get_fits_data(reference_fits_frame)
-    fits_data_blank = reading.get_fits_data(reference_fits_frame, blank_data=True)
+    fits_data, _, _ = reading.get_fits_data(reference_fits_frame)
+    fits_data_blank, _, _ = reading.get_fits_data(reference_fits_frame, blank_data=True)
     SHOW_UPSILON = False
 
     # if SHOW_UPSILON:

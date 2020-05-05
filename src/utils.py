@@ -22,17 +22,15 @@ StarUI = namedtuple('StarInfo', 'catalog_name, separation, extradata, filename_o
 StarDict = Dict[int, StarDescription]
 
 
-def find_index_of_file(the_dir, the_file, the_filter='*'):
-    the_dir = glob.glob(the_dir + "*" + the_filter)
-    the_dir.sort()
-    indices = [i for i, elem in enumerate(the_dir) if the_file in elem]
-    return indices[0]
-
-
-def find_file_for_index(the_dir, index, the_filter='*'):
-    the_dir = glob.glob(the_dir + the_filter)
-    the_dir.sort()
-    return the_dir[index]
+# Select files conforming to the match_pattern using percentage which is between 0 and 1
+def file_selector(the_dir, match_pattern, percentage=1) -> List[str]:
+    matched_files = glob.glob(the_dir + match_pattern)
+    desired_length = max(1, int(len(matched_files) * float(percentage)))
+    logging.debug(f"Reading.file_selector: {the_dir + match_pattern}, "
+                  f"total:{len(matched_files)}, desired:{desired_length}")
+    np.random.seed(42)  # for the same percentage, we always get the same selection
+    selected_files = np.random.choice(matched_files, size=desired_length, replace=False).tolist()
+    return selected_files
 
 
 def add_trailing_slash(the_path):
@@ -50,7 +48,7 @@ def get_starid_from_outfile(outfile) -> int:
 
 
 # returns a dict with the local_id as key
-def get_star_description_cache(stars: List[StarDescription]) -> Dict[int, StarDescription]:
+def get_localid_to_sd_dict(stars: List[StarDescription]) -> Dict[int, StarDescription]:
     cachedict = {}
     for sd in stars:
         cachedict[sd.local_id] = sd
@@ -275,4 +273,17 @@ def replace_spaces(a_string: str):
 # replace spaces with underscores
 def replace_underscores(a_string: str):
     return a_string.replace('_', ' ')
+
+# not used
+def find_index_of_file(the_dir, the_file, the_filter='*'):
+    the_dir = glob.glob(the_dir + "*" + the_filter)
+    the_dir.sort()
+    indices = [i for i, elem in enumerate(the_dir) if the_file in elem]
+    return indices[0]
+
+# not used
+def find_file_for_index(the_dir, index, the_filter='*'):
+    the_dir = glob.glob(the_dir + the_filter)
+    the_dir.sort()
+    return the_dir[index]
 

@@ -455,7 +455,7 @@ def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir:
                 pass
         pool.close()
         pool.join()
-        stardict = main_vast.get_star_description_cache(star_descriptions)
+        stardict = main_vast.get_localid_to_sd_dict(star_descriptions)
         for key, value in star_result_dict.items():
             star_result = stardict[key].result
             for key2, value2 in value.items():

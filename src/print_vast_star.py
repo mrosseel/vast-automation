@@ -1,26 +1,17 @@
 import argparse
 import logging
-import main_vast
-import do_calibration
-import utils
+import utils_sd
 
-def main(args):
-    vastdir = utils.add_trailing_slash(args.datadir)
-    wcs_file = vastdir+'new-image.fits'
-    wcs = do_calibration.get_wcs(wcs_file)
-    all_files = main_vast.file_selector(the_dir=vastdir, match_pattern="*.dat")
-    file_targets = [vastdir+star_to_dat(int(x)) for x in args.stars]
-    print("file targets ", file_targets)
-    # selected_files = [x for x in all_files where]
-    all_stardict = main_vast.read_stardict(vastdir)
-    logging.info(f"Number of found lightcurves: {len(file_targets)}, number of identified stars: {len(all_stardict.keys())}")
-    args.upsilon = args.vsx = args.selectedstarfile = False
-    sds = main_vast.construct_star_descriptions(vastdir, wcs, all_stardict, file_targets, args)
+
+def main(cmdline_args):
+    sds = utils_sd.construct_star_descriptions(cmdline_args.datadir, list(map(lambda x: int(x), cmdline_args.stars)))
     for star in sds:
         print(star, '\n')
 
+
 def star_to_dat(star: int):
     return f"out{star:05}.dat"
+
 
 if __name__ == '__main__':
     logger = logging.getLogger()

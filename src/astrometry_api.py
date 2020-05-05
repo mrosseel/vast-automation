@@ -502,6 +502,6 @@ def main():
         print(jobs)
 
 
-# python3 astrometry_api.py --apikey=afdwexgqedqbjyhn --upload=../results/temp/reference_frame.fits --newfits=new-image.fits
+# python3 astrometry_api.py --apikey=afdqbjyhn --upload=../results/temp/reference_frame.fits --newfits=new-image.fits
 if __name__ == '__main__':
     main()
