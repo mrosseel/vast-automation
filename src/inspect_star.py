@@ -64,16 +64,17 @@ def process(vastdir, resultdir, fitsdir, apikey, shapex, shapey, starid):
 
     # Get the 10 closest neighbours
     sd_dict = utils.get_localid_to_sd_dict(sds)
-    sd_174 = sd_dict[starid]
+    chosen_star_sd = sd_dict[starid]
     neighbours = []
     for neigh in range(2, 12):
-        idx, d2d, _ = match_coordinates_sky(sd_174.coords, star_catalog, nthneighbor=neigh)
+        idx, d2d, _ = match_coordinates_sky(chosen_star_sd.coords, star_catalog, nthneighbor=neigh)
         neighbours.append(sds[idx])
     add_ucac4(neighbours)
+    add_ucac4([chosen_star_sd])
     output_file = Path(vastdir) / f'platesolve_{starid}.fits'
     if not os.path.isfile(output_file):
         plate_solve(apikey, chosen_fits_fullpath, output_file)
-    update_img(starid, chosen_record, neighbours, fitsdir, resultdir, output_file)
+    update_img(chosen_star_sd, chosen_record, neighbours, resultdir, output_file)
 
 
 def add_ucac4(stars: List[StarDescription]):
@@ -89,7 +90,7 @@ def plate_solve(apikey, chosen_fits_fullpath, output_file):
         time.sleep(10)
 
 
-def update_img(starid: int, record: ImageRecord, neighbours: List[StarDescription], fitsdir: str, resultdir: str,
+def update_img(star: StarDescription, record: ImageRecord, neighbours: List[StarDescription], resultdir: str,
                output_file: str):
     fig = plt.figure(figsize=(15, 15), dpi=80, facecolor='w', edgecolor='k')
     wcs = do_calibration.get_wcs(output_file)
@@ -100,6 +101,7 @@ def update_img(starid: int, record: ImageRecord, neighbours: List[StarDescriptio
     # add main target
     add_circle(record.x, record.y, 4, 'b')
     random_offset = True
+    log_star(star)
     # add neighbours
     for nstar in neighbours:
         add_pixels(nstar, wcs, 0)
@@ -113,19 +115,23 @@ def update_img(starid: int, record: ImageRecord, neighbours: List[StarDescriptio
             offset2 = ysignrand * yrandoffset
         plt.annotate(f'{nstar.local_id}', xy=(round(nstar.xpos), round(nstar.ypos)), xycoords='data',
                      xytext=(offset1, offset2), textcoords='offset points', size=16, arrowprops=dict(arrowstyle="-"))
-        nstar_ucac4 = nstar.get_metadata("UCAC4")
-        logging.info(f'Neighbor star: {nstar.local_id} with ucac4: {nstar_ucac4.name}, vmag: '
-                     f'{nstar_ucac4.vmag}, coords: {nstar_ucac4.coords}')
+        log_star(nstar)
 
     median = np.median(data)
     print(data.max())
     #     data = ndimage.interpolation.rotate(data, record.rotation)
     plt.imshow(data, cmap='gray_r', origin='lower', vmin=0, vmax=min(median * 5, 65536))
-    save_inspect_image = Path(resultdir, f'inspect_star_{starid}.png')
+    save_inspect_image = Path(resultdir, f'inspect_star_{star.local_id}.png')
     fig.savefig(save_inspect_image)
     logging.info(f"Saved file as {save_inspect_image}.")
     plt.close(fig)
     plt.clf()
+
+
+def log_star(star):
+    star_ucac4 = star.get_metadata("UCAC4")
+    logging.info(f'Star: {star.local_id} with ucac4: {star_ucac4.name}, vmag: '
+                 f'{star.vmag}, coords: {star_ucac4.coords}')
 
 
 def add_circle(xpos, ypos, radius: float, color: str):
