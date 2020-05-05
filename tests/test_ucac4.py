@@ -74,7 +74,7 @@ class TestUcac4(unittest.TestCase):
         # WARNING Did not find a UCAC4 match for 274.26921036101504, -88.73827035367276, 0.02.
         # Buckets: range(1098, 1099), zones: [7],smallest dist: 1000
         # ra, dec = 274.26921036101504, -88.73827035367276
-        ra, dec = 274.2390118,	-88.7390245
+        ra, dec = 274.2390118, -88.7390245
         result = self.ucac4.get_ucac4_sd_from_ra_dec(ra, dec, tolerance_deg=0.19)
 
         self.assertEqual("UCAC4 007-002358", result.aavso_id)
@@ -84,6 +84,11 @@ class TestUcac4(unittest.TestCase):
         # 2358    2   7 1100
         self.assertEqual(20.0, result.vmag)
         print("diff is ", target.separation(result.coords))
+
+        ra, dec = 271.0133100, -43.5485520
+        # target = SkyCoord(ra, dec, unit='deg')
+        result = self.ucac4.get_ucac4_sd_from_ra_dec(ra, dec)
+        self.assertEqual("UCAC4 233-155696", result.aavso_id)
 
 
     def test_get_zone_for_dec(self):

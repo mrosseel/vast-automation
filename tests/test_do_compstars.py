@@ -7,7 +7,7 @@ from astropy.coordinates import SkyCoord
 import logging
 import main_vast
 import os
-from pathlib import PurePath
+from pathlib import Path
 import logging
 from pandas import DataFrame
 import utils
@@ -15,7 +15,7 @@ import utils
 logging.getLogger().setLevel(logging.DEBUG)
 logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
 
-test_file_path = PurePath(os.getcwd(), 'tests', 'data')
+test_file_path = Path(os.getcwd(), 'tests', 'data')
 
 
 class TestDoCompstars(unittest.TestCase):
@@ -65,8 +65,9 @@ class TestDoCompstars(unittest.TestCase):
                  self.stardesc(132, 10.24496, 9.96736, 13, 0.02, 10),
                  self.stardesc(2, 10.24490, 9.96730, 12, 0.01, 10),
                  self.stardesc(3, 10.24490, 9.96730, 12, 0.01, 10)]  # not there
-        stardict = utils.get_star_description_cache(stars)
-        ids, sds = do_compstars.get_calculated_compstars(test_file_path, stardict)
+        stardict = utils.get_localid_to_sd_dict(stars)
+        # def get_calculated_compstars(vastdir, stardict: StarDict, ref_jd, maglimit=15, starlimit=1000):
+        ids, sds = do_compstars.get_calculated_compstars(test_file_path, stardict, ref_jd=1)
         self.assertEqual(4, len(ids))
 
 
@@ -96,3 +97,4 @@ if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
     logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
     unittest.main()
+
