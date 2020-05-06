@@ -123,6 +123,10 @@ class TestUcac4(unittest.TestCase):
         # self.assertEqual(.05, sd.e_vmag)
         # print("bl")
 
+    def test_get_ucac4_range_tuples(self):
+        result = self.ucac4.get_ucac4_range_tuples(40,40,1)
+        self.assertEqual(2480, len(result))
+
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)

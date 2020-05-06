@@ -18,6 +18,7 @@ import reading
 import argparse
 from datetime import datetime
 import random
+import toml
 
 from star_description import StarDescription
 from ucac4 import UCAC4
@@ -55,7 +56,7 @@ def process(vastdir, resultdir, fitsdir, apikey, shapex, shapey, starid, ref_jd,
         refrow = refdf.iloc[0]
         chosen_record = ImageRecord(refrow.jd, refrow.x, refrow.y, refrow.file, 0.0)
         wcs_file, _ = reading.read_wcs_file(vastdir)
-        platesolved_file =  wcs_file
+        platesolved_file = wcs_file
         chosen_fits = jddict[float(ref_jd)]
     else:
         logging.info("Choosing other fits frame because star is on it.")
@@ -108,6 +109,7 @@ def plate_solve(apikey, chosen_fits_fullpath, output_file):
 
 def update_img(star: StarDescription, record: ImageRecord, neighbours: List[StarDescription], resultdir: str,
                output_file: str):
+    resultlines = []
     fig = plt.figure(figsize=(36, 32), dpi=160, facecolor='w', edgecolor='k')
     wcs = do_calibration.get_wcs(output_file)
     data, shapex, shapey = reading.get_fits_data(output_file)
@@ -116,8 +118,9 @@ def update_img(star: StarDescription, record: ImageRecord, neighbours: List[Star
     data = np.pad(data, (padding, padding), 'constant', constant_values=(backgr, backgr))
     # add main target
     add_circle(record.x, record.y, 4, 'b')
-    log_star(star, -1)
-
+    startoml = load_toml(star)
+    star.vmag = startoml['vmag']
+    resultlines.append(log_star(star, -1))
     random_offset = False
     offset1 = 70
     offset2 = 10
@@ -135,23 +138,45 @@ def update_img(star: StarDescription, record: ImageRecord, neighbours: List[Star
             offset2 = ysignrand * yrandoffset
         plt.annotate(f'{idx}', xy=(round(nstar.xpos), round(nstar.ypos)), xycoords='data',
                      xytext=(offset1, offset2), textcoords='offset points', size=12, arrowprops=dict(arrowstyle="-"))
-        log_star(nstar, idx)
+        resultlines.append(log_star(nstar, idx))
 
     median = np.median(data)
-    print(data.max())
     #     data = ndimage.interpolation.rotate(data, record.rotation)
     plt.imshow(data, cmap='gray_r', origin='lower', vmin=0, vmax=min(median * 5, 65536))
     save_inspect_image = Path(resultdir, f'inspect_star_{star.local_id}.png')
     fig.savefig(save_inspect_image)
     logging.info(f"Saved file as {save_inspect_image}.")
+    write_file(star, resultdir, resultlines)
     plt.close(fig)
     plt.clf()
 
 
+def load_toml(star):
+    starui: utils.StarUI = utils.get_star_or_catalog_name(star)
+    print("starui", starui)
+    txt_path = Path(resultdir) / "phase_selected" / "txt" / f'{starui.filename_no_suff_no_ext}.txt'
+    print("txtpath", txt_path)
+    try:
+        parsed_toml = toml.load(txt_path)
+    except FileNotFoundError:
+        logging.error(f"Could not load txt file with phase information from {txt_path}")
+    return parsed_toml
+
+
+def write_file(star: StarDescription, resultdir: str, lines: List[str]):
+    outputfile = f"{resultdir}/inspect_star_{star.local_id}.txt"
+    logging.debug(f"Writing toml to {outputfile}")
+    with open(outputfile, "w") as outfile:
+        outfile.write("\n".join(lines))
+
+
 def log_star(star, idx):
     star_ucac4 = star.get_metadata("UCAC4")
-    logging.info(f'IDX: {idx}, Star: {star.local_id} with ucac4: {star_ucac4.name}, vmag: '
-                 f'{star_ucac4.vmag}, coords: {star_ucac4.coords}')
+    starmag = f' mag: {star.vmag:.3f}' if star.vmag is not None else ''
+    logline = f'IDX: {idx}, Star: {star.local_id}{starmag} with ucac4: {star_ucac4.name}, ' \
+              f'vmag: {star_ucac4.vmag}, coords: {star_ucac4.coords}'
+    logging.info(logline)
+    return logline
 
 
 def add_circle(xpos, ypos, radius: float, color: str):

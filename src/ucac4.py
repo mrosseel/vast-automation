@@ -126,6 +126,7 @@ StarTuple = namedtuple('Star', 'ra spd mag1 mag2 mag_sigma obj_type double_star_
                                ' apass_mag_sigma_B apass_mag_sigma_V apass_mag_sigma_g apass_mag_sigma_r'
                                ' apass_mag_sigma_i yale_gc_flags catalog_flags leda_flag twomass_ext_flag'
                                ' id_number ucac2_zone ucac2_number')
+MinimalStarTuple = namedtuple('MinStar', 'id, ra, dec, mag')
 
 
 def get_line_nr(n0, nn, line):
@@ -231,10 +232,32 @@ class UCAC4:
         return result_n0, result_nn
 
 
+    def get_ucac4_range_tuples(self, ra: float, dec: float, radius=0.5):
+        zones, buckets = self.get_zones_and_index_bins(40, 40, 1)
+        result = []
+        for zone in zones:
+            for bucket in buckets:
+                cache_key = (zone, bucket)
+                the_stars: List[StarTuple] = self.zone_bucket_cache.get(cache_key)
+                # cache miss
+                if the_stars == -1:
+                    the_stars = self.get_ucac4_details_raw(zone, self.index_bin_to_run_nrs(zone, bucket))
+                    self.zone_bucket_cache.set(cache_key, the_stars)
+                if len(the_stars) == 0:
+                    logging.debug(f"zone/bucket: {zone}/{bucket}, no stars")
+                    if bucket + 1 not in buckets:
+                        buckets.append(bucket+1)
+                        logging.debug(f"Appending bucket {bucket+1}")
+                for sd in the_stars:
+                    result.append(MinimalStarTuple(UCAC4.zone_and_run_nr_to_name(sd[1], sd[2]),
+                                                   *UCAC4.get_real_ra_dec(sd[0].ra, sd[0].spd),
+                                                   sd[0].apass_mag_V / 1000))
+        return result
+
+
     def get_ucac4_sd_from_ra_dec(self, ra: float, dec: float, tolerance_deg=0.02) -> StarDescription:
         logging.debug(f"get_ucac4_sd with ra:{ra}, dec:{dec}, tolerance:{tolerance_deg}")
         target_np = np.array((ra, dec))
-        assert tolerance_deg < 0.2
         zones, buckets = self.get_zones_and_index_bins(ra, dec, tolerance_deg)
         smallest_dist = 1000
         best = None
