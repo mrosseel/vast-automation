@@ -82,7 +82,8 @@ class SiteData(StarMetaData):
 
 
 class CatalogData(StarMetaData):
-    def __init__(self, key=None, catalog_id=None, name=None, coords: SkyCoord = None, separation=-1, extradata=None):
+    def __init__(self, key=None, catalog_id=None, name=None, coords: SkyCoord = None, separation=-1, vmag=None,
+                 vmag_err=None, extradata=None):
         # the name of the catalog
         super().__init__(key)
         # the id in the catalog
@@ -93,6 +94,10 @@ class CatalogData(StarMetaData):
         self.coords = coords
         # the separation between the vast coords and the catalog coords
         self.separation = separation
+        # the visual magnitude
+        self.vmag = vmag
+        # the visual magnitude error
+        self.vmag_err = vmag_err
         # optional extra info on the catalog object
         self.extradata = extradata
 

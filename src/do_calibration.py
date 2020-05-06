@@ -237,43 +237,14 @@ def add_apass_to_star_descriptions(star_descriptions, radius=0.01, row_limit=2):
     return star_descriptions
 
 
-def add_vizier_ucac4_to_star_descriptions(star_descriptions: List[StarDescription], nr_threads: int, radius=0.01):
-    logging.info("Retrieving ucac4 for {} star(s)".format(len(star_descriptions)))
-    radius_angle = Angle(radius, unit=u.deg)
-
-    pool = Pool(nr_threads * 2)
-    func = partial(add_vizier_ucac4_to_star, radius_angle=radius_angle)
-    result = []
-    for entry in pool.map(func, star_descriptions):
-        result.append(entry)
-    return result
-
-
-def add_vizier_ucac4_to_star(star: StarDescription, radius_angle):
-    vizier_results = get_ucac4_field(star.coords, radius=radius_angle, row_limit=1)
-    if vizier_results is None:
-        logging.warning("No vizier results for star", star.local_id)
-        return star
-    else:
-        # print('vizier results', vizier_results)
-        logging.debug(f"Adding vmag: {vizier_results['Vmag'].iloc(0)[0]}")
-        coord_catalog = SkyCoord(vizier_results['RAJ2000'], vizier_results['DEJ2000'], unit='deg')
-        add_info_to_star_description(star, vizier_results['Vmag'].iloc(0)[0], vizier_results['e_Vmag'][0],
-                                     vizier_results['UCAC4'][0].decode("utf-8"), "UCAC4", coord_catalog)
-        # print(vizier_results.describe())
-        # print(vizier_results.info())
-        # import code
-        # code.InteractiveConsole(locals=dict(globals(), **locals())).interact()
-    return star
-
-
 # take a star_description and add some info to it: vmag, error vmag, catalog information
 def add_info_to_star_description(star, vmag, e_vmag, catalog_id, catalog_name, coord_catalog):
     star.vmag = vmag
     star.e_vmag = e_vmag
     star_to_catalog_dist = star.coords.separation(coord_catalog)
     star.metadata = CatalogData(key=catalog_name, catalog_id=catalog_id,
-                                name=catalog_id, coords=coord_catalog, separation=star_to_catalog_dist)
+                                name=catalog_id, coords=coord_catalog, separation=star_to_catalog_dist, vmag=vmag,
+                                vmag_err=e_vmag)
     logging.debug("Add info: Star {} has vmag={}, error={}, dist={}".format(star.local_id, star.vmag, star.e_vmag,
                                                                             star_to_catalog_dist))
     return star

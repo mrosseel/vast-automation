@@ -20,8 +20,8 @@ if __name__ == '__main__':
                         required=False)
     parser.add_argument('-o', '--owncatalog', help="Supply a file to identify stars known to you by RA/DEC",
                         required=False)
-    # parser.add_argument('--owncatalogasselected', help="The owncatalog stars are added to the selection",
-    #                     action="store_true")
+    parser.add_argument('-s', '--selectedstarfile',
+                        help="Load a file with star ids, these ids will be used for field charts/reporting")
     parser.add_argument('--apikey', help="Astrometry.net api key for automatic plate solving of the referenc "
                                                "frame found by vast.",
                         required=False)
@@ -40,8 +40,6 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--aavsolimit', help="Limits the number of lines per aavso file. -t 5000 splits the"
                                                    "observations in files of 5000 lines each.",
                         nargs='?', type=int, default=None, const=5000)
-    parser.add_argument('-s', '--selectedstarfile',
-                        help="Load a file with star ids, these ids will be used for field charts/reporting")
     parser.add_argument('--selectvsx', help="Add all VSX stars to the selected stars", action="store_true")
     parser.add_argument('--selectcandidates', help="Add all candidate stars to the selected stars", action="store_true")
     parser.add_argument('--site', help="Generate a hugo compatible page")
