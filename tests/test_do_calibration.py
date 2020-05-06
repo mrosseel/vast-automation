@@ -15,7 +15,7 @@ class TestDoCalibration(unittest.TestCase):
                                                              SkyCoord(ra=8, dec=5, unit="deg"))
         self.assertEqual(star0_id, id(result))
         self.assertEqual(stars[0].vmag, 10)
-        self.assertEqual(stars[0].e_vmag, 0.1)
+        self.assertEqual(stars[0].vmag_err, 0.1)
 
 
     def test_add_VSX(self):

@@ -114,7 +114,7 @@ class TestUcac4(unittest.TestCase):
         # Vmag	11.957 	mag, e_Vmag	01 cmag
         self.assertEqual(-1, raw[0][0].apass_mag_sigma_V)
         sd: StarDescription = self.ucac4.get_ucac4_star_description_fromtuple(*raw[0])
-        self.assertEqual(.01, sd.e_vmag)
+        self.assertEqual(.01, sd.vmag_err)
 
         # first entry of out.sam
         # raw = self.ucac4.get_ucac4_details_raw('451', [133336])

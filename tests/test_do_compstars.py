@@ -90,7 +90,7 @@ class TestDoCompstars(unittest.TestCase):
 
     def stardesc(self, id, ra, dec, vmag, e_vmag, obs):
         return StarDescription(local_id=id,
-                               coords=SkyCoord(ra, dec, unit='deg'), vmag=vmag, e_vmag=e_vmag, obs=obs)
+                               coords=SkyCoord(ra, dec, unit='deg'), vmag=vmag, vmag_err=e_vmag, obs=obs)
 
 
 if __name__ == '__main__':
