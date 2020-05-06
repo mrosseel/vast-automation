@@ -213,109 +213,12 @@ def create_star_descriptions_catalog(star_descriptions):
     return create_generic_astropy_catalog(ra2, dec2)
 
 
-def add_apass_to_star_descriptions(star_descriptions, radius=0.01, row_limit=2):
-    logging.info(f"apass input {len(star_descriptions)}")
-    radius_angle = Angle(radius, unit=u.deg)
-    for star in star_descriptions:
-        apass = get_apass_field(star.coords, radius=radius_angle, row_limit=row_limit)
-        if apass is None:
-            logging.info("More/less results received from APASS than expected: {}".format(
-                apass.shape[0] if not apass is None and not apass.shape is None else 0))
-            logging.info(apass)
-            continue
-        else:
-            star.vmag = apass['Vmag'][0]
-            star.e_vmag = apass['e_Vmag'][0]
-            catalog_id = 'TODO'  # apass['recno'][0].decode("utf-8")
-            coord_catalog = SkyCoord(apass['RAJ2000'], apass['DEJ2000'], unit='deg')
-            mindist = star.coords.separation(SkyCoord(apass['RAJ2000'], apass['DEJ2000'], unit='deg'))
-            star.metadata = CatalogData(key="APASS", catalog_id=catalog_id,
-                                        name=catalog_id, coords=coord_catalog, separation=mindist)
-            logging.info(
-                "APASS: Star {} has vmag={}, error={:.5f}, dist={}".format(star.local_id, star.vmag, star.e_vmag,
-                                                                           mindist))
-    return star_descriptions
-
-
 # take a star_description and add some info to it: vmag, error vmag, catalog information
-def add_info_to_star_description(star, vmag, e_vmag, catalog_id, catalog_name, coord_catalog):
-    star.vmag = vmag
-    star.e_vmag = e_vmag
+def add_info_to_star_description(star, vmag, vmag_err, catalog_id, catalog_name, coord_catalog):
     star_to_catalog_dist = star.coords.separation(coord_catalog)
     star.metadata = CatalogData(key=catalog_name, catalog_id=catalog_id,
                                 name=catalog_id, coords=coord_catalog, separation=star_to_catalog_dist, vmag=vmag,
-                                vmag_err=e_vmag)
-    logging.debug("Add info: Star {} has vmag={}, error={}, dist={}".format(star.local_id, star.vmag, star.e_vmag,
+                                vmag_err=vmag_err)
+    logging.debug("Add info: Star {} has vmag={}, error={}, dist={}".format(star.local_id, star.vmag, star.vmag_err,
                                                                             star_to_catalog_dist))
     return star
-
-
-def get_apass_row_to_star_descriptions(row):
-    return StarDescription(coords=SkyCoord(row['RAJ2000'], row['DEJ2000'], unit='deg'),
-                           vmag=row['Vmag'], e_vmag=row['e_Vmag'])
-
-
-def get_ucac4_row_to_star_descriptions(row):
-    ucac4 = get_apass_row_to_star_descriptions(row)
-    ucac4.aavso_id = row['UCAC4']
-    return ucac4
-
-
-def get_apass_star_descriptions(center_coord, radius, row_limit=2):
-    return get_vizier_star_descriptions(get_apass_field, get_apass_row_to_star_descriptions, center_coord,
-                                        radius, row_limit)
-
-
-def get_ucac4_star_descriptions(center_coord, radius, row_limit=2):
-    return get_vizier_star_descriptions(get_ucac4_field, get_ucac4_row_to_star_descriptions, center_coord,
-                                        radius, row_limit)
-
-
-def get_vizier_star_descriptions(field_method, to_star_descr_method, center_coord, radius, row_limit=2):
-    field = field_method(center_coord, radius, row_limit)
-    result = []
-    for index, row in field.iterrows():
-        result.append(to_star_descr_method(row))
-    return result
-
-
-def get_apass_field(center_coord, radius, row_limit=2):
-    return get_vizier_field(center_coord, radius, 'II/336', row_limit)
-
-
-def get_ucac4_field(center_coord, radius, row_limit=2):
-    return get_vizier_field(center_coord, radius, 'I/322A', row_limit)
-
-
-# object_name = 'UCAC4 231-154752'
-def get_ucac4_id_as_dataframe(object_name):
-    result = Vizier.query_object(object_name, catalog=['I/322A'])
-    if len(result) == 0:
-        logging.warning(f"Returned result from vizier for object {object_name} is empty.")
-    df = result[0].to_pandas()
-    df2 = df.loc[df['UCAC4'] == object_name.split()[1].encode('UTF-8')]
-    return df2
-
-
-def get_vizier_field(center_coord, radius, catalog, row_limit=2):
-    # Select all columns (this is a generic function so has to be all)
-    v = Vizier(columns=['all'])
-
-    # Limit the number of rows returned to row_limit
-    v.ROW_LIMIT = row_limit
-
-    result = v.query_region(center_coord,
-                            radius=radius,
-                            catalog=[catalog])
-    try:
-        df = result[0].to_pandas() if len(result) > 0 else None
-    except:
-        logging.error("Error processing vizier results in do_calibration")
-        return None
-    return df
-
-# if __name__ == '__main__':
-#     star_descriptions = do_calibration.get_star_descriptions(init.star_list)
-#     star_catalog = create_star_descriptions_catalog(star_descriptions)
-#     result = get_starid_1_for_radec(star_catalog, [271.234735], [-43.845816])
-#     logging.info(f"calibration result: {result}")

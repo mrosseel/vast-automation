@@ -175,8 +175,9 @@ def set_comp_stars_and_ucac4(star_descriptions: List[StarDescription], selecteds
     comp_catalogmags = []
     comp_catalogerr = []
     for star in comparison_stars_1_sds:
-        comp_catalogmags.append(star.vmag)
-        comp_catalogerr.append(star.e_vmag)
+        star_ucac4_catalog = star.get_metadata("UCAC4")
+        comp_catalogmags.append(star_ucac4_catalog.vmag)
+        comp_catalogerr.append(star_ucac4_catalog.vmag_err)
     comp_stars = ComparisonStars(comparison_stars_ids, comparison_stars_1_sds, comp_observations, comp_catalogmags,
                                  comp_catalogerr)
     logging.info(

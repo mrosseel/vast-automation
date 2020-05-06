@@ -20,7 +20,7 @@ class StarMetaData:
 
 class StarDescription:
     def __init__(self, local_id: int = None, aavso_id: str = None, coords: SkyCoord = None, vmag: float = None,
-                 e_vmag: float = None, metadata: Dict[str, StarMetaData] = None,
+                 vmag_err: float = None, metadata: Dict[str, StarMetaData] = None,
                  label: str = None, xpos: float = None, ypos: float = None, path: str = None, obs: int = None):
         # star id given by munipack
         self.local_id = local_id
@@ -28,10 +28,10 @@ class StarDescription:
         self.aavso_id = aavso_id
         # coords as measured by vast
         self.coords = coords
-        # vmag as provided by one of the matching catalogs
+        # vmag as measured on the LC of this star
         self.vmag = vmag
-        # error on vmag as provided by one of the matching catalogs
-        self.e_vmag = e_vmag
+        # error on vmag as measured
+        self.vmag_err = vmag_err
         # arrray of catalogs matching this star
         self._metadata = metadata if metadata is not None else {}
         # x position on the reference frame

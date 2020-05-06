@@ -36,7 +36,7 @@ def get_fixed_compstars(star_descriptions: List[StarDescription], comparison_sta
         # adding info to star_description
         star = star_descriptions[star_id_1 - 1]
         logging.info(f"Compstar match: {ucacsd.aavso_id} with {star.local_id} ({ra}, {dec})")
-        do_calibration.add_info_to_star_description(star, ucacsd.vmag, ucacsd.e_vmag,
+        do_calibration.add_info_to_star_description(star, ucacsd.vmag, ucacsd.vmag_err,
                                                     ucacsd.aavso_id,
                                                     "UCAC4", SkyCoord(ra, dec, unit='deg'))
         star_desc_result.append(star)
@@ -57,7 +57,7 @@ def get_calculated_compstars(vastdir, stardict: StarDict, ref_jd, maglimit=15, s
             star_realmag[star.local_id] = comp_magdict[ref_jd]
 
     # restrict to maglimit
-    mag_list = list(filter(lambda x: x.vmag < maglimit, likely_sd))
+    mag_list = list(filter(lambda x: x.get_metadata("UCAC4").vmag < maglimit, likely_sd))
     # only want the best stars with max possible observations
     max_obs_sorted = sorted(mag_list, key=lambda x: x.obs, reverse=True)
     max_obs = np.max([x.obs for x in likely_sd])

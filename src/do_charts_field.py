@@ -219,8 +219,8 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
         filtered_compstars, check_star = do_compstars.filter_comparison_stars(star, comp_stars)
         filtered_compstars_sds = filtered_compstars.star_descriptions
         check_star_sd = check_star.star_descriptions
-        compstars_labeled = set_custom_label(filtered_compstars_sds, [x.vmag for x in filtered_compstars_sds])
-        checkstar_labeled = set_custom_label(check_star_sd, f"Kmag={check_star_sd[0].vmag}")
+        compstars_labeled = set_custom_label(filtered_compstars_sds, [x.get_metadata("UCAC4").vmag for x in filtered_compstars_sds])
+        checkstar_labeled = set_custom_label(check_star_sd, f"Kmag={check_star_sd[0].get_metadata('UCAC4').vmag}")
         starui: utils.StarUI = utils.get_star_or_catalog_name(star, suffix="")
         fig = plot_it([[star], vsx_labeled, compstars_labeled, checkstar_labeled], [7., 5., 3., 4.],
                       [True, False, True, False],

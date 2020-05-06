@@ -319,7 +319,7 @@ class UCAC4:
     def get_ucac4_star_description_fromtuple(star: StarTuple, zone: int, run_nr: int):
         ra, dec = UCAC4.get_real_ra_dec(star.ra, star.spd)
         sd = StarDescription(coords=SkyCoord(ra, dec, unit='deg'),
-                             vmag=star.apass_mag_V / 1000, e_vmag=abs(star.apass_mag_sigma_V / 100),
+                             vmag=star.apass_mag_V / 1000, vmag_err=abs(star.apass_mag_sigma_V / 100),
                              aavso_id=UCAC4.zone_and_run_nr_to_name(zone, run_nr))
         return sd
 
@@ -347,7 +347,7 @@ class UCAC4:
                 if not star.has_metadata("UCAC4"):
                     sd = self.get_ucac4_sd_from_ra_dec(star.coords.ra.deg, star.coords.dec.deg)
                     if sd is not None:
-                        do_calibration.add_info_to_star_description(star, sd.vmag, sd.e_vmag, sd.aavso_id, "UCAC4",
+                        do_calibration.add_info_to_star_description(star, sd.vmag, sd.vmag_err, sd.aavso_id, "UCAC4",
                                                                     sd.coords)
                 pbar.update(1)
 

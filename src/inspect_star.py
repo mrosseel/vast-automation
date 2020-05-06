@@ -151,7 +151,7 @@ def update_img(star: StarDescription, record: ImageRecord, neighbours: List[Star
 def log_star(star, idx):
     star_ucac4 = star.get_metadata("UCAC4")
     logging.info(f'IDX: {idx}, Star: {star.local_id} with ucac4: {star_ucac4.name}, vmag: '
-                 f'{star.vmag}, coords: {star_ucac4.coords}')
+                 f'{star_ucac4.vmag}, coords: {star_ucac4.coords}')
 
 
 def add_circle(xpos, ypos, radius: float, color: str):

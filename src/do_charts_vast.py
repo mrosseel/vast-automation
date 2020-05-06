@@ -211,6 +211,9 @@ def calculate_min_max_epochs(t_np, y_np):
 
 def write_toml(filename_no_ext, fullphasedir, period, star, points_removed, ymin, ymax, epoch_min, epoch_max):
     tomldict = {}
+    photometry_metadata = star.get_metadata("PHOTOMETRY")
+    tomldict['vmag'] = float(photometry_metadata.vmag)
+    tomldict['vmag_err'] = float(photometry_metadata.vmag_err)
     tomldict['period'] = float(period.period)
     tomldict['period_origin'] = period.origin
     tomldict['range'] = f'{ymin:.1f}-{ymax:.1f} (LS)'
@@ -315,7 +318,8 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, star_result_dict
         df['realV'], df['realErr'] = do_compstars.calculate_ensemble_photometry(
             df, filtered_compstars, do_compstars.weighted_value_ensemble_method)
         df = df.dropna(subset=['realV', 'realErr'])  # drop rows where the ensemble photometry failed
-
+        do_calibration.add_info_to_star_description(star, df['realV'].mean(), df['realErr'].mean(),
+                                                    None, "PHOTOMETRY", star.coords)
         starui: utils.StarUI = utils.get_star_or_catalog_name(star, suffix="")
         period, epoch = determine_period_and_epoch(df, star)
 
