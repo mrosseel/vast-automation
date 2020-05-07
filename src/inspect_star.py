@@ -141,7 +141,7 @@ def update_img(star: StarDescription, record: ImageRecord, neighbours: List[Star
     data = data.reshape(shapex, shapey)
     data = np.pad(data, (padding, padding), 'constant', constant_values=(backgr, backgr))
     # add main target
-    add_circle(record.x, record.y, 4, 'b')
+    add_circle(record.x, record.y, 3, 'b')
     startoml = load_toml(star)
     star.vmag = startoml['vmag']
     resultlines.append(log_star(star, -1))
@@ -152,16 +152,18 @@ def update_img(star: StarDescription, record: ImageRecord, neighbours: List[Star
     # add neighbours
     for idx, nstar in enumerate(neighbours):
         add_pixels(nstar, wcs, 0)
-        add_circle(nstar.xpos, nstar.ypos, 5, 'g')
+        add_circle(nstar.xpos, nstar.ypos, 4, 'g')
         if random_offset:
-            xrandoffset = random.randint(5, 8)
-            yrandoffset = random.randint(2, 4)
+            xrandoffset = random.randint(3, 4)
+            yrandoffset = random.randint(2, 3)
             xsignrand = random.choice([-1.0, 1.0])
             ysignrand = random.choice([-1.0, 1.0])
             offset1 = xsignrand * xrandoffset
             offset2 = ysignrand * yrandoffset
+        # https://matplotlib.org/3.1.0/api/_as_gen/matplotlib.pyplot.arrow.html
         plt.annotate(f'{idx}', xy=(round(nstar.xpos), round(nstar.ypos)), xycoords='data',
-                     xytext=(offset1, offset2), textcoords='offset points', size=8, arrowprops=dict(arrowstyle="-"))
+                     xytext=(offset1, offset2), textcoords='offset points', size=8,
+                     arrowprops=dict(arrowstyle="-", facecolor='grey', color='grey', alpha=0.2))
         resultlines.append(log_star(nstar, idx))
 
     # loading and painting ucac stars
@@ -174,7 +176,8 @@ def update_img(star: StarDescription, record: ImageRecord, neighbours: List[Star
         # logging.info(f"Plotting {x}, {y}")
         add_circle(x, y, 2, 'c')
         plt.annotate(f'{ucac_star.id[-3:]}', xy=(x, y), xycoords='data',
-                     xytext=(2, 2), textcoords='offset points', size=6, arrowprops=dict(arrowstyle="-"))
+                     xytext=(2, 2), textcoords='offset points', size=6,
+                     arrowprops=dict(arrowstyle="-", facecolor='grey', color='grey', alpha=0.2))
 
     median = np.median(data)
     #     data = ndimage.interpolation.rotate(data, record.rotation)
@@ -220,12 +223,12 @@ def log_star(star, idx):
 
 def add_circle(xpos, ypos, radius: float, color: str):
     target_app = CircularAperture((xpos, ypos), r=radius)
-    target_app.plot(color=color)
+    target_app.plot(color=color, alpha=0.7)
 
 
 def add_pixels(star, wcs, offset):
     star_coord = star.coords
-    xy = SkyCoord.to_pixel(star_coord, wcs=wcs, origin=0)
+    xy = SkyCoord.to_pixel(star_coord, wcs=wcs, origin=0, mode='all')
     x, y = round(xy[0].item(0)), round(xy[1].item(0))
     star.xpos = x + offset
     star.ypos = y + offset

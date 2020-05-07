@@ -86,7 +86,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         else:
             ucac4_name = ucac4.catalog_id if not None else UNKNOWN
             ucac4_mag = f'<strong style="color: red;">{ucac4.vmag}</strong>' \
-                if abs(ucac4.vmag - parsed_toml['vmag']) > 0.2 else ucac4.vmag
+                if abs(ucac4.vmag - parsed_toml['vmag']) > 0.2 and ucac4.vmag != 20.0 else ucac4.vmag
             ucac4_coords = f"<li>coords: {utils.get_hms_dms_sober(ucac4.coords)} (ucac4)</li>"
         nl = '\n'
         name = f"{nl.join(parsed_toml['our_name'])}" if 'our_name' in parsed_toml else f"OUR_NAME_{star.local_id}"
