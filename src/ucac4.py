@@ -232,8 +232,8 @@ class UCAC4:
         return result_n0, result_nn
 
 
-    def get_ucac4_range_tuples(self, ra: float, dec: float, radius=0.5):
-        zones, buckets = self.get_zones_and_index_bins(40, 40, 1)
+    def get_ucac4_range_tuples(self, ra: float, dec: float, radius=0.5) -> List[MinimalStarTuple]:
+        zones, buckets = self.get_zones_and_index_bins(ra, dec, radius)
         result = []
         for zone in zones:
             for bucket in buckets:

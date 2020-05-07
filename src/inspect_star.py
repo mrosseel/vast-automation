@@ -23,17 +23,20 @@ import toml
 from collections import namedtuple
 
 from star_description import StarDescription
-from ucac4 import UCAC4
+from ucac4 import UCAC4, MinimalStarTuple
 
 padding = 0
 dpi = 100
 RefFrame = namedtuple('RefFrame', 'ref_jd path_to_solved path_to_reference_frame')
+ucac4 = UCAC4()
+
 
 # import scipy.misc
 # from skimage.draw import line_aa
 
-
 def inspect(vastdir, resultdir, fitsdir, apikey, stars):
+    inspect_resultdir = Path(resultdir) / 'inspect'
+    reading.trash_and_recreate_dir(inspect_resultdir)
     ref_jd, _, _, reference_frame = reading.extract_reference_frame(vastdir)
     _, shapex, shapey = reading.get_fits_data(Path(fitsdir, Path(reference_frame).name))
     refframes: List[RefFrame] = [RefFrame(ref_jd, Path(vastdir) / 'new-image.fits',
@@ -48,10 +51,12 @@ def inspect(vastdir, resultdir, fitsdir, apikey, stars):
     if args.localids:
         stardict = main_vast.get_localid_to_sd_dict(sds)
         main_vast.tag_selected(args.localids, stardict)
-
-    stars = list(map(lambda x: int(x), stars))
+    if args.stars:
+        stars = list(map(lambda x: int(x), stars))
+    else:
+        stars = [x.local_id for x in sds if x.get_metadata("SELECTEDFILE")]
     for starid in stars:
-        process(vastdir, resultdir, fitsdir, apikey, shapex, shapey, starid, ref_jd, reference_frame, sds,
+        process(vastdir, inspect_resultdir, fitsdir, apikey, shapex, shapey, starid, ref_jd, reference_frame, sds,
                 star_catalog, refframes)
 
 
@@ -64,6 +69,7 @@ def process(vastdir, resultdir, fitsdir, apikey, shapex, shapey, starid, ref_jd,
     logging.debug(f"imagerecords has {len(image_records)} entries")
     df = pd.DataFrame(image_records)
     jddict = reading.jd_to_fitsfile_dict(vastdir)
+    platesolved_file = None
 
     for frame in refframes:
         # check if reference frame is good enough
@@ -79,7 +85,7 @@ def process(vastdir, resultdir, fitsdir, apikey, shapex, shapey, starid, ref_jd,
             break
     # couldn't find a match in the existing refframes, let's find a new one
     if not platesolved_file:
-        logging.info("Choosing other fits frame because star is on it.")
+        logging.info("No existing frames can be used for this star.")
         df = df[(df.x > 0) & (df.x < shapex) & (df.y > 0) & (df.y < shapey)]
         df['borderdistance'] = abs(shapex / 2 - df.x) + abs(shapey / 2 - df.y)
         logging.debug(df['borderdistance'].idxmin())
@@ -89,7 +95,11 @@ def process(vastdir, resultdir, fitsdir, apikey, shapex, shapey, starid, ref_jd,
         chosen_record = ImageRecord(chosen_jd, chosen_row.x, chosen_row.y, chosen_row.file, chosen_row.rotation)
         chosen_fits_fullpath = Path(fitsdir, jddict[chosen_jd])
         platesolved_file = Path(vastdir) / f'platesolve_{starid}.fits'
-        plate_solve(apikey, chosen_fits_fullpath, platesolved_file)
+        if os.path.isfile(platesolved_file):
+            logging.info(f"Found old platesolved file on disk: {platesolved_file}")
+        else:
+            logging.info(f"Platesolving {platesolved_file}")
+            plate_solve(apikey, chosen_fits_fullpath, platesolved_file)
         refframes.append(RefFrame(chosen_jd, platesolved_file, chosen_fits_fullpath))
     chosen_rotation = rotation_dict[chosen_fits_fullpath.name]
     logging.info(f"platesolved file: {platesolved_file}, chosen fits: {chosen_fits_fullpath}, "
@@ -144,32 +154,46 @@ def update_img(star: StarDescription, record: ImageRecord, neighbours: List[Star
         add_pixels(nstar, wcs, 0)
         add_circle(nstar.xpos, nstar.ypos, 5, 'g')
         if random_offset:
-            xrandoffset = random.randint(50, 100)
-            yrandoffset = random.randint(20, 40)
+            xrandoffset = random.randint(5, 8)
+            yrandoffset = random.randint(2, 4)
             xsignrand = random.choice([-1.0, 1.0])
             ysignrand = random.choice([-1.0, 1.0])
             offset1 = xsignrand * xrandoffset
             offset2 = ysignrand * yrandoffset
         plt.annotate(f'{idx}', xy=(round(nstar.xpos), round(nstar.ypos)), xycoords='data',
-                     xytext=(offset1, offset2), textcoords='offset points', size=12, arrowprops=dict(arrowstyle="-"))
+                     xytext=(offset1, offset2), textcoords='offset points', size=8, arrowprops=dict(arrowstyle="-"))
         resultlines.append(log_star(nstar, idx))
+
+    # loading and painting ucac stars
+    ucac_stars: List[MinimalStarTuple] = ucac4.get_ucac4_range_tuples(star.coords.ra.deg, star.coords.dec.deg, 0.1)
+    logging.info(f"Looping on {len(ucac_stars)} UCAC4 stars")
+    for ucac_star in ucac_stars:
+        coord = SkyCoord(ucac_star.ra, ucac_star.dec, unit='deg')
+        xy = SkyCoord.to_pixel(coord, wcs=wcs, origin=0)
+        x, y = round(xy[0].item(0)), round(xy[1].item(0))
+        # logging.info(f"Plotting {x}, {y}")
+        add_circle(x, y, 2, 'c')
+        plt.annotate(f'{ucac_star.id[-3:]}', xy=(x, y), xycoords='data',
+                     xytext=(2, 2), textcoords='offset points', size=6, arrowprops=dict(arrowstyle="-"))
 
     median = np.median(data)
     #     data = ndimage.interpolation.rotate(data, record.rotation)
     plt.imshow(data, cmap='gray_r', origin='lower', vmin=0, vmax=min(median * 5, 65536))
-    save_inspect_image = Path(resultdir, f'inspect_star_{star.local_id}.png')
+    starui = utils.get_star_or_catalog_name(star)
+    save_inspect_image = Path(resultdir, f'inspect_star_{starui.filename_no_ext}.png')
+    save_inspect_txt = Path(resultdir, f'inspect_star_{starui.filename_no_ext}.txt')
     fig.savefig(save_inspect_image)
     logging.info(f"Saved file as {save_inspect_image}.")
-    write_file(star, resultdir, resultlines)
+    write_file(star, save_inspect_txt, resultlines)
     plt.close(fig)
     plt.clf()
 
 
 def load_toml(star):
     starui: utils.StarUI = utils.get_star_or_catalog_name(star)
-    print("starui", starui)
+    logging.info(f"starui: {starui}")
     txt_path = Path(resultdir) / "phase_selected" / "txt" / f'{starui.filename_no_suff_no_ext}.txt'
-    print("txtpath", txt_path)
+    logging.debug("txtpath", txt_path)
     try:
         parsed_toml = toml.load(txt_path)
     except FileNotFoundError:
@@ -177,8 +201,7 @@ def load_toml(star):
     return parsed_toml
 
 
-def write_file(star: StarDescription, resultdir: str, lines: List[str]):
-    outputfile = f"{resultdir}/inspect_star_{star.local_id}.txt"
+def write_file(star: StarDescription, outputfile: str, lines: List[str]):
     logging.debug(f"Writing toml to {outputfile}")
     with open(outputfile, "w") as outfile:
         outfile.write("\n".join(lines))
@@ -225,7 +248,7 @@ if __name__ == '__main__':
                         help="Load a file local ids, these ids will be used for field charts/reporting")
     parser.add_argument('--apikey', '-k', dest='apikey',
                         help='API key for Astrometry.net web service; if not given will check AN_API_KEY environment variable')
-    parser.add_argument('-s', '--stars', help="List the star id's to plot", nargs='+')
+    parser.add_argument('-s', '--stars', help="List the star id's to plot", nargs='+', required=False)
     parser.add_argument('-x', '--verbose', help="Set logging to debug mode", action="store_true")
     args = parser.parse_args()
     datadir = utils.add_trailing_slash(args.datadir)

@@ -216,6 +216,9 @@ def get_star_or_catalog_name(star: StarDescription, suffix: str = "") -> StarUI:
         catalog = star.get_metadata("VSX")
         catalog_name, separation = catalog.name, catalog.separation
         extradata = catalog.extradata
+    elif star.has_metadata("SITE"):
+        catalog = star.get_metadata("SITE")
+        catalog_name, separation = catalog.our_name, catalog.separation
     elif star.has_metadata("OWNCATALOG"):
         catalog = star.get_metadata("OWNCATALOG")
         catalog_name, separation = catalog.name, catalog.separation
