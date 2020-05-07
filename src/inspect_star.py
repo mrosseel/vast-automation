@@ -52,9 +52,9 @@ def inspect(vastdir, resultdir, fitsdir, apikey, stars):
         stardict = main_vast.get_localid_to_sd_dict(sds)
         main_vast.tag_selected(args.localids, stardict)
     if args.stars:
-        stars = list(map(lambda x: int(x), stars))
+        stars = sorted(list(map(lambda x: int(x), stars)))
     else:
-        stars = [x.local_id for x in sds if x.get_metadata("SELECTEDFILE")]
+        stars = sorted([x.local_id for x in sds if x.get_metadata("SELECTEDFILE")])
     for starid in stars:
         process(vastdir, inspect_resultdir, fitsdir, apikey, shapex, shapey, starid, ref_jd, reference_frame, sds,
                 star_catalog, refframes)
@@ -193,6 +193,8 @@ def load_toml(star):
     starui: utils.StarUI = utils.get_star_or_catalog_name(star)
     logging.info(f"starui: {starui}")
     txt_path = Path(resultdir) / "phase_selected" / "txt" / f'{starui.filename_no_suff_no_ext}.txt'
+    if not os.path.isfile(txt_path):
+        txt_path = Path(resultdir) / "phase_selected" / "txt" / f'{star.local_id:05}.txt'
     logging.debug("txtpath", txt_path)
     try:
         parsed_toml = toml.load(txt_path)
