@@ -489,6 +489,7 @@ def tag_candidates_as_selected(candidate_stars: List[StarDescription]):
 
 
 def construct_vsx_mag_range(entry):
+    """ Constructs the min-max rang of a VSX star using an entry from the VSX file """
     def empty_if_nan(x):
         if type(x) is str:
             return x

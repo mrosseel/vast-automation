@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from photutils import aperture_photometry, CircularAperture
 from astropy.coordinates import match_coordinates_sky
 from pathlib import Path
+import main_vast
 import utils
 import os
 from reading import ImageRecord
@@ -19,13 +20,14 @@ import argparse
 from datetime import datetime
 import random
 import toml
+from collections import namedtuple
 
 from star_description import StarDescription
 from ucac4 import UCAC4
 
 padding = 0
 dpi = 100
-
+RefFrame = namedtuple('RefFrame', 'ref_jd path_to_solved path_to_reference_frame')
 
 # import scipy.misc
 # from skimage.draw import line_aa
@@ -34,31 +36,49 @@ dpi = 100
 def inspect(vastdir, resultdir, fitsdir, apikey, stars):
     ref_jd, _, _, reference_frame = reading.extract_reference_frame(vastdir)
     _, shapex, shapey = reading.get_fits_data(Path(fitsdir, Path(reference_frame).name))
+    refframes: List[RefFrame] = [RefFrame(ref_jd, Path(vastdir) / 'new-image.fits',
+                                          Path(fitsdir, Path(reference_frame).name))]
+
+    # construct star descriptions
+    sds = utils_sd.construct_star_descriptions(vastdir, None)
+    star_catalog = do_calibration.create_star_descriptions_catalog(sds)
+
+    if args.radecs:
+        main_vast.tag_owncatalog(args.owncatalog, sds)
+    if args.localids:
+        stardict = main_vast.get_localid_to_sd_dict(sds)
+        main_vast.tag_selected(args.localids, stardict)
+
     stars = list(map(lambda x: int(x), stars))
     for starid in stars:
-        process(vastdir, resultdir, fitsdir, apikey, shapex, shapey, starid, ref_jd, reference_frame)
+        process(vastdir, resultdir, fitsdir, apikey, shapex, shapey, starid, ref_jd, reference_frame, sds,
+                star_catalog, refframes)
 
 
-def process(vastdir, resultdir, fitsdir, apikey, shapex, shapey, starid, ref_jd, reference_frame):
+def process(vastdir, resultdir, fitsdir, apikey, shapex, shapey, starid, ref_jd, reference_frame, sds, star_catalog,
+            refframes: List[RefFrame]):
     logging.info(f"Processing star {starid}")
     # getting the image records and rotation dict for star X
     image_records, rotation_dict = reading.get_star_jd_xy_rot(starid, vastdir)
     logging.debug(f"rotation dict has {len(rotation_dict)} entries")
     logging.debug(f"imagerecords has {len(image_records)} entries")
     df = pd.DataFrame(image_records)
-
-    # check if reference frame is good enough
     jddict = reading.jd_to_fitsfile_dict(vastdir)
-    refdf = df[df.jd == float(ref_jd)]
-    if len(refdf) == 1 and (abs(shapex / 2 - refdf.iloc[0].x) < shapex / 2 * 0.95) and (
-        abs(shapey / 2 - refdf.iloc[0].y) < shapey / 2 * 0.95):
-        logging.info("Choosing original refframe because star is on it.")
-        refrow = refdf.iloc[0]
-        chosen_record = ImageRecord(refrow.jd, refrow.x, refrow.y, refrow.file, 0.0)
-        wcs_file, _ = reading.read_wcs_file(vastdir)
-        platesolved_file = wcs_file
-        chosen_fits = jddict[float(ref_jd)]
-    else:
+
+    for frame in refframes:
+        # check if reference frame is good enough
+        refdf = df[df.jd == float(ref_jd)]
+        if len(refdf) == 1 and (abs(shapex / 2 - refdf.iloc[0].x) < shapex / 2 * 0.95) and (
+            abs(shapey / 2 - refdf.iloc[0].y) < shapey / 2 * 0.95):
+            logging.info(f"Choosing refframe {frame.path_to_reference_frame.name} because star {starid} is on it.")
+            refrow = refdf.iloc[0]
+            chosen_record = ImageRecord(refrow.jd, refrow.x, refrow.y, refrow.file, 0.0)
+            chosen_fits_fullpath = frame.path_to_reference_frame
+            platesolved_file = frame.path_to_solved
+            logging.info("Found platesolved file.")
+            break
+    # couldn't find a match in the existing refframes, let's find a new one
+    if not platesolved_file:
         logging.info("Choosing other fits frame because star is on it.")
         df = df[(df.x > 0) & (df.x < shapex) & (df.y > 0) & (df.y < shapey)]
         df['borderdistance'] = abs(shapex / 2 - df.x) + abs(shapey / 2 - df.y)
@@ -67,19 +87,13 @@ def process(vastdir, resultdir, fitsdir, apikey, shapex, shapey, starid, ref_jd,
         chosen_row = df.iloc[df['borderdistance'].idxmin()]
         chosen_jd = chosen_row.jd
         chosen_record = ImageRecord(chosen_jd, chosen_row.x, chosen_row.y, chosen_row.file, chosen_row.rotation)
-        chosen_fits = jddict[chosen_jd]
+        chosen_fits_fullpath = Path(fitsdir, jddict[chosen_jd])
         platesolved_file = Path(vastdir) / f'platesolve_{starid}.fits'
-    chosen_fits_fullpath = Path(fitsdir, chosen_fits)
-    chosen_rotation = rotation_dict[chosen_fits]
-    logging.info(f"platesolved file: {platesolved_file}, chosen fits: {chosen_fits}, {chosen_fits_fullpath}, "
-                 f"rotation: {chosen_rotation}")
-    if not os.path.isfile(platesolved_file):
         plate_solve(apikey, chosen_fits_fullpath, platesolved_file)
-    else:
-        logging.info("Found platesolved file.")
-    # construct star descriptions
-    sds = utils_sd.construct_star_descriptions(vastdir, None)
-    star_catalog = do_calibration.create_star_descriptions_catalog(sds)
+        refframes.append(RefFrame(chosen_jd, platesolved_file, chosen_fits_fullpath))
+    chosen_rotation = rotation_dict[chosen_fits_fullpath.name]
+    logging.info(f"platesolved file: {platesolved_file}, chosen fits: {chosen_fits_fullpath}, "
+                 f"rotation: {chosen_rotation}")
 
     # Get the 10 closest neighbours
     sd_dict = utils.get_localid_to_sd_dict(sds)
@@ -108,11 +122,11 @@ def plate_solve(apikey, chosen_fits_fullpath, output_file):
 
 
 def update_img(star: StarDescription, record: ImageRecord, neighbours: List[StarDescription], resultdir: str,
-               output_file: str):
+               platesolved_file: str):
     resultlines = []
     fig = plt.figure(figsize=(36, 32), dpi=160, facecolor='w', edgecolor='k')
-    wcs = do_calibration.get_wcs(output_file)
-    data, shapex, shapey = reading.get_fits_data(output_file)
+    wcs = do_calibration.get_wcs(platesolved_file)
+    data, shapex, shapey = reading.get_fits_data(platesolved_file)
     backgr = data.mean()
     data = data.reshape(shapex, shapey)
     data = np.pad(data, (padding, padding), 'constant', constant_values=(backgr, backgr))
@@ -205,6 +219,10 @@ if __name__ == '__main__':
                         nargs='?', required=True)
     parser.add_argument('--fitsdir', help="The dir where the fits are, only needed to plate-solve the reference frame",
                         required=True)
+    parser.add_argument('-a', '--radecs', help="Supply a file to identify stars known to you by RA/DEC",
+                        required=False)
+    parser.add_argument('-l', '--localids',
+                        help="Load a file local ids, these ids will be used for field charts/reporting")
     parser.add_argument('--apikey', '-k', dest='apikey',
                         help='API key for Astrometry.net web service; if not given will check AN_API_KEY environment variable')
     parser.add_argument('-s', '--stars', help="List the star id's to plot", nargs='+')
