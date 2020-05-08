@@ -31,10 +31,8 @@ RefFrame = namedtuple('RefFrame', 'ref_jd path_to_solved path_to_reference_frame
 ucac4 = UCAC4()
 
 
-# import scipy.misc
-# from skimage.draw import line_aa
-
 def inspect(vastdir, resultdir, fitsdir, apikey, stars):
+    """generate image+txt file to inspect a certain star on wrong ucac/localid nrs """
     inspect_resultdir = Path(resultdir) / 'inspect'
     reading.trash_and_recreate_dir(inspect_resultdir)
     ref_jd, _, _, reference_frame = reading.extract_reference_frame(vastdir)
@@ -142,7 +140,7 @@ def update_img(star: StarDescription, record: ImageRecord, neighbours: List[Star
     data = np.pad(data, (padding, padding), 'constant', constant_values=(backgr, backgr))
     # add main target
     add_circle(record.x, record.y, 3, 'b')
-    startoml = load_toml(star)
+    startoml = load_toml(star, resultdir)
     star.vmag = startoml['vmag']
     resultlines.append(log_star(star, -1))
     random_offset = False
@@ -162,15 +160,18 @@ def update_img(star: StarDescription, record: ImageRecord, neighbours: List[Star
             offset2 = ysignrand * yrandoffset
         # https://matplotlib.org/3.1.0/api/_as_gen/matplotlib.pyplot.arrow.html
         plt.annotate(f'{idx}', xy=(round(nstar.xpos), round(nstar.ypos)), xycoords='data',
-                     xytext=(offset1, offset2), textcoords='offset points', size=8,
+                     xytext=(offset1, offset2), textcoords='offset points', size=8, color='red',
                      arrowprops=dict(arrowstyle="-", facecolor='grey', color='grey', alpha=0.2))
         resultlines.append(log_star(nstar, idx))
 
     # loading and painting ucac stars
-    ucac_stars: List[MinimalStarTuple] = ucac4.get_ucac4_range_tuples(star.coords.ra.deg, star.coords.dec.deg, 0.1)
+    radius = 0.08
+    ucac_stars: List[MinimalStarTuple] = ucac4.get_ucac4_range_tuples(star.coords.ra.deg, star.coords.dec.deg, radius)
     logging.info(f"Looping on {len(ucac_stars)} UCAC4 stars")
     for ucac_star in ucac_stars:
         coord = SkyCoord(ucac_star.ra, ucac_star.dec, unit='deg')
+        if star.coords.separation(coord).degree > radius:
+            continue
         xy = SkyCoord.to_pixel(coord, wcs=wcs, origin=0)
         x, y = round(xy[0].item(0)), round(xy[1].item(0))
         # logging.info(f"Plotting {x}, {y}")
@@ -192,7 +193,7 @@ def update_img(star: StarDescription, record: ImageRecord, neighbours: List[Star
     plt.clf()
 
 
-def load_toml(star):
+def load_toml(star, resultdir):
     starui: utils.StarUI = utils.get_star_or_catalog_name(star)
     logging.info(f"starui: {starui}")
     txt_path = Path(resultdir) / "phase_selected" / "txt" / f'{starui.filename_no_suff_no_ext}.txt'
@@ -226,6 +227,7 @@ def add_circle(xpos, ypos, radius: float, color: str):
     target_app.plot(color=color, alpha=0.7)
 
 
+# kinda duplicate, move to util or something
 def add_pixels(star, wcs, offset):
     star_coord = star.coords
     xy = SkyCoord.to_pixel(star_coord, wcs=wcs, origin=0, mode='all')
@@ -258,7 +260,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     datadir = utils.add_trailing_slash(args.datadir)
     datenow = datetime.now()
-    resultdir = Path(args.resultdir)
     filehandler = f"{datadir}vastlog-{datenow:%Y%M%d-%H_%M_%S}.log"
     fh = logging.FileHandler(filehandler)
     fh.setLevel(logging.INFO)
@@ -269,7 +270,6 @@ if __name__ == '__main__':
         fh.setLevel(logging.DEBUG)
 
     assert os.path.exists(args.datadir), "datadir does not exist"
-    # assert os.path.exists(args.resultdir), "resultdir does not exist" ==> this dir is created
     assert os.path.exists(args.resultdir), "resultdir does not exist"
     assert os.path.exists(args.fitsdir), "fitsdir does not exist"
     inspect(datadir, args.resultdir, args.fitsdir, args.apikey, args.stars)
