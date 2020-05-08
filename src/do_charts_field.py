@@ -155,7 +155,7 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
 
     # field chart with all detections
     logging.info("Plotting field chart with all detected stars...")
-    fig = plot_it([all_stars_no_label], [4.], [False], fits_data, wcs, "All detected stars", PADDING)
+    fig = plot_it([all_stars_no_label], [4.], [False], fits_data, wcs, "All detected stars", PADDING, annotate=False)
     save(fig, fieldchartsdirs + 'all_detections_{}_stars'.format(len(all_stars_no_label)))
 
     # vsx stars get their aavso id label
