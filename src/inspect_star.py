@@ -33,8 +33,7 @@ ucac4 = UCAC4()
 
 def inspect(vastdir, resultdir, fitsdir, apikey, stars):
     """generate image+txt file to inspect a certain star on wrong ucac/localid nrs """
-    inspect_resultdir = Path(resultdir) / 'inspect'
-    reading.trash_and_recreate_dir(inspect_resultdir)
+    reading.trash_and_recreate_dir(Path(resultdir) / 'inspect')
     ref_jd, _, _, reference_frame = reading.extract_reference_frame(vastdir)
     _, shapex, shapey = reading.get_fits_data(Path(fitsdir, Path(reference_frame).name))
     refframes: List[RefFrame] = [RefFrame(ref_jd, Path(vastdir) / 'new-image.fits',
@@ -54,7 +53,7 @@ def inspect(vastdir, resultdir, fitsdir, apikey, stars):
     else:
         stars = sorted([x.local_id for x in sds if x.get_metadata("SELECTEDFILE")])
     for starid in stars:
-        process(vastdir, inspect_resultdir, fitsdir, apikey, shapex, shapey, starid, ref_jd, reference_frame, sds,
+        process(vastdir, resultdir, fitsdir, apikey, shapex, shapey, starid, ref_jd, reference_frame, sds,
                 star_catalog, refframes)
 
 
@@ -184,8 +183,8 @@ def update_img(star: StarDescription, record: ImageRecord, neighbours: List[Star
     #     data = ndimage.interpolation.rotate(data, record.rotation)
     plt.imshow(data, cmap='gray_r', origin='lower', vmin=0, vmax=min(median * 5, 65536))
     starui = utils.get_star_or_catalog_name(star)
-    save_inspect_image = Path(resultdir, f'inspect_star_{starui.filename_no_ext}.png')
-    save_inspect_txt = Path(resultdir, f'inspect_star_{starui.filename_no_ext}.txt')
+    save_inspect_image = Path(Path(resultdir) / 'inspect', f'inspect_star_{starui.filename_no_ext}.png')
+    save_inspect_txt = Path(Path(resultdir) / 'inspect', f'inspect_star_{starui.filename_no_ext}.txt')
     fig.savefig(save_inspect_image)
     logging.info(f"Saved file as {save_inspect_image}.")
     write_file(star, save_inspect_txt, resultlines)
