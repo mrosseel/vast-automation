@@ -53,7 +53,7 @@ def convert(args):
     extradata = data.to_dict(orient='records')
     vsx_dict = {'ra_deg_np': ra_deg_np, 'dec_deg_np': dec_deg_np, 'extradata': extradata}
 
-    print(f"Writing {outfile}...")
+    print(f"Writing {outfile} with {len(vsx_dict)} stars ...")
     # From Python 3.6 onwards, the standard dict type maintains insertion order by default. => no OrderedDict necessary
     with open(outfile, 'wb') as fp:
         pickle.dump(vsx_dict, fp)

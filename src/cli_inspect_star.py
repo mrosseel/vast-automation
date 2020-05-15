@@ -106,7 +106,7 @@ def process(vastdir, resultdir, fitsdir, apikey, shapex, shapey, starid, ref_jd,
     sd_dict = utils.get_localid_to_sd_dict(sds)
     chosen_star_sd = sd_dict[starid]
     neighbours = []
-    for neigh in range(2, 12):
+    for neigh in range(2, 22):
         idx, d2d, _ = match_coordinates_sky(chosen_star_sd.coords, star_catalog, nthneighbor=neigh)
         neighbours.append(sds[idx])
     add_ucac4(neighbours)
