@@ -109,14 +109,9 @@ def process(vastdir, resultdir, fitsdir, apikey, shapex, shapey, starid, ref_jd,
     for neigh in range(2, 22):
         idx, d2d, _ = match_coordinates_sky(chosen_star_sd.coords, star_catalog, nthneighbor=neigh)
         neighbours.append(sds[idx])
-    add_ucac4(neighbours)
-    add_ucac4([chosen_star_sd])
+    ucac4.add_ucac4_to_sd(neighbours)
+    ucac4.add_ucac4_to_sd([chosen_star_sd])
     update_img(chosen_star_sd, chosen_record, neighbours, resultdir, platesolved_file)
-
-
-def add_ucac4(stars: List[StarDescription]):
-    ucac4 = UCAC4()
-    ucac4.add_ucac4_to_sd(stars)
 
 
 # platesolve the best frame for this star

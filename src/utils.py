@@ -263,6 +263,14 @@ def get_ucac4_of_sd(star: StarDescription) -> CatalogData:
     return catdata
 
 
+def get_full_ucac4_id(ucac4_input: str) -> str:
+    """ Takes a partial ucac4 id and makes it complete. E.g.: '233-155284' ==> 'UCAC4 233-155284'"""
+    # UCAC4 233-155284
+    if len(ucac4_input) >= 10:
+        return f"UCAC4 {ucac4_input[-10:]}"
+    return None
+
+
 # replace spaces with dashes
 def replace_dots(a_string: str):
     return a_string.replace('.', '-')

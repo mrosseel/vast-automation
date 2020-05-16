@@ -31,8 +31,9 @@ RefFrame = namedtuple('RefFrame', 'ref_jd path_to_solved path_to_reference_frame
 ucac4 = UCAC4()
 
 
-def process(stars):
-    print(stars)
+def process(stars_input):
+    logging.debug(f"Stars: {stars_input}")
+    stars = list(map(lambda x: utils.get_full_ucac4_id(x), stars_input))
     star1 = ucac4.get_ucac4_details(stars[0])[0]
     sd1 = ucac4.get_ucac4_star_description_fromtuple(*star1)
     star2 = ucac4.get_ucac4_details(stars[1])[0]
