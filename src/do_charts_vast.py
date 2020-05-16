@@ -6,6 +6,8 @@ from matplotlib.ticker import FormatStrFormatter
 import main_vast
 import do_compstars
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
+import matplotlib as mplotlib
 import seaborn as sns
 import multiprocessing as mp
 import tqdm
@@ -14,10 +16,9 @@ import do_aavso_report
 import do_calibration
 import reading
 import utils
-import argparse
+import math
 import logging
 import gc
-import matplotlib as mplotlib
 from collections import namedtuple
 from multiprocessing import cpu_count, Manager
 from comparison_stars import ComparisonStars
@@ -88,6 +89,7 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
             logging.info(f"Curve is None for star {star_id}")
             return
 
+        # e.g for phase locked curve
         if jd_adjusting_func is None:
             curve['realJD'] = curve['floatJD']
         else:
@@ -101,19 +103,24 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
         plt.xlabel(xlabel, labelpad=TITLE_PAD)
         curve_max = curve['realV'].max()
         curve_min = curve['realV'].min()
+        jd_min = curve['realJD'].min()
+        jd_max = curve['realJD'].max()
         plot_max = curve_max + 0.1
         plot_min = curve_min - 0.1
         plt.ylim(plot_min, plot_max)
-        nop = lambda *a, **k: None
-        print("limits are here:", star_id, "min:", curve['realJD'].min(), "max", curve['realJD'].max(),
-              "first 10", curve['realJD'][:10], "first 10 orig:", curve['floatJD'][:10], "len", len(curve['realJD']),
-              "describe", curve['realJD'].describe()) \
-            if curve['realJD'].max() == 0 else nop()
+        plt.xlim(jd_min, jd_max)
+        # plt.xticks(range(math.floor(jd_min), math.ceil(jd_max)))
 
-        plt.xlim(curve['realJD'].min(), curve['realJD'].max())
+        # nop = lambda *a, **k: None
+        # print("limits are here:", star_id, "min:", curve['realJD'].min(), "max", curve['realJD'].max(),
+        #       "first 10", curve['realJD'][:10], "first 10 orig:", curve['floatJD'][:10], "len", len(curve['realJD']),
+        #       "describe", curve['realJD'].describe()) \
+        #     if curve['realJD'].max() == 0 else nop()
+
         plt.gca().invert_yaxis()
-        # plt.ticklabel_format(style='plain', axis='x')
+        plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
         plt.title(plot_title, pad=TITLE_PAD)
+        plt.ticklabel_format(useOffset=False, style='plain')
         if rotate:
             plt.xticks(rotation=25)
         plt.tight_layout()
