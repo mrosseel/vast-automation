@@ -27,8 +27,7 @@ def main(vastdir, star):
         idx, d2d, _ = match_coordinates_sky(ucacsd.coords, star_catalog, nthneighbor=neigh)
         neighbours.append(sds[idx])
     ucac4.add_ucac4_to_sd(neighbours)
-    logging.info('\n'.join([f'Star {x.local_id}: {x}' for x in neighbours]))
-    logging.info(f"star 83 has separation: {ucacsd.coords.separation(sd_dict[83].coords)}")
+    logging.info('\n'+'\n'.join([f'Star {x.local_id}: {x}' for x in neighbours]))
 
 
 if __name__ == '__main__':
