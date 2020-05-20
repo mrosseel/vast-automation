@@ -172,7 +172,7 @@ def update_img(star: StarDescription, record: ImageRecord, neighbours: List[Star
         if star.coords.separation(coord).degree > radius:
             continue
         xy = SkyCoord.to_pixel(coord, wcs=wcs, origin=0)
-        # logging.info(f"Plotting {x}, {y}")
+        x, y = round(xy[0].item(0)), round(xy[1].item(0))
         add_circle(x, y, 2, 'c')
         plt.annotate(f'{ucac_star.id[-3:]}', xy=(x, y), xycoords='data',
                      xytext=(2, 2), textcoords='offset points', size=UCAC4_TEXT_SIZE,
@@ -238,7 +238,6 @@ def log_star(star, idx):
 
 
 def add_circle(xpos, ypos, radius: float, color: str):
-    print("Adding circles at pos ", xpos, ypos)
     target_app = CircularAperture((xpos, ypos), r=radius)
     target_app.plot(color=color, alpha=0.7)
 
