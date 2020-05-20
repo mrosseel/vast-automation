@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from astropy.coordinates import SkyCoord
 import matplotlib.pyplot as plt
+from functools import partial
 from photutils import aperture_photometry, CircularAperture
 from astropy.coordinates import match_coordinates_sky
 from pathlib import Path
@@ -26,7 +27,9 @@ from star_description import StarDescription
 from ucac4 import UCAC4, MinimalStarTuple
 
 padding = 0
-dpi = 100
+dpi = 300
+NEIGHBOUR_TEXT_SIZE = 4
+UCAC4_TEXT_SIZE = 3
 RefFrame = namedtuple('RefFrame', 'ref_jd path_to_solved path_to_reference_frame')
 ucac4 = UCAC4()
 
@@ -126,12 +129,14 @@ def plate_solve(apikey, chosen_fits_fullpath, output_file):
 def update_img(star: StarDescription, record: ImageRecord, neighbours: List[StarDescription], resultdir: str,
                platesolved_file: str):
     resultlines = []
-    fig = plt.figure(figsize=(36, 32), dpi=160, facecolor='w', edgecolor='k')
+    fig = plt.figure(figsize=(36, 32), dpi=dpi, facecolor='w', edgecolor='k')
     wcs = do_calibration.get_wcs(platesolved_file)
     data, shapex, shapey = reading.get_fits_data(platesolved_file)
     backgr = data.mean()
     data = data.reshape(shapex, shapey)
     data = np.pad(data, (padding, padding), 'constant', constant_values=(backgr, backgr))
+    starxy = SkyCoord.to_pixel(star.coords, wcs=wcs, origin=0)
+
     # add main target
     add_circle(record.x, record.y, 3, 'b')
     startoml = load_toml(star, resultdir)
@@ -154,7 +159,7 @@ def update_img(star: StarDescription, record: ImageRecord, neighbours: List[Star
             offset2 = ysignrand * yrandoffset
         # https://matplotlib.org/3.1.0/api/_as_gen/matplotlib.pyplot.arrow.html
         plt.annotate(f'{idx}', xy=(round(nstar.xpos), round(nstar.ypos)), xycoords='data',
-                     xytext=(offset1, offset2), textcoords='offset points', size=8, color='red',
+                     xytext=(offset1, offset2), textcoords='offset points', size=NEIGHBOUR_TEXT_SIZE, color='red',
                      arrowprops=dict(arrowstyle="-", facecolor='grey', color='grey', alpha=0.2))
         resultlines.append(log_star(nstar, idx))
 
@@ -167,15 +172,15 @@ def update_img(star: StarDescription, record: ImageRecord, neighbours: List[Star
         if star.coords.separation(coord).degree > radius:
             continue
         xy = SkyCoord.to_pixel(coord, wcs=wcs, origin=0)
-        x, y = round(xy[0].item(0)), round(xy[1].item(0))
         # logging.info(f"Plotting {x}, {y}")
         add_circle(x, y, 2, 'c')
         plt.annotate(f'{ucac_star.id[-3:]}', xy=(x, y), xycoords='data',
-                     xytext=(2, 2), textcoords='offset points', size=6,
+                     xytext=(2, 2), textcoords='offset points', size=UCAC4_TEXT_SIZE,
                      arrowprops=dict(arrowstyle="-", facecolor='grey', color='grey', alpha=0.2))
 
     median = np.median(data)
     #     data = ndimage.interpolation.rotate(data, record.rotation)
+
     plt.imshow(data, cmap='gray_r', origin='lower', vmin=0, vmax=min(median * 5, 65536))
     starui = utils.get_star_or_catalog_name(star)
     save_inspect_image = Path(Path(resultdir) / 'inspect', f'inspect_star_{starui.filename_no_ext}.png')
@@ -185,6 +190,22 @@ def update_img(star: StarDescription, record: ImageRecord, neighbours: List[Star
     write_file(star, save_inspect_txt, resultlines)
     plt.close(fig)
     plt.clf()
+
+
+# UNUSED ATM
+# returns cropped image and coordinate transformer
+def crop_around(img, aroundx: float, aroundy: float, halfwidth: int):
+    y, x = img.shape
+    # startx = x // 2 - (cropx // 2)
+    startx = max(0, int(aroundx) - halfwidth)
+    # starty = y // 2 - (cropy // 2)
+    starty = max(0, int(aroundy) - halfwidth)
+    translater = partial(coord_translate, centerx=aroundx, centery=aroundy, halfwidth=halfwidth)
+    return img[starty:min(y, starty + halfwidth), startx:min(x, startx + halfwidth)], translater
+
+# UNUSED ATM and not correct
+def coord_translate(xin, yin, centerx, centery, halfwidth: int):
+    return xin - centerx + halfwidth, yin - centery + halfwidth
 
 
 def load_toml(star, resultdir):
@@ -217,6 +238,7 @@ def log_star(star, idx):
 
 
 def add_circle(xpos, ypos, radius: float, color: str):
+    print("Adding circles at pos ", xpos, ypos)
     target_app = CircularAperture((xpos, ypos), r=radius)
     target_app.plot(color=color, alpha=0.7)
 
@@ -226,8 +248,7 @@ def add_pixels(star, wcs, offset):
     star_coord = star.coords
     xy = SkyCoord.to_pixel(star_coord, wcs=wcs, origin=0, mode='all')
     x, y = round(xy[0].item(0)), round(xy[1].item(0))
-    star.xpos = x + offset
-    star.ypos = y + offset
+    star.xpos, star.ypos = x, y
 
 
 if __name__ == '__main__':
