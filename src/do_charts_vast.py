@@ -401,9 +401,11 @@ def lombscargle_period_calculate(df: DataFrame, star: StarDescription) -> Tuple[
 
 
 def determine_period_and_epoch(df: DataFrame, star: StarDescription, method=lombscargle_period_calculate) -> Tuple[Period, str]:
-    logging.info(f"determining period {star.local_id}, {method}")
+    print(f"determining period {star.local_id}, {method}")
     if star.has_metadata("SITE") and star.get_metadata("SITE").period is not None:
+        print(f'It is a site and has a period {star} {star.get_metadata("SITE").period}')
         return _preset_period(star)
+    print("Running the method")
     return method(df.copy(), star)
 
 
