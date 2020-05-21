@@ -329,6 +329,7 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, star_result_dict
                                                     None, "PHOTOMETRY", star.coords)
         starui: utils.StarUI = utils.get_star_or_catalog_name(star, suffix="")
         period, epoch = determine_period_and_epoch(df, star)
+        logging.info(f"Found period, epoch of {period}, {epoch}")
 
         df, points_removed = phase_dependent_outlier_removal(df, period)
         temp_dict['compstars'] = write_compstars(star, starui.filename_no_ext, phasedir, filtered_compstars, check_star)
