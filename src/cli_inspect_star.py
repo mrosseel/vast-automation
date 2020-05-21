@@ -203,6 +203,7 @@ def crop_around(img, aroundx: float, aroundy: float, halfwidth: int):
     translater = partial(coord_translate, centerx=aroundx, centery=aroundy, halfwidth=halfwidth)
     return img[starty:min(y, starty + halfwidth), startx:min(x, startx + halfwidth)], translater
 
+
 # UNUSED ATM and not correct
 def coord_translate(xin, yin, centerx, centery, halfwidth: int):
     return xin - centerx + halfwidth, yin - centery + halfwidth
@@ -214,6 +215,8 @@ def load_toml(star, resultdir):
     txt_path = Path(resultdir) / "phase_selected" / "txt" / f'{starui.filename_no_suff_no_ext}.txt'
     if not os.path.isfile(txt_path):
         txt_path = Path(resultdir) / "phase_selected" / "txt" / f'{star.local_id:05}.txt'
+    if not os.path.isfile(txt_path):
+        txt_path = Path(resultdir) / "phase_candidates" / "txt" / f'{star.local_id:05}.txt'
     logging.debug("txtpath", txt_path)
     try:
         parsed_toml = toml.load(txt_path)
