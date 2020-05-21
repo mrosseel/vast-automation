@@ -401,9 +401,11 @@ def lombscargle_period_calculate(df: DataFrame, star: StarDescription) -> Tuple[
 
 
 def determine_period_and_epoch(df: DataFrame, star: StarDescription, method=lombscargle_period_calculate) -> Tuple[Period, str]:
-    logging.info(f"determining period {star.local_id}, {method}")
+    print(f"determining period {star.local_id}, {method}")
     if star.has_metadata("SITE") and star.get_metadata("SITE").period is not None:
+        print(f'It is a site and has a period {star} {star.get_metadata("SITE").period}')
         return _preset_period(star)
+    print("Running the method")
     return method(df.copy(), star)
 
 
@@ -427,6 +429,7 @@ def calculate_ls_period(t_np, y_np, dy_np) -> Period:
     ls = LombScargleFast(optimizer_kwds={'quiet': True, 'period_range': (0.01, period_max)},
                          silence_warnings=True, fit_period=True).fit(t_np, y_np, dy_np)
     period = ls.best_period
+    logging.debug(f"len t_np {len(t_np)}, len y_np: {len(y_np)}, len dy_np : {len(dy_np)}, ls: {ls}, period: {period}")
     return Period(period, "LS")
     # TODO test this trended lombscargle !
     # tmodel = TrendedLombScargle(optimizer_kwds={'quiet': True, 'period_range': (0.01, period_max)},
