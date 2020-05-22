@@ -424,6 +424,7 @@ def calculate_ls_period_from_df(df: DataFrame) -> Period:
 
 def calculate_ls_period(t_np, y_np, dy_np) -> Period:
     period_max = np.max(t_np) - np.min(t_np)
+    logging.debug(f"period max and min {np.max(t_np) - np.min(t_np)}")
     if period_max <= 0.01:
         return
     ls = LombScargleFast(optimizer_kwds={'quiet': True, 'period_range': (0.01, period_max)},
