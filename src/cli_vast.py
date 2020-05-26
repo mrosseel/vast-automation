@@ -47,7 +47,11 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--laststars', help="Use the star descriptions of the previous run to do the charting",
                         action="store_true")
     parser.add_argument('-u', '--upsilon', help="Add upsilon star info to charting", action="store_true")
-    parser.add_argument('--jdfilter', help="Filters out a range of JD's", nargs='+', type=float, required=False)
+    parser.add_argument('--jdfilter', help="Filters out a range of JD's. Filters every JD between the first and "
+                                           "the second argument. If the second argument is smaller than the first, "
+                                           "the filter wraps around and everything greater than the first is excluded,"
+                                           " and everything up to the second argument.",
+                        nargs='+', type=float, required=False)
     parser.add_argument('--jdrefignore', help="Igone that the ref frame jd is inside of the filter", action="store_true")
     args = parser.parse_args()
     datadir = utils.add_trailing_slash(args.datadir)

@@ -316,6 +316,9 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, star_result_dict
         df['floatJD'] = df['JD'].astype(np.float)
         if jdfilter is not None:
             df = df[(df.floatJD <= jdfilter[0]) | (df.floatJD >= jdfilter[1])]
+            if len(df) < 2:
+                logging.warning(f"Applying the jdfilter caused the lightcurve to contain less than 2 points! "
+                                f"Everything between {jdfilter[0]} and {jdfilter[1]} is thrown away")
         if df is None or len(df) == 0:
             logging.info(f"No lightcurve found for {star.path}")
             return
@@ -329,7 +332,6 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, star_result_dict
                                                     None, "PHOTOMETRY", star.coords)
         starui: utils.StarUI = utils.get_star_or_catalog_name(star, suffix="")
         period, epoch = determine_period_and_epoch(df, star)
-        logging.info(f"Found period, epoch of {period}, {epoch}")
 
         df, points_removed = phase_dependent_outlier_removal(df, period)
         temp_dict['compstars'] = write_compstars(star, starui.filename_no_ext, phasedir, filtered_compstars, check_star)
@@ -401,11 +403,8 @@ def lombscargle_period_calculate(df: DataFrame, star: StarDescription) -> Tuple[
 
 
 def determine_period_and_epoch(df: DataFrame, star: StarDescription, method=lombscargle_period_calculate) -> Tuple[Period, str]:
-    print(f"determining period {star.local_id}, {method}")
     if star.has_metadata("SITE") and star.get_metadata("SITE").period is not None:
-        print(f'It is a site and has a period {star} {star.get_metadata("SITE").period}')
         return _preset_period(star)
-    print("Running the method")
     return method(df.copy(), star)
 
 
@@ -424,13 +423,11 @@ def calculate_ls_period_from_df(df: DataFrame) -> Period:
 
 def calculate_ls_period(t_np, y_np, dy_np) -> Period:
     period_max = np.max(t_np) - np.min(t_np)
-    logging.debug(f"period max and min {np.max(t_np) - np.min(t_np)}")
     if period_max <= 0.01:
         return
     ls = LombScargleFast(optimizer_kwds={'quiet': True, 'period_range': (0.01, period_max)},
                          silence_warnings=True, fit_period=True).fit(t_np, y_np, dy_np)
     period = ls.best_period
-    logging.debug(f"len t_np {len(t_np)}, len y_np: {len(y_np)}, len dy_np : {len(dy_np)}, ls: {ls}, period: {period}")
     return Period(period, "LS")
     # TODO test this trended lombscargle !
     # tmodel = TrendedLombScargle(optimizer_kwds={'quiet': True, 'period_range': (0.01, period_max)},
