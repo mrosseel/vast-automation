@@ -33,17 +33,15 @@ Needed: python 3.7.7 (3.8 doesn't work yet)
 
 ### run the command
 
-Install a virtual environment (do this once):
+Install pipenv to manage the python dependencies.
 
-`python3 -m venv .venv`
+Install the dependencies and the virtual environment (do this once):
+
+`pipenv install`
 
 Activate a python virtual environment (do this every time):
 
-`source .venv/bin/activate`
-
-Make sure you have all the necessary python dependencies (do this once):
-
-`python -m pip install -r requirements.txt`
+`pipenv shell`
 
 Run the actual processing software to get all options:
 

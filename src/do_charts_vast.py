@@ -328,8 +328,8 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, star_result_dict
         df['realV'], df['realErr'] = do_compstars.calculate_ensemble_photometry(
             df, filtered_compstars, do_compstars.weighted_value_ensemble_method)
         df = df.dropna(subset=['realV', 'realErr'])  # drop rows where the ensemble photometry failed
-        do_calibration.add_info_to_star_description(star, df['realV'].mean(), df['realErr'].mean(),
-                                                    None, "PHOTOMETRY", star.coords)
+        do_calibration.add_catalog_data_to_sd(star, df['realV'].mean(), df['realErr'].mean(),
+                                              None, "PHOTOMETRY", star.coords)
         starui: utils.StarUI = utils.get_star_or_catalog_name(star, suffix="")
         period, epoch = determine_period_and_epoch(df, star)
 

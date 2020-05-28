@@ -12,8 +12,8 @@ from ucac4 import UCAC4
 def main(vastdir, star):
     ucac4 = UCAC4()
     # get UCAC4 sd for search later
-    ucac_details = ucac4.get_ucac4_details(utils.get_full_ucac4_id(star))
-    ucacsd = ucac4.get_ucac4_star_description_fromtuple(*ucac_details[0])
+    ucac_details = ucac4.get_ucactuple_from_id(utils.get_full_ucac4_id(star))
+    ucacsd = ucac4.get_star_description_from_tuple(*ucac_details[0])
     logging.info(f"Found UCAC4: {ucacsd}")
 
     # construct star descriptions
@@ -26,7 +26,7 @@ def main(vastdir, star):
     for neigh in range(1, 22):
         idx, d2d, _ = match_coordinates_sky(ucacsd.coords, star_catalog, nthneighbor=neigh)
         neighbours.append(sds[idx])
-    ucac4.add_ucac4_to_sd(neighbours)
+    ucac4.add_sd_metadatas(neighbours)
     logging.info('\n'+'\n'.join([f'Star {x.local_id}: {x}' for x in neighbours]))
 
 

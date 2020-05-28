@@ -16,7 +16,7 @@ def process_file(uc, zone_nr, bucket, process_func):
     for run_nr in run_nrs:
         # logging.debug(f"unpack: {uc.zone_star_length * run_nr}:{uc.zone_star_length * (run_nr+1) +1}")
         result = uc.unpack_zone_fileformat(filecontent[uc.zone_star_length * run_nr:uc.zone_star_length * (run_nr+1)])
-        star = uc.make_star(result)
+        star = uc.make_startuple(result)
         stars.append(star)
     return process_func(uc, zone_nr, bucket, run_nrs, stars)
 

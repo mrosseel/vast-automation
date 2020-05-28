@@ -47,10 +47,10 @@ def inspect(vastdir, resultdir, fitsdir, apikey, stars):
     star_catalog = do_calibration.create_star_descriptions_catalog(sds)
 
     if args.radecs:
-        main_vast.tag_owncatalog(args.owncatalog, sds)
+        main_vast.read_and_tag_radec(args.owncatalog, sds)
     if args.localids:
         stardict = main_vast.get_localid_to_sd_dict(sds)
-        main_vast.tag_selected(args.localids, stardict)
+        main_vast.read_and_tag_localid(args.localids, stardict)
     if args.stars:
         stars = sorted(list(map(lambda x: int(x), stars)))
     else:
@@ -112,8 +112,8 @@ def process(vastdir, resultdir, fitsdir, apikey, shapex, shapey, starid, ref_jd,
     for neigh in range(2, 22):
         idx, d2d, _ = match_coordinates_sky(chosen_star_sd.coords, star_catalog, nthneighbor=neigh)
         neighbours.append(sds[idx])
-    ucac4.add_ucac4_to_sd(neighbours)
-    ucac4.add_ucac4_to_sd([chosen_star_sd])
+    ucac4.add_sd_metadatas(neighbours)
+    ucac4.add_sd_metadatas([chosen_star_sd])
     update_img(chosen_star_sd, chosen_record, neighbours, resultdir, platesolved_file)
 
 
@@ -165,7 +165,7 @@ def update_img(star: StarDescription, record: ImageRecord, neighbours: List[Star
 
     # loading and painting ucac stars
     radius = 0.08
-    ucac_stars: List[MinimalStarTuple] = ucac4.get_ucac4_range_tuples(star.coords.ra.deg, star.coords.dec.deg, radius)
+    ucac_stars: List[MinimalStarTuple] = ucac4.get_region_minimal_star_tuples(star.coords.ra.deg, star.coords.dec.deg, radius)
     logging.info(f"Looping on {len(ucac_stars)} UCAC4 stars")
     for ucac_star in ucac_stars:
         coord = SkyCoord(ucac_star.ra, ucac_star.dec, unit='deg')

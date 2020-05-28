@@ -34,10 +34,10 @@ ucac4 = UCAC4()
 def process(stars_input):
     logging.debug(f"Stars: {stars_input}")
     stars = list(map(lambda x: utils.get_full_ucac4_id(x), stars_input))
-    star1 = ucac4.get_ucac4_details(stars[0])[0]
-    sd1 = ucac4.get_ucac4_star_description_fromtuple(*star1)
-    star2 = ucac4.get_ucac4_details(stars[1])[0]
-    sd2 = ucac4.get_ucac4_star_description_fromtuple(*star2)
+    star1 = ucac4.get_ucactuple_from_id(stars[0])[0]
+    sd1 = ucac4.get_star_description_from_tuple(*star1)
+    star2 = ucac4.get_ucactuple_from_id(stars[1])[0]
+    sd2 = ucac4.get_star_description_from_tuple(*star2)
     logging.info(f"Separation from {stars[0]} to {stars[1]} = {sd1.coords.separation(sd2.coords)}")
 
 

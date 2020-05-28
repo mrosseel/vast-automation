@@ -34,6 +34,7 @@ from utils import StarDict
 vsx_catalog_name = "vsx_catalog.bin"
 vsxcatalogdir = PurePath(os.getcwd(), vsx_catalog_name)
 STAR_KEEPER_PERCENTAGE = 0.1
+ucac4 = UCAC4()
 
 
 def run_do_rest(args):
@@ -156,14 +157,13 @@ def run_do_rest(args):
 # Either read UCAC4 check stars from a file, or calculate our own comparison stars
 def set_comp_stars_and_ucac4(star_descriptions: List[StarDescription], selectedstars: List[StarDescription],
                              checkstarfile: str, vastdir: str, stardict: StarDict, ref_jd: str) -> ComparisonStars:
-    ucac4 = UCAC4()
     if checkstarfile:
         # load comparison stars
         checkstars = read_checkstars(checkstarfile)
-        ucac4.add_ucac4_to_sd(selectedstars)
+        ucac4.add_sd_metadatas(selectedstars)
         comparison_stars_ids, comparison_stars_1_sds = do_compstars.get_fixed_compstars(star_descriptions, checkstars)
     else:
-        ucac4.add_ucac4_to_sd(star_descriptions)
+        ucac4.add_sd_metadatas(star_descriptions)
         comparison_stars_ids, comparison_stars_1_sds = do_compstars.get_calculated_compstars(vastdir, stardict,
                                                                                              ref_jd)
     # get all observations for the comparison stars
@@ -382,14 +382,14 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, args):
 
     # adds sitedata to selected stars
     if args.selectedstarfile:
-        tag_selected(args.selectedstarfile, stardict)
+        read_and_tag_localid(args.selectedstarfile, stardict)
         logging.debug(
             f"Succesfully read {len(list(filter(lambda x: x.has_metadata('SELECTEDFILE'), star_descriptions)))} "
             f"stars from file:"
             f" {[x.local_id for x in list(filter(lambda x: x.has_metadata('SELECTEDFILE'), star_descriptions))]}")
 
     if args.owncatalog:
-        tag_owncatalog(args.owncatalog, star_descriptions)
+        read_and_tag_radec(args.owncatalog, star_descriptions)
 
     return star_descriptions
 
@@ -398,45 +398,6 @@ def tag_candidates(vastdir: str, star_descriptions: List[StarDescription]):
     candidate_ids = get_autocandidates(vastdir)
     candidate_stars = do_calibration.select_star_descriptions(candidate_ids, star_descriptions)
     do_calibration.add_metadata_to_star_descriptions(candidate_stars, ["CANDIDATE"], strict=False)
-
-
-def tag_selected(selectedstarfile: str, stardict: StarDict):
-    try:
-        df = pd.read_csv(selectedstarfile, delimiter=',', comment='#',
-                         names=['our_name', 'local_id', 'minmax', 'min', 'max', 'var_type', 'period', 'period_err',
-                                'epoch'],
-                         dtype={'local_id': int, 'minmax': str, 'epoch': float},
-                         skipinitialspace=True, warn_bad_lines=True)
-        df = df.replace({np.nan: None})
-        logging.info(f"Selecting {len(df)} stars added by {selectedstarfile}: {df['local_id'].to_numpy()}")
-        for idx, row in df.iterrows():
-            the_star: StarDescription = stardict.get(row['local_id'])
-            if the_star is None:
-                logging.error(f"Could not find star {row['local_id']}, consider removing it from your txt file")
-                continue
-            the_star.metadata = SiteData(minmax=row['minmax'],
-                                         var_min=row['min'],
-                                         var_max=row['max'],
-                                         var_type=row['var_type'],
-                                         our_name=row['our_name'],
-                                         period=float(row['period'])
-                                         if row['period'] is not None and row['period'] is not 'None' else None,
-                                         period_err=float(row['period_err'])
-                                         if row['period_err'] is not None and row['period_err'] is not 'None' else None,
-                                         source="OWN",
-                                         epoch=row['epoch'])
-            the_star.metadata = SelectedFileData()
-            logging.debug(f"starfile {the_star.local_id} metadata: {the_star.metadata}, "
-                          f"{the_star.get_metadata('SELECTEDFILE')}")
-            logging.debug(f"starfile {the_star.get_metadata('SELECTEDFILE')}")
-        logging.debug(f"Tagged {len(df)} stars as selected by file.")
-    except Exception as ex:
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-        message = template.format(type(ex).__name__, ex.args)
-        import traceback
-        print(traceback.print_exc())
-        logging.error(message)
-        logging.error(f"Could not read {selectedstarfile}, star {row['local_id']}")
 
 
 def tag_vsx_as_selected(vsx_stars: List[StarDescription]):
@@ -490,6 +451,8 @@ def tag_candidates_as_selected(candidate_stars: List[StarDescription]):
 
 def construct_vsx_mag_range(entry):
     """ Constructs the min-max rang of a VSX star using an entry from the VSX file """
+
+
     def empty_if_nan(x):
         if type(x) is str:
             return x
@@ -501,15 +464,56 @@ def construct_vsx_mag_range(entry):
            f"{empty_if_nan(entry['min'])} {empty_if_nan(entry['u_min'])} {empty_if_nan(entry['n_min'])}"
 
 
-def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
+def read_and_tag_localid(selectedstarfile: str, stardict: StarDict):
+    try:
+        df = pd.read_csv(selectedstarfile, delimiter=',', comment='#',
+                         names=['our_name', 'local_id', 'ucac4_name', 'ucac4_force', 'minmax', 'min', 'max',
+                                'var_type', 'period', 'period_err', 'epoch'],
+                         dtype={'local_id': int, 'minmax': str, 'epoch': float, 'ucac4_force': bool},
+                         skipinitialspace=True, warn_bad_lines=True)
+        df = df.replace({np.nan: None})
+        logging.info(f"Selecting {len(df)} stars added by {selectedstarfile}: {df['local_id'].to_numpy()}")
+        for idx, row in df.iterrows():
+            the_star: StarDescription = stardict.get(row['local_id'])
+            if the_star is None:
+                logging.error(f"Could not find star {row['local_id']}, consider removing it from your txt file")
+                continue
+            the_star.metadata = SiteData(minmax=row['minmax'],
+                                         var_min=row['min'],
+                                         var_max=row['max'],
+                                         var_type=row['var_type'],
+                                         our_name=row['our_name'],
+                                         period=float(row['period'])
+                                         if row['period'] is not None and row['period'] is not 'None' else None,
+                                         period_err=float(row['period_err'])
+                                         if row['period_err'] is not None and row['period_err'] is not 'None' else None,
+                                         source="OWN",
+                                         epoch=row['epoch'])
+            the_star.metadata = SelectedFileData()
+            ucac4.add_sd_metadatas([the_star])
+            if the_star.get_metadata("UCAC4").catalog_id != row['ucac4_name']:
+                ucac4.add_sd_metadata_from_id(the_star, row['ucac4_name'], overwrite=True)
+            logging.debug(f"starfile {the_star.local_id} metadata: {the_star.metadata}, "
+                          f"{the_star.get_metadata('SELECTEDFILE')}")
+            logging.debug(f"starfile {the_star.get_metadata('SELECTEDFILE')}")
+        logging.debug(f"Tagged {len(df)} stars as selected by file.")
+    except Exception as ex:
+        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+        message = template.format(type(ex).__name__, ex.args)
+        import traceback
+        print(traceback.print_exc())
+        logging.error(message)
+        logging.error(f"Could not read {selectedstarfile}, star {row['local_id']}")
+
+
+def read_and_tag_radec(owncatalog: str, stars: List[StarDescription]):
     # outfile.write(f"# our_name,ra,dec,minmax,var_type,period,epoch\n")
     logging.info(f"Using owncatalog: {owncatalog}")
     df = pd.read_csv(owncatalog, delimiter=',', comment='#',
-                     names=['our_name', 'ra', 'dec', 'ucac4_name', 'ucac4_ra', 'ucac4_dec', 'minmax', 'min', 'max',
-                            'var_type', 'period', 'period_err',
-                            'epoch'],
-                     dtype={'ra': float, 'dec': float, 'ucac4_ra': float, 'ucac4_dec': float, 'minmax': str,
-                            'epoch': float},
+                     names=['our_name', 'ra', 'dec', 'ucac4_name', 'ucac4_ra', 'ucac4_dec', 'ucac4_force',
+                            'minmax', 'min', 'max', 'var_type', 'period', 'period_err', 'epoch'],
+                     dtype={'ra': float, 'dec': float, 'ucac4_ra': float, 'ucac4_dec': float,
+                            'minmax': str, 'epoch': float},
                      skipinitialspace=True, warn_bad_lines=True)
     df.loc[df['ucac4_ra'].notnull(), 'chosenRA'] = df['ucac4_ra']
     df.loc[df['ucac4_ra'].isnull(), 'chosenRA'] = df['ra']
@@ -558,6 +562,9 @@ def tag_owncatalog(owncatalog: str, stars: List[StarDescription]):
                                          source="OWN",
                                          epoch=row['epoch'])
             the_star.metadata = SelectedFileData()
+            ucac4.add_sd_metadatas([the_star])
+            if the_star.get_metadata("UCAC4").catalog_id != row['ucac4_name'] and row['ucac4_name'] is not None:
+                ucac4.add_sd_metadata_from_id(the_star, row['ucac4_name'], overwrite=True)
         if d2d[count].degree > 0.01:
             logging.warning(f"Separation between {df.iloc[count]['our_name']} "
                             f"and {stars[index].local_id} is {d2d[count]}")

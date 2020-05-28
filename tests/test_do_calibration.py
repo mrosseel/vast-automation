@@ -11,8 +11,8 @@ class TestDoCalibration(unittest.TestCase):
         stars = [self.stardesc(1, 1, 1), self.stardesc(1, 3, 3), self.stardesc(1, 10.24496, 9.96736),
                  self.stardesc(1, 10.24490, 9.96730)]
         star0_id = id(stars[0])
-        result = do_calibration.add_info_to_star_description(stars[0], 10, 0.1, "BLA", "BLA",
-                                                             SkyCoord(ra=8, dec=5, unit="deg"))
+        result = do_calibration.add_catalog_data_to_sd(stars[0], 10, 0.1, "BLA", "BLA",
+                                                       SkyCoord(ra=8, dec=5, unit="deg"))
         self.assertEqual(star0_id, id(result))
         self.assertEqual(stars[0].vmag, 10)
         self.assertEqual(stars[0].vmag_err, 0.1)

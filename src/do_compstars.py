@@ -29,15 +29,15 @@ def get_fixed_compstars(star_descriptions: List[StarDescription], comparison_sta
     star_catalog = do_calibration.create_star_descriptions_catalog(star_descriptions)
     for ucac_id in comparison_stars:
         # getting star_id_1
-        ucacsd = ucac4.get_ucac4_star_description_fromid(ucac_id)
+        ucacsd = ucac4.get_star_description_from_id(ucac_id)
         ra, dec = ucacsd.coords.ra, ucacsd.coords.dec
         star_id_1 = do_calibration.get_starid_1_for_radec([ra], [dec], star_catalog)
         star_ids_1.append(star_id_1)
         # adding info to star_description
         star = star_descriptions[star_id_1 - 1]
         logging.info(f"Compstar match: {ucacsd.aavso_id} with {star.local_id} ({ra}, {dec})")
-        do_calibration.add_info_to_star_description(star, ucacsd.vmag, ucacsd.vmag_err,
-                                                    ucacsd.aavso_id,
+        do_calibration.add_catalog_data_to_sd(star, ucacsd.vmag, ucacsd.vmag_err,
+                                              ucacsd.aavso_id,
                                                     "UCAC4", SkyCoord(ra, dec, unit='deg'))
         star_desc_result.append(star)
         logging.debug(f"Using fixed compstar '{ucac_id}' with Vmag: '{ucacsd.vmag}' and star id: {star_id_1}")

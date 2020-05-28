@@ -127,6 +127,8 @@ StarTuple = namedtuple('Star', 'ra spd mag1 mag2 mag_sigma obj_type double_star_
                                ' apass_mag_sigma_i yale_gc_flags catalog_flags leda_flag twomass_ext_flag'
                                ' id_number ucac2_zone ucac2_number')
 MinimalStarTuple = namedtuple('MinStar', 'id, ra, dec, mag')
+UcacTuple = Tuple[StarTuple, str, int]
+UcacTupleList = List[UcacTuple]
 
 
 def get_line_nr(n0, nn, line):
@@ -170,11 +172,11 @@ class UCAC4:
             return result
 
 
-    def get_ucac4_details(self, ucac_id) -> List[Tuple[StarTuple, str, int]]:
+    def get_ucactuple_from_id(self, ucac_id) -> UcacTuple:
         """ Given a UCAC ID, return a tuple of (StarTuple, zone, run_nr) """
         zone, run_nr = UCAC4.ucac_id_to_zone_and_run_nr(ucac_id)
         logging.debug(f"UCAC4 id {zone}, {run_nr}")
-        return self.get_ucac4_details_raw(zone, [run_nr])
+        return self.get_ucactuples_for_zone_and_runnrs(zone, [run_nr])[0]
 
 
     def index_bin_to_run_nrs(self, zone: int, index_bin: int):
@@ -203,7 +205,7 @@ class UCAC4:
         return zones, index_bins
 
 
-    def get_ucac4_details_raw(self, zone: int, run_nr_list: List[int]) -> List[Tuple[StarTuple, str, int]]:
+    def get_ucactuples_for_zone_and_runnrs(self, zone: int, run_nr_list: List[int]) -> UcacTupleList:
         """ Given a zone and one or more run_nr's, return List of (StarTuple, zone, run_nr) """
         stars = []
         filecontent = self.get_zone_filecontent(zone)
@@ -214,7 +216,7 @@ class UCAC4:
             if star == -1:
                 result = self.unpack_zone_fileformat(
                     filecontent[self.zone_star_length * (run_nr-1):self.zone_star_length * run_nr])
-                star = UCAC4.make_star(result)
+                star = UCAC4.make_startuple(result)
                 self.bucket_cache.set(key, star)
             stars.append((star, zone, run_nr))
             # logging.debug(f"read ucac4 star: {star}")
@@ -232,31 +234,36 @@ class UCAC4:
         return result_n0, result_nn
 
 
-    def get_ucac4_range_tuples(self, ra: float, dec: float, radius=0.5) -> List[MinimalStarTuple]:
+    def get_region_minimal_star_tuples(self, ra: float, dec: float, radius=0.5) -> List[MinimalStarTuple]:
+        """ For a given ra/dec and radius, return all ucac4 stars as ('id, ra, dec, mag') """
         zones, buckets = self.get_zones_and_index_bins(ra, dec, radius)
         result = []
         for zone in zones:
             for bucket in buckets:
                 cache_key = (zone, bucket)
-                the_stars: List[StarTuple] = self.zone_bucket_cache.get(cache_key)
+                ucactuples: UcacTupleList = self.zone_bucket_cache.get(cache_key)
                 # cache miss
-                if the_stars == -1:
-                    the_stars = self.get_ucac4_details_raw(zone, self.index_bin_to_run_nrs(zone, bucket))
-                    self.zone_bucket_cache.set(cache_key, the_stars)
-                if len(the_stars) == 0:
+                if ucactuples == -1:
+                    ucactuples: UcacTupleList = self.get_ucactuples_for_zone_and_runnrs(zone, self.index_bin_to_run_nrs(zone, bucket))
+                    self.zone_bucket_cache.set(cache_key, ucactuples)
+                if len(ucactuples) == 0:
                     logging.debug(f"zone/bucket: {zone}/{bucket}, no stars")
                     if bucket + 1 not in buckets:
                         buckets.append(bucket+1)
                         logging.debug(f"Appending bucket {bucket+1}")
-                for sd in the_stars:
-                    result.append(MinimalStarTuple(UCAC4.zone_and_run_nr_to_name(sd[1], sd[2]),
-                                                   *UCAC4.get_real_ra_dec(sd[0].ra, sd[0].spd),
-                                                   sd[0].apass_mag_V / 1000))
+                for ucactuple in ucactuples:
+                    result.append(MinimalStarTuple(UCAC4.zone_and_run_nr_to_name(ucactuple[1], ucactuple[2]),
+                                                   *UCAC4.get_real_ra_dec(ucactuple[0].ra, ucactuple[0].spd),
+                                                   ucactuple[0].apass_mag_V / 1000))
         return result
 
 
-    def get_ucac4_sd_from_ra_dec(self, ra: float, dec: float, tolerance_deg=0.02) -> StarDescription:
-        logging.debug(f"get_ucac4_sd with ra:{ra}, dec:{dec}, tolerance:{tolerance_deg}")
+    def get_sd_from_ra_dec(self, ra: float, dec: float, tolerance_deg=0.02) -> StarDescription:
+        return self.get_star_description_from_tuple(self.get_ucactuple_from_ra_dec(ra, dec, tolerance_deg))
+
+
+    def get_ucactuple_from_ra_dec(self, ra: float, dec: float, tolerance_deg=0.02) -> UcacTuple:
+        logging.debug(f"get_ucac4_ucactuple_from_ra_dec with ra:{ra}, dec:{dec}, tolerance:{tolerance_deg}")
         target_np = np.array((ra, dec))
         zones, buckets = self.get_zones_and_index_bins(ra, dec, tolerance_deg)
         smallest_dist = 1000
@@ -264,14 +271,14 @@ class UCAC4:
         for zone in zones:
             for bucket in buckets:
                 cache_key = (zone, bucket)
-                the_stars = self.zone_bucket_cache.get(cache_key)
+                ucactuples: UcacTupleList = self.zone_bucket_cache.get(cache_key)
                 # cache miss
-                if the_stars == -1:
-                    the_stars = self.get_ucac4_details_raw(zone, self.index_bin_to_run_nrs(zone, bucket))
-                    self.zone_bucket_cache.set(cache_key, the_stars)
+                if ucactuples == -1:
+                    ucactuples: UcacTupleList = self.get_ucactuples_for_zone_and_runnrs(zone, self.index_bin_to_run_nrs(zone, bucket))
+                    self.zone_bucket_cache.set(cache_key, ucactuples)
                 ################ DEBUG
-                if len(the_stars) > 0:
-                    radecs = [self.get_real_ra_dec(x[0].ra, x[0].spd) for x in the_stars]
+                if len(ucactuples) > 0:
+                    radecs = [self.get_real_ra_dec(x[0].ra, x[0].spd) for x in ucactuples]
                     ras = [x[0] for x in radecs]
                     decs = [x[1] for x in radecs]
                     logging.debug(
@@ -282,18 +289,19 @@ class UCAC4:
                         buckets.append(bucket+1)
                         logging.debug(f"Appending bucket {bucket+1}")
                 ################ DEBUG
-                for sd in the_stars:
-                    dist = np.linalg.norm(np.array((UCAC4.get_real_ra_dec(sd[0].ra, sd[0].spd)) - target_np))
+                for ucactuple in ucactuples:
+                    dist = np.linalg.norm(np.array((UCAC4.get_real_ra_dec(ucactuple[0].ra, ucactuple[0].spd))
+                                                   - target_np))
                     # logging.debug(f"magj: {sd[0].mag_j}")
                     if dist < smallest_dist:
                         smallest_dist = dist
-                        best = sd
+                        best = ucactuple
         if best is None:
             logging.warning(f"Did not find a UCAC4 match for {ra}, {dec}, {tolerance_deg}. Buckets: {buckets}, "
                             f"zones: {zones},smallest dist: {smallest_dist}")
             return best
         logging.debug(f"Best distance is: {smallest_dist}, {best}")
-        return self.get_ucac4_star_description_fromtuple(*best)
+        return best
 
 
     @staticmethod
@@ -325,24 +333,21 @@ class UCAC4:
         return f"UCAC4 {zone:03}-{run_nr:06}"
 
 
-    def get_ucac4_star_description_fromid(self, ucac4_id) -> StarDescription:
-        return UCAC4.get_ucac4_star_descriptions(self.get_ucac4_details(ucac4_id))[0]
+    def get_star_description_from_id(self, ucac4_id) -> StarDescription:
+        return UCAC4.get_star_description_from_tuple(self.get_ucactuple_from_id(ucac4_id))
 
 
     @staticmethod
-    def get_ucac4_star_descriptions(startuples: List[Tuple[StarTuple, str, int]]) -> List[StarDescription]:
-        result = []
-        for startuple in startuples:
-            star, zone, run_nr = startuple
-            result.append(UCAC4.get_ucac4_star_description_fromtuple(star, zone, run_nr))
-        return result
+    def get_star_descriptions_from_tuples(ucactuples: UcacTupleList) -> List[StarDescription]:
+        return [UCAC4.get_star_description_from_tuple(ucactuple) for ucactuple in ucactuples]
 
 
     @staticmethod
-    def get_ucac4_star_description_fromtuple(star: StarTuple, zone: int, run_nr: int):
-        ra, dec = UCAC4.get_real_ra_dec(star.ra, star.spd)
+    def get_star_description_from_tuple(ucactuple: UcacTuple) -> StarDescription:
+        startuple, zone, run_nr = ucactuple
+        ra, dec = UCAC4.get_real_ra_dec(startuple.ra, startuple.spd)
         sd = StarDescription(coords=SkyCoord(ra, dec, unit='deg'),
-                             vmag=star.apass_mag_V / 1000, vmag_err=abs(star.apass_mag_sigma_V / 100),
+                             vmag=startuple.apass_mag_V / 1000, vmag_err=abs(startuple.apass_mag_sigma_V / 100),
                              aavso_id=UCAC4.zone_and_run_nr_to_name(zone, run_nr))
         return sd
 
@@ -355,7 +360,7 @@ class UCAC4:
 
 
     @staticmethod
-    def make_star(result: List):
+    def make_startuple(result: List) -> StarTuple:
         star = StarTuple._make(result)
         star = star._replace(ra_sigma=star.ra_sigma + 128)
         star = star._replace(dec_sigma=star.dec_sigma + 128)
@@ -364,15 +369,27 @@ class UCAC4:
         return star
 
 
-    def add_ucac4_to_sd(self, stars: List[StarDescription]):
+    def add_sd_metadatas(self, stars: List[StarDescription], overwrite=False):
         with tqdm.tqdm(total=len(stars), desc='Adding UCAC4', unit='stars') as pbar:
             for star in stars:
-                if not star.has_metadata("UCAC4"):
-                    sd = self.get_ucac4_sd_from_ra_dec(star.coords.ra.deg, star.coords.dec.deg)
-                    if sd is not None:
-                        do_calibration.add_info_to_star_description(star, sd.vmag, sd.vmag_err, sd.aavso_id, "UCAC4",
-                                                                    sd.coords)
+                if not star.has_metadata("UCAC4") or overwrite:
+                    sd = self.get_sd_from_ra_dec(star.coords.ra.deg, star.coords.dec.deg)
+                    self._add_catalog_data_to_sd(star, sd, overwrite)
                 pbar.update(1)
+
+
+    def add_sd_metadata_from_id(self, star: StarDescription, ucac4_id: str, overwrite=False):
+        sd = self.get_star_description_from_id(ucac4_id)
+        self._add_catalog_data_to_sd(star, sd, overwrite)
+
+
+    @staticmethod
+    def _add_catalog_data_to_sd(sd: StarDescription, ucac4_sd: StarDescription, overwrite):
+        """ Add UCAC4 catalog data to a stardescription if there is none yet, or if overwrite is True """
+        if ucac4_sd is not None and not sd.has_metadata("UCAC4") or overwrite:
+            do_calibration.add_catalog_data_to_sd(sd, ucac4_sd.vmag, ucac4_sd.vmag_err, ucac4_sd.aavso_id, "UCAC4",
+                                                  ucac4_sd.coords)
+
 
     # >>> ra=140361
     # >>> ra/1000/60/60
