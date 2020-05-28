@@ -266,7 +266,7 @@ def write_selected_files(resultdir: str, vastdir: str, selected_stars: List[Star
                    f"other stars: {no_vsx_len}\n"
         outowncatalog.write(f"{preamble}# our_name,ra,dec,ucac4_name,ucac4_ra,ucac4_dec,minmax,min,max,var_type,"
                             f"period,period_err,epoch\n")
-        outselected.write(f"{preamble}# our_name,local_id,minmax,min,max,var_type,period,period_err,epoch\n")
+        outselected.write(f"{preamble}# our_name,local_id,ucac4_name,ucac4_force,minmax,min,max,var_type,period,period_err,epoch\n")
 
 
         def format_float_arg(atoml, arg: str, precision):
@@ -301,13 +301,14 @@ def write_selected_files(resultdir: str, vastdir: str, selected_stars: List[Star
             try:
                 parsed_toml = toml.load(txt_path)
                 outowncatalog.write(
-                    f"{metadata.our_name},{star.coords.ra.deg:.7f},{star.coords.dec.deg:.7f},{ucac4_name},{ucac4_coords},"
+                    f"{metadata.our_name},{star.coords.ra.deg:.7f},{star.coords.dec.deg:.7f},{ucac4_name},"
+                    f"{ucac4_coords},False,"
                     f"{format_string('minmax', parsed_toml)},{format_float_1(parsed_toml, 'min')},"
                     f"{format_float_1(parsed_toml, 'max')},{metadata.var_type},"
                     f"{format_float_5(parsed_toml, 'period')},{format_float_5(parsed_toml, 'period_err')},"
                     f"{format_string('epoch', parsed_toml)}\n")
                 outselected.write(
-                    f"{metadata.our_name},{star.local_id},"
+                    f"{metadata.our_name},{star.local_id},,False,"
                     f"{format_string('minmax', parsed_toml)},{format_float_1(parsed_toml, 'min')},"
                     f"{format_float_1(parsed_toml, 'max')},{metadata.var_type},"
                     f"{format_float_5(parsed_toml, 'period')},{format_float_5(parsed_toml, 'period_err')},"
