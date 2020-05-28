@@ -37,7 +37,7 @@ def set_aavso_id_label(star_descriptions):
 def set_custom_label(star_descriptions, label, strict=False):
     for index, star_descr in enumerate(star_descriptions):
         label_to_set = label if not isinstance(label, list) else label[index]
-        if strict and (star_descr.label is not '' or None):
+        if strict and (star_descr.label != '' or None):
             logging.warning(f"Setting label to {label_to_set} but it has previous value {star_descr.label}")
         star_descr.label = label_to_set
     return star_descriptions

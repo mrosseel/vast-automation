@@ -301,7 +301,7 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, star_result_dict
     if star.local_id not in star_result_dict:
         star_result_dict[star.local_id] = {}
     temp_dict = star_result_dict[star.local_id]
-    if star.path is '':
+    if star.path == '':
         logging.debug(f"Path for {star.local_id} is empty")
         return
     if not do_light and not do_phase:
