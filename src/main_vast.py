@@ -46,7 +46,7 @@ def run_do_rest(args):
     do_phase = args.phase
     do_aavso = args.aavso
     logging.info(f"Dir with VaST files: '{vastdir}', results dir: '{resultdir}'")
-    # get wcs model from the reference header. Used in writing world positions and field charts
+    # get wcs model from the reference header. Used in writing world positions and field charts (can fail)
     wcs_file, wcs = reading.read_wcs_file(vastdir)
     ref_jd, _, _, reference_frame = reading.extract_reference_frame(vastdir)
     _, _, _, first_frame = reading.extract_first_frame(vastdir)
@@ -79,6 +79,7 @@ def run_do_rest(args):
         while not os.path.isfile(wcs_file):
             logging.info(f"Waiting for the astrometry.net plate solve...")
             time.sleep(10)
+        wcs_file, wcs = reading.read_wcs_file(vastdir)
 
     star_descriptions = construct_star_descriptions(vastdir, resultdir, wcs, args)
     stardict = get_localid_to_sd_dict(star_descriptions)
