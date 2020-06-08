@@ -183,8 +183,8 @@ def update_img(star: StarDescription, record: ImageRecord, neighbours: List[Star
 
     plt.imshow(data, cmap='gray_r', origin='lower', vmin=0, vmax=min(median * 5, 65536))
     starui = utils.get_star_or_catalog_name(star)
-    save_inspect_image = Path(Path(resultdir) / 'inspect', f'inspect_star_{starui.filename_no_ext}.png')
-    save_inspect_txt = Path(Path(resultdir) / 'inspect', f'inspect_star_{starui.filename_no_ext}.txt')
+    save_inspect_image = Path(Path(resultdir) / 'inspect', f'{starui.filename_no_ext}_{Path(resultdir).name}_inspect.png')
+    save_inspect_txt = Path(Path(resultdir) / 'inspect', f'{starui.filename_no_ext}_{Path(resultdir).name}_inspect.txt')
     fig.savefig(save_inspect_image)
     logging.info(f"Saved file as {save_inspect_image}.")
     write_file(star, save_inspect_txt, resultlines)

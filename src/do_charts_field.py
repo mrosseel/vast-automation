@@ -215,7 +215,7 @@ def run_standard_field_charts(star_descriptions: StarDescriptionList, wcs, field
     logging.info(f"Plotting field chart for each of the {selected_count} selected stars")
     # Plotting finder charts for the site
     # field charts for each individually selected starfile star
-    for star in tqdm.tqdm(selected_desc):
+    for star in tqdm.tqdm(selected_desc, desc="Field chart for each star"):
         filtered_compstars, check_star = do_compstars.filter_comparison_stars(star, comp_stars)
         filtered_compstars_sds = filtered_compstars.star_descriptions
         check_star_sd = check_star.star_descriptions
