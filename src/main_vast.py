@@ -46,7 +46,7 @@ def run_do_rest(args):
     do_phase = args.phase
     do_aavso = args.aavso
     logging.info(f"Dir with VaST files: '{vastdir}', results dir: '{resultdir}'")
-    # get wcs model from the reference header. Used in writing world positions and field charts
+    # get wcs model from the reference header. Used in writing world positions and field charts (can fail)
     wcs_file, wcs = reading.read_wcs_file(vastdir)
     ref_jd, _, _, reference_frame = reading.extract_reference_frame(vastdir)
     _, _, _, first_frame = reading.extract_first_frame(vastdir)
@@ -79,6 +79,7 @@ def run_do_rest(args):
         while not os.path.isfile(wcs_file):
             logging.info(f"Waiting for the astrometry.net plate solve...")
             time.sleep(10)
+        wcs_file, wcs = reading.read_wcs_file(vastdir)
 
     star_descriptions = construct_star_descriptions(vastdir, resultdir, wcs, args)
     stardict = get_localid_to_sd_dict(star_descriptions)
@@ -235,7 +236,7 @@ def write_augmented_autocandidates(readdir: str, writedir: str, stardict: StarDi
             if star_id in stardict:
                 cacheentry = stardict[star_id]
                 outfile.write(
-                    f"{linetext}{'' if cacheentry.path is not '' else '*'}\t{cacheentry.aavso_id}\t{utils.get_lesve_coords(cacheentry.coords)}\n")
+                    f"{linetext}{'' if cacheentry.path != '' else '*'}\t{cacheentry.aavso_id}\t{utils.get_lesve_coords(cacheentry.coords)}\n")
             else:
                 outfile.write(f"{linetext}*\t{'None'}\n")
 
@@ -266,7 +267,7 @@ def write_selected_files(resultdir: str, vastdir: str, selected_stars: List[Star
                    f"other stars: {no_vsx_len}\n"
         outowncatalog.write(f"{preamble}# our_name,ra,dec,ucac4_name,ucac4_ra,ucac4_dec,minmax,min,max,var_type,"
                             f"period,period_err,epoch\n")
-        outselected.write(f"{preamble}# our_name,local_id,minmax,min,max,var_type,period,period_err,epoch\n")
+        outselected.write(f"{preamble}# our_name,local_id,ucac4_name,ucac4_force,minmax,min,max,var_type,period,period_err,epoch\n")
 
 
         def format_float_arg(atoml, arg: str, precision):
@@ -301,13 +302,14 @@ def write_selected_files(resultdir: str, vastdir: str, selected_stars: List[Star
             try:
                 parsed_toml = toml.load(txt_path)
                 outowncatalog.write(
-                    f"{metadata.our_name},{star.coords.ra.deg:.7f},{star.coords.dec.deg:.7f},{ucac4_name},{ucac4_coords},"
+                    f"{metadata.our_name},{star.coords.ra.deg:.7f},{star.coords.dec.deg:.7f},{ucac4_name},"
+                    f"{ucac4_coords},False,"
                     f"{format_string('minmax', parsed_toml)},{format_float_1(parsed_toml, 'min')},"
                     f"{format_float_1(parsed_toml, 'max')},{metadata.var_type},"
                     f"{format_float_5(parsed_toml, 'period')},{format_float_5(parsed_toml, 'period_err')},"
                     f"{format_string('epoch', parsed_toml)}\n")
                 outselected.write(
-                    f"{metadata.our_name},{star.local_id},"
+                    f"{metadata.our_name},{star.local_id},,False,"
                     f"{format_string('minmax', parsed_toml)},{format_float_1(parsed_toml, 'min')},"
                     f"{format_float_1(parsed_toml, 'max')},{metadata.var_type},"
                     f"{format_float_5(parsed_toml, 'period')},{format_float_5(parsed_toml, 'period_err')},"
@@ -327,7 +329,7 @@ def write_vsx_stars(resultdir, results_ids, stars: List[StarDescription]):
     with open(newname, 'wt') as fp, open(selected_file, 'wt') as selected:
         for number, vsx_id in enumerate(results_ids):
             current_sd = stardict[vsx_id]
-            found = False if current_sd.path is '' else True
+            found = False if current_sd.path == '' else True
             assert vsx_id == current_sd.local_id
             total_found += 1 if found else 0
             fp.write(
@@ -346,7 +348,7 @@ def write_candidate_stars(resultdir, stars: List[StarDescription]):
     logging.debug(f"Receiving {len(stardict.keys())} as vsx input")
     with open(newname, 'wt') as fp:
         for index, current_sd in enumerate(candidates):
-            found = False if current_sd.path is '' else True
+            found = False if current_sd.path == '' else True
             total_found += 1 if found else 0
             fp.write(f'{current_sd.local_id},,CANDIDATE-{index},,\n')
 
@@ -484,14 +486,16 @@ def read_and_tag_localid(selectedstarfile: str, stardict: StarDict):
                                          var_type=row['var_type'],
                                          our_name=row['our_name'],
                                          period=float(row['period'])
-                                         if row['period'] is not None and row['period'] is not 'None' else None,
+                                         if row['period'] is not None and row['period'] != 'None' else None,
                                          period_err=float(row['period_err'])
-                                         if row['period_err'] is not None and row['period_err'] is not 'None' else None,
+                                         if row['period_err'] is not None and row['period_err'] != 'None' else None,
                                          source="OWN",
                                          epoch=row['epoch'])
             the_star.metadata = SelectedFileData()
             ucac4.add_sd_metadatas([the_star])
-            if the_star.get_metadata("UCAC4").catalog_id != row['ucac4_name']:
+            if the_star.get_metadata("UCAC4").catalog_id != row['ucac4_name'] and row['ucac4_name'] is not None:
+                logging.info(f"Pinning {the_star.local_id} from {the_star.get_metadata('UCAC4').catalog_id} "
+                             f"to {row['ucac4_name']}")
                 ucac4.add_sd_metadata_from_id(the_star, row['ucac4_name'], overwrite=True)
             logging.debug(f"starfile {the_star.local_id} metadata: {the_star.metadata}, "
                           f"{the_star.get_metadata('SELECTEDFILE')}")
@@ -564,6 +568,8 @@ def read_and_tag_radec(owncatalog: str, stars: List[StarDescription]):
             the_star.metadata = SelectedFileData()
             ucac4.add_sd_metadatas([the_star])
             if the_star.get_metadata("UCAC4").catalog_id != row['ucac4_name'] and row['ucac4_name'] is not None:
+                logging.info(f"Pinning {the_star.local_id} from {the_star.get_metadata('UCAC4').catalog_id} "
+                             f"to {row['ucac4_name']}")
                 ucac4.add_sd_metadata_from_id(the_star, row['ucac4_name'], overwrite=True)
         if d2d[count].degree > 0.01:
             logging.warning(f"Separation between {df.iloc[count]['our_name']} "

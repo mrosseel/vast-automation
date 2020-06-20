@@ -243,7 +243,10 @@ def star_to_dat(star: int):
 def read_wcs_file(vastdir: str) -> Tuple[str, WCS]:
     wcs_file = Path(vastdir, 'new-image.fits')
     # get wcs model from the reference header. Used in writing world positions and field charts
-    wcs = do_calibration.get_wcs(wcs_file)
+    try:
+        wcs = do_calibration.get_wcs(wcs_file)
+    except FileNotFoundError:
+        wcs = None
     return wcs_file, wcs
 
 
