@@ -468,13 +468,16 @@ def construct_vsx_mag_range(entry):
 
 def read_and_tag_localid(selectedstarfile: str, stardict: StarDict):
     try:
-        df = pd.read_csv(selectedstarfile, delimiter=',', comment='#',
+        df = pd.read_csv(selectedstarfile, sep=',', comment='#',
                          names=['our_name', 'local_id', 'ucac4_name', 'ucac4_force', 'minmax', 'min', 'max',
                                 'var_type', 'period', 'period_err', 'epoch'],
-                         dtype={'local_id': int, 'minmax': str, 'epoch': float, 'ucac4_force': bool},
+                         dtype={'local_id': float, 'minmax': str, 'epoch': float},
+                         converters={'ucac4_force': bool(int())},
                          skipinitialspace=True, warn_bad_lines=True)
+        logging.info(f"Raw df: {df.info()}, {df}")
         df = df.replace({np.nan: None})
         logging.info(f"Selecting {len(df)} stars added by {selectedstarfile}: {df['local_id'].to_numpy()}")
+        logging.info(f"The resulting df is {df}")
         for idx, row in df.iterrows():
             the_star: StarDescription = stardict.get(row['local_id'])
             if the_star is None:
