@@ -23,8 +23,9 @@ from collections import namedtuple
 from multiprocessing import cpu_count, Manager
 from comparison_stars import ComparisonStars
 from functools import partial
-from gatspy.periodic import LombScargleFast
-from gatspy.periodic import TrendedLombScargle
+from astropy.timeseries import LombScargle
+#from gatspy.periodic import LombScargleFast
+#from gatspy.periodic import TrendedLombScargle
 from reading import trash_and_recreate_dir
 from timeit import default_timer as timer
 from star_description import StarDescription

@@ -11,7 +11,7 @@ from astropy.coordinates import match_coordinates_sky
 from astropy import units as u
 from astropy.coordinates import Angle
 # astroquery imports the keyring backend, but why?
-from astroquery.vizier import Vizier
+#from astroquery.vizier import Vizier
 import vsx_pickle
 import do_calibration
 import numpy as np
