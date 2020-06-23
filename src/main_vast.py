@@ -474,7 +474,6 @@ def read_and_tag_localid(selectedstarfile: str, stardict: StarDict):
                          dtype={'local_id': float, 'minmax': str, 'epoch': float},
                          converters={'ucac4_force': bool(int())},
                          skipinitialspace=True, warn_bad_lines=True)
-        logging.info(f"Raw df: {df.info()}, {df}")
         df = df.replace({np.nan: None})
         logging.info(f"Selecting {len(df)} stars added by {selectedstarfile}: {df['local_id'].to_numpy()}")
         logging.info(f"The resulting df is {df}")
@@ -516,7 +515,7 @@ def read_and_tag_localid(selectedstarfile: str, stardict: StarDict):
 def read_and_tag_radec(owncatalog: str, stars: List[StarDescription]):
     # outfile.write(f"# our_name,ra,dec,minmax,var_type,period,epoch\n")
     logging.info(f"Using owncatalog: {owncatalog}")
-    df = pd.read_csv(owncatalog, delimiter=',', comment='#',
+    df = pd.read_csv(owncatalog, sep=',', comment='#',
                      names=['our_name', 'ra', 'dec', 'ucac4_name', 'ucac4_ra', 'ucac4_dec', 'ucac4_force',
                             'minmax', 'min', 'max', 'var_type', 'period', 'period_err', 'epoch'],
                      dtype={'ra': float, 'dec': float, 'ucac4_ra': float, 'ucac4_dec': float,
