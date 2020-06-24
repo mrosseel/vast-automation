@@ -8,7 +8,6 @@ import do_compstars
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import matplotlib as mplotlib
-import seaborn as sns
 import multiprocessing as mp
 import tqdm
 import numpy as np
@@ -41,10 +40,8 @@ Period = namedtuple('period', 'period origin')
 TITLE_PAD = 40
 
 
-def set_seaborn_style():
+def set_font_size():
     plt.rcParams.update({'font.size': 40})
-    #sns.set_context("notebook", font_scale=4)
-    #sns.set_style("ticks")
 
 
 def plot_lightcurve_raw(star: StarDescription, curve: DataFrame, chartsdir, write_plot=True):
@@ -442,7 +439,7 @@ def run(star_descriptions, comp_stars: ComparisonStars, basedir: str, resultdir:
         aavso_part: str, do_light=False, do_light_raw=False, do_phase=True, do_aavso=False, aavsolimit=None,
         nr_threads=cpu_count(), jdfilter=None, desc="Writing light curve charts/phase diagrams"):
     chunk: int = 1  # max(1, len(star_descriptions) // nr_threads*10)
-    set_seaborn_style()
+    set_font_size()
     pool = mp.Pool(nr_threads, maxtasksperchild=10)
     phasedir = Path(resultdir, phasepart)
     chartsdir = Path(resultdir, chartspart)
