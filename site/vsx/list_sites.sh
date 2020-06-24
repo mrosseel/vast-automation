@@ -1,3 +1,4 @@
 #!/bin/sh
-ls -al ./content/posts/
-
+cd ./content/posts/
+ls -1d -ct */ | less
+cd -
