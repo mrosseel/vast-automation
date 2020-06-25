@@ -160,7 +160,7 @@ def update_img(star: StarDescription, record: ImageRecord, neighbours: List[Star
         # https://matplotlib.org/3.1.0/api/_as_gen/matplotlib.pyplot.arrow.html
         plt.annotate(f'{idx}', xy=(round(nstar.xpos), round(nstar.ypos)), xycoords='data',
                      xytext=(offset1, offset2), textcoords='offset points', size=NEIGHBOUR_TEXT_SIZE, color='red',
-                     arrowprops=dict(arrowstyle="-", facecolor='grey', color='grey', alpha=0.2))
+                     arrowprops=dict(arrowstyle="-", color='grey', alpha=0.2))
         resultlines.append(log_star(nstar, idx))
 
     # loading and painting ucac stars
@@ -176,7 +176,7 @@ def update_img(star: StarDescription, record: ImageRecord, neighbours: List[Star
         add_circle(x, y, 2, 'c')
         plt.annotate(f'{ucac_star.id[-3:]}', xy=(x, y), xycoords='data',
                      xytext=(2, 2), textcoords='offset points', size=UCAC4_TEXT_SIZE,
-                     arrowprops=dict(arrowstyle="-", facecolor='grey', color='grey', alpha=0.2))
+                     arrowprops=dict(arrowstyle="-", color='grey', alpha=0.2))
 
     median = np.median(data)
     #     data = ndimage.interpolation.rotate(data, record.rotation)
