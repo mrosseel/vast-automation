@@ -15,6 +15,7 @@ ipykernel = "*"
 ipython = "*"
 ipython-genutils = "*"
 coverage = "*"
+rope = "*"
 
 [packages]
 appnope = "*"
@@ -68,3 +69,4 @@ traitlets = "*"
 urllib3 = "*"
 wcwidth = "*"
 webencodings = "*"
+gatspy = "*"
