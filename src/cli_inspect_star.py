@@ -27,7 +27,7 @@ from star_description import StarDescription
 from ucac4 import UCAC4, MinimalStarTuple
 
 padding = 0
-dpi = 300
+dpi = 600
 NEIGHBOUR_TEXT_SIZE = 4
 UCAC4_TEXT_SIZE = 3
 RefFrame = namedtuple('RefFrame', 'ref_jd path_to_solved path_to_reference_frame')
