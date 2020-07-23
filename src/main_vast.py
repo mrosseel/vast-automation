@@ -415,7 +415,7 @@ def tag_vsx_as_selected(vsx_stars: List[StarDescription]):
         # extradata: {'id': index, 'OID': row['OID'], 'Name': row['Name'], 'Type': row['Type'],
         # 'l_Period': row['l_Period'], 'Period': row['Period'], 'u_Period': row['u_Period']})
         the_star.metadata = SiteData(var_type=str(extradata['Type']).strip(),
-                                     vsx_var_flag=str(extradata['V']),
+                                     vsx_var_flag=str(extradata['V']).strip(),
                                      separation=float(vsx_metadata.separation),
                                      our_name=str(extradata['Name']),
                                      period=float(extradata['Period'])
