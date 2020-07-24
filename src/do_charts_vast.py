@@ -312,11 +312,7 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, star_result_dict
     try:
         df = reading.read_lightcurve_vast(star.path)
         df['floatJD'] = df['JD'].astype(np.float)
-        if jdfilter is not None:
-            df = df[(df.floatJD <= jdfilter[0]) | (df.floatJD >= jdfilter[1])]
-            if len(df) < 2:
-                logging.warning(f"Applying the jdfilter caused the lightcurve to contain less than 2 points! "
-                                f"Everything between {jdfilter[0]} and {jdfilter[1]} is thrown away")
+        utils.jd_filter(df, jdfilter)
         if df is None or len(df) == 0:
             logging.info(f"No lightcurve found for {star.path}")
             return

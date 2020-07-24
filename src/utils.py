@@ -15,6 +15,7 @@ import logging
 from astropy.coordinates import SkyCoord
 from star_metadata import CatalogData
 from collections import namedtuple
+from pandas import DataFrame
 
 # all info needed for ui purposes
 StarUI = namedtuple('StarInfo', 'catalog_name, separation, extradata, filename_orig_no_ext, filename_no_ext, '
@@ -59,6 +60,13 @@ def get_localid_to_sd_dict(stars: List[StarDescription]) -> Dict[int, StarDescri
 def catalog_filter(star: StarDescription, catalog_name):
     return star.has_metadata(catalog_name)
 
+def jd_filter(df: DataFrame, jdfilter: List[float]):
+    """ takes a list of 2 julian dates and uses these so the region between them is not used. The DataFrame needs a column named 'floatJD' """
+    if jdfilter is not None:
+        df = df[(df.floatJD <= jdfilter[0]) | (df.floatJD >= jdfilter[1])]
+        if len(df) < 2:
+            logging.warning(f"Applying the jdfilter caused the lightcurve to contain less than 2 points! "
+                    f"Everything between {jdfilter[0]} and {jdfilter[1]} is thrown away")
 
 def get_hms_dms(coord: SkyCoord):
     return "{:2.0f}h {:02.0f}m {:02.2f}s  {:2.0f}d {:02.0f}' {:02.2f}\"" \
