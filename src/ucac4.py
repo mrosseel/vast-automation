@@ -104,6 +104,7 @@
 # I ucac2_number;
 
 # NOTE !!!!!!!!!!!  The ra/dec and proper motion sigmas are now offset by 128; i.e.,  a value of -128 would indicate a zero sigma.
+import os
 import logging
 import math
 import struct
@@ -143,8 +144,17 @@ def get_line_nr(n0, nn, line):
 # 5  dec  = upper declination of corresponding zone, printed out only at the beginning of a new zone
 
 class UCAC4:
-    def __init__(self, ucac_path: Path = Path('./support/ucac4/UCAC4/')):
-        decimal.getcontext().prec = 8
+    """ Uses UCAC4 catalog to search ucac4 numbers from coords and vice versa. Ucac4 path can be passed or read from $ucac4_path """
+    def __init__(self, ucac_path=None):
+        if ucac_path is None:
+            try:
+                ucac_path = Path(os.environ['ucac4_path'])
+                print("found environ with ucac45 path", ucac_path)
+            except KeyError:
+                print("no environment found")
+                logging.debug("No ucac path passed, and no environment var, using default")
+                ucac_path = Path('./support/ucac4/UCAC4/')
+        print("Ucac path is", ucac_path)
         # star id given by munipack
         self.ucac_path = ucac_path
         self.zones_cache = LRUCache(capacity=10)
