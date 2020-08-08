@@ -58,7 +58,7 @@ def helper_plot_stars(star: StarDescription, chartsdir: str, starui: utils.StarU
     colors = [cmap(i) for i in np.linspace(0, 1, number + 1)]
     title = f"{starui.filename_no_suff_no_ext} comp. stars{' + V' if not show_error else ''}"
     for idx, df in enumerate(dfs):
-        df['floatJD'] = df['JD'].astype(float).to_numpy()
+        df['floatJD'] = df['JD'].astype(float)
         df['Vrel30'] = df['Vrel'] + 30
         logging.info(f"Before filtering the length is {len(df)}")
         df = utils.jd_filter_df(df, jdfilter)
