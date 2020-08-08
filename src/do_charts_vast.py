@@ -312,7 +312,7 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, star_result_dict
     try:
         df = reading.read_lightcurve_vast(star.path)
         df['floatJD'] = df['JD'].astype(np.float)
-        utils.jd_filter(df, jdfilter)
+        df = utils.jd_filter_df(df, jdfilter)
         if df is None or len(df) == 0:
             logging.info(f"No lightcurve found for {star.path}")
             return

@@ -1,3 +1,4 @@
+from multiprocessing import cpu_count
 import logging
 import argparse
 import utils
@@ -40,6 +41,7 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--aavsolimit', help="Limits the number of lines per aavso file. -t 5000 splits the"
                                                    "observations in files of 5000 lines each.",
                         nargs='?', type=int, default=None, const=5000)
+    parser.add_argument('--threads', help="Specifies the number of threads to be used by this program", nargs='?', type=int, default=cpu_count()-1)
     parser.add_argument('--selectvsx', help="Add all VSX stars to the selected stars", action="store_true")
     parser.add_argument('--selectcandidates', help="Add all candidate stars to the selected stars", action="store_true")
     parser.add_argument('--site', help="Generate a hugo compatible page")

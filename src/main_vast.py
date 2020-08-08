@@ -1,4 +1,3 @@
-from multiprocessing import cpu_count
 import logging
 import re
 import os
@@ -38,7 +37,7 @@ ucac4 = UCAC4()
 
 
 def run_do_rest(args):
-    thread_count = cpu_count() - 1
+    thread_count = args.threads
     vastdir = utils.add_trailing_slash(args.datadir)
     resultdir = clean_and_create_resultdir(args.resultdir, vastdir)
     fieldchartsdir = resultdir + 'fieldcharts/'
@@ -61,10 +60,9 @@ def run_do_rest(args):
         ref_inside_filter = float(ref_jd) > args.jdfilter[0] and float(ref_jd) > args.jdfilter[1]
         if ref_inside_filter:
             if not args.jdrefignore:
-                assert float(ref_jd) > args.jdfilter[0] and float(ref_jd) > args.jdfilter[1], \
-                    "Reference frame JD is filtered"
+                assert not ref_inside_filter, "Reference frame JD is filtered"
             else:
-                logging.info("Reference frame JD is inside of the JD filter")
+                logging.info("Reference frame JD is inside of the JD filter, but you indicated that's ok.")
 
     if not os.path.isfile(wcs_file):
         full_ref_path = Path(args.fitsdir) / reference_frame_filename
@@ -144,10 +142,10 @@ def run_do_rest(args):
         do_charts_field.run_standard_field_charts(star_descriptions, wcs, fieldchartsdir, wcs_file, comp_stars)
 
     if args.stats:
-        do_charts_stats.plot_comparison_stars(fieldchartsdir, selected_stars, stardict)
-        do_charts_stats.plot_aperture_vs_jd(fieldchartsdir, vastdir)
-        do_charts_stats.plot_aperture_vs_airmass(fieldchartsdir, vastdir, wcs)
-        do_charts_stats.plot_merr_vs_jd(fieldchartsdir, selected_stars)
+        do_charts_stats.plot_comparison_stars(fieldchartsdir, selected_stars, stardict, args.jdfilter)
+        do_charts_stats.plot_aperture_vs_jd(fieldchartsdir, vastdir, args.jdfilter)
+        do_charts_stats.plot_aperture_vs_airmass(fieldchartsdir, vastdir, wcs, args.jdfilter)
+        do_charts_stats.plot_merr_vs_jd(fieldchartsdir, selected_stars, args.jdfilter)
 
     if args.site:
         ids = [x.local_id for x in selected_stars]

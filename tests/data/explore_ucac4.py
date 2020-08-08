@@ -22,8 +22,8 @@ def process_file(uc, zone_nr, bucket, process_func):
 
 
 def print_pretty_stars(uc, zone_nr, bucket, run_nrs, stars):
-    for star in stars:
-
+    # for star in stars:
+    return "TODO"
 
 
 def get_ra_decs(uc, zone_nr, bucket, run_nrs, stars):

@@ -60,13 +60,23 @@ def get_localid_to_sd_dict(stars: List[StarDescription]) -> Dict[int, StarDescri
 def catalog_filter(star: StarDescription, catalog_name):
     return star.has_metadata(catalog_name)
 
-def jd_filter(df: DataFrame, jdfilter: List[float]):
+# filters a DataFrame with a floatJD column according to julian dates
+def jd_filter_df(df: DataFrame, jdfilter: List[float]):
     """ takes a list of 2 julian dates and uses these so the region between them is not used. The DataFrame needs a column named 'floatJD' """
     if jdfilter is not None:
+        logging.info(f"jdfilter is: {jdfilter}, of type {type(jdfilter)}, df.floatJD is of type {df.floatJD.dtypes}")
         df = df[(df.floatJD <= jdfilter[0]) | (df.floatJD >= jdfilter[1])]
         if len(df) < 2:
             logging.warning(f"Applying the jdfilter caused the lightcurve to contain less than 2 points! "
                     f"Everything between {jdfilter[0]} and {jdfilter[1]} is thrown away")
+    return df
+
+
+def jd_filter_array(x, y, jdfilter: List[float]):
+    if jdfilter is not None:
+        return zip(*filter(lambda x: x[0] <= jdfilter[0] or x[0] >= jdfilter[1], zip(x,y)))
+    else:
+        return x, y
 
 def get_hms_dms(coord: SkyCoord):
     return "{:2.0f}h {:02.0f}m {:02.2f}s  {:2.0f}d {:02.0f}' {:02.2f}\"" \
@@ -81,7 +91,7 @@ def get_hms_dms_sober(coord: SkyCoord):
 
 
 def get_hms_dms_matplotlib(coord: SkyCoord):
-    return "{:2.0f}$^h$ {:02.0f}$^m$ {:02.2f}$^s$ | {:2.0f}$\degree$ {:02.0f}$'$ {:02.2f}$''$" \
+    return r"{:2.0f}$^h$ {:02.0f}$^m$ {:02.2f}$^s$ | {:2.0f}$\degree$ {:02.0f}$'$ {:02.2f}$''$" \
         .format(coord.ra.hms.h, abs(coord.ra.hms.m), abs(coord.ra.hms.s),
                 coord.dec.dms.d, abs(coord.dec.dms.m), abs(coord.dec.dms.s))
 
@@ -138,7 +148,7 @@ class MetadataSorter:
 
     def get_mixed_sort_value(self, startuple: Tuple[int, StarDescription], names: List[str]):
         """ gets the value to sort, works with mixed int/str types """
-        idx, star = startuple
+        idx, _ = startuple
         name = names[idx]
         if name is None:
             result = -1, -1
@@ -172,13 +182,6 @@ class MetadataSorter:
                 logging.warning(
                     f"The metadata {obj} does not have a name variable called {name_var}")
             return None
-
-
-    def mixed_name_extract(self, the_star):
-        star_name = the_star.our_name
-        assert star_name is not None, f"{the_star} contains None as our_name"
-        return (0, self.get_metadata_name_number_part(star_name)) if isinstance(star_name, str) else (1, star_name)
-
 
     def __call__(self, stars: List[StarDescription], metadata_id='SITE', name_variable='name', warnings=True):
         metadata = [MetadataSorter.get_metadata_from_star(x, metadata_id, warnings) for x in stars]
