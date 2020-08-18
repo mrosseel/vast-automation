@@ -17,11 +17,12 @@ WORKDIR /home/jovyan
 RUN git clone https://github.com/mrosseel/vast-automation.git
 RUN git clone https://github.com/dwkim78/upsilon.git  && \
     mkdir -p .jupyter
-WORKDIR /home/jovyan/vast-automation
-RUN pipenv install --system --deploy --ignore-pipfile
 COPY jupyter_notebook_config.json .jupyter/jupyter_notebook_config.json
 USER root
 RUN chmod 777 .jupyter/jupyter_notebook_config.json
+WORKDIR /home/jovyan/vast-automation
+USER $NB_USER
+RUN pipenv install --system --deploy --ignore-pipfile
 WORKDIR /home/jovyan/upsilon
 RUN python3 setup.py install
 WORKDIR /home/jovyan/work
