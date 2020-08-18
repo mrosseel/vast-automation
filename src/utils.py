@@ -60,23 +60,27 @@ def get_localid_to_sd_dict(stars: List[StarDescription]) -> Dict[int, StarDescri
 def catalog_filter(star: StarDescription, catalog_name):
     return star.has_metadata(catalog_name)
 
+
 # filters a DataFrame with a floatJD column according to julian dates
 def jd_filter_df(df: DataFrame, jdfilter: List[float]):
     """ takes a list of 2 julian dates and uses these so the region between them is not used. The DataFrame needs a column named 'floatJD' """
     if jdfilter is not None:
-        logging.info(f"jdfilter is: {jdfilter}, of type {type(jdfilter)}, df.floatJD is of type {df.floatJD.dtypes}")
+        logging.debug(f"Before jd_filter_df(): jdfilter is: {jdfilter}, len is {len(df)}")
         df = df[(df.floatJD <= jdfilter[0]) | (df.floatJD >= jdfilter[1])]
+        logging.debug(f"After jd_filter_df(): len is {len(df)}")
         if len(df) < 2:
             logging.warning(f"Applying the jdfilter caused the lightcurve to contain less than 2 points! "
                     f"Everything between {jdfilter[0]} and {jdfilter[1]} is thrown away")
     return df
 
 
-def jd_filter_array(x, y, jdfilter: List[float]):
+def jd_filter_array(jds, values, jdfilter: List[float]):
+    """ takes a JD array and a value array (mags) together with a min/max jdfilter list """
     if jdfilter is not None:
-        return zip(*filter(lambda x: x[0] <= jdfilter[0] or x[0] >= jdfilter[1], zip(x,y)))
+        logging.debug(f"jd_filter_array(): jdfilter is: {jdfilter}, of type {type(jdfilter)}")
+        return zip(*filter(lambda jdsvaluezip: jdsvaluezip[0] <= jdfilter[0] or jdsvaluezip[0] >= jdfilter[1], zip(jds,values)))
     else:
-        return x, y
+        return jds, values
 
 def get_hms_dms(coord: SkyCoord):
     return "{:2.0f}h {:02.0f}m {:02.2f}s  {:2.0f}d {:02.0f}' {:02.2f}\"" \
@@ -144,7 +148,6 @@ def metadata_filter(star: StarDescription, catalog_name, exclude=[]):
 
 class MetadataSorter:
     pattern = re.compile(r'.*?(\d+)$')  # finding the number in our name
-
 
     def get_mixed_sort_value(self, startuple: Tuple[int, StarDescription], names: List[str]):
         """ gets the value to sort, works with mixed int/str types """
@@ -253,7 +256,6 @@ def get_star_names(star: StarDescription) -> List[str]:
         if new not in alist:
             alist.append(new)
 
-
     names = []
     if star.has_metadata("VSX"):
         unique_append(names, star.get_metadata("VSX").name)
@@ -297,6 +299,8 @@ def replace_underscores(a_string: str):
     return a_string.replace('_', ' ')
 
 # not used
+
+
 def find_index_of_file(the_dir, the_file, the_filter='*'):
     the_dir = glob.glob(the_dir + "*" + the_filter)
     the_dir.sort()
@@ -304,8 +308,9 @@ def find_index_of_file(the_dir, the_file, the_filter='*'):
     return indices[0]
 
 # not used
+
+
 def find_file_for_index(the_dir, index, the_filter='*'):
     the_dir = glob.glob(the_dir + the_filter)
     the_dir.sort()
     return the_dir[index]
-

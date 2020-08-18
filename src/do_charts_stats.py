@@ -57,12 +57,10 @@ def helper_plot_stars(star: StarDescription, chartsdir: str, starui: utils.StarU
     number = len(dfs)
     colors = [cmap(i) for i in np.linspace(0, 1, number + 1)]
     title = f"{starui.filename_no_suff_no_ext} comp. stars{' + V' if not show_error else ''}"
-    for idx, df in enumerate(dfs):
-        df['floatJD'] = df['JD'].astype(float)
-        df['Vrel30'] = df['Vrel'] + 30
-        logging.info(f"Before filtering the length is {len(df)}")
-        df = utils.jd_filter_df(df, jdfilter)
-        logging.info(f"floatjd: {df['floatJD']}, jdfilter: {jdfilter}, after filtering the length is {len(df)}")
+    for idx, dfx in enumerate(dfs):
+        dfx['floatJD'] = dfx['JD'].astype(float)
+        dfx['Vrel30'] = dfx['Vrel'] + 30
+        df = utils.jd_filter_df(dfx, jdfilter)
         xmax = max(xmax, df['floatJD'].max())
         xmin = min(xmin, df['floatJD'].min())
         ymax = max(ymax, df['Vrel30'].max())
@@ -93,7 +91,6 @@ def helper_plot_stars(star: StarDescription, chartsdir: str, starui: utils.StarU
     fig.savefig(save_location)
     plt.close(fig)
     return save_location
-
 
 # read all image.cat.info files
 # get JD and aperture via regex
