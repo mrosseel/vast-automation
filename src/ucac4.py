@@ -151,10 +151,9 @@ class UCAC4:
                 ucac_path = Path(os.environ['ucac4_path'])
                 print("found environ with ucac45 path", ucac_path)
             except KeyError:
-                print("no environment found")
                 logging.debug("No ucac path passed, and no environment var, using default")
                 ucac_path = Path('./support/ucac4/UCAC4/')
-        print("Ucac path is", ucac_path)
+        logging.info("Ucac path is", ucac_path)
         # star id given by munipack
         self.ucac_path = ucac_path
         self.zones_cache = LRUCache(capacity=10)
