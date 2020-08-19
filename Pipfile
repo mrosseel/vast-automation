@@ -17,6 +17,7 @@ ipython-genutils = "*"
 coverage = "*"
 rope = "*"
 pylint = "*"
+black = "*"
 
 [packages]
 appnope = "*"
@@ -73,3 +74,7 @@ webencodings = "*"
 gatspy = "*"
 ipdb = "*"
 ipykernel = "*"
+black = "*"
+
+[pipenv]
+allow_prereleases = true

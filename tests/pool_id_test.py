@@ -1,10 +1,12 @@
 from functools import partial
 from multiprocessing import Pool
 
+
 def thing(it, bullshit=False):
     print(f"For {it} we have id {id(it)}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     func = partial(thing, bullshit=True)
     pool = Pool(4)
     thelist = [x for x in range(1, 20)]

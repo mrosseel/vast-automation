@@ -11,7 +11,7 @@ from pandas import DataFrame
 from pathlib import Path
 from astropy.coordinates import SkyCoord
 
-test_file_path = PurePath(os.getcwd(), 'tests', 'data')
+test_file_path = PurePath(os.getcwd(), "tests", "data")
 epsilon = 0.0000001
 
 
@@ -19,21 +19,18 @@ class TestUcac4(unittest.TestCase):
     def setUp(self) -> None:
         logging.getLogger().setLevel(logging.DEBUG)
         logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
-        self.UCAC4_ID = 'UCAC4 001-000003'
+        self.UCAC4_ID = "UCAC4 001-000003"
         # self.ucac4 = UCAC4(ucac_path=Path('tests/data/'))
         self.ucac4 = UCAC4()
-
 
     def test_get_ucactuple_for_zone_and_runnrs(self):
         # ucac4.get_ucac4_star_description_raw('UCAC4 001-000003')
         result = self.ucac4.get_ucactuples_for_zone_and_runnrs(1, [3])
         self.assertEqual(result[0][0].ra, 18290451)
 
-
     def test_get_ucactuple_from_id(self):
         result = self.ucac4.get_ucactuple_from_id(self.UCAC4_ID)
         self.assertEqual(result[0].ra, 18290451)
-
 
     def test_get_ucac4_star_description(self):
         result = self.ucac4.get_star_description_from_id(self.UCAC4_ID)
@@ -45,23 +42,20 @@ class TestUcac4(unittest.TestCase):
         self.assertTrue(result.coords.dec.deg - -89.81054306 < epsilon)
         self.assertEqual(result.vmag, 10.986)
 
-
     def test_name_to_zone_and_run_nr(self):
         zone, runnr = self.ucac4.ucac_id_to_zone_and_run_nr(self.UCAC4_ID)
         self.assertEqual(zone, 1)
         self.assertEqual(runnr, 3)
 
-
     def test_zone_and_run_nr_to_name(self):
         ucac4_id = self.ucac4.zone_and_run_nr_to_name(1, 3)
         self.assertEqual(ucac4_id, self.UCAC4_ID)
-
 
     def test_get_ucac4_id(self):
         # Compstar match: UCAC4 231-154752 with 3174 (271.2347344444444 deg, -43.84581611111111 deg)
         # Compstar match: UCAC4 232-147677 with 2620 (271.2807819444444 deg, -43.77729194444444 deg)
         ra, dec = 271.23473, -43.845816
-        target = SkyCoord(ra, dec, unit='deg')
+        target = SkyCoord(ra, dec, unit="deg")
         result = self.ucac4.get_sd_from_ra_dec(ra, dec)
         self.assertEqual("UCAC4 231-154752", result.aavso_id)
         self.assertEqual(12.107, result.vmag)
@@ -90,7 +84,6 @@ class TestUcac4(unittest.TestCase):
         result = self.ucac4.get_sd_from_ra_dec(ra, dec)
         self.assertEqual("UCAC4 233-155696", result.aavso_id)
 
-
     def test_get_zone_for_dec(self):
         self.assertEqual(1, self.ucac4.get_zone_for_dec(-90))
         self.assertEqual(2, self.ucac4.get_zone_for_dec(-89.8))
@@ -99,12 +92,10 @@ class TestUcac4(unittest.TestCase):
         self.assertEqual(5, self.ucac4.get_zone_for_dec(-89.2))
         self.assertEqual(900, self.ucac4.get_zone_for_dec(90))
 
-
     def test_get_ra_bucket(self):
         self.assertEqual(1440, self.ucac4.ra_bin_index(360))  # 1440 but zero based
         self.assertEqual(1, self.ucac4.ra_bin_index(0))
         self.assertEqual(720, self.ucac4.ra_bin_index(180))  # 720 but zero based
-
 
     def test_mag_error(self):
         # 'UCAC4 232-146904'
@@ -114,7 +105,7 @@ class TestUcac4(unittest.TestCase):
         # Vmag	11.957 	mag, e_Vmag	01 cmag
         self.assertEqual(-1, raw[0][0].apass_mag_sigma_V)
         sd: StarDescription = self.ucac4.get_star_description_from_tuple(raw[0])
-        self.assertEqual(.01, sd.vmag_err)
+        self.assertEqual(0.01, sd.vmag_err)
 
         # first entry of out.sam
         # raw = self.ucac4.get_ucac4_details_raw('451', [133336])
@@ -123,13 +114,12 @@ class TestUcac4(unittest.TestCase):
         # self.assertEqual(.05, sd.e_vmag)
         # print("bl")
 
-
     def test_get_ucac4_range_tuples(self):
         result = self.ucac4.get_region_minimal_star_tuples(40, 40, 1)
         self.assertEqual(2480, len(result))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
     unittest.main()

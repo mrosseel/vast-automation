@@ -23,13 +23,11 @@ class TestDoCalibration(unittest.TestCase):
     #             total += 1
     #     self.assertEqual(1, total)
 
-
     def stardesc(self, id, ra, dec):
-        return StarDescription(local_id=id,
-                               coords=SkyCoord(ra, dec, unit='deg'))
+        return StarDescription(local_id=id, coords=SkyCoord(ra, dec, unit="deg"))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logging.getLogger().setLevel(logging.DEBUG)
     logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
     unittest.main()

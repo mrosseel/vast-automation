@@ -27,7 +27,7 @@ from ucac4 import UCAC4, MinimalStarTuple
 
 padding = 0
 dpi = 100
-RefFrame = namedtuple('RefFrame', 'ref_jd path_to_solved path_to_reference_frame')
+RefFrame = namedtuple("RefFrame", "ref_jd path_to_solved path_to_reference_frame")
 ucac4 = UCAC4()
 
 
@@ -38,16 +38,22 @@ def process(stars_input):
     sd1 = ucac4.get_star_description_from_tuple(*star1)
     star2 = ucac4.get_ucactuple_from_id(stars[1])[0]
     sd2 = ucac4.get_star_description_from_tuple(*star2)
-    logging.info(f"Separation from {stars[0]} to {stars[1]} = {sd1.coords.separation(sd2.coords)}")
+    logging.info(
+        f"Separation from {stars[0]} to {stars[1]} = {sd1.coords.separation(sd2.coords)}"
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
     logging.basicConfig(format="%(asctime)s %(name)s: %(levelname)s %(message)s")
-    parser = argparse.ArgumentParser(description='munipack automation cli')
-    parser.add_argument('-s', '--stars', help="List the star id's to plot", nargs='+', required=False)
-    parser.add_argument('-x', '--verbose', help="Set logging to debug mode", action="store_true")
+    parser = argparse.ArgumentParser(description="munipack automation cli")
+    parser.add_argument(
+        "-s", "--stars", help="List the star id's to plot", nargs="+", required=False
+    )
+    parser.add_argument(
+        "-x", "--verbose", help="Set logging to debug mode", action="store_true"
+    )
     args = parser.parse_args()
     # add the handlers to the logger
     if args.verbose:

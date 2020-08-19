@@ -18,8 +18,11 @@ from collections import namedtuple
 from pandas import DataFrame
 
 # all info needed for ui purposes
-StarUI = namedtuple('StarInfo', 'catalog_name, separation, extradata, filename_orig_no_ext, filename_no_ext, '
-                                'filename_orig_no_suff_no_ext, filename_no_suff_no_ext')
+StarUI = namedtuple(
+    "StarInfo",
+    "catalog_name, separation, extradata, filename_orig_no_ext, filename_no_ext, "
+    "filename_orig_no_suff_no_ext, filename_no_suff_no_ext",
+)
 StarDict = Dict[int, StarDescription]
 
 
@@ -27,15 +30,19 @@ StarDict = Dict[int, StarDescription]
 def file_selector(the_dir, match_pattern, percentage=1) -> List[str]:
     matched_files = glob.glob(the_dir + match_pattern)
     desired_length = max(1, int(len(matched_files) * float(percentage)))
-    logging.debug(f"Reading.file_selector: {the_dir + match_pattern}, "
-                  f"total:{len(matched_files)}, desired:{desired_length}")
+    logging.debug(
+        f"Reading.file_selector: {the_dir + match_pattern}, "
+        f"total:{len(matched_files)}, desired:{desired_length}"
+    )
     np.random.seed(42)  # for the same percentage, we always get the same selection
-    selected_files = np.random.choice(matched_files, size=desired_length, replace=False).tolist()
+    selected_files = np.random.choice(
+        matched_files, size=desired_length, replace=False
+    ).tolist()
     return selected_files
 
 
 def add_trailing_slash(the_path):
-    return join(the_path, '')
+    return join(the_path, "")
 
 
 def get_files_in_dir(mypath):
@@ -44,8 +51,8 @@ def get_files_in_dir(mypath):
 
 # out012345.dat -> 12345
 def get_starid_from_outfile(outfile) -> int:
-    m = re.search('out(.*).dat', outfile)
-    return int(m.group(1).lstrip('0'))
+    m = re.search("out(.*).dat", outfile)
+    return int(m.group(1).lstrip("0"))
 
 
 # returns a dict with the local_id as key
@@ -65,45 +72,78 @@ def catalog_filter(star: StarDescription, catalog_name):
 def jd_filter_df(df: DataFrame, jdfilter: List[float]):
     """ takes a list of 2 julian dates and uses these so the region between them is not used. The DataFrame needs a column named 'floatJD' """
     if jdfilter is not None:
-        logging.debug(f"Before jd_filter_df(): jdfilter is: {jdfilter}, len is {len(df)}")
+        logging.debug(
+            f"Before jd_filter_df(): jdfilter is: {jdfilter}, len is {len(df)}"
+        )
         df = df[(df.floatJD <= jdfilter[0]) | (df.floatJD >= jdfilter[1])]
         logging.debug(f"After jd_filter_df(): len is {len(df)}")
         if len(df) < 2:
-            logging.warning(f"Applying the jdfilter caused the lightcurve to contain less than 2 points! "
-                    f"Everything between {jdfilter[0]} and {jdfilter[1]} is thrown away")
+            logging.warning(
+                f"Applying the jdfilter caused the lightcurve to contain less than 2 points! "
+                f"Everything between {jdfilter[0]} and {jdfilter[1]} is thrown away"
+            )
     return df
 
 
 def jd_filter_array(jds, values, jdfilter: List[float]):
     """ takes a JD array and a value array (mags) together with a min/max jdfilter list """
     if jdfilter is not None:
-        logging.debug(f"jd_filter_array(): jdfilter is: {jdfilter}, of type {type(jdfilter)}")
-        return zip(*filter(lambda jdsvaluezip: jdsvaluezip[0] <= jdfilter[0] or jdsvaluezip[0] >= jdfilter[1], zip(jds,values)))
+        logging.debug(
+            f"jd_filter_array(): jdfilter is: {jdfilter}, of type {type(jdfilter)}"
+        )
+        return zip(
+            *filter(
+                lambda jdsvaluezip: jdsvaluezip[0] <= jdfilter[0]
+                or jdsvaluezip[0] >= jdfilter[1],
+                zip(jds, values),
+            )
+        )
     else:
         return jds, values
 
+
 def get_hms_dms(coord: SkyCoord):
-    return "{:2.0f}h {:02.0f}m {:02.2f}s  {:2.0f}d {:02.0f}' {:02.2f}\"" \
-        .format(coord.ra.hms.h, abs(coord.ra.hms.m), abs(coord.ra.hms.s),
-                coord.dec.dms.d, abs(coord.dec.dms.m), abs(coord.dec.dms.s))
+    return "{:2.0f}h {:02.0f}m {:02.2f}s  {:2.0f}d {:02.0f}' {:02.2f}\"".format(
+        coord.ra.hms.h,
+        abs(coord.ra.hms.m),
+        abs(coord.ra.hms.s),
+        coord.dec.dms.d,
+        abs(coord.dec.dms.m),
+        abs(coord.dec.dms.s),
+    )
 
 
 def get_hms_dms_sober(coord: SkyCoord):
-    return "{:2.0f} {:02.0f} {:02.2f}  {:2.0f} {:02.0f} {:02.2f}" \
-        .format(coord.ra.hms.h, abs(coord.ra.hms.m), abs(coord.ra.hms.s),
-                coord.dec.dms.d, abs(coord.dec.dms.m), abs(coord.dec.dms.s))
+    return "{:2.0f} {:02.0f} {:02.2f}  {:2.0f} {:02.0f} {:02.2f}".format(
+        coord.ra.hms.h,
+        abs(coord.ra.hms.m),
+        abs(coord.ra.hms.s),
+        coord.dec.dms.d,
+        abs(coord.dec.dms.m),
+        abs(coord.dec.dms.s),
+    )
 
 
 def get_hms_dms_matplotlib(coord: SkyCoord):
-    return r"{:2.0f}$^h$ {:02.0f}$^m$ {:02.2f}$^s$ | {:2.0f}$\degree$ {:02.0f}$'$ {:02.2f}$''$" \
-        .format(coord.ra.hms.h, abs(coord.ra.hms.m), abs(coord.ra.hms.s),
-                coord.dec.dms.d, abs(coord.dec.dms.m), abs(coord.dec.dms.s))
+    return r"{:2.0f}$^h$ {:02.0f}$^m$ {:02.2f}$^s$ | {:2.0f}$\degree$ {:02.0f}$'$ {:02.2f}$''$".format(
+        coord.ra.hms.h,
+        abs(coord.ra.hms.m),
+        abs(coord.ra.hms.s),
+        coord.dec.dms.d,
+        abs(coord.dec.dms.m),
+        abs(coord.dec.dms.s),
+    )
 
 
 def get_lesve_coords(coord: SkyCoord):
-    return "{:2.0f} {:02.0f} {:02.2f} {:2.0f} {:02.0f} {:02.2f}" \
-        .format(coord.ra.hms.h, abs(coord.ra.hms.m), abs(coord.ra.hms.s),
-                coord.dec.dms.d, abs(coord.dec.dms.m), abs(coord.dec.dms.s))
+    return "{:2.0f} {:02.0f} {:02.2f} {:2.0f} {:02.0f} {:02.2f}".format(
+        coord.ra.hms.h,
+        abs(coord.ra.hms.m),
+        abs(coord.ra.hms.s),
+        coord.dec.dms.d,
+        abs(coord.dec.dms.m),
+        abs(coord.dec.dms.s),
+    )
 
 
 def get_pool(processes=cpu_count() - 1, maxtasksperchild=10):
@@ -121,11 +161,18 @@ def add_metadata(stars: List[star_description.StarDescription], metadata: StarMe
         star.metadata = metadata
 
 
-def get_stars_with_metadata(stars: List[star_description.StarMetaData], catalog_name: str,
-                            exclude: List[str] = []) -> List[star_description.StarDescription]:
+def get_stars_with_metadata(
+    stars: List[star_description.StarMetaData],
+    catalog_name: str,
+    exclude: List[str] = [],
+) -> List[star_description.StarDescription]:
     # gets all stars which have a catalog of name catalog_name
     assert isinstance(exclude, list) and isinstance(stars, list)
-    return list(filter(partial(metadata_filter, catalog_name=catalog_name, exclude=exclude), stars))
+    return list(
+        filter(
+            partial(metadata_filter, catalog_name=catalog_name, exclude=exclude), stars
+        )
+    )
 
 
 def concat_sd_lists(*star_descriptions):
@@ -147,9 +194,11 @@ def metadata_filter(star: StarDescription, catalog_name, exclude=[]):
 
 
 class MetadataSorter:
-    pattern = re.compile(r'.*?(\d+)$')  # finding the number in our name
+    pattern = re.compile(r".*?(\d+)$")  # finding the number in our name
 
-    def get_mixed_sort_value(self, startuple: Tuple[int, StarDescription], names: List[str]):
+    def get_mixed_sort_value(
+        self, startuple: Tuple[int, StarDescription], names: List[str]
+    ):
         """ gets the value to sort, works with mixed int/str types """
         idx, _ = startuple
         name = names[idx]
@@ -161,20 +210,22 @@ class MetadataSorter:
             result = 1, self.get_string_number_part_or_default(name)
         return result
 
-
-    def get_string_number_part_or_default(self, star_name: str, default_value: int = sys.maxsize):
+    def get_string_number_part_or_default(
+        self, star_name: str, default_value: int = sys.maxsize
+    ):
         match = re.match(self.pattern, star_name)
         return int(match.group(1)) if match is not None else default_value
 
-
     @staticmethod
-    def get_metadata_from_star(star: StarDescription, metadata_id: str, warnings: bool = False):
+    def get_metadata_from_star(
+        star: StarDescription, metadata_id: str, warnings: bool = False
+    ):
         result = star.get_metadata(metadata_id)
         if result is None and warnings:
             logging.warning(
-                f"The metadata {metadata_id} for star {star.local_id} does not exist")
+                f"The metadata {metadata_id} for star {star.local_id} does not exist"
+            )
         return result
-
 
     @staticmethod
     def get_name_from_metadata(obj, name_var: str, warning: bool = False):
@@ -183,13 +234,31 @@ class MetadataSorter:
         except AttributeError:
             if warning:
                 logging.warning(
-                    f"The metadata {obj} does not have a name variable called {name_var}")
+                    f"The metadata {obj} does not have a name variable called {name_var}"
+                )
             return None
 
-    def __call__(self, stars: List[StarDescription], metadata_id='SITE', name_variable='name', warnings=True):
-        metadata = [MetadataSorter.get_metadata_from_star(x, metadata_id, warnings) for x in stars]
-        names = [MetadataSorter.get_name_from_metadata(x, name_variable, warnings) for x in metadata]
-        sorted_stars = [x[1] for x in sorted(enumerate(stars), key=partial(self.get_mixed_sort_value, names=names))]
+    def __call__(
+        self,
+        stars: List[StarDescription],
+        metadata_id="SITE",
+        name_variable="name",
+        warnings=True,
+    ):
+        metadata = [
+            MetadataSorter.get_metadata_from_star(x, metadata_id, warnings)
+            for x in stars
+        ]
+        names = [
+            MetadataSorter.get_name_from_metadata(x, name_variable, warnings)
+            for x in metadata
+        ]
+        sorted_stars = [
+            x[1]
+            for x in sorted(
+                enumerate(stars), key=partial(self.get_mixed_sort_value, names=names)
+            )
+        ]
         return sorted_stars
 
 
@@ -202,9 +271,13 @@ def sort_selected(stars: List[StarDescription]) -> List[StarDescription]:
     vsx = get_stars_with_metadata(stars, "VSX")
     # logging.info(f"Vsx stars: {[x for x in non_vsx]}")
     assert len(stars) == len(non_vsx) + len(vsx)
-    non_vsx_sorted_stars = metadata_sorter(non_vsx, metadata_id="SITE", name_variable='our_name')
+    non_vsx_sorted_stars = metadata_sorter(
+        non_vsx, metadata_id="SITE", name_variable="our_name"
+    )
     # logging.info(f"Non vsx stars sorted: {[x for x in non_vsx_sorted_stars]}")
-    vsx_sorted_stars = metadata_sorter(vsx, metadata_id="SITE", name_variable='our_name')
+    vsx_sorted_stars = metadata_sorter(
+        vsx, metadata_id="SITE", name_variable="our_name"
+    )
     # logging.info(f"Vsx stars sorted: {[x for x in vsx_sorted_stars]}")
     return non_vsx_sorted_stars + vsx_sorted_stars
 
@@ -238,8 +311,11 @@ def get_star_or_catalog_name(star: StarDescription, suffix: str = "") -> StarUI:
         catalog_name, separation = catalog.name, catalog.separation
     else:
         catalog_name, separation = star.local_id, None
-    filename_no_suff_no_ext = f"{int(catalog_name):05}" \
-        if isinstance(catalog_name, int) or catalog_name.isdigit() else f"{catalog_name}"
+    filename_no_suff_no_ext = (
+        f"{int(catalog_name):05}"
+        if isinstance(catalog_name, int) or catalog_name.isdigit()
+        else f"{catalog_name}"
+    )
     filename_no_ext = f"{filename_no_suff_no_ext}{suffix}"
 
     filename_orig_no_ext = filename_no_ext
@@ -247,8 +323,15 @@ def get_star_or_catalog_name(star: StarDescription, suffix: str = "") -> StarUI:
 
     filename_orig_no_suff_no_ext = filename_no_suff_no_ext
     filename_no_suff_no_ext = replace_spaces(replace_dots(filename_orig_no_suff_no_ext))
-    return StarUI(catalog_name, separation, extradata, filename_orig_no_ext, filename_no_ext,
-                  filename_orig_no_suff_no_ext, filename_no_suff_no_ext)
+    return StarUI(
+        catalog_name,
+        separation,
+        extradata,
+        filename_orig_no_ext,
+        filename_no_ext,
+        filename_orig_no_suff_no_ext,
+        filename_no_suff_no_ext,
+    )
 
 
 def get_star_names(star: StarDescription) -> List[str]:
@@ -286,31 +369,33 @@ def get_full_ucac4_id(ucac4_input: str) -> str:
 
 # replace spaces with dashes
 def replace_dots(a_string: str):
-    return a_string.replace('.', '-')
+    return a_string.replace(".", "-")
 
 
 # replace spaces with underscores
 def replace_spaces(a_string: str):
-    return a_string.replace(' ', '_')
+    return a_string.replace(" ", "_")
 
 
 # replace spaces with underscores
 def replace_underscores(a_string: str):
-    return a_string.replace('_', ' ')
+    return a_string.replace("_", " ")
+
 
 # not used
 
 
-def find_index_of_file(the_dir, the_file, the_filter='*'):
+def find_index_of_file(the_dir, the_file, the_filter="*"):
     the_dir = glob.glob(the_dir + "*" + the_filter)
     the_dir.sort()
     indices = [i for i, elem in enumerate(the_dir) if the_file in elem]
     return indices[0]
 
+
 # not used
 
 
-def find_file_for_index(the_dir, index, the_filter='*'):
+def find_file_for_index(the_dir, index, the_filter="*"):
     the_dir = glob.glob(the_dir + the_filter)
     the_dir.sort()
     return the_dir[index]

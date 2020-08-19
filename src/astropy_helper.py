@@ -10,13 +10,15 @@ import reading
 
 # not used
 def calculate_wcs_manual(reference_frame, xpos, ypos, arcsec_width, arcsec_height):
-    object_ra, object_dec, naxis1, naxis2, jd= get_data_from_fits_header(reference_frame)
+    object_ra, object_dec, naxis1, naxis2, jd = get_data_from_fits_header(
+        reference_frame
+    )
     c = SkyCoord(object_ra, object_dec, unit="deg")
     return [setup_wcs(c, naxis1, naxis2, xpos, ypos, arcsec_width, arcsec_height), jd]
 
 
 def calculate_wcs_from_file(header, frame, xpos, ypos):
-    object_ra, object_dec, naxis1, naxis2, jd= get_data_from_fits_header(frame)
+    object_ra, object_dec, naxis1, naxis2, jd = get_data_from_fits_header(frame)
     c = SkyCoord(object_ra, object_dec, unit="deg")
     return [setup_wcs_from_file(header, c, xpos, ypos), jd]
 
@@ -25,7 +27,10 @@ def setup_wcs(coord, naxis1, naxis2, xpos, ypos, arcsec_width, arcsec_height):
     w = wcs.WCS(naxis=2)
     # Set up an "Airy's zenithal" projection
     # Vector properties may be set with Python lists, or Numpy arrays
-    w.wcs.crpix = [xpos, ypos] # the so-called center, this is the position of our main star, given by the user
+    w.wcs.crpix = [
+        xpos,
+        ypos,
+    ]  # the so-called center, this is the position of our main star, given by the user
     w.wcs.cdelt = np.array([-0.000572222222222, 0.000572222222222])
     w.wcs.crval = [coord.ra.degree, coord.dec.degree]
     w.wcs.ctype = ["RA---AIR", "DEC--AIR"]
@@ -35,20 +40,24 @@ def setup_wcs(coord, naxis1, naxis2, xpos, ypos, arcsec_width, arcsec_height):
 def setup_wcs_from_file(header, coord, xpos, ypos):
     header_fits = get_fits_header(header)
     w = wcs.WCS(header_fits)
-    w.wcs.crpix = [xpos, ypos] # the so-called center, this is the position of our main star, given by the user
+    w.wcs.crpix = [
+        xpos,
+        ypos,
+    ]  # the so-called center, this is the position of our main star, given by the user
     w.wcs.crval = [coord.ra.degree, coord.dec.degree]
     return w
+
 
 ### HELPER functions
 
 
 def get_data_from_fits_header(reference_frame):
     fits_header = get_fits_header(reference_frame)
-    object_ra = fits_header['OBJCTRA']
-    object_dec = fits_header['OBJCTDEC']
-    naxis1 = fits_header['NAXIS1']
-    naxis2 = fits_header['NAXIS2']
-    jd = fits_header['JD']
+    object_ra = fits_header["OBJCTRA"]
+    object_dec = fits_header["OBJCTDEC"]
+    naxis1 = fits_header["NAXIS1"]
+    naxis2 = fits_header["NAXIS2"]
+    jd = fits_header["JD"]
     return [object_ra, object_dec, naxis1, naxis2, jd]
 
 
@@ -59,9 +68,10 @@ def get_fits_header(reference_file):
 
 # TEST code
 
+
 def testing(w):
     # Some pixel coordinates of interest.
-    pixcrd = np.array([[0, 0], [1365/2.0, 1365/2.0], [0, 1365]], np.float_)
+    pixcrd = np.array([[0, 0], [1365 / 2.0, 1365 / 2.0], [0, 1365]], np.float_)
     logging.info(pixcrd)
 
     # Convert pixel coordinates to world coordinates
@@ -79,31 +89,32 @@ def testing(w):
 
 
 def test_code(reference_frame, xpos, ypos, arcsecond_width, arssecond_heigth):
-    reference_frame_full = settings.fitsdir +reference_frame
+    reference_frame_full = settings.fitsdir + reference_frame
     fits_header = get_fits_header(reference_frame_full)
-    object_ra = fits_header['OBJCTRA']
-    object_dec = fits_header['OBJCTDEC']
-    naxis1 = fits_header['NAXIS1']
-    naxis2 = fits_header['NAXIS2']
-    JD = fits_header['JD']
+    object_ra = fits_header["OBJCTRA"]
+    object_dec = fits_header["OBJCTDEC"]
+    naxis1 = fits_header["NAXIS1"]
+    naxis2 = fits_header["NAXIS2"]
+    JD = fits_header["JD"]
 
-    logging.info(f"object_ra: {object_ra} object_dec: {object_dec} naxis1: {naxis1} naxis2: {naxis2}")
+    logging.info(
+        f"object_ra: {object_ra} object_dec: {object_dec} naxis1: {naxis1} naxis2: {naxis2}"
+    )
 
     # coords of center of frame of first image
     c = SkyCoord(object_ra, object_dec, unit="deg")
-    #wcs_config = setup_wcs(c, naxis1, naxis2)
-    #print("file:",reference_frame, os.getcwd())
-    #wcs_config = setup_wcs_from_file(settings.basedir +reference_frame)
-    #result = pixel_to_radec(wcs_config, 1365, 1365)
-    #print(result)
+    # wcs_config = setup_wcs(c, naxis1, naxis2)
+    # print("file:",reference_frame, os.getcwd())
+    # wcs_config = setup_wcs_from_file(settings.basedir +reference_frame)
+    # result = pixel_to_radec(wcs_config, 1365, 1365)
+    # print(result)
 
     # conesearch is deprecated and moved to astroquery
-    #conesearch.list_catalogs()
-    #my_catalog = 'Guide Star Catalog v2 1'
-    #c = SkyCoord.from_name('GSC 7911-3668')
-    #result = conesearch.conesearch(c, 0.01 * u.degree, catalog_db=my_catalog)
-    #print(result)
-
+    # conesearch.list_catalogs()
+    # my_catalog = 'Guide Star Catalog v2 1'
+    # c = SkyCoord.from_name('GSC 7911-3668')
+    # result = conesearch.conesearch(c, 0.01 * u.degree, catalog_db=my_catalog)
+    # print(result)
 
     # Set the WCS information manually by setting properties of the WCS
     # object.
@@ -111,17 +122,20 @@ def test_code(reference_frame, xpos, ypos, arcsecond_width, arssecond_heigth):
     # Create a new WCS object.  The number of axes must be set
     # from the start
     w = wcs.WCS(naxis=2)
-    logging.info(c )
+    logging.info(c)
 
     # Set up an "Airy's zenithal" projection
     # Vector properties may be set with Python lists, or Numpy arrays
-    w.wcs.crpix = [xpos, ypos] # the so-called center, this is the position of our main star, given by the user
+    w.wcs.crpix = [
+        xpos,
+        ypos,
+    ]  # the so-called center, this is the position of our main star, given by the user
     w.wcs.cdelt = np.array([-0.000572222222222, 0.000572222222222])
-    #w.wcs.crval = [spaces_position_to_comma(object_ra), spaces_position_to_comma(object_dec)]
+    # w.wcs.crval = [spaces_position_to_comma(object_ra), spaces_position_to_comma(object_dec)]
     w.wcs.ctype = ["RA---AIR", "DEC--AIR"]
 
     # Some pixel coordinates of interest.
-    pixcrd = np.array([[0, 0], [1365/2.0, 1365/2.0], [0, 1365]], np.float_)
+    pixcrd = np.array([[0, 0], [1365 / 2.0, 1365 / 2.0], [0, 1365]], np.float_)
     logging.info(pixcrd)
 
     # Convert pixel coordinates to world coordinates
@@ -146,9 +160,10 @@ def test_code(reference_frame, xpos, ypos, arcsecond_width, arssecond_heigth):
     # Save to FITS file
     # hdu.writeto('test.fits')
 
-#w, jd = calculate_wcs('WWCrA#30V_000185980_FLAT.fit', 695, 671, 47*60, 47*60)
+
+# w, jd = calculate_wcs('WWCrA#30V_000185980_FLAT.fit', 695, 671, 47*60, 47*60)
 # w, jd = calculate_wcs_from_file(settings.reference_header, init.reference_dir+init.reference_frame, init.xpos, init.ypos)
 # logging.info(f"Astropy helper main method calculated w:{w} and jd: {jd}")
 # testing(w)
-pd.set_option('precision', 10)
+pd.set_option("precision", 10)
 # logging.info(star_to_radec(1, w, jd))

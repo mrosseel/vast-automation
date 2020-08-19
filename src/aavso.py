@@ -35,9 +35,18 @@ class ExtendedFormatWriter(object):
     .. _`Visual File Format`: http://www.aavso.org/aavso-visual-file-format
     """
 
-
-    def __init__(self, fp, observer_code, *, delimiter=',', date_format='JD', type='EXTENDED',
-                 obstype='CCD', software='pyaavso', location=("unknown", "unknown", "unknown")):
+    def __init__(
+        self,
+        fp,
+        observer_code,
+        *,
+        delimiter=",",
+        date_format="JD",
+        type="EXTENDED",
+        obstype="CCD",
+        software="pyaavso",
+        location=("unknown", "unknown", "unknown"),
+    ):
         """
         Creates the writer which will write observations into the file-like
         object given in first parameter. The only other required parameter
@@ -62,7 +71,7 @@ class ExtendedFormatWriter(object):
         self.fp = fp
         self.data = []
         self.data.append(f"#TYPE={type}")
-        self.data.append(f'#OBSCODE={observer_code}')
+        self.data.append(f"#OBSCODE={observer_code}")
         self.data.append(f"#SOFTWARE={software}")
         self.data.append(f"#DELIM={delimiter}")
         self.data.append(f"#DATE={date_format.upper()}")
@@ -70,14 +79,14 @@ class ExtendedFormatWriter(object):
         self.data.append(f"#Observation site Latitude = {location[0]}")
         self.data.append(f"#Observation site Longitude = {location[1]}")
         # self.data.append(f"#Observation site Altitude = {location[2]} m")
-        self.data.append("#NAME,DATE,MAG,MERR,FILT,TRANS,MTYPE,CNAME,CMAG,KNAME,KMAG,AMASS,GROUP,CHART,NOTES")
-
+        self.data.append(
+            "#NAME,DATE,MAG,MERR,FILT,TRANS,MTYPE,CNAME,CMAG,KNAME,KMAG,AMASS,GROUP,CHART,NOTES"
+        )
 
     def flush(self):
         string_to_write = "\n".join(self.data)
         self.fp.write(string_to_write)
         self.data = []
-
 
     def addrow(self, observation_data):
         """
@@ -96,7 +105,6 @@ class ExtendedFormatWriter(object):
             row = self.dict_to_row(observation_data)
         self.data.append(row)
 
-
     @classmethod
     def dict_to_row(cls, observation_data):
         """
@@ -108,15 +116,17 @@ class ExtendedFormatWriter(object):
         :param cls: current class
         :param observation_data: a single observation as a dictionary
         """
-        return f"{observation_data['name']:.30},{observation_data['date']:.16}," \
-               f"{observation_data['magnitude']:.3f},{observation_data['magnitude_error']:.3f}," \
-               f"{observation_data['filter']:.5},{observation_data['transformed']:.3}," \
-               f"{observation_data['magnitude_type']:.3}," \
-               f"{observation_data.get('comparison_name', 'na'):.20}," \
-               f"{observation_data.get('comparison_magnitude', 'na'):.2}," \
-               f"{observation_data['check_name']:.20}," \
-               f"{observation_data['check_magnitude']}," \
-               f"{observation_data['airmass']:.2f}," \
-               f"{observation_data.get('group', 'na'):.5}," \
-               f"{observation_data.get('chart', 'na'):.20}," \
-               f"{observation_data.get('notes', 'na'):.2000}"
+        return (
+            f"{observation_data['name']:.30},{observation_data['date']:.16},"
+            f"{observation_data['magnitude']:.3f},{observation_data['magnitude_error']:.3f},"
+            f"{observation_data['filter']:.5},{observation_data['transformed']:.3},"
+            f"{observation_data['magnitude_type']:.3},"
+            f"{observation_data.get('comparison_name', 'na'):.20},"
+            f"{observation_data.get('comparison_magnitude', 'na'):.2},"
+            f"{observation_data['check_name']:.20},"
+            f"{observation_data['check_magnitude']},"
+            f"{observation_data['airmass']:.2f},"
+            f"{observation_data.get('group', 'na'):.5},"
+            f"{observation_data.get('chart', 'na'):.20},"
+            f"{observation_data.get('notes', 'na'):.2000}"
+        )

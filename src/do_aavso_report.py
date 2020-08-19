@@ -10,11 +10,12 @@ from pathlib import PurePath, Path
 from astropy import units as u
 from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz
+
 # supress the warning about vector transforms so as not to clutter the doc build log
 import warnings
 import utils
 
-warnings.filterwarnings('ignore', module='astropy.coordinates.baseframe')
+warnings.filterwarnings("ignore", module="astropy.coordinates.baseframe")
 
 
 # TODO
@@ -31,25 +32,40 @@ warnings.filterwarnings('ignore', module='astropy.coordinates.baseframe')
 
 
 def calculate_airmass(coord, location, jd):
-    time = Time(jd, format='jd')
+    time = Time(jd, format="jd")
     alt_azs = coord.transform_to(AltAz(obstime=time, location=location))
     return alt_azs.secz
 
 
-def report(star: StarDescription, df_curve: DataFrame, comp_stars: ComparisonStars, check_star: ComparisonStars,
-           target_dir: Path, sitelat, sitelong, sitealt, camera_filter=None, observer='RMH', chunk_size=None):
-    df = df_curve.sort_values('JD')
-    star_match_ucac4 = star.get_metadata("UCAC4").name if star.has_metadata("UCAC4") else None
+def report(
+    star: StarDescription,
+    df_curve: DataFrame,
+    comp_stars: ComparisonStars,
+    check_star: ComparisonStars,
+    target_dir: Path,
+    sitelat,
+    sitelong,
+    sitealt,
+    camera_filter=None,
+    observer="RMH",
+    chunk_size=None,
+):
+    df = df_curve.sort_values("JD")
+    star_match_ucac4 = (
+        star.get_metadata("UCAC4").name if star.has_metadata("UCAC4") else None
+    )
     star_match_vsx = star.get_metadata("VSX").name if star.has_metadata("VSX") else None
     var_display_name = star_match_ucac4 if star_match_vsx is None else star_match_vsx
-    var_display_name = var_display_name if var_display_name is not None else f"Star_{star.local_id}"
+    var_display_name = (
+        var_display_name if var_display_name is not None else f"Star_{star.local_id}"
+    )
     # utils.replace_spaces(f"{star.local_id:05}" if star.aavso_id is None else star.aavso_id)
     starui = utils.get_star_or_catalog_name(star)
     earth_location = EarthLocation(lat=sitelat, lon=sitelong, height=sitealt * u.m)
     logging.debug(f"Starting aavso report with star:{star}")
     if chunk_size is None:
         chunk_size = df.shape[0]
-    star_chunks = [df[i:i + chunk_size] for i in range(0, df.shape[0], chunk_size)]
+    star_chunks = [df[i : i + chunk_size] for i in range(0, df.shape[0], chunk_size)]
     chunk_counters = 0
     kname = check_star.star_descriptions[0].get_metadata("UCAC4").catalog_id
     notes = f"Standard mag: K = {check_star.comp_catalogmags[0]:.3f}"
@@ -67,58 +83,93 @@ def report(star: StarDescription, df_curve: DataFrame, comp_stars: ComparisonSta
         chunk_counters += 1
         suffix = f"_{chunk_counters}.txt" if len(star_chunks) != 1 else ".txt"
         filename = Path(target_dir, f"{starui.filename_no_ext}_ext{suffix}")
-        with open(filename, 'w') as fp:
-            writer = aavso.ExtendedFormatWriter(fp, observer, location=(sitelat, sitelong, sitealt),
-                                                software='https://github.com/mrosseel/vast-automation',
-                                                type='EXTENDED', obstype='CCD')
+        with open(filename, "w") as fp:
+            writer = aavso.ExtendedFormatWriter(
+                fp,
+                observer,
+                location=(sitelat, sitelong, sitealt),
+                software="https://github.com/mrosseel/vast-automation",
+                type="EXTENDED",
+                obstype="CCD",
+            )
             for _, row in chunk.iterrows():
                 # logging.info(row, type(row))
-                jd = row['JD']
+                jd = row["JD"]
                 if jd in check_star.observations[0]:
                     # adding an offset of 30 to get instrumental mags to be positive (recommended by aavso)
                     check_mag = f"{check_star.observations[0][jd][0] + 30:.3f}"
                 else:
                     check_mag = "na"
 
-                writer.addrow({
-                    'name': var_display_name,
-                    'date': jd,
-                    'magnitude': row['realV'],
-                    'magnitude_error': row['realErr'],
-                    'filter': filterlambda(row['JD']),
-                    'transformed': 'NO',
-                    'magnitude_type': 'STD',
-                    'comparison_name': 'ENSEMBLE',
-                    'comparison_magnitude': 'na',
-                    'check_name': kname,
-                    'check_magnitude': check_mag,
-                    'airmass': calculate_airmass(star.coords, earth_location, row['floatJD']).value,
-                    'group': 'na',
-                    'chart': 'na',
-                    'notes': notes
-                })
+                writer.addrow(
+                    {
+                        "name": var_display_name,
+                        "date": jd,
+                        "magnitude": row["realV"],
+                        "magnitude_error": row["realErr"],
+                        "filter": filterlambda(row["JD"]),
+                        "transformed": "NO",
+                        "magnitude_type": "STD",
+                        "comparison_name": "ENSEMBLE",
+                        "comparison_magnitude": "na",
+                        "check_name": kname,
+                        "check_magnitude": check_mag,
+                        "airmass": calculate_airmass(
+                            star.coords, earth_location, row["floatJD"]
+                        ).value,
+                        "group": "na",
+                        "chart": "na",
+                        "notes": notes,
+                    }
+                )
             writer.flush()
     return Path(target_dir, f"{starui.filename_no_ext}_ext.txt")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
     logging.basicConfig(format="%(asctime)s %(name)s: %(levelname)s %(message)s")
-    parser = argparse.ArgumentParser(description='munipack automation cli')
-    parser.add_argument('-d', '--datadir',
-                        help="The directory where the data can be found (fits in ./fits dir under the data dir",
-                        nargs='?', required=True)
-    parser.add_argument('-c', '--chart', help="Only generate lightcurve, lightcurve plot and phase diagram plot",
-                        nargs='+')
-    parser.add_argument('-n', '--nowait', help="Don't wait 10 secs before starting", action="store_true")
-    parser.add_argument('-v', '--vsx', help="Add vsx stars to field charts/reporting list", action="store_true")
-    parser.add_argument('-s', '--starfile',
-                        help="Load a file with star ids, these ids will be used for field charts/reporting")
-    parser.add_argument('-x', '--verbose', help="Set logging to debug mode", action="store_true")
-    parser.add_argument('-l', '--laststars', help="Use the star descriptions of the previous run to do the charting",
-                        action="store_true")
-    parser.add_argument('-u', '--upsilon', help="Add upsilon star info to charting", action="store_true")
+    parser = argparse.ArgumentParser(description="munipack automation cli")
+    parser.add_argument(
+        "-d",
+        "--datadir",
+        help="The directory where the data can be found (fits in ./fits dir under the data dir",
+        nargs="?",
+        required=True,
+    )
+    parser.add_argument(
+        "-c",
+        "--chart",
+        help="Only generate lightcurve, lightcurve plot and phase diagram plot",
+        nargs="+",
+    )
+    parser.add_argument(
+        "-n", "--nowait", help="Don't wait 10 secs before starting", action="store_true"
+    )
+    parser.add_argument(
+        "-v",
+        "--vsx",
+        help="Add vsx stars to field charts/reporting list",
+        action="store_true",
+    )
+    parser.add_argument(
+        "-s",
+        "--starfile",
+        help="Load a file with star ids, these ids will be used for field charts/reporting",
+    )
+    parser.add_argument(
+        "-x", "--verbose", help="Set logging to debug mode", action="store_true"
+    )
+    parser.add_argument(
+        "-l",
+        "--laststars",
+        help="Use the star descriptions of the previous run to do the charting",
+        action="store_true",
+    )
+    parser.add_argument(
+        "-u", "--upsilon", help="Add upsilon star info to charting", action="store_true"
+    )
     args = parser.parse_args()
     datadir = utils.add_trailing_slash(args.datadir)
     datenow = datetime.now()

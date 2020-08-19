@@ -7,9 +7,8 @@ from star_metadata import StarMetaData
 
 
 class TestStarDescription(unittest.TestCase):
-
     def test_metadata(self):
-        star = StarDescription(local_id=id, coords=SkyCoord(10, 11, unit='deg'))
+        star = StarDescription(local_id=id, coords=SkyCoord(10, 11, unit="deg"))
         self.assertEqual({}, star.metadata)
         star.metadata = CompStarData([1])
         self.assertEqual(1, len(star.metadata))
@@ -22,8 +21,7 @@ class TestStarDescription(unittest.TestCase):
         self.fail("Adding duplicate keys to the dictionary should fail")
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     logging.getLogger().setLevel(logging.DEBUG)
     logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
     unittest.main()

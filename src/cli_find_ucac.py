@@ -24,23 +24,33 @@ def main(vastdir, star):
     sd_dict = utils.get_localid_to_sd_dict(sds)
     neighbours = []
     for neigh in range(1, 22):
-        idx, d2d, _ = match_coordinates_sky(ucacsd.coords, star_catalog, nthneighbor=neigh)
+        idx, d2d, _ = match_coordinates_sky(
+            ucacsd.coords, star_catalog, nthneighbor=neigh
+        )
         neighbours.append(sds[idx])
     ucac4.add_sd_metadatas(neighbours)
-    logging.info('\n'+'\n'.join([f'Star {x.local_id}: {x}' for x in neighbours]))
+    logging.info("\n" + "\n".join([f"Star {x.local_id}: {x}" for x in neighbours]))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
     logging.basicConfig(format="%(asctime)s %(name)s: %(levelname)s %(message)s")
 
-    parser = argparse.ArgumentParser(description="Finds the closest localid's for a certain ucac4 id")
-    parser.add_argument('-d', '--datadir',
-                        help="The directory where the data can be found (usually the vast dir)",
-                        nargs='?', required=True)
-    parser.add_argument('-s', '--star', help="UCAC4 star id", required=True)
-    parser.add_argument('-x', '--verbose', help="Set logging to debug mode", action="store_true")
+    parser = argparse.ArgumentParser(
+        description="Finds the closest localid's for a certain ucac4 id"
+    )
+    parser.add_argument(
+        "-d",
+        "--datadir",
+        help="The directory where the data can be found (usually the vast dir)",
+        nargs="?",
+        required=True,
+    )
+    parser.add_argument("-s", "--star", help="UCAC4 star id", required=True)
+    parser.add_argument(
+        "-x", "--verbose", help="Set logging to debug mode", action="store_true"
+    )
     args = parser.parse_args()
     if args.verbose:
         logger.setLevel(logging.DEBUG)
