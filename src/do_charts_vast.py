@@ -48,7 +48,7 @@ def plot_lightcurve_raw(star: StarDescription, curve: DataFrame, chartsdir, writ
     logging.debug(f"Plotting raw lightcurve for {star.local_id}")
     return _plot_lightcurve(star, curve, chartsdir, rotate=True, write_plot=write_plot)
 
-
+# phase adjusted lightcurve
 def plot_lightcurve_pa(star: StarDescription, curve: DataFrame, chartsdir, period: Period, write_plot=True):
     logging.debug(f"Plotting phase adjusted lightcurve for {star.local_id}")
     convert_func = partial(phase_lock_lightcurve, period=period)
@@ -64,22 +64,25 @@ def plot_lightcurve_continuous(star: StarDescription, curve: DataFrame, chartsdi
     return _plot_lightcurve(star, curve, chartsdir, f"_lightcont", convert_func, xlabel='All obs, one after the other',
                             markersize=6, errorbars=False, write_plot=write_plot)
 
+def plot_lightcurve_main(star: StarDescription, curve: DataFrame, chartsdir, write_plot=True):
+    logging.debug(f"Plotting main lightcurve for {star.local_id}")
+    return _plot_lightcurve(star, curve, chartsdir, f"_lightmain", rotate=True, write_plot=write_plot, plot_width=18, plot_height=16,
+                            plot_dpi=80)
+
 
 def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=f"_light",
-                     jd_adjusting_func=None, xlabel='JD', markersize=6, errorbars=True, rotate=False, write_plot=True):
+                     jd_adjusting_func=None, xlabel='JD', plot_width=20, plot_height=16, plot_dpi=150,
+                     markersize=6, errorbars=True, rotate=False, write_plot=True):
     try:
         star_id = star.local_id
         logging.debug(f"Plotting lightcurve for {star_id}")
         starui: utils.StarUI = utils.get_star_or_catalog_name(star, suffix=suffix)
-        var_type = f"Type: {starui.extradata['Type']}" \
-            if starui.extradata is not None and 'Type' in starui.extradata else ""
         save_location = Path(chartsdir, starui.filename_no_ext + '.png')
         start = timer()
         upsilon_match = star.get_metadata('UPSILON') if star.has_metadata('UPSILON') else None
         upsilon_text = upsilon_match.get_upsilon_string() if upsilon_match is not None else ''
         end = timer()
         logging.debug(f"timing upsilon stuff {end - start}")
-        coord = star.coords
         names = utils.get_star_names(star)
         catalog_title = f"{names[0]}" if names is not None and names is not star.local_id else ''
         plot_title = f"{catalog_title}\nStar {star.local_id}"
@@ -93,7 +96,7 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
             curve['realJD'] = curve['floatJD']
         else:
             curve['realJD'] = jd_adjusting_func(curve['floatJD'])
-        fig = plt.figure(figsize=(20, 12), dpi=150, facecolor='w', edgecolor='k')
+        fig = plt.figure(figsize=(plot_width, plot_height), dpi=plot_dpi, facecolor='w', edgecolor='k')
         if errorbars:
             plt.errorbar(curve['realJD'], curve['realV'], yerr=curve['realErr'], linestyle='none', marker='o',
                          ecolor='gray', elinewidth=1, ms=markersize)
@@ -346,6 +349,9 @@ def read_vast_lightcurves(star: StarDescription, compstarproxy, star_result_dict
         if do_light and 'lightpa' not in star.result:
             temp_dict['lightpa'] = plot_lightcurve_pa(star, df.copy(), chartsdir, period)
             temp_dict['lightcont'] = plot_lightcurve_continuous(star, df.copy(), chartsdir)
+            sitedata: SiteData = star.get_metadata('SITE')
+            if sitedata is not None and sitedata.var_type == 'L':
+                temp_dict['lightmain'] = plot_lightcurve_main(star, df.copy(), chartsdir, sitedata.var_type)
         if do_light_raw and 'light' not in star.result:
             temp_dict['light'] = plot_lightcurve_raw(star, df.copy(), chartsdir)
         if do_aavso and 'aavso' not in star.result:

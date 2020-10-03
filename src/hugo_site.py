@@ -66,6 +66,11 @@ def selective_copy_files(stars: List[StarDescription], destdir: str, resultdir: 
     copy(f"{resultdir}selected_radec.txt", destdir)
     logging.info(f"Copying done.")
 
+def get_from_toml(key, parsed_toml, default=None):
+    if key in parsed_toml:
+        return parsed_toml[key]
+    else:
+        return default
 
 def block(star: StarDescription, resultdir: str, images_prefix: str):
     try:
@@ -91,9 +96,12 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         nl = '\n'
         name = f"{nl.join(parsed_toml['our_name'])}" if 'our_name' in parsed_toml else f"OUR_NAME_{star.local_id}"
         period = f"{float(parsed_toml['period']):.5f}"
+        var_type_raw = get_from_toml('var_type', parsed_toml, UNKNOWN)
+        var_type = f"{var_type_raw}"
         phase_url = f"{images_prefix}{starui.filename_no_ext}.png"
+        if var_type == 'L':
+            phase_url = f"{images_prefix}{starui.filename_no_ext}_lightmain.png"
         epoch = f"{parsed_toml['epoch']}" if 'epoch' in parsed_toml else UNKNOWN
-        var_type = f"{parsed_toml['var_type']}" if 'var_type' in parsed_toml else UNKNOWN
         vsx_var_flag = f" ({parsed_toml['vsx_var_flag']})" if 'vsx_var_flag' in parsed_toml else ""
         tomlseparation = parsed_toml['separation'] if 'separation' in parsed_toml else None
         ucacseparation = star.coords.separation(star.get_metadata("UCAC4").coords).degree if star.has_metadata(
