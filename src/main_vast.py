@@ -422,7 +422,7 @@ def write_selected_files(
                     f"{format_string('epoch', parsed_toml)}\n"
                 )
                 outselected.write(
-                    f"{metadata.our_name},{star.local_id},{star.ucac4_name},False,"
+                    f"{metadata.our_name},{star.local_id},{ucac4_name},False,"
                     f"{format_string('minmax', parsed_toml)},{format_float_1(parsed_toml, 'min')},"
                     f"{format_float_1(parsed_toml, 'max')},{metadata.var_type},"
                     f"{format_float_5(parsed_toml, 'period')},{format_float_5(parsed_toml, 'period_err')},"
