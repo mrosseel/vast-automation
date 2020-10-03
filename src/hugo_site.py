@@ -68,9 +68,8 @@ def selective_copy_files(stars: List[StarDescription], destdir: str, resultdir: 
         copy(astar.result["compB"], destdir) if "compB" in astar.result else None
         copy(astar.result["light"], destdir) if "light" in astar.result else None
         copy(astar.result["lightpa"], destdir) if "lightpa" in astar.result else None
-        copy(
-            astar.result["lightcont"], destdir
-        ) if "lightcont" in astar.result else None
+        copy(astar.result["lightcont"], destdir) if "lightcont" in astar.result else None
+        copy(astar.result["lightmain"], destdir) if "lightmain" in astar.result else None
         copy(astar.result["aavso"], destdir) if "aavso" in astar.result else None
     fieldcharts = f"{resultdir}fieldcharts/*.png"
     fieldcharts_glob = glob.glob(fieldcharts)
