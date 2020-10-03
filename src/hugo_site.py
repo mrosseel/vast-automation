@@ -129,7 +129,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         var_type = f"{var_type_raw}"
         phase_url = f"{images_prefix}{starui.filename_no_ext}.png"
         if var_type == 'L':
-            phase_url = f"{images_prefix}{starui.filename_no_ext}_lightmain.png"
+            phase_url = f"{images_prefix}{starui.filename_no_suff_no_ext}_lightmain.png"
         epoch = f"{parsed_toml['epoch']}" if 'epoch' in parsed_toml else UNKNOWN
         vsx_var_flag = f" ({parsed_toml['vsx_var_flag']})" if 'vsx_var_flag' in parsed_toml else ""
         tomlseparation = parsed_toml['separation'] if 'separation' in parsed_toml else None
