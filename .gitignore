@@ -1,10 +1,14 @@
+.vim
+.idea/**/*
+**/.ipynb_checkpoints/**/*
+/.venv/
+/.vscode/
 inputfiles
+runscripts/
 current
 cmunipack*
 *.pyc
 process*.log
-.idea/**/*
-**/.ipynb_checkpoints/**/*
 transfer/
 secrets.py
 support/vast*/**
@@ -18,9 +22,6 @@ support/**
 venv
 /support/vast-dev/
 /results/
-
-/.venv/
-/.vscode/
 /tests/data/aavso_out.txt
 /tests/data/outliers/ASASSN-V_J110351.21-544047.3_light.png
 /vsx_last_modified.txt

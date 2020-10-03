@@ -104,6 +104,7 @@
 # I ucac2_number;
 
 # NOTE !!!!!!!!!!!  The ra/dec and proper motion sigmas are now offset by 128; i.e.,  a value of -128 would indicate a zero sigma.
+import os
 import logging
 import math
 import struct
@@ -114,19 +115,23 @@ from star_description import StarDescription
 from astropy.coordinates import SkyCoord
 from pathlib import Path
 from LRUCache import LRUCache
+
 # remove this, would be cleaner in ucac4_utils or something
 import do_calibration
 import tqdm
 import decimal
 
-StarTuple = namedtuple('Star', 'ra spd mag1 mag2 mag_sigma obj_type double_star_flag ra_sigma'
-                               ' dec_sigma n_ucac_total n_ucac_used n_cats_used epoch_ra epoch_dec pm_ra pm_dec'
-                               ' pm_ra_sigma pm_dec_sigma twomass_id mag_j mag_h mag_k icq_flag1 icq_flag2 icq_flag3'
-                               ' e2mpho1 e2mpho2 e2mpho3 apass_mag_B apass_mag_V apass_mag_g apass_mag_r apass_mag_i'
-                               ' apass_mag_sigma_B apass_mag_sigma_V apass_mag_sigma_g apass_mag_sigma_r'
-                               ' apass_mag_sigma_i yale_gc_flags catalog_flags leda_flag twomass_ext_flag'
-                               ' id_number ucac2_zone ucac2_number')
-MinimalStarTuple = namedtuple('MinStar', 'id, ra, dec, mag')
+StarTuple = namedtuple(
+    "Star",
+    "ra spd mag1 mag2 mag_sigma obj_type double_star_flag ra_sigma"
+    " dec_sigma n_ucac_total n_ucac_used n_cats_used epoch_ra epoch_dec pm_ra pm_dec"
+    " pm_ra_sigma pm_dec_sigma twomass_id mag_j mag_h mag_k icq_flag1 icq_flag2 icq_flag3"
+    " e2mpho1 e2mpho2 e2mpho3 apass_mag_B apass_mag_V apass_mag_g apass_mag_r apass_mag_i"
+    " apass_mag_sigma_B apass_mag_sigma_V apass_mag_sigma_g apass_mag_sigma_r"
+    " apass_mag_sigma_i yale_gc_flags catalog_flags leda_flag twomass_ext_flag"
+    " id_number ucac2_zone ucac2_number",
+)
+MinimalStarTuple = namedtuple("MinStar", "id, ra, dec, mag")
 UcacTuple = Tuple[StarTuple, str, int]
 UcacTupleList = List[UcacTuple]
 
@@ -142,9 +147,21 @@ def get_line_nr(n0, nn, line):
 # 4  j    = index for bins along RA (1 to 1440)
 # 5  dec  = upper declination of corresponding zone, printed out only at the beginning of a new zone
 
+
 class UCAC4:
-    def __init__(self, ucac_path: Path = Path('./support/ucac4/UCAC4/')):
-        decimal.getcontext().prec = 8
+    """ Uses UCAC4 catalog to search ucac4 numbers from coords and vice versa. Ucac4 path can be passed or read from $ucac4_path """
+
+    def __init__(self, ucac_path=None):
+        if ucac_path is None:
+            try:
+                ucac_path = Path(os.environ["ucac4_path"])
+                print("found environ with ucac45 path", ucac_path)
+            except KeyError:
+                logging.debug(
+                    "No ucac path passed, and no environment var, using default"
+                )
+                ucac_path = Path("./support/ucac4/UCAC4/")
+        logging.info("Ucac path is", ucac_path)
         # star id given by munipack
         self.ucac_path = ucac_path
         self.zones_cache = LRUCache(capacity=10)
@@ -153,31 +170,35 @@ class UCAC4:
         self.index_cache = None
         self.ra_range = 360 * 3600 * 100
         # read index file
-        with open(str(Path(ucac_path, 'u4i', 'u4index.unf')), mode='rb') as file:  # b is important -> binary
+        with open(
+            str(Path(ucac_path, "u4i", "u4index.unf")), mode="rb"
+        ) as file:  # b is important -> binary
             self.index_cache = file.read()
         self.zone_starformat = "=iiHHBBBbbBBBHHhhbbIHHHBBBBBBHHHHHbbbbbBIBBIHI"
         self.zone_star_length = struct.calcsize(self.zone_starformat)
         self.unpack_zone_fileformat = struct.Struct(self.zone_starformat).unpack
-        self.result_n0_running_star_number, self.result_nn_stars_in_bin = UCAC4._get_n0_and_nn(self.index_cache)
-
+        (
+            self.result_n0_running_star_number,
+            self.result_nn_stars_in_bin,
+        ) = UCAC4._get_n0_and_nn(self.index_cache)
 
     def get_zone_filecontent(self, zone: int):
         """ gets the content of a zone file, either from disk or from cache"""
         result = self.zones_cache.get(zone)
         if result != -1:
             return result
-        with open(str(Path(self.ucac_path, f"u4b/z{zone:03}")), mode='rb') as file:  # b is important -> binary
+        with open(
+            str(Path(self.ucac_path, f"u4b/z{zone:03}")), mode="rb"
+        ) as file:  # b is important -> binary
             result = file.read()
             self.zones_cache.set(zone, result)
             return result
-
 
     def get_ucactuple_from_id(self, ucac_id) -> UcacTuple:
         """ Given a UCAC ID, return a tuple of (StarTuple, zone, run_nr) """
         zone, run_nr = UCAC4.ucac_id_to_zone_and_run_nr(ucac_id)
         logging.debug(f"UCAC4 id {zone}, {run_nr}")
         return self.get_ucactuples_for_zone_and_runnrs(zone, [run_nr])[0]
-
 
     def index_bin_to_run_nrs(self, zone: int, index_bin: int):
         # index = (zone - 1) * 1440 + index_bin
@@ -187,9 +208,9 @@ class UCAC4:
         run_nrs = list(range(star_run_nr, star_run_nr + star_count_in_bucket))
         logging.debug(
             f"index_bin_to_run_nrs: zone is {zone}, index_bin = {index_bin}, index is {index}. "
-            f"star_run_nr is {star_run_nr}, count =  {star_count_in_bucket}, run nrs: {run_nrs}")
+            f"star_run_nr is {star_run_nr}, count =  {star_count_in_bucket}, run nrs: {run_nrs}"
+        )
         return run_nrs
-
 
     def get_zones_and_index_bins(self, ra, dec, tolerance_deg) -> Dict[int, List[int]]:
         logging.debug(f"ra: {ra}, dec: {dec}, tolerance: {tolerance_deg}")
@@ -204,8 +225,9 @@ class UCAC4:
         logging.debug(f"get_zones_and_index_bins: {ra_low}, {ra_high}, {index_bins}")
         return zones, index_bins
 
-
-    def get_ucactuples_for_zone_and_runnrs(self, zone: int, run_nr_list: List[int]) -> UcacTupleList:
+    def get_ucactuples_for_zone_and_runnrs(
+        self, zone: int, run_nr_list: List[int]
+    ) -> UcacTupleList:
         """ Given a zone and one or more run_nr's, return List of (StarTuple, zone, run_nr) """
         stars = []
         filecontent = self.get_zone_filecontent(zone)
@@ -215,13 +237,17 @@ class UCAC4:
             star = self.bucket_cache.get(key)
             if star == -1:
                 result = self.unpack_zone_fileformat(
-                    filecontent[self.zone_star_length * (run_nr-1):self.zone_star_length * run_nr])
+                    filecontent[
+                        self.zone_star_length
+                        * (run_nr - 1) : self.zone_star_length
+                        * run_nr
+                    ]
+                )
                 star = UCAC4.make_startuple(result)
                 self.bucket_cache.set(key, star)
             stars.append((star, zone, run_nr))
             # logging.debug(f"read ucac4 star: {star}")
         return stars
-
 
     @staticmethod
     def _get_n0_and_nn(index_cache):
@@ -233,8 +259,9 @@ class UCAC4:
         result_nn = unpack_starformat(index_cache[index_length:])
         return result_n0, result_nn
 
-
-    def get_region_minimal_star_tuples(self, ra: float, dec: float, radius=0.5) -> List[MinimalStarTuple]:
+    def get_region_minimal_star_tuples(
+        self, ra: float, dec: float, radius=0.5
+    ) -> List[MinimalStarTuple]:
         """ For a given ra/dec and radius, return all ucac4 stars as ('id, ra, dec, mag') """
         zones, buckets = self.get_zones_and_index_bins(ra, dec, radius)
         result = []
@@ -244,26 +271,38 @@ class UCAC4:
                 ucactuples: UcacTupleList = self.zone_bucket_cache.get(cache_key)
                 # cache miss
                 if ucactuples == -1:
-                    ucactuples: UcacTupleList = self.get_ucactuples_for_zone_and_runnrs(zone, self.index_bin_to_run_nrs(zone, bucket))
+                    ucactuples: UcacTupleList = self.get_ucactuples_for_zone_and_runnrs(
+                        zone, self.index_bin_to_run_nrs(zone, bucket)
+                    )
                     self.zone_bucket_cache.set(cache_key, ucactuples)
                 if len(ucactuples) == 0:
                     logging.debug(f"zone/bucket: {zone}/{bucket}, no stars")
                     if bucket + 1 not in buckets:
-                        buckets.append(bucket+1)
+                        buckets.append(bucket + 1)
                         logging.debug(f"Appending bucket {bucket+1}")
                 for ucactuple in ucactuples:
-                    result.append(MinimalStarTuple(UCAC4.zone_and_run_nr_to_name(ucactuple[1], ucactuple[2]),
-                                                   *UCAC4.get_real_ra_dec(ucactuple[0].ra, ucactuple[0].spd),
-                                                   ucactuple[0].apass_mag_V / 1000))
+                    result.append(
+                        MinimalStarTuple(
+                            UCAC4.zone_and_run_nr_to_name(ucactuple[1], ucactuple[2]),
+                            *UCAC4.get_real_ra_dec(ucactuple[0].ra, ucactuple[0].spd),
+                            ucactuple[0].apass_mag_V / 1000,
+                        )
+                    )
         return result
 
+    def get_sd_from_ra_dec(
+        self, ra: float, dec: float, tolerance_deg=0.02
+    ) -> StarDescription:
+        return self.get_star_description_from_tuple(
+            self.get_ucactuple_from_ra_dec(ra, dec, tolerance_deg)
+        )
 
-    def get_sd_from_ra_dec(self, ra: float, dec: float, tolerance_deg=0.02) -> StarDescription:
-        return self.get_star_description_from_tuple(self.get_ucactuple_from_ra_dec(ra, dec, tolerance_deg))
-
-
-    def get_ucactuple_from_ra_dec(self, ra: float, dec: float, tolerance_deg=0.02) -> UcacTuple:
-        logging.debug(f"get_ucac4_ucactuple_from_ra_dec with ra:{ra}, dec:{dec}, tolerance:{tolerance_deg}")
+    def get_ucactuple_from_ra_dec(
+        self, ra: float, dec: float, tolerance_deg=0.02
+    ) -> UcacTuple:
+        logging.debug(
+            f"get_ucac4_ucactuple_from_ra_dec with ra:{ra}, dec:{dec}, tolerance:{tolerance_deg}"
+        )
         target_np = np.array((ra, dec))
         zones, buckets = self.get_zones_and_index_bins(ra, dec, tolerance_deg)
         smallest_dist = 1000
@@ -274,51 +313,63 @@ class UCAC4:
                 ucactuples: UcacTupleList = self.zone_bucket_cache.get(cache_key)
                 # cache miss
                 if ucactuples == -1:
-                    ucactuples: UcacTupleList = self.get_ucactuples_for_zone_and_runnrs(zone, self.index_bin_to_run_nrs(zone, bucket))
+                    ucactuples: UcacTupleList = self.get_ucactuples_for_zone_and_runnrs(
+                        zone, self.index_bin_to_run_nrs(zone, bucket)
+                    )
                     self.zone_bucket_cache.set(cache_key, ucactuples)
                 ################ DEBUG
                 if len(ucactuples) > 0:
-                    radecs = [self.get_real_ra_dec(x[0].ra, x[0].spd) for x in ucactuples]
+                    radecs = [
+                        self.get_real_ra_dec(x[0].ra, x[0].spd) for x in ucactuples
+                    ]
                     ras = [x[0] for x in radecs]
                     decs = [x[1] for x in radecs]
                     logging.debug(
-                        f"zone/bucket: {zone}/{bucket}, Searching between {min(ras)}, {max(ras)}, {min(decs)}, {max(decs)}")
+                        f"zone/bucket: {zone}/{bucket}, Searching between {min(ras)}, {max(ras)}, {min(decs)}, {max(decs)}"
+                    )
                 else:
                     logging.debug(f"zone/bucket: {zone}/{bucket}, no stars")
                     if bucket + 1 not in buckets:
-                        buckets.append(bucket+1)
+                        buckets.append(bucket + 1)
                         logging.debug(f"Appending bucket {bucket+1}")
                 ################ DEBUG
                 for ucactuple in ucactuples:
-                    dist = np.linalg.norm(np.array((UCAC4.get_real_ra_dec(ucactuple[0].ra, ucactuple[0].spd))
-                                                   - target_np))
+                    dist = np.linalg.norm(
+                        np.array(
+                            (UCAC4.get_real_ra_dec(ucactuple[0].ra, ucactuple[0].spd))
+                            - target_np
+                        )
+                    )
                     # logging.debug(f"magj: {sd[0].mag_j}")
                     if dist < smallest_dist:
                         smallest_dist = dist
                         best = ucactuple
         if best is None:
-            logging.warning(f"Did not find a UCAC4 match for {ra}, {dec}, {tolerance_deg}. Buckets: {buckets}, "
-                            f"zones: {zones},smallest dist: {smallest_dist}")
+            logging.warning(
+                f"Did not find a UCAC4 match for {ra}, {dec}, {tolerance_deg}. Buckets: {buckets}, "
+                f"zones: {zones},smallest dist: {smallest_dist}"
+            )
             return best
         logging.debug(f"Best distance is: {smallest_dist}, {best}")
         return best
-
 
     @staticmethod
     def get_zone_for_dec(dec: float, zone_height: float = 0.2) -> int:
         dec_0 = decimal.Decimal(dec) + decimal.Decimal(90.0)
         result = min(900, max(1, int(dec_0 / decimal.Decimal(zone_height)) + 1))
-        logging.debug(f"get_zone_for_dec: dec {dec}, height:{zone_height}, dec0 {dec_0}, result {result}")
+        logging.debug(
+            f"get_zone_for_dec: dec {dec}, height:{zone_height}, dec0 {dec_0}, result {result}"
+        )
         return result
-
 
     @staticmethod
     def ra_bin_index(ra: float):
         """index for bins along RA (1 to 1440)"""
         index = math.ceil(decimal.Decimal(ra) * decimal.Decimal(4))  # 1440/360
-        logging.debug(f"ra_bin_index: ra {ra}, index {index}, rawindex: {decimal.Decimal(ra) * decimal.Decimal(4)}")
+        logging.debug(
+            f"ra_bin_index: ra {ra}, index {index}, rawindex: {decimal.Decimal(ra) * decimal.Decimal(4)}"
+        )
         return max(1, index)
-
 
     @staticmethod
     def ucac_id_to_zone_and_run_nr(ucac_id: str):
@@ -327,37 +378,43 @@ class UCAC4:
         run_nr = int(full_id[4:].lstrip("0"))
         return zone, run_nr
 
-
     @staticmethod
     def zone_and_run_nr_to_name(zone: int, run_nr: int):
         return f"UCAC4 {zone:03}-{run_nr:06}"
 
-
     def get_star_description_from_id(self, ucac4_id) -> StarDescription:
-        return UCAC4.get_star_description_from_tuple(self.get_ucactuple_from_id(ucac4_id))
-
+        return UCAC4.get_star_description_from_tuple(
+            self.get_ucactuple_from_id(ucac4_id)
+        )
 
     @staticmethod
-    def get_star_descriptions_from_tuples(ucactuples: UcacTupleList) -> List[StarDescription]:
-        return [UCAC4.get_star_description_from_tuple(ucactuple) for ucactuple in ucactuples]
-
+    def get_star_descriptions_from_tuples(
+        ucactuples: UcacTupleList,
+    ) -> List[StarDescription]:
+        return [
+            UCAC4.get_star_description_from_tuple(ucactuple) for ucactuple in ucactuples
+        ]
 
     @staticmethod
     def get_star_description_from_tuple(ucactuple: UcacTuple) -> StarDescription:
         startuple, zone, run_nr = ucactuple
         ra, dec = UCAC4.get_real_ra_dec(startuple.ra, startuple.spd)
-        sd = StarDescription(coords=SkyCoord(ra, dec, unit='deg'),
-                             vmag=startuple.apass_mag_V / 1000, vmag_err=abs(startuple.apass_mag_sigma_V / 100),
-                             aavso_id=UCAC4.zone_and_run_nr_to_name(zone, run_nr))
+        sd = StarDescription(
+            coords=SkyCoord(ra, dec, unit="deg"),
+            vmag=startuple.apass_mag_V / 1000,
+            vmag_err=abs(startuple.apass_mag_sigma_V / 100),
+            aavso_id=UCAC4.zone_and_run_nr_to_name(zone, run_nr),
+        )
         return sd
-
 
     @staticmethod
     def get_real_ra_dec(ra, spd) -> Tuple[float, float]:
         # return ra / 1000 / 3600, (spd - 324000000) / 1000 / 3600
         divisor = decimal.Decimal(3600000)
-        return float(decimal.Decimal(ra) / divisor), float(decimal.Decimal(spd - 324000000) / divisor)
-
+        return (
+            float(decimal.Decimal(ra) / divisor),
+            float(decimal.Decimal(spd - 324000000) / divisor),
+        )
 
     @staticmethod
     def make_startuple(result: List) -> StarTuple:
@@ -368,28 +425,36 @@ class UCAC4:
         star = star._replace(pm_dec_sigma=star.pm_dec_sigma + 128)
         return star
 
-
     def add_sd_metadatas(self, stars: List[StarDescription], overwrite=False):
-        with tqdm.tqdm(total=len(stars), desc='Adding UCAC4', unit='stars') as pbar:
+        with tqdm.tqdm(total=len(stars), desc="Adding UCAC4", unit="stars") as pbar:
             for star in stars:
                 if not star.has_metadata("UCAC4") or overwrite:
-                    sd = self.get_sd_from_ra_dec(star.coords.ra.deg, star.coords.dec.deg)
+                    sd = self.get_sd_from_ra_dec(
+                        star.coords.ra.deg, star.coords.dec.deg
+                    )
                     self._add_catalog_data_to_sd(star, sd, overwrite)
                 pbar.update(1)
 
-
-    def add_sd_metadata_from_id(self, star: StarDescription, ucac4_id: str, overwrite=False):
+    def add_sd_metadata_from_id(
+        self, star: StarDescription, ucac4_id: str, overwrite=False
+    ):
         sd = self.get_star_description_from_id(ucac4_id)
         self._add_catalog_data_to_sd(star, sd, overwrite)
 
-
     @staticmethod
-    def _add_catalog_data_to_sd(sd: StarDescription, ucac4_sd: StarDescription, overwrite):
+    def _add_catalog_data_to_sd(
+        sd: StarDescription, ucac4_sd: StarDescription, overwrite
+    ):
         """ Add UCAC4 catalog data to a stardescription if there is none yet, or if overwrite is True """
         if ucac4_sd is not None and not sd.has_metadata("UCAC4") or overwrite:
-            do_calibration.add_catalog_data_to_sd(sd, ucac4_sd.vmag, ucac4_sd.vmag_err, ucac4_sd.aavso_id, "UCAC4",
-                                                  ucac4_sd.coords)
-
+            do_calibration.add_catalog_data_to_sd(
+                sd,
+                ucac4_sd.vmag,
+                ucac4_sd.vmag_err,
+                ucac4_sd.aavso_id,
+                "UCAC4",
+                ucac4_sd.coords,
+            )
 
     # >>> ra=140361
     # >>> ra/1000/60/60
@@ -400,7 +465,7 @@ class UCAC4:
     # >>>
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # run('UCAC4 003-000419')
     ucac4 = UCAC4()
-    print(ucac4.get_ucac4_star_description('UCAC4 001-000003'))
+    print(ucac4.get_ucac4_star_description("UCAC4 001-000003"))

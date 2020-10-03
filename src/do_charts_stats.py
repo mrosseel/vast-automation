@@ -31,55 +31,96 @@ def get_fig_and_ax():
     return fig, ax
 
 
-def plot_comparison_stars(chartsdir: str, stars: List[StarDescription], stardict: StarDict):
+def plot_comparison_stars(
+    chartsdir: str,
+    stars: List[StarDescription],
+    stardict: StarDict,
+    jdfilter: List[float],
+):
     # for every selected star make one chart
     for star in tqdm(stars, desc="Plotting comparison stars", unit="star"):
-        compstars: CompStarData = star.get_metadata('COMPSTARS')
+        compstars: CompStarData = star.get_metadata("COMPSTARS")
         compstar_ids = compstars.compstar_ids + [compstars.extra_id, star.local_id]
-        labels = compstars.compstar_ids + ['K']
+        labels = compstars.compstar_ids + ["K"]
         dfs = reading.read_lightcurve_ids(compstar_ids, stardict)
-        star.result['compA'] = \
-            plot_star_fluctuations(star, chartsdir, utils.get_star_or_catalog_name(star, suffix="_compstarsA"),
-                                   dfs[:-1], labels, show_error=True)
-        star.result['compB'] = \
-            plot_star_fluctuations(star, chartsdir, utils.get_star_or_catalog_name(star, suffix="_compstarsB"), dfs,
-                                   labels + ['V'], show_error=False)
+        # compstars without the 'K' star or check star
+        star.result["compA"] = helper_plot_stars(
+            star,
+            chartsdir,
+            utils.get_star_or_catalog_name(star, suffix="_compstarsA"),
+            dfs[:-1],
+            labels,
+            jdfilter,
+            show_error=True,
+        )
+        # compstars + 'K' star
+        star.result["compB"] = helper_plot_stars(
+            star,
+            chartsdir,
+            utils.get_star_or_catalog_name(star, suffix="_compstarsB"),
+            dfs,
+            labels + ["V"],
+            jdfilter,
+            show_error=False,
+        )
 
 
-def plot_star_fluctuations(star: StarDescription, chartsdir: str, starui: utils.StarUI, dfs: List[pd.DataFrame],
-                           labels: List[str], show_error: bool = False):
+def helper_plot_stars(
+    star: StarDescription,
+    chartsdir: str,
+    starui: utils.StarUI,
+    dfs: List[pd.DataFrame],
+    labels: List[str],
+    jdfilter: List[float],
+    show_error: bool = False,
+):
+    """ helper function to plot the comparison stars  """
     fig, ax = get_fig_and_ax()
-    xmax, xmin, ymax, ymin = float('-inf'), float('inf'), float('-inf'), float('inf')
-    cmap = plt.get_cmap('Set1')
+    xmax, xmin, ymax, ymin = float("-inf"), float("inf"), float("-inf"), float("inf")
+    cmap = plt.get_cmap("Set1")
     number = len(dfs)
     colors = [cmap(i) for i in np.linspace(0, 1, number + 1)]
     title = f"{starui.filename_no_suff_no_ext} comp. stars{' + V' if not show_error else ''}"
-    for idx, df in enumerate(dfs):
-        df['floatJD'] = df['JD'].astype(float).to_numpy()
-        df['Vrel30'] = df['Vrel'] + 30
-        xmax = max(xmax, df['floatJD'].max())
-        xmin = min(xmin, df['floatJD'].min())
-        ymax = max(ymax, df['Vrel30'].max())
-        ymin = min(ymin, df['Vrel30'].min())
+    for idx, dfx in enumerate(dfs):
+        dfx["floatJD"] = dfx["JD"].astype(float)
+        dfx["Vrel30"] = dfx["Vrel"] + 30
+        df = utils.jd_filter_df(dfx, jdfilter)
+        xmax = max(xmax, df["floatJD"].max())
+        xmin = min(xmin, df["floatJD"].min())
+        ymax = max(ymax, df["Vrel30"].max())
+        ymin = min(ymin, df["Vrel30"].min())
         if show_error:
-            ax.errorbar(df['floatJD'], df['Vrel30'], yerr=df['err'], linestyle='', color=colors[idx], ms=2)
+            ax.errorbar(
+                df["floatJD"],
+                df["Vrel30"],
+                yerr=df["err"],
+                linestyle="",
+                color=colors[idx],
+                ms=2,
+            )
         else:
-            fmt = '*r' if labels[idx] == 'K' else '^b' if labels[idx] == 'V' else '.'
-            ax.plot(df['floatJD'], df['Vrel30'], fmt, color=colors[idx], markersize=2)
+            fmt = "*r" if labels[idx] == "K" else "^b" if labels[idx] == "V" else "."
+            ax.plot(df["floatJD"], df["Vrel30"], fmt, color=colors[idx], markersize=2)
     fontp = FontProperties()
-    fontp.set_size('18')
+    fontp.set_size("18")
     # Shrink current axis's height by 10% on the bottom
     box = ax.get_position()
-    ax.set_position([box.x0, box.y0 + box.height * 0.1,
-                     box.width, box.height * 0.9])
+    ax.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
     # Put a legend below current axis
-    ax.legend(labels, loc='lower center', bbox_to_anchor=(0.5, -0.4), fancybox=True, shadow=True, ncol=len(labels),
-              prop=fontp)
+    ax.legend(
+        labels,
+        loc="lower center",
+        bbox_to_anchor=(0.5, -0.4),
+        fancybox=True,
+        shadow=True,
+        ncol=len(labels),
+        prop=fontp,
+    )
     ax.set_title(title)
     plt.xlim(xmin, xmax)
     plt.ylim(ymin - 0.05, ymax + 0.05)
-    plt.xlabel('JD')
-    plt.ylabel('Instr. mag')
+    plt.xlabel("JD")
+    plt.ylabel("Instr. mag")
     plt.xticks(rotation=25)
     ax.invert_yaxis()
     plt.autoscale()
@@ -92,22 +133,27 @@ def plot_star_fluctuations(star: StarDescription, chartsdir: str, starui: utils.
 # read all image.cat.info files
 # get JD and aperture via regex
 # plot
-def plot_aperture_vs_jd(chartsdir: str, vastdir: str):
-    x, y = get_aperture_and_jd(vastdir)
+def plot_aperture_vs_jd(chartsdir: str, vastdir: str, jdfilter: List[float]):
+    x, y = get_aperture_and_jd(vastdir, jdfilter)
+    logging.info(f"len xy after is {len(x)} {len(y)}, with jdfilter: {jdfilter}")
     fig, ax = get_fig_and_ax()
-    ax.plot(x, y, '*r', markersize=2)
-    ax.set_title('Aperture vs JD')
-    plt.xlabel('JD')
-    plt.ylabel('Aperture (px)')
+    ax.plot(x, y, "*r", markersize=2)
+    ax.set_title("Aperture vs JD")
+    plt.xlabel("JD")
+    plt.ylabel("Aperture (px)")
     plt.xticks(rotation=25)
     plt.minorticks_on()
     plt.autoscale()
-    save_location = Path(chartsdir, 'aperture_vs_jd' + '.png')
+    save_location = Path(chartsdir, "aperture_vs_jd" + ".png")
     fig.savefig(save_location)
     plt.close(fig)
 
 
-def get_aperture_and_jd(vastdir: str):
+def get_catinfo_files(vastdir):
+    return [Path(f) for f in glob.glob(vastdir + "/*.cat.info")]
+
+
+def get_aperture_and_jd(vastdir: str, jdfilter: List[float]):
     catinfo_files = get_catinfo_files(vastdir)
     x = []
     y = []
@@ -115,38 +161,41 @@ def get_aperture_and_jd(vastdir: str):
         a, b = get_jd_aperture_from_catinfo(file)
         x.append(float(a))
         y.append(float(b))
-    return x, y
+    logging.info(f"len xy before is {len(x)} {len(y)}")
+    return utils.jd_filter_array(x, y, jdfilter)
 
 
-def plot_merr_vs_jd(chartsdir: str, stars: List[StarDescription]):
+def plot_merr_vs_jd(chartsdir: str, stars: List[StarDescription], jdfilter):
     dfs = reading.read_lightcurve_sds(stars)
-    for star, df in tqdm(zip(stars, dfs), desc="Plotting magnitude error vs jd", unit="star", total=len(stars)):
-        df['floatJD'] = df['JD'].astype(np.float)
+    for star, df in tqdm(
+        zip(stars, dfs),
+        desc="Plotting magnitude error vs jd",
+        unit="star",
+        total=len(stars),
+    ):
+        df["floatJD"] = df["JD"].astype(np.float)
+        df = utils.jd_filter_df(df, jdfilter)
         starui: utils.StarUI = utils.get_star_or_catalog_name(star)
         fig, ax = get_fig_and_ax()
-        ax.plot(df['floatJD'], df['err'], '*r', markersize=2)
-        ax.set_title('Magnitude error vs JD')
-        plt.xlabel('JD (day)')
-        plt.ylabel('Mag error (mag)')
+        ax.plot(df["floatJD"], df["err"], "*r", markersize=2)
+        ax.set_title("Magnitude error vs JD")
+        plt.xlabel("JD (day)")
+        plt.ylabel("Mag error (mag)")
         plt.xticks(rotation=25)
         plt.minorticks_on()
         plt.autoscale()
-        save_location = Path(chartsdir, f'{starui.filename_no_ext}_merr_vs_jd' + '.png')
+        save_location = Path(chartsdir, f"{starui.filename_no_ext}_merr_vs_jd" + ".png")
         fig.savefig(save_location)
         plt.close(fig)
-        star.result['merr_vs_jd'] = save_location
-
-
-# part of plot_apertures
-def get_catinfo_files(vastdir):
-    return [Path(f) for f in glob.glob(vastdir + '/*.cat.info')]
+        star.result["merr_vs_jd"] = save_location
 
 
 # part of plot_apertures
 def get_jd_aperture_from_catinfo(filename):
-    the_regex = re.compile(r'^write_string_to_log_file\(\): JD=\s*(.*)\s*ap=\s*(\S*)\s*.*$')
-    catalog_dict = {}
-    with open(filename, 'r') as infile:
+    the_regex = re.compile(
+        r"^write_string_to_log_file\(\): JD=\s*(.*)\s*ap=\s*(\S*)\s*.*$"
+    )
+    with open(filename, "r") as infile:
         for line in infile:
             thesearch = the_regex.search(line)
             if thesearch:
@@ -154,98 +203,51 @@ def get_jd_aperture_from_catinfo(filename):
     return None
 
 
-def plot_aperture_vs_airmass(chartsdir: str, vastdir: str, wcs):
-    x, y = get_aperture_and_jd(vastdir)
-    settings = toml.load('settings.txt')
-    sitelat = settings['sitelat']
-    sitelong = settings['sitelong']
-    sitealt = settings['sitealt']
+def plot_aperture_vs_airmass(chartsdir: str, vastdir: str, wcs, jdfilter: List[float]):
+    x, y = get_aperture_and_jd(vastdir, jdfilter)
+    settings = toml.load("settings.txt")
+    sitelat = settings["sitelat"]
+    sitelong = settings["sitelong"]
+    sitealt = settings["sitealt"]
     earth_location = EarthLocation(lat=sitelat, lon=sitelong, height=sitealt * u.m)
 
     xair = []
-    central_coord = SkyCoord.from_pixel(wcs.pixel_shape[0] / 2.0, wcs.pixel_shape[1] / 2.0, wcs=wcs, origin=0)
+    central_coord = SkyCoord.from_pixel(
+        wcs.pixel_shape[0] / 2.0, wcs.pixel_shape[1] / 2.0, wcs=wcs, origin=0
+    )
     for entry in tqdm(x, total=len(x), desc="Calculating airmass", unit="JD"):
-        result = do_aavso_report.calculate_airmass(central_coord, earth_location, entry).value
+        result = do_aavso_report.calculate_airmass(
+            central_coord, earth_location, entry
+        ).value
         xair.append(result)
 
     fig, ax = get_fig_and_ax()
-    ax.plot(xair, y, '*r', markersize=2)
-    ax.tick_params(axis='x', which='minor', bottom=False)
-    ax.set_title('Aperture vs Airmass')
-    plt.xlabel(f'Airmass of central point: {utils.get_hms_dms(central_coord)}')
-    plt.ylabel('Aperture (px)')
+    ax.plot(xair, y, "*r", markersize=2)
+    ax.tick_params(axis="x", which="minor", bottom=False)
+    ax.set_title("Aperture vs Airmass")
+    plt.xlabel(f"Airmass of central point: {utils.get_hms_dms(central_coord)}")
+    plt.ylabel("Aperture (px)")
     plt.minorticks_on()
     plt.autoscale()
-    save_location = Path(chartsdir, 'aperture_vs_airmass' + '.png')
+    save_location = Path(chartsdir, "aperture_vs_airmass" + ".png")
     fig.savefig(save_location)
     plt.close(fig)
-
-
-def plot_cumul_histo_detections(savefig=True):
-    result = reading.read_lightcurve_ids()
-    matplotlib.rcParams.update({'font.size': 38})
-    fig_size = (38, 32)
-    dpi = 100
-    # print(len(result))
-    keys = result.keys()
-    values = list(map(lambda x: x[0] / x[1] * 100, result.values()))
-    # print(len(keys), len(values))
-    num_bins = 10
-    fig, ax = plt.subplots(figsize=fig_size, dpi=dpi, facecolor='w', edgecolor='k')
-
-    # the histogram of the data
-    n, bins, patches = ax.hist(values, num_bins, density=1)
-
-    # add a 'best fit' line
-    # y = ((1 / (np.sqrt(2 * np.pi) * sigma)) *
-    #     np.exp(-0.5 * (1 / sigma * (bins - mu))**2))
-    # ax.plot(bins, range(1,50), '--')
-    ax.set_xlabel('% of star detections, on which star was found')
-    ax.set_ylabel('Nr of stars')
-    ax.set_title(r'Cumulative histogram of star detections')
-    ax.grid(True)
-    # plt.xticks(np.arange(0, 110, step=10))
-    major_ticks = np.arange(0, 11000, 2000)
-    minor_ticks = np.arange(0, 11000, 1000)
-    ax.set_yticks(major_ticks)
-    ax.set_yticks(minor_ticks, minor=True)
-    plt.minorticks_on()
-    plt.xlim(0, 100)
-    plt.ylim(0, 10000)
-    # plt.yticks(np.arange(0, 11000, step=1000))
-    # Tweak spacing to prevent clipping of ylabel
-    # fig.tight_layout()
-    plt.hist(bins=num_bins, x=values, cumulative=1)
-    plt.show()
-    if savefig:
-        save(fig, settings.fieldchartsdirs + 'cumul_histo_detections.png')
-
-    fig, ax = plt.subplots(figsize=fig_size, dpi=dpi, facecolor='w', edgecolor='k')
-    ax.set_xlabel('star number')
-    ax.set_ylabel('Star is in % of images')
-    ax.set_title(r'Barchart of on which % of images the star is seen')
-    ax.grid(True)
-    xaxis = range(0, len(values))
-    logging.info(f"len xaxis: {len(xaxis)}, len values: {len(values)}")
-    plt.bar(x=xaxis, height=sorted(values), width=1)
-    plt.show()
-    save(fig, settings.fieldchartsdirs + 'barcharts.png')
 
 
 def plot_fwhm(fwhm):
     fig_size = (36, 32)
     dpi = 100
-    matplotlib.rcParams.update({'font.size': 38})
+    matplotlib.rcParams.update({"font.size": 38})
 
-    fig, ax = plt.subplots(figsize=fig_size, dpi=dpi, facecolor='w', edgecolor='k')
-    ax.set_xlabel('Image number')
-    ax.set_ylabel('FWHM')
-    ax.set_title(r'Progress over time of the FWHM per image')
+    fig, ax = plt.subplots(figsize=fig_size, dpi=dpi, facecolor="w", edgecolor="k")
+    ax.set_xlabel("Image number")
+    ax.set_ylabel("FWHM")
+    ax.set_title(r"Progress over time of the FWHM per image")
     ax.grid(True)
     xaxis = range(0, len(fwhm))
     plt.bar(x=xaxis, height=np.take(fwhm, 1, axis=1), width=1)
     plt.show()
-    save(fig, settings.fieldchartsdirs + 'fwhm.png')
+    save(fig, settings.fieldchartsdirs + "fwhm.png")
 
 
 def save(fig, path):
@@ -254,5 +256,4 @@ def save(fig, path):
 
 
 def main(fwhm):
-    plot_cumul_histo_detections()
     plot_fwhm(fwhm)
