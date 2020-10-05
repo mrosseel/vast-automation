@@ -466,6 +466,7 @@ def read_vast_lightcurves(
         starui: utils.StarUI = utils.get_star_or_catalog_name(star, suffix="")
         period, epoch = determine_period_and_epoch(df, star)
 
+        # filter depending on phase diagram
         df, points_removed = phase_dependent_outlier_removal(df, period)
         temp_dict["compstars"] = write_compstars(
             star, starui.filename_no_ext, phasedir, filtered_compstars, check_star
@@ -534,7 +535,7 @@ def read_vast_lightcurves(
 
 
 def phase_dependent_outlier_removal(
-    df: DataFrame, period: Period
+    df: DataFrame, period: Period, stdev=3
 ) -> Tuple[DataFrame, int]:
     phased_t = np.fmod(df["floatJD"] / period.period, 1)
     # array of times rounded to 1 decimal, results in 11 buckens which cover the phase diagram from 0.0 to 1.0
@@ -545,7 +546,7 @@ def phase_dependent_outlier_removal(
         bucket = bucket_all["realV"]
         bucketmean = bucket.median()
         bucketstd = bucket.std()
-        mask = abs(bucket - bucketmean) < 5 * bucketstd
+        mask = abs(bucket - bucketmean) < stdev * bucketstd
         maskresult = maskresult.append(bucket_all[mask])
     return maskresult, len(df) - len(maskresult)
 
