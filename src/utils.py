@@ -52,7 +52,11 @@ def get_files_in_dir(mypath):
 # out012345.dat -> 12345
 def get_starid_from_outfile(outfile) -> int:
     m = re.search("out(.*).dat", outfile)
-    return int(m.group(1).lstrip("0"))
+    try:
+        result = int(m.group(1).lstrip("0"))
+    except:
+        logging.error(f"Could not extract the starid from file: {outfile}")
+    return result
 
 
 # returns a dict with the local_id as key
