@@ -535,7 +535,7 @@ def read_vast_lightcurves(
 
 
 def phase_dependent_outlier_removal(
-    df: DataFrame, period: Period, stdev=3
+    df: DataFrame, period: Period, stdev=5
 ) -> Tuple[DataFrame, int]:
     phased_t = np.fmod(df["floatJD"] / period.period, 1)
     # array of times rounded to 1 decimal, results in 11 buckens which cover the phase diagram from 0.0 to 1.0

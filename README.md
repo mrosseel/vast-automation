@@ -121,6 +121,7 @@ _Password is 'muni'_
 
 ## TODO
 
+- for cli_inspect, add the chosen fits to the txt file
 - for candidates, closest known vsx
 - check out https://public.lanl.gov/palmer/fastchi.html for period determination
 - check out https://github.com/toros-astro/astroalign for aligning

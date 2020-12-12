@@ -77,6 +77,7 @@ def selective_copy_files(stars: List[StarDescription], destdir: str, resultdir: 
     for file in fieldcharts_glob:
         copy(file, destdir)
     copy(f"{resultdir}selected_radec.txt", destdir)
+    copy(f"{resultdir}selected_localid.txt", destdir)
     logging.info(f"Copying done.")
 
 def get_from_toml(key, parsed_toml, default=None):
