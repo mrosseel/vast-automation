@@ -2,6 +2,23 @@
 
 # vast-automation
 
+## Introduction
+
+This project takes as input:
+- a number of FITS files of the same region in the sky (time series)
+- the resulting files of running VaST on these files
+- the observatory location (settings.txt)
+
+and produces a website containing this information:
+- phase diagram charts of VSX stars and new variable candidates (as detected by VaST)
+- light curves charts
+- magnitude error vs JD chart
+- Ensemble comparison star lightcurves
+- Global charts on aperture vs airmass and aperture vs JD
+- AAVSO reports
+
+Most output can be turned off if it's of no interest.
+
 ## Preparation
 
 ### Importing VSX star catalog
@@ -20,6 +37,12 @@ Getting the 900 files (9Gb):
 Checking that all 900 files were downloaded correctly:
 - `md5sum -c md5sum.txt`
 
+Also download some support files:
+- `wget ftp://cdsarc.u-strasbg.fr/0/more/UCAC4/u4i/*` 
+
+and place these two directories (u4b and u4i) in this location:
+- `support/ucac4/UCAC4/`
+
 ## Run VAST on the fits files
 
 `./vast -u -x 3 ../location/of/fits/*.fit`
@@ -33,7 +56,7 @@ Needed: python 3.7.7 (3.8 doesn't work yet)
 
 ### run the command
 
-Install pipenv to manage the python dependencies.
+*Install pipenv to manage the python dependencies.*
 
 Install the dependencies and the virtual environment (do this once):
 
@@ -49,11 +72,13 @@ Run the actual processing software to get all options:
 
 Example usage:
 
-`./vast_process.sh --vsx --candidates -d support/vast-1.0rc84 --fitsdir ./fits --apikey abcde`
+`./vast_process.sh --vsx --candidates -d support/vast-1.0rc84 --fitsdir ./fits --apikey abcde -r /bla/my-result-dir/`
 
 Note that the fitsdir and apikey options are needed to perform automatic plate-solving via
 astrometry.net. If you prefer to do your own plate-solving, put the solved image as new-image.fits
-in the directory passed via -d
+in the directory passed via *-d*
+
+Note that the fitsdir should contain the same files as were used by VaST.
 
 ### look at the results
 
