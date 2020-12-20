@@ -141,6 +141,7 @@ def run_do_rest(args):
             "aavso_all/",
             do_phase=do_phase,
             do_light=do_light,
+            do_light_raw=do_light,
             do_aavso=do_aavso,
             nr_threads=thread_count,
             jdfilter=args.jdfilter,
