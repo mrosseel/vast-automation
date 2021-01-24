@@ -350,6 +350,7 @@ def write_augmented_all_stars(readdir: str, writedir: str, stardict: StarDict):
                 )
 
 
+# Main CSV file output, all data on selected stars, once with radec id, once with localid
 # naam, ra, dec, max, min, type, periode, epoch?
 def write_selected_files(
     resultdir: str, vastdir: str, selected_stars: List[StarDescription]
@@ -612,6 +613,7 @@ def construct_vsx_mag_range(entry):
 
 
 def read_and_tag_localid(selectedstarfile: str, stardict: StarDict):
+    """ used for the -s or --selectedstars cli argument """
     try:
         df = pd.read_csv(
             selectedstarfile,
@@ -691,7 +693,9 @@ def read_and_tag_localid(selectedstarfile: str, stardict: StarDict):
         logging.error(f"Could not read {selectedstarfile}, star {row['local_id']}")
 
 
+
 def read_and_tag_radec(owncatalog: str, stars: List[StarDescription]):
+    """ used for the -o or --owncatalag cli argument """
     # outfile.write(f"# our_name,ra,dec,minmax,var_type,period,epoch\n")
     logging.info(f"Using owncatalog: {owncatalog}")
     df = pd.read_csv(
@@ -725,11 +729,13 @@ def read_and_tag_radec(owncatalog: str, stars: List[StarDescription]):
         skipinitialspace=True,
         warn_bad_lines=True,
     )
+    # use the UCAC4 RA if present
     df.loc[df["ucac4_ra"].notnull(), "chosenRA"] = df["ucac4_ra"]
     df.loc[df["ucac4_ra"].isnull(), "chosenRA"] = df["ra"]
+    # use the UCAC4 DEC if present
     df.loc[df["ucac4_dec"].notnull(), "chosenDEC"] = df["ucac4_dec"]
     df.loc[df["ucac4_dec"].isnull(), "chosenDEC"] = df["dec"]
-    logging.info(f"tag_owncatalog: {df}")
+    logging.info(f"--owncatalog : {df}")
     ra, dec = (df["chosenRA"], df["chosenDEC"])
     df = df.replace({np.nan: None})
     skycoord: SkyCoord = do_calibration.create_generic_astropy_catalog(ra, dec)
@@ -812,5 +818,4 @@ def has_option(obj, attr_name):
 
 def interact():
     import code
-
     code.InteractiveConsole(locals=dict(globals(), **locals())).interact()

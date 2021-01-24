@@ -38,7 +38,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-s",
         "--selectedstarfile",
-        help="Load a file with star ids, these ids will be used for field charts/reporting",
+        help="Load a file with star ids, these internal vast ids can unambiguously point to a vast star",
     )
     parser.add_argument(
         "--apikey",
