@@ -100,24 +100,24 @@ def run_do_rest(args):
     )
     write_augmented_autocandidates(vastdir, resultdir, stardict)
     write_augmented_all_stars(vastdir, resultdir, stardict)
-    owncatalog = utils.get_stars_with_metadata(star_descriptions, "OWNCATALOG")
-    logging.info(f"There are {len(owncatalog)} own catalog stars")
+    radec_catalog = utils.get_stars_with_metadata(star_descriptions, "RADECCATALOG")
+    logging.info(f"There are {len(radec_catalog)} radec catalog stars")
     candidate_stars = utils.get_stars_with_metadata(
         star_descriptions, "CANDIDATE", exclude=["VSX"]
     )
-    candidate_stars = utils.add_star_lists(candidate_stars, owncatalog)
+    candidate_stars = utils.add_star_lists(candidate_stars, radec_catalog)
     if args.selectcandidates:
         tag_candidates_as_selected(candidate_stars)
     logging.info(f"There are {len(candidate_stars)} candidate stars")
 
     vsx_stars = utils.get_stars_with_metadata(star_descriptions, "VSX")
     logging.info(f"There are {len(vsx_stars)} vsx stars")
-    selected_stars = utils.get_stars_with_metadata(star_descriptions, "SELECTEDFILE")
+    selected_stars = utils.get_stars_with_metadata(star_descriptions, "SELECTEDTAG")
     # if args.selectvsx:
     #     selected_stars = utils.concat_sd_lists(selected_stars, vsx_stars)
     logging.info(f"There are {len(selected_stars)} selected stars")
     compstar_needing_stars = utils.concat_sd_lists(
-        selected_stars, vsx_stars, candidate_stars, owncatalog
+        selected_stars, vsx_stars, candidate_stars, radec_catalog
     )
     comp_stars = set_comp_stars_and_ucac4(
         star_descriptions, selected_stars, args.checkstarfile, vastdir, stardict, ref_jd
@@ -166,7 +166,7 @@ def run_do_rest(args):
                 jdfilter=args.jdfilter,
                 desc="Phase/light/aavso of VSX stars",
             )
-        if args.selectedstarfile or args.owncatalog:
+        if args.radeccatalog or args.localidcatalog:
             do_charts_vast.run(
                 selected_stars,
                 comp_stars,
@@ -355,29 +355,29 @@ def write_augmented_all_stars(readdir: str, writedir: str, stardict: StarDict):
 def write_selected_files(
     resultdir: str, vastdir: str, selected_stars: List[StarDescription]
 ):
-    owncatalog = f"{resultdir}selected_radec.txt"
-    selectedstars = f"{resultdir}selected_localid.txt"
+    radec_catalog = f"{resultdir}selected_radec.txt"
+    localid_catalog = f"{resultdir}selected_localid.txt"
     logging.info(
-        f"Writing {owncatalog} and {selectedstars} with {len(selected_stars)} stars..."
+        f"Writing {radec_catalog} and {localid_catalog} with {len(selected_stars)} stars..."
     )
     sorted_stars = utils.sort_selected(selected_stars)
     vsx_stars_len = len(utils.get_stars_with_metadata(selected_stars, "VSX"))
     no_vsx_len = len(
-        utils.get_stars_with_metadata(selected_stars, "SELECTEDFILE", exclude=["VSX"])
+        utils.get_stars_with_metadata(selected_stars, "SELECTEDTAG", exclude=["VSX"])
     )
-    with open(owncatalog, "w") as outowncatalog, open(
-        selectedstars, "w"
-    ) as outselected:
-        preamble = (
+    with open(radec_catalog, "w") as out_radec_catalog, open(
+        localid_catalog, "w"
+    ) as out_localid_catalog:
+        common_preamble = (
             f"# resultdir: {resultdir}, vastdir: {vastdir}, vsx stars: {vsx_stars_len}, "
             f"other stars: {no_vsx_len}\n"
         )
-        outowncatalog.write(
-            f"{preamble}# our_name,ra,dec,ucac4_name,ucac4_ra,ucac4_dec,ucac4_force,minmax,min,max,var_type,"
+        out_radec_catalog.write(
+            f"{common_preamble}# our_name,ra,dec,ucac4_name,ucac4_ra,ucac4_dec,ucac4_force,minmax,min,max,var_type,"
             f"period,period_err,epoch\n"
         )
-        outselected.write(
-            f"{preamble}# our_name,local_id,ucac4_name,ucac4_force,minmax,min,max,var_type,period,period_err,epoch\n"
+        out_localid_catalog.write(
+            f"{common_preamble}# our_name,local_id,ucac4_name,ucac4_force,minmax,min,max,var_type,period,period_err,epoch\n"
         )
 
         def format_float_arg(atoml, arg: str, precision):
@@ -415,7 +415,7 @@ def write_selected_files(
             )
             try:
                 parsed_toml = toml.load(txt_path)
-                outowncatalog.write(
+                out_radec_catalog.write(
                     f"{metadata.our_name},{star.coords.ra.deg:.7f},{star.coords.dec.deg:.7f},{ucac4_name},"
                     f"{ucac4_coords},False,"
                     f"{format_string('minmax', parsed_toml)},{format_float_1(parsed_toml, 'min')},"
@@ -423,7 +423,7 @@ def write_selected_files(
                     f"{format_float_5(parsed_toml, 'period')},{format_float_5(parsed_toml, 'period_err')},"
                     f"{format_string('epoch', parsed_toml)}\n"
                 )
-                outselected.write(
+                out_localid_catalog.write(
                     f"{metadata.our_name},{star.local_id},{ucac4_name},False,"
                     f"{format_string('minmax', parsed_toml)},{format_float_1(parsed_toml, 'min')},"
                     f"{format_float_1(parsed_toml, 'max')},{metadata.var_type},"
@@ -508,16 +508,16 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, args):
         tag_vsx_as_selected(vsx_stars)
 
     # adds sitedata to selected stars
-    if args.selectedstarfile:
-        read_and_tag_localid(args.selectedstarfile, stardict)
+    if args.localidcatalog:
+        read_and_tag_localid(args.localidcatalog, stardict)
         logging.debug(
             f"Succesfully read {len(list(filter(lambda x: x.has_metadata('SELECTEDFILE'), star_descriptions)))} "
             f"stars from file:"
             f" {[x.local_id for x in list(filter(lambda x: x.has_metadata('SELECTEDFILE'), star_descriptions))]}"
         )
 
-    if args.owncatalog:
-        read_and_tag_radec(args.owncatalog, star_descriptions)
+    if args.radeccatalog:
+        read_and_tag_radec(args.radeccatalog, star_descriptions)
 
     return star_descriptions
 
@@ -612,11 +612,11 @@ def construct_vsx_mag_range(entry):
     )
 
 
-def read_and_tag_localid(selectedstarfile: str, stardict: StarDict):
-    """ used for the -s or --selectedstars cli argument """
+def read_and_tag_localid(localid_catalog: str, stardict: StarDict):
+    """ used for the -l or --localidcatalog cli argument """
     try:
         df = pd.read_csv(
-            selectedstarfile,
+            localid_catalog,
             sep=",",
             comment="#",
             names=[
@@ -639,9 +639,9 @@ def read_and_tag_localid(selectedstarfile: str, stardict: StarDict):
         )
         df = df.replace({np.nan: None})
         logging.info(
-            f"Selecting {len(df)} stars added by {selectedstarfile}: {df['local_id'].to_numpy()}"
+            f"Selecting {len(df)} stars added by {localid_catalog}: {df['local_id'].to_numpy()}"
         )
-        logging.info(f"The resulting df is {df}")
+        # logging.info(f"The resulting df is {df}")
         for idx, row in df.iterrows():
             the_star: StarDescription = stardict.get(row["local_id"])
             if the_star is None:
@@ -694,12 +694,12 @@ def read_and_tag_localid(selectedstarfile: str, stardict: StarDict):
 
 
 
-def read_and_tag_radec(owncatalog: str, stars: List[StarDescription]):
-    """ used for the -o or --owncatalag cli argument """
+def read_and_tag_radec(radec_catalog: str, stars: List[StarDescription]):
+    """ used for the -o or --radeccatalog cli argument """
     # outfile.write(f"# our_name,ra,dec,minmax,var_type,period,epoch\n")
-    logging.info(f"Using owncatalog: {owncatalog}")
+    logging.info(f"Using radec catalog: {radec_catalog}")
     df = pd.read_csv(
-        owncatalog,
+        radec_catalog,
         sep=",",
         comment="#",
         names=[
@@ -735,7 +735,10 @@ def read_and_tag_radec(owncatalog: str, stars: List[StarDescription]):
     # use the UCAC4 DEC if present
     df.loc[df["ucac4_dec"].notnull(), "chosenDEC"] = df["ucac4_dec"]
     df.loc[df["ucac4_dec"].isnull(), "chosenDEC"] = df["dec"]
-    logging.info(f"--owncatalog : {df}")
+    logging.info(
+            f"Selecting {len(df)} stars added by {radec_catalog}: {df['our_name'].to_numpy()}"
+    )
+    # logging.info(f"--radeccatalog : {df}")
     ra, dec = (df["chosenRA"], df["chosenDEC"])
     df = df.replace({np.nan: None})
     skycoord: SkyCoord = do_calibration.create_generic_astropy_catalog(ra, dec)
@@ -745,7 +748,7 @@ def read_and_tag_radec(owncatalog: str, stars: List[StarDescription]):
         row = df.iloc[count]
         the_star = stars[index]
         the_star.metadata = CatalogData(
-            key="OWNCATALOG",
+            key="RADECCATALOG",
             catalog_id=row["our_name"],
             name=row["our_name"],
             coords=SkyCoord(row["ra"], row["dec"], unit="deg"),

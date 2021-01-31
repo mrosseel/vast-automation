@@ -31,19 +31,18 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-o",
-        "--owncatalog",
+        "--radeccatalog",
         help="Supply a file to identify stars known to you by RA/DEC",
         required=False,
     )
     parser.add_argument(
-        "-s",
-        "--selectedstarfile",
-        help="Load a file with star ids, these internal vast ids can unambiguously point to a vast star",
+        "-l",
+        "--localidcatalog",
+        help="Supply a file to identify stars with VaST star ids, these point unambiguously to a vast star",
     )
     parser.add_argument(
         "--apikey",
-        help="Astrometry.net api key for automatic plate solving of the referenc "
-        "frame found by vast.",
+        help="Astrometry.net api key for automatic plate solving of the reference frame found by vast.",
         required=False,
     )
     parser.add_argument(
@@ -117,12 +116,6 @@ if __name__ == "__main__":
         "-x", "--verbose", help="Set logging to debug mode", action="store_true"
     )
     parser.add_argument(
-        "-l",
-        "--laststars",
-        help="Use the star descriptions of the previous run to do the charting",
-        action="store_true",
-    )
-    parser.add_argument(
         "-u", "--upsilon", help="Add upsilon star info to charting", action="store_true"
     )
     parser.add_argument(
@@ -154,13 +147,13 @@ if __name__ == "__main__":
     # assert os.path.exists(args.resultdir), "resultdir does not exist" ==> this dir is created
     assert (
         os.path.exists(args.checkstarfile) if args.checkstarfile else True
-    ), "checkstarfile does not exist"
+    ), "checkstar file does not exist"
     assert (
-        os.path.exists(args.owncatalog) if args.owncatalog else True
-    ), "owncatalog does not exist"
+        os.path.exists(args.radeccatalog) if args.radeccatalog else True
+    ), "radec catalog file does not exist"
     assert (
-        os.path.exists(args.selectedstarfile) if args.selectedstarfile else True
-    ), "selectedstarfile does not exist"
+        os.path.exists(args.localidcatalog) if args.localidcatalog else True
+    ), "local id catalog file does not exist"
     if args.selectcandidates and not args.candidates:
         logging.warning(
             "--selectcandidates was selected, but --candidates was absent. Corrected."

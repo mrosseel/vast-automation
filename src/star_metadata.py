@@ -48,7 +48,7 @@ class CompStarData(StarMetaData):
 
 
 class SelectedFileData(StarMetaData):
-    def __init__(self, key="SELECTEDFILE"):
+    def __init__(self, key="SELECTEDTAG"):
         super().__init__(key)
 
 

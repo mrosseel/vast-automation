@@ -52,14 +52,14 @@ def inspect(vastdir, resultdir, fitsdir, apikey, stars):
     star_catalog = do_calibration.create_star_descriptions_catalog(sds)
 
     if args.radecs:
-        main_vast.read_and_tag_radec(args.owncatalog, sds)
+        main_vast.read_and_tag_radec(args.radecs, sds)
     if args.localids:
         stardict = main_vast.get_localid_to_sd_dict(sds)
         main_vast.read_and_tag_localid(args.localids, stardict)
     if args.stars:
         stars = sorted(list(map(lambda x: int(x), stars)))
     else:
-        stars = sorted([x.local_id for x in sds if x.get_metadata("SELECTEDFILE")])
+        stars = sorted([x.local_id for x in sds if x.get_metadata("SELECTEDTAG")])
     for starid in stars:
         process(
             vastdir,

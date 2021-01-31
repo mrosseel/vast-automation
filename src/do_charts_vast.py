@@ -471,13 +471,15 @@ def read_vast_lightcurves(
         temp_dict["compstars"] = write_compstars(
             star, starui.filename_no_ext, phasedir, filtered_compstars, check_star
         )
+        ymin, ymax, epoch_min, epoch_max = *calculate_min_max_epochs(df["floatJD"], df["realV"]),
+        logging.info(f"Calculating min/max/epochs: {ymin}, {ymax}, {epoch_min}, {epoch_max}")
         write_toml(
             starui.filename_no_ext,
             phasedir,
             period,
             star,
             points_removed,
-            *calculate_min_max_epochs(df["floatJD"], df["realV"]),
+            ymin, ymax, epoch_min, epoch_max
         )
 
         if do_phase and "phase" not in star.result:

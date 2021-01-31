@@ -24,7 +24,7 @@ def run(
     resultdir: str,
 ):
     sitedir = f"{os.getcwd()}/site/vsx/"
-    images_prefix = f"images/{post_name}/"
+    images_prefix = f"/images/{post_name}/"
     # copy_files(post_name, resultdir, sitedir)
     staticimagesdir = f"{sitedir}static/{images_prefix}"
     selective_copy_files(selected_stars, staticimagesdir, resultdir)
