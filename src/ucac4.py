@@ -129,8 +129,7 @@ StarTuple = namedtuple(
     " e2mpho1 e2mpho2 e2mpho3 apass_mag_B apass_mag_V apass_mag_g apass_mag_r apass_mag_i"
     " apass_mag_sigma_B apass_mag_sigma_V apass_mag_sigma_g apass_mag_sigma_r"
     " apass_mag_sigma_i yale_gc_flags catalog_flags leda_flag twomass_ext_flag"
-    " id_number ucac2_zone ucac2_number",
-)
+    " id_number ucac2_zone ucac2_number",)
 MinimalStarTuple = namedtuple("MinStar", "id, ra, dec, mag")
 UcacTuple = Tuple[StarTuple, str, int]
 UcacTupleList = List[UcacTuple]
@@ -199,6 +198,11 @@ class UCAC4:
         zone, run_nr = UCAC4.ucac_id_to_zone_and_run_nr(ucac_id)
         logging.debug(f"UCAC4 id {zone}, {run_nr}")
         return self.get_ucactuples_for_zone_and_runnrs(zone, [run_nr])[0]
+
+    def get_ra_dec_from_id(self, ucac4_id) -> Tuple[float, float]:
+        startuple, _, _ = self.get_ucactuple_from_id(ucac4_id)
+        ra, dec = UCAC4.get_real_ra_dec(startuple.ra, startuple.spd)
+        return ra, dec
 
     def index_bin_to_run_nrs(self, zone: int, index_bin: int):
         # index = (zone - 1) * 1440 + index_bin
@@ -296,6 +300,7 @@ class UCAC4:
         return self.get_star_description_from_tuple(
             self.get_ucactuple_from_ra_dec(ra, dec, tolerance_deg)
         )
+
 
     def get_ucactuple_from_ra_dec(
         self, ra: float, dec: float, tolerance_deg=0.02
@@ -406,6 +411,7 @@ class UCAC4:
             aavso_id=UCAC4.zone_and_run_nr_to_name(zone, run_nr),
         )
         return sd
+
 
     @staticmethod
     def get_real_ra_dec(ra, spd) -> Tuple[float, float]:

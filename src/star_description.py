@@ -72,12 +72,13 @@ class StarDescription:
             print("traceback:", traceback.print_exc())
             logging.error(error)
             raise ValueError(error)
+        elif val is None:
+            logging.error("Calling set_metadata with none as val")
         elif val.key in self._metadata:
             logging.warning(
                 f"Overwriting metadata of star {self.local_id} with key {val.key}, strict is False. "
                 f"{self._metadata}"
             )
-
         self._metadata[val.key] = val
 
     def has_metadata(self, key: str) -> bool:

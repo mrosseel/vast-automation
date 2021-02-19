@@ -100,12 +100,9 @@ def run_do_rest(args):
     )
     write_augmented_autocandidates(vastdir, resultdir, stardict)
     write_augmented_all_stars(vastdir, resultdir, stardict)
-    radec_catalog = utils.get_stars_with_metadata(star_descriptions, "RADECCATALOG")
-    logging.info(f"There are {len(radec_catalog)} radec catalog stars")
     candidate_stars = utils.get_stars_with_metadata(
         star_descriptions, "CANDIDATE", exclude=["VSX"]
     )
-    candidate_stars = utils.add_star_lists(candidate_stars, radec_catalog)
     if args.selectcandidates:
         tag_candidates_as_selected(candidate_stars)
     logging.info(f"There are {len(candidate_stars)} candidate stars")
@@ -117,7 +114,7 @@ def run_do_rest(args):
     #     selected_stars = utils.concat_sd_lists(selected_stars, vsx_stars)
     logging.info(f"There are {len(selected_stars)} selected stars")
     compstar_needing_stars = utils.concat_sd_lists(
-        selected_stars, vsx_stars, candidate_stars, radec_catalog
+        selected_stars, vsx_stars, candidate_stars
     )
     comp_stars = set_comp_stars_and_ucac4(
         star_descriptions, selected_stars, args.checkstarfile, vastdir, stardict, ref_jd
@@ -357,46 +354,52 @@ def write_selected_files(
 ):
     radec_catalog = f"{resultdir}selected_radec.txt"
     localid_catalog = f"{resultdir}selected_localid.txt"
+    aavso_vsx_catalog = f"{resultdir}aavso_vsx.txt"
     logging.info(
-        f"Writing {radec_catalog} and {localid_catalog} with {len(selected_stars)} stars..."
+        f"Writing {radec_catalog} and {localid_catalog} and {aavso_vsx_catalog} with {len(selected_stars)} stars..."
     )
     sorted_stars = utils.sort_selected(selected_stars)
     vsx_stars_len = len(utils.get_stars_with_metadata(selected_stars, "VSX"))
     no_vsx_len = len(
         utils.get_stars_with_metadata(selected_stars, "SELECTEDTAG", exclude=["VSX"])
     )
-    with open(radec_catalog, "w") as out_radec_catalog, open(
-        localid_catalog, "w"
-    ) as out_localid_catalog:
-        common_preamble = (
+
+    def format_float_arg(atoml, arg: str, precision):
+        if arg is None or arg not in atoml:
+            return ""
+        if not isinstance(atoml[arg], float):
+            return atoml[arg]
+        return f"{atoml[arg]:.{precision}f}"
+
+    def format_float_5(atoml, arg: str):
+        return format_float_arg(atoml, arg, 5)
+
+    def format_float_1(atoml, arg: str):
+        return format_float_arg(atoml, arg, 1)
+
+    def format_string(arg: str, atoml):
+        if arg in atoml:
+            return atoml[arg]
+        return ""
+
+    with open(radec_catalog, "w") as out_radec_catalog, open(localid_catalog, "w") as out_localid_catalog, open(aavso_vsx_catalog, "w") as out_aavso_vsx_catalog:
+        common_prefix = (
             f"# resultdir: {resultdir}, vastdir: {vastdir}, vsx stars: {vsx_stars_len}, "
             f"other stars: {no_vsx_len}\n"
         )
+        common_postfix = (
+            f"minmax,min,max,var_type,period,period_err,epoch\n"
+        )
         out_radec_catalog.write(
-            f"{common_preamble}# our_name,ra,dec,ucac4_name,ucac4_ra,ucac4_dec,ucac4_force,minmax,min,max,var_type,"
-            f"period,period_err,epoch\n"
+            f"{common_prefix}# our_name,ra,dec,ucac4_name,ucac4_force,{common_postfix}"
         )
         out_localid_catalog.write(
-            f"{common_preamble}# our_name,local_id,ucac4_name,ucac4_force,minmax,min,max,var_type,period,period_err,epoch\n"
+            f"{common_prefix}# our_name,local_id,ucac4_name,ucac4_force,{common_postfix}"
         )
 
-        def format_float_arg(atoml, arg: str, precision):
-            if arg is None or arg not in atoml:
-                return ""
-            if not isinstance(atoml[arg], float):
-                return atoml[arg]
-            return f"{atoml[arg]:.{precision}f}"
-
-        def format_float_5(atoml, arg: str):
-            return format_float_arg(atoml, arg, 5)
-
-        def format_float_1(atoml, arg: str):
-            return format_float_arg(atoml, arg, 1)
-
-        def format_string(arg: str, atoml):
-            if arg in atoml:
-                return atoml[arg]
-            return ""
+        out_aavso_vsx_catalog.write(
+            f"{common_prefix}# our_name,ucac4_name,ucac4_ra,ucac4_dec,{common_postfix}"
+        )
 
         for star in sorted_stars:
             metadata: SiteData = star.get_metadata("SITE")
@@ -408,27 +411,19 @@ def write_selected_files(
                 else f"{ucac4.coords.ra.deg:.7f},{ucac4.coords.dec.deg:.7f}"
             )
             starui: utils.StarUI = utils.get_star_or_catalog_name(star)
-            txt_path = Path(
-                Path(star.result["phase"]).parent,
-                "txt",
-                starui.filename_no_ext + ".txt",
-            )
+            txt_path = Path(Path(star.result["phase"]).parent, "txt", starui.filename_no_ext + ".txt")
             try:
                 parsed_toml = toml.load(txt_path)
+                postfix = f"{format_string('minmax', parsed_toml)},{format_float_1(parsed_toml, 'min')},{format_float_1(parsed_toml, 'max')},{metadata.var_type},{format_float_5(parsed_toml, 'period')},{format_float_5(parsed_toml, 'period_err')},{format_string('epoch', parsed_toml)}"
+
                 out_radec_catalog.write(
-                    f"{metadata.our_name},{star.coords.ra.deg:.7f},{star.coords.dec.deg:.7f},{ucac4_name},"
-                    f"{ucac4_coords},False,"
-                    f"{format_string('minmax', parsed_toml)},{format_float_1(parsed_toml, 'min')},"
-                    f"{format_float_1(parsed_toml, 'max')},{metadata.var_type},"
-                    f"{format_float_5(parsed_toml, 'period')},{format_float_5(parsed_toml, 'period_err')},"
-                    f"{format_string('epoch', parsed_toml)}\n"
+                    f"{metadata.our_name},{star.coords.ra.deg:.7f},{star.coords.dec.deg:.7f},{ucac4_name},False,{postfix}\n"
                 )
                 out_localid_catalog.write(
-                    f"{metadata.our_name},{star.local_id},{ucac4_name},False,"
-                    f"{format_string('minmax', parsed_toml)},{format_float_1(parsed_toml, 'min')},"
-                    f"{format_float_1(parsed_toml, 'max')},{metadata.var_type},"
-                    f"{format_float_5(parsed_toml, 'period')},{format_float_5(parsed_toml, 'period_err')},"
-                    f"{format_string('epoch', parsed_toml)}\n"
+                    f"{metadata.our_name},{star.local_id},{ucac4_name},False,{postfix}\n"
+                )
+                out_aavso_vsx_catalog.write(
+                    f"{metadata.our_name},{ucac4_name},{ucac4_coords},{postfix}\n"
                 )
             except FileNotFoundError:
                 logging.error(
@@ -546,22 +541,20 @@ def tag_vsx_as_selected(vsx_stars: List[StarDescription]):
                 f"consider removing it from your txt file"
             )
             continue
-        # extradata: {'id': index, 'OID': row['OID'], 'Name': row['Name'], 'Type': row['Type'],
-        # 'l_Period': row['l_Period'], 'Period': row['Period'], 'u_Period': row['u_Period']})
+        # extradata is {'OID': 1500045, 'Name': 'ASASSN-V J060000.76-310027.8', 'V': 0, 'RAdeg': 90.00317, 'DEdeg': -31.007720000000003,
+        # 'Type': 'DIP:', 'l_max': nan, 'max': 13.62, 'u_max': nan, 'n_max': 'V', 'f_min': '(', 'l_min': nan, 'min': 0.9, 'u_min': nan, 'n_min': 'g',
+        # 'Epoch': nan, 'u_Epoch': nan, 'l_Period': nan, 'Period': nan, 'u_Period': nan}
         the_star.metadata = SiteData(
             var_type=str(extradata["Type"]).strip(),
             vsx_var_flag=str(extradata["V"]).strip(),
             separation=float(vsx_metadata.separation),
             our_name=str(extradata["Name"]),
-            period=float(extradata["Period"])
-            if not np.isnan(extradata["Period"])
-            else None,
-            period_err=extradata["u_Period"]
-            if not extradata["u_Period"] is None or not np.isnan(extradata["u_Period"])
-            else None,
+            period=float(extradata["Period"]) if not np.isnan(extradata["Period"]) else None,
+            period_err=extradata["u_Period"] if (not extradata["u_Period"] is None or not np.isnan(extradata["u_Period"])) else None,
             var_min=float(extradata["min"]) if not np.isnan(extradata["min"]) else None,
             var_max=float(extradata["max"]) if not np.isnan(extradata["max"]) else None,
             minmax=construct_vsx_mag_range(extradata),
+            epoch=extradata["Epoch"] if not np.isnan(extradata["Epoch"]) else None,
             source="VSX",
         )
         the_star.metadata = SelectedFileData()
@@ -612,9 +605,11 @@ def construct_vsx_mag_range(entry):
     )
 
 
+# adds SELECTED, SITEDATA and UCAC4
 def read_and_tag_localid(localid_catalog: str, stardict: StarDict):
     """ used for the -l or --localidcatalog cli argument """
     try:
+        # read the CSV file from disk
         df = pd.read_csv(
             localid_catalog,
             sep=",",
@@ -639,175 +634,173 @@ def read_and_tag_localid(localid_catalog: str, stardict: StarDict):
         )
         df = df.replace({np.nan: None})
         logging.info(
-            f"Selecting {len(df)} stars added by {localid_catalog}: {df['local_id'].to_numpy()}"
+            f"Selecting {len(df)} stars added by {localid_catalog}: {df['local_id'].to_numpy(dtype=int)}"
         )
-        # logging.info(f"The resulting df is {df}")
+        # process DataFrame row per row
         for idx, row in df.iterrows():
+            # get star description from ID in file
             the_star: StarDescription = stardict.get(row["local_id"])
             if the_star is None:
                 logging.error(
                     f"Could not find star {row['local_id']}, consider removing it from your txt file"
                 )
                 continue
-            the_star.metadata = SiteData(
-                minmax=row["minmax"],
-                var_min=row["min"],
-                var_max=row["max"],
-                var_type=row["var_type"],
-                our_name=row["our_name"],
-                period=float(row["period"])
-                if row["period"] is not None and row["period"] != "None"
-                else None,
-                period_err=float(row["period_err"])
-                if row["period_err"] is not None and row["period_err"] != "None"
-                else None,
-                source="OWN",
-                epoch=row["epoch"],
-            )
-            the_star.metadata = SelectedFileData()
-            ucac4.add_sd_metadatas([the_star])
-            if (
-                the_star.get_metadata("UCAC4").catalog_id != row["ucac4_name"]
-                and row["ucac4_name"] is not None
-            ):
-                logging.info(
-                    f"Pinning {the_star.local_id} from {the_star.get_metadata('UCAC4').catalog_id} "
-                    f"to {row['ucac4_name']}"
-                )
-                ucac4.add_sd_metadata_from_id(
-                    the_star, row["ucac4_name"], overwrite=True
-                )
+            # add sitedata for the star in this row
+            add_site_metadata(the_star, row)
+
+            # add selected, add UCAC4, override UCAC4
+            postprocess_csv_reads(the_star, row)
             logging.debug(
                 f"starfile {the_star.local_id} metadata: {the_star.metadata}, "
                 f"{the_star.get_metadata('SELECTEDFILE')}"
             )
             logging.debug(f"starfile {the_star.get_metadata('SELECTEDFILE')}")
         logging.debug(f"Tagged {len(df)} stars as selected by file.")
+
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
         import traceback
-
         print(traceback.print_exc())
         logging.error(message)
-        logging.error(f"Could not read {selectedstarfile}, star {row['local_id']}")
+        logging.error(f"Could not read {localid_catalog}")
 
 
-
+# adds SELECTED, RADECCATALOG, SITE and UCAC4
 def read_and_tag_radec(radec_catalog: str, stars: List[StarDescription]):
     """ used for the -o or --radeccatalog cli argument """
-    # outfile.write(f"# our_name,ra,dec,minmax,var_type,period,epoch\n")
-    logging.info(f"Using radec catalog: {radec_catalog}")
-    df = pd.read_csv(
-        radec_catalog,
-        sep=",",
-        comment="#",
-        names=[
-            "our_name",
-            "ra",
-            "dec",
-            "ucac4_name",
-            "ucac4_ra",
-            "ucac4_dec",
-            "ucac4_force",
-            "minmax",
-            "min",
-            "max",
-            "var_type",
-            "period",
-            "period_err",
-            "epoch",
-        ],
-        dtype={
-            "ra": float,
-            "dec": float,
-            "ucac4_ra": float,
-            "ucac4_dec": float,
-            "minmax": str,
-            "epoch": float,
-        },
-        skipinitialspace=True,
-        warn_bad_lines=True,
-    )
-    # use the UCAC4 RA if present
-    df.loc[df["ucac4_ra"].notnull(), "chosenRA"] = df["ucac4_ra"]
-    df.loc[df["ucac4_ra"].isnull(), "chosenRA"] = df["ra"]
-    # use the UCAC4 DEC if present
-    df.loc[df["ucac4_dec"].notnull(), "chosenDEC"] = df["ucac4_dec"]
-    df.loc[df["ucac4_dec"].isnull(), "chosenDEC"] = df["dec"]
-    logging.info(
-            f"Selecting {len(df)} stars added by {radec_catalog}: {df['our_name'].to_numpy()}"
-    )
-    # logging.info(f"--radeccatalog : {df}")
-    ra, dec = (df["chosenRA"], df["chosenDEC"])
-    df = df.replace({np.nan: None})
-    skycoord: SkyCoord = do_calibration.create_generic_astropy_catalog(ra, dec)
-    star_catalog = do_calibration.create_star_descriptions_catalog(stars)
-    idx, d2d, d3d = match_coordinates_sky(skycoord, star_catalog, nthneighbor=1)
-    for count, index in enumerate(idx):
-        row = df.iloc[count]
-        the_star = stars[index]
-        the_star.metadata = CatalogData(
-            key="RADECCATALOG",
-            catalog_id=row["our_name"],
-            name=row["our_name"],
-            coords=SkyCoord(row["ra"], row["dec"], unit="deg"),
-            separation=d2d[count].degree,
+    try:
+        # read the CSV file from disk
+        logging.info(f"Using radec catalog: {radec_catalog}")
+        df = pd.read_csv(
+            radec_catalog,
+            sep=",",
+            comment="#",
+            names=[
+                "our_name",
+                "ra",
+                "dec",
+                "ucac4_name",
+                "ucac4_force",
+                "minmax",
+                "min",
+                "max",
+                "var_type",
+                "period",
+                "period_err",
+                "epoch",
+            ],
+            dtype={
+                "ra": float,
+                "dec": float,
+                "minmax": str,
+                "epoch": float,
+            },
+            skipinitialspace=True,
+            warn_bad_lines=True,
         )
+
+        # process DataFrame row per row
+        for idx, row in df.iterrows():
+            ucac_ra, ucac_dec = UCAC4.get_ra_dec_from_id(row["ucac4_name"])
+            row["chosenRA"] = row["ra"]
+            row["chosenDEC"] = row["dec"]
+            # override 'our' ra/dec with ucac4 ra/dec if flag is set
+            if(row["ucac4_force"]):
+                row["chosenRA"], row["chosenDEC"] = ucac_ra, ucac_dec
+
         logging.info(
-            f"Matching {row['our_name']} to {the_star.local_id} with sep {d2d[count].degree} "
-            f"at coords {the_star.coords}"
+                f"Selecting {len(df)} stars added by {radec_catalog}: {df['our_name'].to_numpy(dtype=int)}"
         )
-        if not the_star.has_metadata("SITE"):
-            try:
-                period = float(row["period"]) if row["period"] is not None else None
-            except ValueError:
-                period = None
-            try:
-                period_err = (
-                    float(row["period_err"]) if row["period_err"] is not None else None
-                )
-            except ValueError:
-                period_err = None
-            try:
-                min = float(row["min"]) if row["min"] is not None else None
-            except ValueError:
-                min = None
-            try:
-                max = float(row["max"]) if row["max"] is not None else None
-            except ValueError:
-                max = None
-            the_star.metadata = SiteData(
-                minmax=row["minmax"],
-                var_min=min,
-                var_max=max,
-                var_type=row["var_type"],
-                our_name=row["our_name"],
-                period=period,
-                period_err=period_err,
-                separation=d2d[count].degree,
-                source="OWN",
-                epoch=row["epoch"],
-            )
-            the_star.metadata = SelectedFileData()
-            ucac4.add_sd_metadatas([the_star])
-            if (
-                the_star.get_metadata("UCAC4").catalog_id != row["ucac4_name"]
-                and row["ucac4_name"] is not None
-            ):
-                logging.info(
-                    f"Pinning {the_star.local_id} from {the_star.get_metadata('UCAC4').catalog_id} "
-                    f"to {row['ucac4_name']}"
-                )
-                ucac4.add_sd_metadata_from_id(
-                    the_star, row["ucac4_name"], overwrite=True
-                )
-        if d2d[count].degree > 0.01:
-            logging.warning(
-                f"Separation between {df.iloc[count]['our_name']} "
-                f"and {stars[index].local_id} is {d2d[count]}"
+
+        # logging.info(f"--radeccatalog : {df}")
+        ra, dec = (df["chosenRA"], df["chosenDEC"])
+        df = df.replace({np.nan: None})
+        skycoord: SkyCoord = do_calibration.create_generic_astropy_catalog(ra, dec)
+        star_catalog = do_calibration.create_star_descriptions_catalog(stars)
+        idx, d2d, d3d = match_coordinates_sky(skycoord, star_catalog,nthneighbor=1)
+        for count, index in enumerate(idx):
+            row = df.iloc[count]
+            the_star = stars[index]
+            logging.info(
+                f"Matching {row['our_name']} to {the_star.local_id} with sep {d2d[count].degree} "
+                f"at coords {the_star.coords}"
             )
 
+            # add sitedata for the star in this row
+            add_site_metadata(the_star, row, separation=d2d[count].degree)
+
+            # add selected, add UCAC4, override UCAC4
+            postprocess_csv_reads(the_star, row)
+            if d2d[count].degree > 0.01:
+                logging.warning(
+                    f"Separation between {df.iloc[count]['our_name']} "
+                    f"and {stars[index].local_id} is {d2d[count]}"
+                )
+    except Exception as ex:
+        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+        message = template.format(type(ex).__name__, ex.args)
+        import traceback
+        print(traceback.print_exc())
+        logging.error(message)
+        logging.error(f"Could not read {radec_catalog}")
+
+
+def add_site_metadata(the_star, row, separation=0):
+    # add sitedata for the star in this row
+    if not the_star.has_metadata("SITE"):
+        try:
+            period = float(row["period"]) if row["period"] is not None else None
+        except ValueError:
+            period = None
+        try:
+            period_err = (
+                float(row["period_err"]) if row["period_err"] is not None else None
+            )
+        except ValueError:
+            period_err = None
+        try:
+            min = float(row["min"]) if row["min"] is not None else None
+        except ValueError:
+            min = None
+        try:
+            max = float(row["max"]) if row["max"] is not None else None
+        except ValueError:
+            max = None
+        the_star.metadata = SiteData(
+            minmax=row["minmax"],
+            var_min=min,
+            var_max=max,
+            var_type=row["var_type"],
+            our_name=row["our_name"],
+            period=period,
+            period_err=period_err,
+            separation=separation,
+            source="OWN",
+            epoch=row["epoch"],
+        )
+
+def postprocess_csv_reads(the_star, row):
+    # add SELECTED metadata to this star
+    the_star.metadata = SelectedFileData()
+    # add UCAC4 metadata to this star
+    ucac4.add_sd_metadatas([the_star])
+    # if the provided UCAC4 is not the same as the detected UCAC4, overwrite with provided UCAC4
+    row_ucac4_name = row["ucac4_name"]
+    if (
+        row_ucac4_name is not None and
+        the_star.get_metadata("UCAC4").catalog_id != row_ucac4_name
+    ):
+        if(row["ucac4_force"]):
+            logging.info(
+                f"Pinning {the_star.local_id} from {the_star.get_metadata('UCAC4').catalog_id} "
+                f"to {row_ucac4_name}"
+            )
+            ucac4.add_sd_metadata_from_id(
+                the_star,row_ucac4_name, overwrite=True
+            )
+        else:
+            logging.info(f"UCAC4 mismatch: {the_star.local_id} identified as {the_star.get_metadata('UCAC4').catalog_id} but input file says {row_ucac4_name}.\nUse UCAC4_force to True to override.")
 
 def set_lines(star: StarDescription):
     with open(star.path) as file:

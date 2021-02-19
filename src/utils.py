@@ -310,9 +310,6 @@ def get_star_or_catalog_name(star: StarDescription, suffix: str = "") -> StarUI:
     elif star.has_metadata("SITE"):
         catalog = star.get_metadata("SITE")
         catalog_name, separation = catalog.our_name, catalog.separation
-    elif star.has_metadata("RADECCATALOG"):
-        catalog = star.get_metadata("RADECCATALOG")
-        catalog_name, separation = catalog.name, catalog.separation
     else:
         catalog_name, separation = star.local_id, None
     filename_no_suff_no_ext = (
@@ -348,8 +345,6 @@ def get_star_names(star: StarDescription) -> List[str]:
         unique_append(names, star.get_metadata("VSX").name)
     if star.has_metadata("SITE"):
         unique_append(names, star.get_metadata("SITE").our_name)
-    if star.has_metadata("RADECCATALOG"):
-        unique_append(names, star.get_metadata("RADECCATALOG").name)
     return names if len(names) > 0 else None
 
 
