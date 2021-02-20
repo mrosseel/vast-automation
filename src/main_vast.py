@@ -708,7 +708,7 @@ def read_and_tag_radec(radec_catalog: str, stars: List[StarDescription]):
             # override 'our' ra/dec with ucac4 ra/dec if flag is set
             if(row["ucac4_force"]):
                 row["chosenRA"], row["chosenDEC"] = ucac_ra, ucac_dec
-                logging.warning(f"Forcing ucac: {row["chosenRA"]}, {row["ra"]}")
+                logging.warning(f"Forcing ucac: {row['chosenRA']}, {row['ra']}")
             df.iloc[idx] = row
 
         logging.info(
