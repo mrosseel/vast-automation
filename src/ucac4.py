@@ -200,7 +200,6 @@ class UCAC4:
         return self.get_ucactuples_for_zone_and_runnrs(zone, [run_nr])[0]
 
     def get_ra_dec_from_id(self, ucac4_id) -> Tuple[float, float]:
-        print("Passed id:", ucac4_id)
         startuple, _, _ = self.get_ucactuple_from_id(ucac4_id)
         ra, dec = UCAC4.get_real_ra_dec(startuple.ra, startuple.spd)
         return ra, dec
