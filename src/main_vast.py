@@ -702,15 +702,20 @@ def read_and_tag_radec(radec_catalog: str, stars: List[StarDescription]):
 
         # process DataFrame row per row
         for idx, row in df.iterrows():
-            ucac_ra, ucac_dec = UCAC4.get_ra_dec_from_id(row["ucac4_name"])
+            ucac_ra, ucac_dec = ucac4.get_ra_dec_from_id(ucac4_id=row["ucac4_name"])
             row["chosenRA"] = row["ra"]
             row["chosenDEC"] = row["dec"]
             # override 'our' ra/dec with ucac4 ra/dec if flag is set
             if(row["ucac4_force"]):
                 row["chosenRA"], row["chosenDEC"] = ucac_ra, ucac_dec
+                print("Forcing ucac: ", row["chosenRA"], row["ra"])
+            df.iloc[idx] = row
+
+        if 'chosenRA' in df.columns:
+            print("COULD NOT FIND CHOSENRA")
 
         logging.info(
-                f"Selecting {len(df)} stars added by {radec_catalog}: {df['our_name'].to_numpy(dtype=int)}"
+                f"Selecting {len(df)} stars added by {radec_catalog}"
         )
 
         # logging.info(f"--radeccatalog : {df}")

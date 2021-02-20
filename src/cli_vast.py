@@ -170,8 +170,8 @@ if __name__ == "__main__":
         fh.setLevel(logging.DEBUG)
 
     logging.info(
-        f"Do phase: {'YES' if args.phase else 'NO'}, Do light: {'YES' if args.light else 'NO'},"
-        f"Do field: {'YES' if args.field else 'NO'}, Do aavso: {'YES' if args.aavso else 'NO'},"
-        f"Do site: {'YES' if args.site else 'NO'}"
+        f"Do phase: {'YES' if args.phase else 'NO'}, do light: {'YES' if args.light else 'NO'},"
+        f" do field: {'YES' if args.field else 'NO'}, do aavso: {'YES' if args.aavso else 'NO'},"
+        f" do site: {'YES' if args.site else 'NO'}"
     )
     main_vast.run_do_rest(args)
