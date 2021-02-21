@@ -544,13 +544,14 @@ def tag_vsx_as_selected(vsx_stars: List[StarDescription]):
         # extradata is {'OID': 1500045, 'Name': 'ASASSN-V J060000.76-310027.8', 'V': 0, 'RAdeg': 90.00317, 'DEdeg': -31.007720000000003,
         # 'Type': 'DIP:', 'l_max': nan, 'max': 13.62, 'u_max': nan, 'n_max': 'V', 'f_min': '(', 'l_min': nan, 'min': 0.9, 'u_min': nan, 'n_min': 'g',
         # 'Epoch': nan, 'u_Epoch': nan, 'l_Period': nan, 'Period': nan, 'u_Period': nan}
+        uperiod = extradata['u_Period']
         the_star.metadata = SiteData(
             var_type=str(extradata["Type"]).strip(),
             vsx_var_flag=str(extradata["V"]).strip(),
             separation=float(vsx_metadata.separation),
             our_name=str(extradata["Name"]),
             period=float(extradata["Period"]) if not np.isnan(extradata["Period"]) else None,
-            period_err=extradata["u_Period"] if (not extradata["u_Period"] is None and not np.isnan(extradata["u_Period"])) else None,
+            period_err=uperiod if (not uperiod is None and not isinstance(uperiod, str) and not np.isnan(uperiod)) else None,
             var_min=float(extradata["min"]) if not np.isnan(extradata["min"]) else None,
             var_max=float(extradata["max"]) if not np.isnan(extradata["max"]) else None,
             minmax=construct_vsx_mag_range(extradata),
