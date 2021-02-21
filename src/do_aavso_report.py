@@ -162,12 +162,6 @@ if __name__ == "__main__":
         "-x", "--verbose", help="Set logging to debug mode", action="store_true"
     )
     parser.add_argument(
-        "-l",
-        "--laststars",
-        help="Use the star descriptions of the previous run to do the charting",
-        action="store_true",
-    )
-    parser.add_argument(
         "-u", "--upsilon", help="Add upsilon star info to charting", action="store_true"
     )
     args = parser.parse_args()

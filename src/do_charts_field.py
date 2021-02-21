@@ -231,41 +231,26 @@ def run_standard_field_charts(
     )
     candidate_labeled = set_local_id_label(candidate_descr)
 
-    # starfile stars get their local id label
+    # localid/radec inputfile stars get their local id label
     selected_desc = utils.get_stars_with_metadata(star_descriptions, "SITE")
     selected_no_vsx_descr = utils.get_stars_with_metadata(
         star_descriptions, "SITE", exclude=["VSX"]
     )
-    selected_no_vsx_no_own_descr = utils.get_stars_with_metadata(
-        star_descriptions, "SITE", exclude=["VSX", "OWNCATALOG"]
-    )
-    selected_count = len(selected_no_vsx_descr)
     selected_no_vsx_labeled = set_custom_label(
         selected_no_vsx_descr,
         [x.get_metadata("SITE").our_name for x in selected_no_vsx_descr],
     )
-    selected_no_vsx_no_own_labeled = set_custom_label(
-        selected_no_vsx_no_own_descr,
-        [x.get_metadata("SITE").our_name for x in selected_no_vsx_no_own_descr],
-    )
+    selected_count = len(selected_no_vsx_labeled)
 
-    # owncatalog stars get their local id label
-    owncatalog_descr = utils.get_stars_with_metadata(
-        star_descriptions, "OWNCATALOG", exclude=["VSX"]
-    )
-    owncatalog_labeled = set_custom_label(
-        owncatalog_descr, [x.get_metadata("OWNCATALOG").name for x in owncatalog_descr]
-    )
-
-    # field chart with all vsx stars + candidates + owncatalog
+    # field chart with all vsx stars + candidates + radeccatalog
     logging.info("Plotting field chart with all VSX variable stars + candidate vars...")
     fig = plot_it(
-        [vsx_labeled, candidate_labeled, owncatalog_labeled],
-        [10.0, 5.0, 4.0],
-        [False, True, True],
+        [vsx_labeled, candidate_labeled],
+        [10.0, 5.0],
+        [False, True],
         fits_data,
         wcs,
-        "VSX stars + candidate stars + own catalog",
+        "VSX stars + candidate stars",
         PADDING,
     )
     save(
@@ -274,17 +259,17 @@ def run_standard_field_charts(
         + f"vsx_{len(vsx_labeled)}_and_candidates_{len(candidate_labeled)}",
     )
 
-    # field chart with all vsx stars + starfile + owncatalog
+    # field chart with all vsx stars + localid/radec inputfile
     logging.info(
         f"Plotting field chart with all VSX variable stars + {selected_count} selected vars..."
     )
     fig = plot_it(
-        [vsx_labeled, selected_no_vsx_no_own_labeled, owncatalog_labeled],
-        [10.0, 5.0, 4.0],
-        [False, True, True],
+        [vsx_labeled, selected_no_vsx_labeled],
+        [10.0, 5.0],
+        [False, True],
         fits_data,
         wcs,
-        "VSX stars + selected stars + own catalog",
+        "VSX stars + selected stars",
         PADDING,
     )
     save(
@@ -322,7 +307,7 @@ def run_standard_field_charts(
             [True, False, True, False],
             fits_data,
             wcs,
-            f"VSX stars + {starui.catalog_name} (star {star.local_id})",
+            f"VSX stars + comp stars + {starui.catalog_name} (star {star.local_id})",
             PADDING,
         )
         save(fig, f"{fieldchartsdirs}vsx_and_star_{starui.filename_no_ext}")

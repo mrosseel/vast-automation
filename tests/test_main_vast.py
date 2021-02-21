@@ -45,7 +45,7 @@ class TestMainVast(unittest.TestCase):
         )
         test = utils.get_stars_with_metadata(stars, "SITE")
         self.assertEqual(4, len(test))
-        test = utils.get_stars_with_metadata(stars, "SELECTEDFILE")
+        test = utils.get_stars_with_metadata(stars, "SELECTEDTAG")
         self.assertEqual(4, len(test))
 
     def stardesc(self, id, ra, dec):

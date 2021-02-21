@@ -316,14 +316,20 @@ def write_toml(
         tomldict["ucac4_coords"] = [ucac4.coords.ra.deg, ucac4.coords.dec.deg]
     tomldict["points_removed"] = points_removed
     tomldict["our_name"] = f"{star.local_id}"
+    tomldict["min"] = f"{ymin:.2f}"
+    tomldict["max"] = f"{ymax:.2f}"
+    tomldict["minmax"] = f"{tomldict['min']}-{tomldict['max']}"
     if star.has_metadata("SITE"):
         sitedata: SiteData = star.get_metadata("SITE")
         assert sitedata is not None
         tomldict["var_type"] = sitedata.var_type
         tomldict["our_name"] = utils.get_star_names(star)
-        tomldict["minmax"] = sitedata.minmax
-        tomldict["min"] = sitedata.var_min
-        tomldict["max"] = sitedata.var_max
+        if sitedata.minmax is not None:
+            tomldict["minmax"] = sitedata.minmax
+        if sitedata.var_min is not None:
+            tomldict["min"] = sitedata.var_min
+        if sitedata.var_max is not None:
+            tomldict["max"] = sitedata.var_max
         if sitedata.vsx_var_flag is not None:
             tomldict["vsx_var_flag"] = int(sitedata.vsx_var_flag)
         if sitedata.separation is not None:
@@ -471,13 +477,15 @@ def read_vast_lightcurves(
         temp_dict["compstars"] = write_compstars(
             star, starui.filename_no_ext, phasedir, filtered_compstars, check_star
         )
+        ymin, ymax, epoch_min, epoch_max = *calculate_min_max_epochs(df["floatJD"], df["realV"]),
+        logging.debug(f"Calculating min/max/epochs: {ymin}, {ymax}, {epoch_min}, {epoch_max}")
         write_toml(
             starui.filename_no_ext,
             phasedir,
             period,
             star,
             points_removed,
-            *calculate_min_max_epochs(df["floatJD"], df["realV"]),
+            ymin, ymax, epoch_min, epoch_max
         )
 
         if do_phase and "phase" not in star.result:
@@ -535,7 +543,7 @@ def read_vast_lightcurves(
 
 
 def phase_dependent_outlier_removal(
-    df: DataFrame, period: Period, stdev=3
+    df: DataFrame, period: Period, stdev=5
 ) -> Tuple[DataFrame, int]:
     phased_t = np.fmod(df["floatJD"] / period.period, 1)
     # array of times rounded to 1 decimal, results in 11 buckets which cover the phase diagram from 0.0 to 1.0

@@ -77,6 +77,8 @@ def selective_copy_files(stars: List[StarDescription], destdir: str, resultdir: 
     for file in fieldcharts_glob:
         copy(file, destdir)
     copy(f"{resultdir}selected_radec.txt", destdir)
+    copy(f"{resultdir}selected_localid.txt", destdir)
+    copy(f"{resultdir}aavso_vsx.txt", destdir)
     logging.info(f"Copying done.")
 
 def get_from_toml(key, parsed_toml, default=None):
@@ -224,8 +226,9 @@ def get_starfile_preamble(
         f'<div class="fl w-100 pa2 ba">'
         f"Images by Josch Hambsch, Data processing by Mike Rosseel, Josch Hambsch and "
         f'<a href="http://scan.sai.msu.ru/vast/">VaST</a></div>'
-        f'<a href="{images_prefix}selected_radec.txt">CSV file of all stars on this page</a><br/>'
-        f'<a href="{images_prefix}selected_localid.txt">Internal use only: CSV with vast ids of stars</a><br/>'
+        f'<a href="{images_prefix}aavso_vsx.txt">Output for AAVSO VSX</a><br/>'
+        f'<a href="{images_prefix}selected_radec.txt">Internal use: csv with ra/dec of selected stars</a><br/>'
+        f'<a href="{images_prefix}selected_localid.txt">Internal use: csv with vast ids of selected stars</a><br/>'
         f'<a href="{images_prefix}vsx_{len_vsx}_and_selected_{len_selected}.png">'
         f"Finder chart with {len_vsx} VSX and {len_selected} new stars</a><br/>{optionalpreamble}"
         f"Periods are derived using Lomb-Scargle (LS), Peranso (OWN) or from the VSX database (VSX)</div></div>\n"
