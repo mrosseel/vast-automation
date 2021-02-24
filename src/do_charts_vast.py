@@ -276,11 +276,11 @@ def plot_phase_diagram(
 
 
 def shift_to_epoch(epoch: float, t_np):
-    """ shift the """
+    """ shift the center of the array to the epoch"""
     if not epoch:
         return t_np
     assert isinstance(epoch, float)
-    t_epoch_location = (np.abs(t_np - epoch)).idxmin()
+    t_epoch_location = (np.abs(t_np - epoch)).argmin()
     t_np_zeroed = t_np - t_np[t_epoch_location]
     return t_np_zeroed
 
