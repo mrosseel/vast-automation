@@ -154,7 +154,7 @@ class UCAC4:
         if ucac_path is None:
             try:
                 ucac_path = Path(os.environ["ucac4_path"])
-                print("found environ with ucac45 path", ucac_path)
+                print("found environ with ucac4 path", ucac_path)
             except KeyError:
                 logging.debug(
                     "No ucac path passed, and no environment var, using default"

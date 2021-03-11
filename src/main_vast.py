@@ -411,6 +411,7 @@ def write_selected_files(
                 else f"{ucac4.coords.ra.deg:.7f},{ucac4.coords.dec.deg:.7f}"
             )
             starui: utils.StarUI = utils.get_star_or_catalog_name(star)
+            print("debugging path", star.result["phase"], starui.filename_no_ext)
             txt_path = Path(Path(star.result["phase"]).parent, "txt", starui.filename_no_ext + ".txt")
             try:
                 parsed_toml = toml.load(txt_path)

@@ -240,17 +240,18 @@ def plot_phase_diagram(
         t_np = curve["floatJD"]
         y_np = curve["realV"].to_numpy()
         dy_np = curve["realErr"].to_numpy()
+        # epoch happens at t=0
         t_np_zeroed = shift_to_epoch(epoch, t_np)
+        # calculate phase where epoch at t=0 will corresponsd to phase 0
         phased_t = np.mod(t_np_zeroed / period.period, 1)
         phased_lc = y_np[:]
 
         if filter_func is not None:
             phased_t, phased_lc = filter_func(phased_t, phased_lc)
-        phased_t_final = np.append(phased_t.subtract(1), phased_t)
+        phased_t_final = np.append(np.subtract(phased_t,1), phased_t)
         phased_lc_final = np.append(phased_lc, phased_lc)
-        phased_err = np.clip(
-            np.append(dy_np, dy_np), -0.5, 0.5
-        )  # error values are clipped to +0.5 and -0.5
+        # error values are clipped to +0.5 and -0.5
+        phased_err = np.clip( np.append(dy_np, dy_np), -0.5, 0.5)
         plt_result = _plot_phase_diagram(
             phased_t_final,
             phased_lc_final,
@@ -274,6 +275,14 @@ def plot_phase_diagram(
         logging.error(message)
         logging.error(f"Error during plot phase: {star.local_id}")
 
+def shift_to_epoch2(epoch: float, t_np):
+    """ shift the center of the array to the epoch"""
+    if not epoch:
+        return t_np
+    assert isinstance(epoch, float)
+    t_epoch_location = (np.abs(t_np - epoch)).argmin()
+    t_np_zeroed = t_np - t_np[t_epoch_location]
+    return t_np_zeroed
 
 def shift_to_epoch(epoch: float, t_np):
     """ shift the center of the array to the epoch"""
@@ -281,7 +290,9 @@ def shift_to_epoch(epoch: float, t_np):
         return t_np
     assert isinstance(epoch, float)
     t_epoch_location = (np.abs(t_np - epoch)).argmin()
+    print("epoch location is ", t_epoch_location)
     t_np_zeroed = t_np - t_np[t_epoch_location]
+    print("the t_np zeroad on location is ", t_np_zeroed[t_epoch_location])
     return t_np_zeroed
 
 
@@ -378,10 +389,13 @@ def _plot_phase_diagram(
         phased_lc_final,
         yerr=phased_err,
         linestyle="none",
-        marker="o",
+        marker="",
         ecolor="gray",
         elinewidth=1,
+        zorder=0
+
     )
+    plt.scatter(phased_t_final, phased_lc_final, color=np.repeat("r", len(phased_t_final)), zorder=100)
     if write_plot:
         logging.debug(f"Saving phase plot to {save_location}")
         fig.savefig(save_location, format="png")
