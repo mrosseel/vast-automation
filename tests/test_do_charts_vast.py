@@ -12,7 +12,7 @@ class TestDoChartsVast(unittest.TestCase):
         t_np = np.random.uniform(2456810, 2456820, 10)
         t_str = np.array(list(map(str, t_np)))
         epoch = 2456810.5808361215
-        t_np_zeroed = do_charts_vast.shift_to_epoch(epoch, t_np)
+        t_np_zeroed = do_charts_vast.epoch_to_zero_time(epoch, t_np)
         self.assertEqual(10, len(t_np_zeroed))
         self.assertEqual(0, t_np_zeroed[6])
 

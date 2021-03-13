@@ -244,23 +244,21 @@ def plot_phase_diagram(
         t_np = curve["floatJD"]
         y_np = curve["realV"].to_numpy()
         dy_np = curve["realErr"].to_numpy()
-        # epoch happens at t=0
-        # epoch_location = np.argmin(abs(t_np - epoch))
-        #epoch_float = float(epoch) if epoch else None
-        epoch_float = float(t_np[np.argmin(y_np)])
-        t_np_zeroed = shift_to_epoch(epoch_float, t_np)
+        epoch_float = float(epoch) if epoch else None
+        t_np_zeroed = epoch_to_zero_time(epoch_float, t_np)
+    
         # calculate phase where epoch at t=0 will corresponsd to phase 0
         phased_t = np.mod(t_np_zeroed / period.period, 1)
-        print(f"Star {starui.filename_no_ext} value of minimum phase is {np.min(phased_t)}, {np.argmin(y_np)}, {phased_t[np.argmin(y_np)]}, period: {period.period}")
+    
+        # print(f"Star {starui.filename_no_ext} value of minimum phase is {np.min(phased_t)}, {np.argmin(y_np)}, {phased_t[np.argmin(y_np)]}, period: {period.period}")
         # print(f"all zeroes is {np.argwhere(phased_t == 0)}")
         phased_lc = y_np[:]
 
-        np.save(Path("./", "epoch_t_" + starui.filename_no_ext + ".txt"), t_np)
-        np.save(Path("./", "epoch_y_" + starui.filename_no_ext + ".txt"), y_np)
-        np.save(Path("./", "epoch_tz_" + starui.filename_no_ext + ".txt"), t_np_zeroed)
-        np.save(Path("./", "epoch_pt_" + starui.filename_no_ext + ".txt"), phased_t)
-        np.save(Path("./", "epoch_py_" + starui.filename_no_ext + ".txt"), phased_lc)
-
+        # np.save(Path("./", "epoch_t_" + starui.filename_no_ext + ".txt"), t_np)
+        # np.save(Path("./", "epoch_y_" + starui.filename_no_ext + ".txt"), y_np)
+        # np.save(Path("./", "epoch_tz_" + starui.filename_no_ext + ".txt"), t_np_zeroed)
+        # np.save(Path("./", "epoch_pt_" + starui.filename_no_ext + ".txt"), phased_t)
+        # np.save(Path("./", "epoch_py_" + starui.filename_no_ext + ".txt"), phased_lc)
 
         if filter_func is not None:
             phased_t, phased_lc = filter_func(phased_t, phased_lc)
@@ -291,27 +289,13 @@ def plot_phase_diagram(
         logging.error(message)
         logging.error(f"Error during plot phase: {star.local_id}")
 
-def shift_to_epoch2(epoch: float, t_np):
-    """ shift the center of the array to the epoch"""
-    if not epoch:
-        return t_np
-    assert isinstance(epoch, float)
-    t_epoch_location = (np.abs(t_np - epoch)).argmin()
-    t_np_zeroed = t_np - t_np[t_epoch_location]
-    return t_np_zeroed
 
-def shift_to_epoch(epoch: float, t_np):
+def epoch_to_zero_time(epoch: float, t_np):
     """ shift the center of the array to the epoch"""
     if not epoch:
         return t_np
     assert isinstance(epoch, float)
-    t_epoch_location = (np.abs(t_np - epoch)).argmin()
-    print("epoch location is ", t_epoch_location)
-    t_np_zeroed = t_np - t_np[t_epoch_location]
-    print("t_np", t_np, t_np.describe())
-    print("zeroed", t_np_zeroed, t_np_zeroed.describe())
-    print("epoch location has time:", t_np_zeroed[t_epoch_location])
-    return t_np_zeroed
+    return t_np - epoch
 
 
 def calculate_min_max_epochs(t_np, y_np):
