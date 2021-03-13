@@ -39,6 +39,10 @@ mplotlib.use("Agg")  # needs no X server
 Period = namedtuple("period", "period origin")
 TITLE_PAD = 40
 
+def interact():
+    import code
+    code.InteractiveConsole(locals=dict(globals(), **locals())).interact()
+
 
 def set_font_size():
     plt.rcParams.update({"font.size": 40})
@@ -241,10 +245,22 @@ def plot_phase_diagram(
         y_np = curve["realV"].to_numpy()
         dy_np = curve["realErr"].to_numpy()
         # epoch happens at t=0
-        t_np_zeroed = shift_to_epoch(epoch, t_np)
+        # epoch_location = np.argmin(abs(t_np - epoch))
+        #epoch_float = float(epoch) if epoch else None
+        epoch_float = float(t_np[np.argmin(y_np)])
+        t_np_zeroed = shift_to_epoch(epoch_float, t_np)
         # calculate phase where epoch at t=0 will corresponsd to phase 0
         phased_t = np.mod(t_np_zeroed / period.period, 1)
+        print(f"Star {starui.filename_no_ext} value of minimum phase is {np.min(phased_t)}, {np.argmin(y_np)}, {phased_t[np.argmin(y_np)]}, period: {period.period}")
+        # print(f"all zeroes is {np.argwhere(phased_t == 0)}")
         phased_lc = y_np[:]
+
+        np.save(Path("./", "epoch_t_" + starui.filename_no_ext + ".txt"), t_np)
+        np.save(Path("./", "epoch_y_" + starui.filename_no_ext + ".txt"), y_np)
+        np.save(Path("./", "epoch_tz_" + starui.filename_no_ext + ".txt"), t_np_zeroed)
+        np.save(Path("./", "epoch_pt_" + starui.filename_no_ext + ".txt"), phased_t)
+        np.save(Path("./", "epoch_py_" + starui.filename_no_ext + ".txt"), phased_lc)
+
 
         if filter_func is not None:
             phased_t, phased_lc = filter_func(phased_t, phased_lc)
@@ -292,7 +308,9 @@ def shift_to_epoch(epoch: float, t_np):
     t_epoch_location = (np.abs(t_np - epoch)).argmin()
     print("epoch location is ", t_epoch_location)
     t_np_zeroed = t_np - t_np[t_epoch_location]
-    print("the t_np zeroad on location is ", t_np_zeroed[t_epoch_location])
+    print("t_np", t_np, t_np.describe())
+    print("zeroed", t_np_zeroed, t_np_zeroed.describe())
+    print("epoch location has time:", t_np_zeroed[t_epoch_location])
     return t_np_zeroed
 
 
@@ -358,6 +376,11 @@ def write_toml(
     logging.debug(f"Writing toml to {outputfile}")
     toml.dump(tomldict, open(outputfile, "w"))
 
+def define_colors(normal_color, special_color, location, color_len):
+    colors = np.repeat(normal_color, color_len)
+    colors[location] = special_color
+    return colors
+
 
 # plotting of 'double' phase diagram from -1 to 1
 def _plot_phase_diagram(
@@ -389,13 +412,12 @@ def _plot_phase_diagram(
         phased_lc_final,
         yerr=phased_err,
         linestyle="none",
-        marker="",
+        marker="o",
         ecolor="gray",
         elinewidth=1,
         zorder=0
-
     )
-    plt.scatter(phased_t_final, phased_lc_final, color=np.repeat("r", len(phased_t_final)), zorder=100)
+    #plt.scatter(phased_t_final, phased_lc_final, color=define_colors("b", "r", location, len(phased_t_final)), zorder=100)
     if write_plot:
         logging.debug(f"Saving phase plot to {save_location}")
         fig.savefig(save_location, format="png")
