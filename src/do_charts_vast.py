@@ -244,14 +244,12 @@ def plot_phase_diagram(
         t_np = curve["floatJD"]
         y_np = curve["realV"].to_numpy()
         dy_np = curve["realErr"].to_numpy()
+        # Epoch centering
+        epoch_location = len(t_np) + np.argmin(abs(t_np - epoch)) if (epoch is not None and epoch >= np.min(t_np) and epoch <= np.max(t_np)) else None
         epoch_float = float(epoch) if epoch else None
         t_np_zeroed = epoch_to_zero_time(epoch_float, t_np)
-    
-        # calculate phase where epoch at t=0 will corresponsd to phase 0
+        # calculate phase where epoch at t=0 will corresponds to phase 0
         phased_t = np.mod(t_np_zeroed / period.period, 1)
-    
-        # print(f"Star {starui.filename_no_ext} value of minimum phase is {np.min(phased_t)}, {np.argmin(y_np)}, {phased_t[np.argmin(y_np)]}, period: {period.period}")
-        # print(f"all zeroes is {np.argwhere(phased_t == 0)}")
         phased_lc = y_np[:]
 
         # np.save(Path("./", "epoch_t_" + starui.filename_no_ext + ".txt"), t_np)
@@ -266,10 +264,12 @@ def plot_phase_diagram(
         phased_lc_final = np.append(phased_lc, phased_lc)
         # error values are clipped to +0.5 and -0.5
         phased_err = np.clip( np.append(dy_np, dy_np), -0.5, 0.5)
+
         plt_result = _plot_phase_diagram(
             phased_t_final,
             phased_lc_final,
             phased_err,
+            epoch_location,
             write_plot,
             save_location,
             star,
@@ -291,7 +291,7 @@ def plot_phase_diagram(
 
 
 def epoch_to_zero_time(epoch: float, t_np):
-    """ shift the center of the array to the epoch"""
+    """ shift the center of the array to the epoch """
     if not epoch:
         return t_np
     assert isinstance(epoch, float)
@@ -313,8 +313,6 @@ def write_toml(
     points_removed,
     ymin,
     ymax,
-    epoch_min,
-    epoch_max,
 ):
     tomldict = {}
     photometry_metadata = star.get_metadata("PHOTOMETRY")
@@ -361,8 +359,10 @@ def write_toml(
     toml.dump(tomldict, open(outputfile, "w"))
 
 def define_colors(normal_color, special_color, location, color_len):
+    """ Create array of same colors, except on different color on a location (if location is not None) """
     colors = np.repeat(normal_color, color_len)
-    colors[location] = special_color
+    if location is not None:
+        colors[location] = special_color
     return colors
 
 
@@ -371,6 +371,7 @@ def _plot_phase_diagram(
     phased_t_final,
     phased_lc_final,
     phased_err,
+    location,
     write_plot,
     save_location,
     star,
@@ -396,12 +397,12 @@ def _plot_phase_diagram(
         phased_lc_final,
         yerr=phased_err,
         linestyle="none",
-        marker="o",
+        marker="",
         ecolor="gray",
         elinewidth=1,
         zorder=0
     )
-    #plt.scatter(phased_t_final, phased_lc_final, color=define_colors("b", "r", location, len(phased_t_final)), zorder=100)
+    plt.scatter(phased_t_final, phased_lc_final, color=define_colors('C0', "r", location, len(phased_t_final)), zorder=100)
     if write_plot:
         logging.debug(f"Saving phase plot to {save_location}")
         fig.savefig(save_location, format="png")
@@ -490,6 +491,7 @@ def read_vast_lightcurves(
             star.coords,
         )
         starui: utils.StarUI = utils.get_star_or_catalog_name(star, suffix="")
+        # calculated epoch is overriden in write_toml if there's a user supllied one
         period, epoch = determine_period_and_epoch(df, star)
 
         # filter depending on phase diagram
@@ -498,14 +500,14 @@ def read_vast_lightcurves(
             star, starui.filename_no_ext, phasedir, filtered_compstars, check_star
         )
         ymin, ymax, epoch_min, epoch_max = *calculate_min_max_epochs(df["floatJD"], df["realV"]),
-        logging.debug(f"Calculating min/max/epochs: {ymin}, {ymax}, {epoch_min}, {epoch_max}")
+        logging.debug(f"Calculating min/max/epochs: {ymin}, {ymax}, not used: {epoch_min}, {epoch_max}")
         write_toml(
             starui.filename_no_ext,
             phasedir,
             period,
             star,
             points_removed,
-            ymin, ymax, epoch_min, epoch_max
+            ymin, ymax
         )
 
         if do_phase and "phase" not in star.result:

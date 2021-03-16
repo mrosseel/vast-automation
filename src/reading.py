@@ -381,7 +381,9 @@ def count_number_of_observations(vastdir):
         Path(vastdir, "vast_lightcurve_statistics.log"),
         names=columns,
         delim_whitespace=True,
+        # usecols=[4, 12]
     )
-    for index, row in df.iterrows():
+    for _, row in df.iterrows():
         obsdict[row["lightcurve file name"]] = row["idx08_Npts"]
+
     return obsdict

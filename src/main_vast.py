@@ -770,6 +770,10 @@ def add_site_metadata(the_star, row, separation=0):
             max = float(row["max"]) if row["max"] is not None else None
         except ValueError:
             max = None
+        try:
+            epoch = float(row["epoch"]) if row["epoch"] is not None else None
+        except ValueError:
+            epoch = None      
         the_star.metadata = SiteData(
             minmax=row["minmax"],
             var_min=min,
@@ -780,7 +784,7 @@ def add_site_metadata(the_star, row, separation=0):
             period_err=period_err,
             separation=separation,
             source="OWN",
-            epoch=row["epoch"],
+            epoch=epoch,
         )
 
 def postprocess_csv_reads(the_star, row):

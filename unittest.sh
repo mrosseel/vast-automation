@@ -1,2 +1,3 @@
 #!/bin/sh
-nose2 -q tests
+PYTHONPATH="src" python -m unittest tests/*
+#nose2 -q tests

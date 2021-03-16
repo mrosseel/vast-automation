@@ -16,11 +16,12 @@ class TestDoChartsVast(unittest.TestCase):
         self.assertEqual(10, len(t_np_zeroed))
         self.assertEqual(0, t_np_zeroed[6])
 
+
     def stardesc(self, id, ra, dec):
         return StarDescription(local_id=id, coords=SkyCoord(ra, dec, unit="deg"))
 
 
 if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.DEBUG)
-    logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
+    # logging.getLogger().setLevel(logging.DEBUG)
+    # logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s")
     unittest.main()
