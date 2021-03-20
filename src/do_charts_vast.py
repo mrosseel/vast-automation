@@ -303,7 +303,8 @@ def calculate_min_max_epochs(t_np, y_np):
     ymin_arg, ymax_arg = np.argmin(np.array(y_np)), np.argmax(np.array(y_np))
     epoch_min, epoch_max = t_np.iloc[ymin_arg], t_np.iloc[ymax_arg]
     ymin, ymax = y_np.iloc[ymin_arg], y_np.iloc[ymax_arg]
-    return ymin, ymax, epoch_min, epoch_max
+    t_start, t_end = float(np.min(t_np)), float(np.max(t_np))
+    return ymin, ymax, epoch_min, epoch_max, t_start, t_end
 
 
 def write_toml(
@@ -315,6 +316,8 @@ def write_toml(
     points_removed,
     ymin,
     ymax,
+    t_start,
+    t_end
 ):
     tomldict = {}
     photometry_metadata = star.get_metadata("PHOTOMETRY")
@@ -333,6 +336,8 @@ def write_toml(
     tomldict["max"] = f"{ymax:.2f}"
     tomldict["minmax"] = f"{tomldict['min']}-{tomldict['max']}"
     tomldict["epoch"] = epoch
+    tomldict["t_start"] = t_start
+    tomldict["t_end"] = t_end
     if star.has_metadata("SITE"):
         sitedata: SiteData = star.get_metadata("SITE")
         assert sitedata is not None
@@ -506,7 +511,7 @@ def read_vast_lightcurves(
         temp_dict["compstars"] = write_compstars(
             star, starui.filename_no_ext, phasedir, filtered_compstars, check_star
         )
-        ymin, ymax, epoch_min, epoch_max = *calculate_min_max_epochs(df["floatJD"], df["realV"]),
+        ymin, ymax, epoch_min, epoch_max, t_start, t_end = *calculate_min_max_epochs(df["floatJD"], df["realV"]),
         logging.debug(f"Calculating min/max/epochs: {ymin}, {ymax}, not used: {epoch_min}, {epoch_max}")
         write_toml(
             starui.filename_no_ext,
@@ -515,7 +520,8 @@ def read_vast_lightcurves(
             epoch,
             star,
             points_removed,
-            ymin, ymax
+            ymin, ymax,
+            t_start, t_end
         )
 
         if do_phase and "phase" not in star.result:
