@@ -773,7 +773,7 @@ def add_site_metadata(the_star, row, separation=0):
         try:
             epoch = float(row["epoch"]) if row["epoch"] is not None else None
         except ValueError:
-            epoch = None      
+            epoch = None
         the_star.metadata = SiteData(
             minmax=row["minmax"],
             var_min=min,

@@ -237,7 +237,6 @@ def plot_phase_diagram(
         upsilon_text = (
             upsilon_match.get_upsilon_string() if upsilon_match is not None else ""
         )
-        # print("Calculating phase diagram for", star)
         if curve is None:
             logging.info("Curve of star {} is None".format(star.local_id))
             return
@@ -252,11 +251,13 @@ def plot_phase_diagram(
         phased_t = np.mod(t_np_zeroed / period.period, 1)
         phased_lc = y_np[:]
 
-        # np.save(Path("./", "epoch_t_" + starui.filename_no_ext + ".txt"), t_np)
-        # np.save(Path("./", "epoch_y_" + starui.filename_no_ext + ".txt"), y_np)
-        # np.save(Path("./", "epoch_tz_" + starui.filename_no_ext + ".txt"), t_np_zeroed)
-        # np.save(Path("./", "epoch_pt_" + starui.filename_no_ext + ".txt"), phased_t)
-        # np.save(Path("./", "epoch_py_" + starui.filename_no_ext + ".txt"), phased_lc)
+        save_to_disk = False
+        if(save_to_disk):
+            np.save(Path("./", "epoch_t_" + starui.filename_no_ext + ".txt"), t_np)
+            np.save(Path("./", "epoch_y_" + starui.filename_no_ext + ".txt"), y_np)
+            np.save(Path("./", "epoch_tz_" + starui.filename_no_ext + ".txt"), t_np_zeroed)
+            np.save(Path("./", "epoch_pt_" + starui.filename_no_ext + ".txt"), phased_t)
+            np.save(Path("./", "epoch_py_" + starui.filename_no_ext + ".txt"), phased_lc)
 
         if filter_func is not None:
             phased_t, phased_lc = filter_func(phased_t, phased_lc)
@@ -309,6 +310,7 @@ def write_toml(
     filename_no_ext,
     fullphasedir,
     period,
+    epoch,
     star,
     points_removed,
     ymin,
@@ -330,6 +332,7 @@ def write_toml(
     tomldict["min"] = f"{ymin:.2f}"
     tomldict["max"] = f"{ymax:.2f}"
     tomldict["minmax"] = f"{tomldict['min']}-{tomldict['max']}"
+    tomldict["epoch"] = epoch
     if star.has_metadata("SITE"):
         sitedata: SiteData = star.get_metadata("SITE")
         assert sitedata is not None
@@ -351,8 +354,6 @@ def write_toml(
             ] = f"{sitedata.var_min:.2f}-{sitedata.var_max:.2f} ({sitedata.source})"
         if sitedata.period_err is not None:
             tomldict["period_err"] = sitedata.period_err
-        if sitedata.epoch:
-            tomldict["epoch"] = sitedata.epoch
 
     outputfile = f"{fullphasedir}/txt/{filename_no_ext}.txt"
     logging.debug(f"Writing toml to {outputfile}")
@@ -397,12 +398,16 @@ def _plot_phase_diagram(
         phased_lc_final,
         yerr=phased_err,
         linestyle="none",
-        marker="",
+        marker="o",
         ecolor="gray",
         elinewidth=1,
+        color='C0',
+        mfc='C0',
         zorder=0
     )
-    plt.scatter(phased_t_final, phased_lc_final, color=define_colors('C0', "r", location, len(phased_t_final)), zorder=100)
+    # print(f"loc = {location}, shape {phased_t_final.shape}, shape2 {phased_t_final[location].shape} t loc = {phased_t_final[location]}, lc = {phased_lc_final[location]}")
+    if location is not None:
+        plt.scatter(phased_t_final[location], phased_lc_final[location], color='r', zorder=100)
     if write_plot:
         logging.debug(f"Saving phase plot to {save_location}")
         fig.savefig(save_location, format="png")
@@ -491,8 +496,10 @@ def read_vast_lightcurves(
             star.coords,
         )
         starui: utils.StarUI = utils.get_star_or_catalog_name(star, suffix="")
-        # calculated epoch is overriden in write_toml if there's a user supllied one
         period, epoch = determine_period_and_epoch(df, star)
+        # override user calculated epoch with user-supplied epoch
+        if(star.has_metadata("SITE") and star.get_metadata("SITE").epoch is not None):
+            epoch = star.get_metadata("SITE").epoch
 
         # filter depending on phase diagram
         df, points_removed = phase_dependent_outlier_removal(df, period)
@@ -505,6 +512,7 @@ def read_vast_lightcurves(
             starui.filename_no_ext,
             phasedir,
             period,
+            epoch,
             star,
             points_removed,
             ymin, ymax
@@ -547,7 +555,7 @@ def read_vast_lightcurves(
                 chunk_size=aavso_limit,
             )
             filtered_compstars = None
-            star_result_dict[star.local_id] = temp_dict
+        star_result_dict[star.local_id] = temp_dict
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)

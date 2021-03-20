@@ -69,21 +69,21 @@ class SiteData(StarMetaData):
         key="SITE",
     ):
         super().__init__(key)
-        self.minmax = self._strip_if_not_none(minmax)
-        self.vsx_var_flag = self._strip_if_not_none(vsx_var_flag)
+        self.minmax = self._strip_if_string(minmax)
+        self.vsx_var_flag = self._strip_if_string(vsx_var_flag)
         self.separation = separation
         self.var_min = var_min
         self.var_max = var_max
-        self.var_type = self._strip_if_not_none(var_type)
-        self.our_name = self._strip_if_not_none(our_name)
+        self.var_type = self._strip_if_string(var_type)
+        self.our_name = self._strip_if_string(our_name)
         self.period = period
         self.period_err = period_err
         self.source = source
         self.epoch = epoch
 
     @staticmethod
-    def _strip_if_not_none(arg, is_nan=True):
-        return arg.strip() if arg is not None else None
+    def _strip_if_string(arg, is_nan=True):
+        return arg.strip() if (arg is not None and isinstance(arg, str)) else arg
 
     def __repr__(self):
         return (
