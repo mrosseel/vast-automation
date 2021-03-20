@@ -96,7 +96,6 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             "txt",
             starui.filename_no_suff_no_ext + ".txt",
         )
-        print(f"star result phase paret = {star.result['phase']}, path is {Path(star.result['phase']).parent}, txt path is {txt_path}")
         try:
             parsed_toml = toml.load(txt_path)
         except FileNotFoundError:
