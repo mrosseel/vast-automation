@@ -411,8 +411,8 @@ def _plot_phase_diagram(
         zorder=0
     )
     # print(f"loc = {location}, shape {phased_t_final.shape}, shape2 {phased_t_final[location].shape} t loc = {phased_t_final[location]}, lc = {phased_lc_final[location]}")
-    if location is not None:
-        plt.scatter(phased_t_final[location], phased_lc_final[location], color='r', zorder=100)
+    # if location is not None:
+    #     plt.scatter(phased_t_final[location], phased_lc_final[location], color='r', zorder=100)
     if write_plot:
         logging.debug(f"Saving phase plot to {save_location}")
         fig.savefig(save_location, format="png")
