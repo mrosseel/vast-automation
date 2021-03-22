@@ -121,9 +121,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             )
         nl = "\n"
         name = (
-            f"{nl.join(str(parsed_toml['our_name']))}"
-            if "our_name" in parsed_toml
-            else f"OUR_NAME_{star.local_id}"
+            f"\n{parsed_toml['our_name']}" if "our_name" in parsed_toml else f"OUR_NAME_{star.local_id}"
         )
         period = f"{float(parsed_toml['period']):.5f}"
         var_type_raw = get_from_toml('var_type', parsed_toml, UNKNOWN)

@@ -119,7 +119,7 @@ def _plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, suffix=
         logging.debug(f"timing upsilon stuff {end - start}")
         names = utils.get_star_names(star)
         catalog_title = (
-            f"{names[0]}" if names is not None and names is not star.local_id else ""
+            f"{names[0]}" if names is not None and names[0] is not star.local_id else ""
         )
         plot_title = f"{catalog_title}\nStar {star.local_id}"
 
@@ -229,7 +229,7 @@ def plot_phase_diagram(
         )
         names = utils.get_star_names(star)
         catalog_title = (
-            f"{names[0]}" if names is not None and names is not star.local_id else ""
+            f"{names[0]}" if names is not None and names[0] is not star.local_id else ""
         )
 
         save_location = Path(fullphasedir, starui.filename_no_ext + ".png")
@@ -342,7 +342,8 @@ def write_toml(
         sitedata: SiteData = star.get_metadata("SITE")
         assert sitedata is not None
         tomldict["var_type"] = sitedata.var_type
-        tomldict["our_name"] = utils.get_star_names(star)
+        our_name = utils.get_star_names(star)
+        tomldict["our_name"] =  our_name[0] if our_name is not None else ""
         if sitedata.minmax is not None:
             tomldict["minmax"] = sitedata.minmax
         if sitedata.var_min is not None:
