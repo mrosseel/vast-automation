@@ -44,7 +44,7 @@ def run_do_rest(args):
     do_light = args.light
     do_phase = args.phase
     do_aavso = args.aavso
-    logging.info(f"Dir with VaST files: '{vastdir}', results dir: '{resultdir}'")
+    logging.info(f"Dir with VaST files: '{vastdir}'\nResults dir: '{resultdir}'")
     # get wcs model from the reference header. Used in writing world positions and field charts (can fail)
     wcs_file, wcs = reading.read_wcs_file(vastdir)
     ref_jd, _, _, reference_frame = reading.extract_reference_frame(vastdir)
