@@ -342,6 +342,10 @@ def write_toml(
         sitedata: SiteData = star.get_metadata("SITE")
         assert sitedata is not None
         tomldict["var_type"] = sitedata.var_type
+        aperiodic = utils.is_var_type_aperiodic(sitedata.var_type)
+        if aperiodic:
+            tomldict["period"] = None
+
         our_name = utils.get_star_names(star)
         tomldict["our_name"] =  our_name[0] if our_name is not None else ""
         if sitedata.minmax is not None:
@@ -358,7 +362,7 @@ def write_toml(
             tomldict[
                 "range"
             ] = f"{sitedata.var_min:.2f}-{sitedata.var_max:.2f} ({sitedata.source})"
-        if sitedata.period_err is not None:
+        if sitedata.period_err is not None and not aperiodic:
             tomldict["period_err"] = sitedata.period_err
 
     outputfile = f"{fullphasedir}/txt/{filename_no_ext}.txt"
