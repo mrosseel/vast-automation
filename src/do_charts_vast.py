@@ -300,7 +300,8 @@ def epoch_to_zero_time(epoch: float, t_np):
 
 
 def calculate_min_max_epochs(t_np, y_np):
-    ymin_arg, ymax_arg = np.argmin(np.array(y_np)), np.argmax(np.array(y_np))
+    min_val, max_val = np.percentile(y_np, [1,99])
+    ymin_arg, ymax_arg = np.argmin(np.abs(y_np - min_val)), np.argmin(np.abs(y_np- max_val))
     epoch_min, epoch_max = t_np.iloc[ymin_arg], t_np.iloc[ymax_arg]
     ymin, ymax = y_np.iloc[ymin_arg], y_np.iloc[ymax_arg]
     t_start, t_end = float(np.min(t_np)), float(np.max(t_np))
