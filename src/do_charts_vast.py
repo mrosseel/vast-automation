@@ -518,6 +518,7 @@ def read_vast_lightcurves(
             star, starui.filename_no_ext, phasedir, filtered_compstars, check_star
         )
         ymin, ymax, epoch_min, epoch_max, t_start, t_end = *calculate_min_max_epochs(df["floatJD"], df["realV"]),
+        print("Debug for the min/max percentiles:", ymin, ymax, epoch_min, epoch_max, t_start, t_end)
         logging.debug(f"Calculating min/max/epochs: {ymin}, {ymax}, not used: {epoch_min}, {epoch_max}")
         write_toml(
             starui.filename_no_ext,
