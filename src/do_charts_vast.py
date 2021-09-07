@@ -343,7 +343,8 @@ def write_toml(
         sitedata: SiteData = star.get_metadata("SITE")
         assert sitedata is not None
         tomldict["var_type"] = sitedata.var_type
-        aperiodic = utils.is_var_type_aperiodic(sitedata.var_type)
+        period = f"{float(sitedata.period):.5f}" if sitedata.period is not None else None
+        aperiodic = utils.is_var_type_aperiodic(sitedata.var_type, sitedata.period)
         if aperiodic:
             tomldict["period"] = None
 
@@ -547,7 +548,7 @@ def read_vast_lightcurves(
                 star, df.copy(), chartsdir
             )
             sitedata: SiteData = star.get_metadata('SITE')
-            if sitedata is not None and sitedata.var_type == 'L':
+            if utils.is_var_type_aperiodic(sitedata.var_type, sitedata.period):
                 temp_dict['lightmain'] = plot_lightcurve_main(star, df.copy(), chartsdir, sitedata.var_type)
 
         if do_light_raw and "light" not in star.result:

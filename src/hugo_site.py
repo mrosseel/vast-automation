@@ -127,7 +127,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         var_type_raw = get_from_toml('var_type', parsed_toml, UNKNOWN)
         var_type = f"{var_type_raw}"
         phase_url = f"{images_prefix}{starui.filename_no_ext}.png"
-        if utils.is_var_type_aperiodic(var_type):
+        if utils.is_var_type_aperiodic(var_type, period):
             phase_url = f"{images_prefix}{starui.filename_no_suff_no_ext}_lightmain.png"
         epoch = f"{parsed_toml['epoch']}" if 'epoch' in parsed_toml else UNKNOWN
         vsx_var_flag = f" ({parsed_toml['vsx_var_flag']})" if 'vsx_var_flag' in parsed_toml else ""
