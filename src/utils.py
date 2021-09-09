@@ -382,7 +382,7 @@ def replace_underscores(a_string: str):
 
 # if var type is L or period is -1/None then it's not periodic
 def is_var_type_aperiodic(var_type, period: float):
-    if var_type == 'L' or period == -1 or period == None or period == 'None':
+    if var_type == 'L' or period == -1:
         return True
     return False
 

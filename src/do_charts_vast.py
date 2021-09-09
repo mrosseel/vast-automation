@@ -346,7 +346,7 @@ def write_toml(
         period = f"{float(sitedata.period):.5f}" if sitedata.period is not None else None
         aperiodic = utils.is_var_type_aperiodic(sitedata.var_type, sitedata.period)
         if aperiodic:
-            tomldict["period"] = None
+            tomldict["period"] = -1
 
         our_name = utils.get_star_names(star)
         tomldict["our_name"] =  our_name[0] if our_name is not None else ""
@@ -519,7 +519,7 @@ def read_vast_lightcurves(
             star, starui.filename_no_ext, phasedir, filtered_compstars, check_star
         )
         ymin, ymax, epoch_min, epoch_max, t_start, t_end = *calculate_min_max_epochs(df["floatJD"], df["realV"]),
-        print("Debug for the min/max percentiles:", ymin, ymax, epoch_min, epoch_max, t_start, t_end)
+        logging.debug(f"Debug for the min/max percentiles: {ymin}, {ymax}, {epoch_min}, {epoch_max}, {t_start}, {t_end}")
         logging.debug(f"Calculating min/max/epochs: {ymin}, {ymax}, not used: {epoch_min}, {epoch_max}")
         write_toml(
             starui.filename_no_ext,
@@ -548,8 +548,8 @@ def read_vast_lightcurves(
                 star, df.copy(), chartsdir
             )
             sitedata: SiteData = star.get_metadata('SITE')
-            if utils.is_var_type_aperiodic(sitedata.var_type, sitedata.period):
-                temp_dict['lightmain'] = plot_lightcurve_main(star, df.copy(), chartsdir, sitedata.var_type)
+            if sitedata and utils.is_var_type_aperiodic(sitedata.var_type, sitedata.period):
+                temp_dict['lightmain'] = plot_lightcurve_main(star, df.copy(), chartsdir)
 
         if do_light_raw and "light" not in star.result:
                 temp_dict["light"] = plot_lightcurve_raw(star, df.copy(), chartsdir)
@@ -569,6 +569,7 @@ def read_vast_lightcurves(
                 chunk_size=aavso_limit,
             )
             filtered_compstars = None
+        # logging.error(f"contents of temp_dict is: {temp_dict}")
         star_result_dict[star.local_id] = temp_dict
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"

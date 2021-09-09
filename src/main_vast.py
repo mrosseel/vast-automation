@@ -634,9 +634,8 @@ def read_and_tag_localid(localid_catalog: str, stardict: StarDict):
             warn_bad_lines=True,
         )
         df = df.replace({np.nan: None})
-        logging.info(
-            f"Selecting {len(df)} stars added by {localid_catalog}: {df['local_id'].to_numpy(dtype=int)}"
-        )
+        localid_to_int = df['local_id'].to_numpy(dtype=int)
+        logging.info(f"Selecting {len(df)} stars added by {localid_catalog}: {localid_to_int}")
         # process DataFrame row per row
         for idx, row in df.iterrows():
             # get star description from ID in file
@@ -665,6 +664,7 @@ def read_and_tag_localid(localid_catalog: str, stardict: StarDict):
         print(traceback.print_exc())
         logging.error(message)
         logging.error(f"Could not read {localid_catalog}")
+        raise Exception("Could not read localid_catalog")
 
 
 # adds SELECTED, RADECCATALOG, SITE and UCAC4

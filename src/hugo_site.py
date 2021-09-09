@@ -123,7 +123,9 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         name = (
             f"\n{parsed_toml['our_name']}" if "our_name" in parsed_toml else f"OUR_NAME_{star.local_id}"
         )
-        period = f"{float(parsed_toml['period']):.5f}" if 'period' in parsed_toml else 'None'
+        # get the period if it's present, and change -1 to None
+        temp_period = float(parsed_toml['period']) if 'period' in parsed_toml else -1
+        period = temp_period if temp_period > 0 else 'None'
         var_type_raw = get_from_toml('var_type', parsed_toml, UNKNOWN)
         var_type = f"{var_type_raw}"
         phase_url = f"{images_prefix}{starui.filename_no_ext}.png"
