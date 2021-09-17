@@ -347,7 +347,7 @@ def write_toml(
         aperiodic = utils.is_var_type_aperiodic(sitedata.var_type, sitedata.period)
         if aperiodic:
             tomldict["period"] = -1
-
+        logging.debug(f"APERIODIC DEBUGGING: Star: {star.local_id}, Period: {period}, aperiodic: {aperiodic}, tomldict entry: {tomldict['period']}")
         our_name = utils.get_star_names(star)
         tomldict["our_name"] =  our_name[0] if our_name is not None else ""
         if sitedata.minmax is not None:

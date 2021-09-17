@@ -124,8 +124,8 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             f"\n{parsed_toml['our_name']}" if "our_name" in parsed_toml else f"OUR_NAME_{star.local_id}"
         )
         # get the period if it's present, and change -1 to None
-        temp_period = float(parsed_toml['period']) if 'period' in parsed_toml else -1
-        period = temp_period if temp_period > 0 else 'None'
+        period = float(parsed_toml['period']) if 'period' in parsed_toml else -1
+        display_period = period if period > 0 else 'None'
         var_type_raw = get_from_toml('var_type', parsed_toml, UNKNOWN)
         var_type = f"{var_type_raw}"
         phase_url = f"{images_prefix}{starui.filename_no_ext}.png"
@@ -181,7 +181,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             <li>{ucac4_name} (mag:{ucac4_mag})</li>
             <li>name: {name}</li>{ucac4_coords}
             <li>coords: {utils.get_hms_dms_sober(star.coords)} (ours)</li>{separation}{points_removed}
-            <li>period (d): {period}</li>{minmax}
+            <li>period (d): {display_period}</li>{minmax}
             <li>mag. range: {mag_range}</li>
             <li><a target="_blank" rel="noopener noreferrer" href="https://www.aavso.org/vsx/index.php?view=about.vartypessort">type</a>: {var_type_link}{vsx_var_flag}</li>
             {vsx_link}<li>epoch: {epoch}</li>

@@ -135,7 +135,7 @@ def helper_plot_stars(
 # plot
 def plot_aperture_vs_jd(chartsdir: str, vastdir: str, jdfilter: List[float]):
     x, y = get_aperture_and_jd(vastdir, jdfilter)
-    logging.info(f"len xy after is {len(x)} {len(y)}, with jdfilter: {jdfilter}")
+    logging.info(f"Aperture lengths after filtering: {len(x)} {len(y)}, with jdfilter: {jdfilter}")
     fig, ax = get_fig_and_ax()
     ax.plot(x, y, "*r", markersize=2)
     ax.set_title("Aperture vs JD")
@@ -161,7 +161,7 @@ def get_aperture_and_jd(vastdir: str, jdfilter: List[float]):
         a, b = get_jd_aperture_from_catinfo(file)
         x.append(float(a))
         y.append(float(b))
-    logging.info(f"len xy before is {len(x)} {len(y)}")
+    logging.debug(f"Aperture lengths before filtering: {len(x)} {len(y)}")
     return utils.jd_filter_array(x, y, jdfilter)
 
 
