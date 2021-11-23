@@ -129,8 +129,10 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         var_type_raw = get_from_toml('var_type', parsed_toml, UNKNOWN)
         var_type = f"{var_type_raw}"
         phase_url = f"{images_prefix}{starui.filename_no_ext}.png"
-        if utils.is_var_type_aperiodic(var_type, period):
-            phase_url = f"{images_prefix}{starui.filename_no_suff_no_ext}_lightmain.png"
+        if utils.is_var_type_aperiodic(var_type, period) or utils.is_check(var_type):
+            main_url = f"{images_prefix}{starui.filename_no_suff_no_ext}_lightmain.png"
+        else:
+            main_url = phase_url
         epoch = f"{parsed_toml['epoch']}" if 'epoch' in parsed_toml else UNKNOWN
         vsx_var_flag = f" ({parsed_toml['vsx_var_flag']})" if 'vsx_var_flag' in parsed_toml else ""
         tomlseparation = parsed_toml['separation'] if 'separation' in parsed_toml else None
@@ -172,9 +174,13 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             if "merr_vs_jd" in star.result
             else ""
         )
+        # show extra phase link if the main image is not a phase diagram and the period is not -1
+        optional_phase = (
+            f'<li><a href="{phase_url}" alt="Phase diagram">Phase diagram</a></li>' if utils.is_check(var_type) else ""
+        )
         result = f"""<div class="bb-l b--black-10 w-100">
         <div class="fl w-70 pa2 ba">
-            <img class="special-img-class" src="{phase_url}" alt="{phase_url}"/>
+            <img class="special-img-class" src="{main_url}" alt="{main_url}"/>
         </div>
         <div class="fl w-30 pa2 ba">
             <ul>
@@ -188,8 +194,8 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             <li><a href="{images_prefix}vsx_and_star_{starui.filename_no_suff_no_ext}.png">finder chart</a></li>
             <li><a href="{images_prefix}{starui.filename_no_suff_no_ext}_ext.txt">observations</a></li>
             <li>light curve: <a href="{images_prefix}{starui.filename_no_suff_no_ext}_light.png">Normal</a>,
-            <a href="{images_prefix}{starui.filename_no_suff_no_ext}_lightpa.png">PA</a>,
-            <a href="{images_prefix}{starui.filename_no_suff_no_ext}_lightcont.png">Continuous</a></li>
+            <a alt="Lightcurve with empty spaces cut out, taking period into account. If period is 1 day, and we have a gap of 1 day and 5 minutes, we cut out the 1 day and leave the 5 minutes so that the shape of the curve is preserved" href="{images_prefix}{starui.filename_no_suff_no_ext}_lightpa.png">PA</a>,
+            <a alt="All observations are plotted sequentially, without taking into account day/time" href="{images_prefix}{starui.filename_no_suff_no_ext}_lightcont.png">Continuous</a></li>{optional_phase}
             <li>comparison stars: {optional_compstars}<a href="{images_prefix}{starui.filename_no_suff_no_ext}_comps.txt">list</a></li>{optional_stats}
             </ul>
         </div>

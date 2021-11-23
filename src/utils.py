@@ -20,8 +20,8 @@ from pandas import DataFrame
 # all info needed for ui purposes
 StarUI = namedtuple(
     "StarInfo",
-    "catalog_name, separation, extradata, filename_orig_no_ext, filename_no_ext, "
-    "filename_orig_no_suff_no_ext, filename_no_suff_no_ext",
+    "catalog_name, separation, extradata, filename_raw_no_ext, filename_no_ext, "
+    "filename_raw_no_suff_no_ext, filename_no_suff_no_ext",
 )
 StarDict = Dict[int, StarDescription]
 
@@ -319,18 +319,18 @@ def get_star_or_catalog_name(star: StarDescription, suffix: str = "") -> StarUI:
     )
     filename_no_ext = f"{filename_no_suff_no_ext}{suffix}"
 
-    filename_orig_no_ext = filename_no_ext
-    filename_no_ext = replace_spaces(replace_dots(filename_orig_no_ext))
+    filename_raw_no_ext = filename_no_ext
+    filename_no_ext = replace_spaces(replace_dots(filename_raw_no_ext))
 
-    filename_orig_no_suff_no_ext = filename_no_suff_no_ext
-    filename_no_suff_no_ext = replace_spaces(replace_dots(filename_orig_no_suff_no_ext))
+    filename_raw_no_suff_no_ext = filename_no_suff_no_ext
+    filename_no_suff_no_ext = replace_spaces(replace_dots(filename_raw_no_suff_no_ext))
     return StarUI(
         catalog_name,
         separation,
         extradata,
-        filename_orig_no_ext,
+        filename_raw_no_ext,
         filename_no_ext,
-        filename_orig_no_suff_no_ext,
+        filename_raw_no_suff_no_ext,
         filename_no_suff_no_ext,
     )
 
@@ -382,9 +382,13 @@ def replace_underscores(a_string: str):
 
 # if var type is L or period is -1/None then it's not periodic
 def is_var_type_aperiodic(var_type, period: float):
-    if var_type in ['L', 'None'] or period == -1:
+    if var_type in ['L', 'None']:
         return True
     return False
+
+def is_check(var_type):
+    return var_type == 'Check'
+
 
 # not used
 

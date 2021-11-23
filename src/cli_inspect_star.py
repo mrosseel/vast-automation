@@ -100,6 +100,7 @@ def process(
     jddict = reading.jd_to_fitsfile_dict(vastdir)
     platesolved_file = None
 
+    # search a refframe where the star is present
     for frame in refframes:
         # check if reference frame is good enough
         refdf = df[df.jd == float(ref_jd)]
@@ -142,8 +143,10 @@ def process(
         f"platesolved file: {platesolved_file}, chosen fits: {chosen_fits_fullpath}, "
         f"rotation: {chosen_rotation}"
     )
+    get_closest_stars(sds, star_catalog, chosen_record, resultdir, platesolved_file, starid)
 
-    # Get the 10 closest neighbours
+# Get the 10 closest neighbour stars
+def get_closest_stars(sds, star_catalog, chosen_record, resultdir, platesolved_file, starid):
     sd_dict = utils.get_localid_to_sd_dict(sds)
     chosen_star_sd = sd_dict[starid]
     neighbours = []
@@ -169,6 +172,7 @@ def plate_solve(apikey, chosen_fits_fullpath, output_file):
         time.sleep(10)
 
 
+#
 def update_img(
     star: StarDescription,
     record: ImageRecord,
