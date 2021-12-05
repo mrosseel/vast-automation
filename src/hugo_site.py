@@ -93,6 +93,33 @@ def color_get(extradata, entry):
     else:
         return "-"
 
+def get_ucac4_info(star):
+    ucac4 = star.get_metadata("UCAC4")
+    if ucac4 is None:
+        ucac4_name = f"no UCAC4 match !!!"
+        ucac4_mag = f"no mag"
+        ucac4_coords = f""
+        ucac4_colors = f""
+
+    else:
+        ucac4_name = ucac4.catalog_id if not None else UNKNOWN
+        ucac4_mag = (
+            f'<strong style="color: red;">{ucac4.vmag}</strong>'
+            if abs(ucac4.vmag - parsed_toml["vmag"]) > 0.2 and ucac4.vmag != 20.0
+            else ucac4.vmag
+        )
+        ucac4_coords = (
+            f"<li>coords: {utils.get_hms_dms_sober(ucac4.coords)} (ucac4)</li>"
+        )
+        ed = ucac4.extradata
+        B = color_get(ed, 'apass_mag_B')
+        Bf = float(B) if B is not '-' else 20
+        V = color_get(ed, 'apass_mag_V')
+        Vf = float(V) if V is not '-' else 20
+        # https://en.wikipedia.org/wiki/Color_index
+        T = f"{4600*(1/(0.92*(Bf-Vf)+1.7)  + 1/(0.92*(Bf-Vf)+0.62)):.0f}" if Bf != 20 and Vf != 20 else '?'
+        ucac4_colors = f"Colors: j={color_get(ed, 'mag_j')} h={color_get(ed, 'mag_h')} k={color_get(ed, 'mag_k')} B={color_get(ed, 'apass_mag_B')} V={color_get(ed, 'apass_mag_V')} g={color_get(ed, 'apass_mag_g')} r={color_get(ed, 'apass_mag_r')} i={color_get(ed, 'apass_mag_i')}. T={T}K"
+    return ucac4_name, ucac4_mag, ucac4_coords, ucac4_colors
 
 def block(star: StarDescription, resultdir: str, images_prefix: str):
     try:
@@ -109,31 +136,10 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             logging.error(
                 f"Could not load txt file with phase information from {txt_path}"
             )
+        ucac4_name, ucac4_mag, ucac4_coords, ucac4_colors = get_ucac4_info(star)
 
-        ucac4 = star.get_metadata("UCAC4")
-        if ucac4 is None:
-            ucac4_name = f"no UCAC4 match !!!"
-            ucac4_mag = f"no mag"
-            ucac4_coords = f""
-            ucac4_colors = f""
-
-        else:
-            ucac4_name = ucac4.catalog_id if not None else UNKNOWN
-            ucac4_mag = (
-                f'<strong style="color: red;">{ucac4.vmag}</strong>'
-                if abs(ucac4.vmag - parsed_toml["vmag"]) > 0.2 and ucac4.vmag != 20.0
-                else ucac4.vmag
-            )
-            ucac4_coords = (
-                f"<li>coords: {utils.get_hms_dms_sober(ucac4.coords)} (ucac4)</li>"
-            )
-            ed = ucac4.extradata
-            ucac4_colors = f"Colors: j={color_get(ed, 'mag_j')} h={color_get(ed, 'mag_h')} k={color_get(ed, 'mag_k')} B={color_get(ed, 'apass_mag_B')} V={color_get(ed, 'apass_mag_V')} g={color_get(ed, 'apass_mag_g')} r={color_get(ed, 'apass_mag_r')} i={color_get(ed, 'apass_mag_i')}"
-        nl = "\n"
-        name = (
-            f"\n{parsed_toml['our_name']}" if "our_name" in parsed_toml else f"OUR_NAME_{star.local_id}"
-        )
-        # get the period if it's present, and change -1 to None
+        name = ( f"\n{parsed_toml['our_name']}" if "our_name" in parsed_toml else f"OUR_NAME_{star.local_id}"
+        ) # get the period if it's present, and change -1 to None
         period = float(parsed_toml['period']) if 'period' in parsed_toml else -1
         display_period = period if period > 0 else 'None'
         var_type_raw = get_from_toml('var_type', parsed_toml, UNKNOWN)
