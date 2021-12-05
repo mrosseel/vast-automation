@@ -257,7 +257,7 @@ def create_star_descriptions_catalog(star_descriptions):
 
 # take a star_description and add some info to it: vmag, error vmag, catalog information
 def add_catalog_data_to_sd(
-    star, vmag, vmag_err, catalog_id, catalog_name, coord_catalog
+    star, vmag, vmag_err, catalog_id, catalog_name, coord_catalog, extradata=None
 ):
     star_to_catalog_dist = star.coords.separation(coord_catalog)
     star.metadata = CatalogData(
@@ -268,10 +268,11 @@ def add_catalog_data_to_sd(
         separation=star_to_catalog_dist,
         vmag=vmag,
         vmag_err=vmag_err,
+        extradata=extradata
     )
     logging.debug(
-        "Add info: Star {} has vmag={}, error={}, dist={}".format(
-            star.local_id, star.vmag, star.vmag_err, star_to_catalog_dist
+        "Add info: Star {} has vmag={}, error={}, dist={}, extradata={}".format(
+            star.local_id, star.vmag, star.vmag_err, star_to_catalog_dist, extradata
         )
     )
     return star

@@ -30,6 +30,7 @@ from star_description import StarDescription
 from pathlib import Path
 import pandas as pd
 from pandas import DataFrame, Series
+import ucac4
 
 # from aovgui import aovcli
 from star_metadata import SiteData, CatalogData, CompStarData

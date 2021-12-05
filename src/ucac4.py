@@ -131,6 +131,7 @@ StarTuple = namedtuple(
     " apass_mag_sigma_i yale_gc_flags catalog_flags leda_flag twomass_ext_flag"
     " id_number ucac2_zone ucac2_number",)
 MinimalStarTuple = namedtuple("MinStar", "id, ra, dec, mag")
+# startuple + zone and runnr
 UcacTuple = Tuple[StarTuple, str, int]
 UcacTupleList = List[UcacTuple]
 
@@ -404,11 +405,24 @@ class UCAC4:
     def get_star_description_from_tuple(ucactuple: UcacTuple) -> StarDescription:
         startuple, zone, run_nr = ucactuple
         ra, dec = UCAC4.get_real_ra_dec(startuple.ra, startuple.spd)
+        coords=SkyCoord(ra, dec, unit="deg")
+        vmag=startuple.apass_mag_V / 1000
+        vmag_err=abs(startuple.apass_mag_sigma_V / 100)
+        aavso_id=UCAC4.zone_and_run_nr_to_name(zone, run_nr)
         sd = StarDescription(
-            coords=SkyCoord(ra, dec, unit="deg"),
-            vmag=startuple.apass_mag_V / 1000,
-            vmag_err=abs(startuple.apass_mag_sigma_V / 100),
-            aavso_id=UCAC4.zone_and_run_nr_to_name(zone, run_nr),
+            coords=coords,
+            vmag=vmag,
+            vmag_err=vmag_err,
+            aavso_id=aavso_id,
+        )
+        do_calibration.add_catalog_data_to_sd(
+            sd,
+            vmag,
+            vmag_err,
+            aavso_id,
+            "UCAC4",
+            coords,
+            extradata=ucactuple[0]._asdict() # get the StarTuple from the UcacTuple
         )
         return sd
 
@@ -460,6 +474,7 @@ class UCAC4:
                 ucac4_sd.aavso_id,
                 "UCAC4",
                 ucac4_sd.coords,
+                extradata=ucac4_sd.get_metadata("UCAC4").extradata,
             )
 
     # >>> ra=140361

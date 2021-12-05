@@ -87,6 +87,13 @@ def get_from_toml(key, parsed_toml, default=None):
     else:
         return default
 
+def color_get(extradata, entry):
+    if entry in extradata:
+        return f"{(extradata[entry]/1000):.2f}"
+    else:
+        return "-"
+
+
 def block(star: StarDescription, resultdir: str, images_prefix: str):
     try:
         is_vsx = star.has_metadata("VSX")
@@ -108,6 +115,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             ucac4_name = f"no UCAC4 match !!!"
             ucac4_mag = f"no mag"
             ucac4_coords = f""
+            ucac4_colors = f""
 
         else:
             ucac4_name = ucac4.catalog_id if not None else UNKNOWN
@@ -119,6 +127,8 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             ucac4_coords = (
                 f"<li>coords: {utils.get_hms_dms_sober(ucac4.coords)} (ucac4)</li>"
             )
+            ed = ucac4.extradata
+            ucac4_colors = f"Colors: j={color_get(ed, 'mag_j')} h={color_get(ed, 'mag_h')} k={color_get(ed, 'mag_k')} B={color_get(ed, 'apass_mag_B')} V={color_get(ed, 'apass_mag_V')} g={color_get(ed, 'apass_mag_g')} r={color_get(ed, 'apass_mag_r')} i={color_get(ed, 'apass_mag_i')}"
         nl = "\n"
         name = (
             f"\n{parsed_toml['our_name']}" if "our_name" in parsed_toml else f"OUR_NAME_{star.local_id}"
@@ -189,6 +199,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             <li>coords: {utils.get_hms_dms_sober(star.coords)} (ours)</li>{separation}{points_removed}
             <li>period (d): {display_period}</li>{minmax}
             <li>mag. range: {mag_range}</li>
+            <li>{ucac4_colors}</li>
             <li><a target="_blank" rel="noopener noreferrer" href="https://www.aavso.org/vsx/index.php?view=about.vartypessort">type</a>: {var_type_link}{vsx_var_flag}</li>
             {vsx_link}<li>epoch: {epoch}</li>
             <li><a href="{images_prefix}vsx_and_star_{starui.filename_no_suff_no_ext}.png">finder chart</a></li>
