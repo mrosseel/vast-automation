@@ -93,7 +93,49 @@ def color_get(extradata, entry):
     else:
         return "-"
 
-def get_ucac4_info(star):
+# https://stackoverflow.com/questions/21977786/star-b-v-color-index-to-apparent-rgb-color
+def bv2rgb(bv):
+    if bv < -0.40: bv = -0.40
+    if bv > 2.00: bv = 2.00
+
+    r = 0.0
+    g = 0.0
+    b = 0.0
+
+    if  -0.40 <= bv<0.00:
+        t=(bv+0.40)/(0.00+0.40)
+        r=0.61+(0.11*t)+(0.1*t*t)
+    elif 0.00 <= bv<0.40:
+        t=(bv-0.00)/(0.40-0.00)
+        r=0.83+(0.17*t)
+    elif 0.40 <= bv<2.10:
+        t=(bv-0.40)/(2.10-0.40)
+        r=1.00
+    if  -0.40 <= bv<0.00:
+        t=(bv+0.40)/(0.00+0.40)
+        g=0.70+(0.07*t)+(0.1*t*t)
+    elif 0.00 <= bv<0.40:
+        t=(bv-0.00)/(0.40-0.00)
+        g=0.87+(0.11*t)
+    elif 0.40 <= bv<1.60:
+        t=(bv-0.40)/(1.60-0.40)
+        g=0.98-(0.16*t)
+    elif 1.60 <= bv<2.00:
+        t=(bv-1.60)/(2.00-1.60)
+        g=0.82-(0.5*t*t)
+    if  -0.40 <= bv<0.40:
+        t=(bv+0.40)/(0.40+0.40)
+        b=1.00
+    elif 0.40 <= bv<1.50:
+        t=(bv-0.40)/(1.50-0.40)
+        b=1.00-(0.47*t)+(0.1*t*t)
+    elif 1.50 <= bv<1.94:
+        t=(bv-1.50)/(1.94-1.50)
+        b=0.63-(0.6*t*t)
+
+    return (255*r, 255*g, 255*b)
+
+def get_ucac4_info(star, parsed_toml):
     ucac4 = star.get_metadata("UCAC4")
     if ucac4 is None:
         ucac4_name = f"no UCAC4 match !!!"
@@ -117,9 +159,17 @@ def get_ucac4_info(star):
         V = color_get(ed, 'apass_mag_V')
         Vf = float(V) if V is not '-' else 20
         # https://en.wikipedia.org/wiki/Color_index
-        T = f"{4600*(1/(0.92*(Bf-Vf)+1.7)  + 1/(0.92*(Bf-Vf)+0.62)):.0f}" if Bf != 20 and Vf != 20 else '?'
-        ucac4_colors = f"Colors: j={color_get(ed, 'mag_j')} h={color_get(ed, 'mag_h')} k={color_get(ed, 'mag_k')} B={color_get(ed, 'apass_mag_B')} V={color_get(ed, 'apass_mag_V')} g={color_get(ed, 'apass_mag_g')} r={color_get(ed, 'apass_mag_r')} i={color_get(ed, 'apass_mag_i')}. T={T}K"
-    return ucac4_name, ucac4_mag, ucac4_coords, ucac4_colors
+        if Bf != 20 and Vf != 20:
+            T = f"{4600*(1/(0.92*(Bf-Vf)+1.7)  + 1/(0.92*(Bf-Vf)+0.62)):.0f}"
+            ucac4_rgb = bv2rgb(Bf-Vf)
+            ucac4_circle = f"<span style='height: 1rem; width: 1rem; background-color: rgb(0, 0,0 ); vertical-align: baseline;padding-left: 3px;padding-right: 3px;padding-top: 2px;padding-bottom: 2px;'><span style='height: 1rem; width: 1rem; background-color: rgb({ucac4_rgb[0]}, {ucac4_rgb[1]}, {ucac4_rgb[2]}); border-radius: 50%; display: inline-block;'></span></span>"
+        else:
+            T = '?'
+            ucac4_rgb=(255,255,225)
+            ucac4_circle = f""
+        ucac4_colors = f"<details><summary>Star Temp: {T}K {ucac4_circle}</summary><p>Colors: j={color_get(ed, 'mag_j')} h={color_get(ed, 'mag_h')} k={color_get(ed, 'mag_k')} B={color_get(ed, 'apass_mag_B')} V={color_get(ed, 'apass_mag_V')} g={color_get(ed, 'apass_mag_g')} r={color_get(ed, 'apass_mag_r')} i={color_get(ed, 'apass_mag_i')}</p></details>"
+
+    return ucac4_name, ucac4_mag, ucac4_coords, ucac4_colors, ucac4_rgb
 
 def block(star: StarDescription, resultdir: str, images_prefix: str):
     try:
@@ -136,12 +186,12 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             logging.error(
                 f"Could not load txt file with phase information from {txt_path}"
             )
-        ucac4_name, ucac4_mag, ucac4_coords, ucac4_colors = get_ucac4_info(star)
+        ucac4_name, ucac4_mag, ucac4_coords, ucac4_colors, ucac4_rgb = get_ucac4_info(star, parsed_toml)
 
         name = ( f"\n{parsed_toml['our_name']}" if "our_name" in parsed_toml else f"OUR_NAME_{star.local_id}"
         ) # get the period if it's present, and change -1 to None
         period = float(parsed_toml['period']) if 'period' in parsed_toml else -1
-        display_period = period if period > 0 else 'None'
+        display_period = f"{period:.6f}" if period > 0 else "None"
         var_type_raw = get_from_toml('var_type', parsed_toml, UNKNOWN)
         var_type = f"{var_type_raw}"
         phase_url = f"{images_prefix}{starui.filename_no_ext}.png"
@@ -178,9 +228,9 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         )
         optional_compstars = (
             f'<a href="{images_prefix}{starui.filename_no_suff_no_ext}_compstarsA.png" '
-            f'alt="Plot of all comparison stars used to measure this star">C</a>, '
+            f'title="Plot of all comparison stars used to measure this star">C</a>, '
             f'<a href="{images_prefix}{starui.filename_no_suff_no_ext}_compstarsB.png" '
-            f'alt="Plot of all comparison stars used to measure this star + the star itself">C+V</a>, '
+            f'title="Plot of all comparison stars used to measure this star + the star itself">C+V</a>, '
             if "compA" in star.result
             else ""
         )
@@ -210,10 +260,10 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             {vsx_link}<li>epoch: {epoch}</li>
             <li><a href="{images_prefix}vsx_and_star_{starui.filename_no_suff_no_ext}.png">finder chart</a></li>
             <li><a href="{images_prefix}{starui.filename_no_suff_no_ext}_ext.txt">observations</a></li>
-            <li>light curve: <a href="{images_prefix}{starui.filename_no_suff_no_ext}_light.png">Normal</a>,
-            <a alt="Lightcurve with empty spaces cut out, taking period into account. If period is 1 day, and we have a gap of 1 day and 5 minutes, we cut out the 1 day and leave the 5 minutes so that the shape of the curve is preserved" href="{images_prefix}{starui.filename_no_suff_no_ext}_lightpa.png">PA</a>,
-            <a alt="All observations are plotted sequentially, without taking into account day/time" href="{images_prefix}{starui.filename_no_suff_no_ext}_lightcont.png">Continuous</a></li>{optional_phase}
-            <li>comparison stars: {optional_compstars}<a href="{images_prefix}{starui.filename_no_suff_no_ext}_comps.txt">list</a></li>{optional_stats}
+            <li>light curve: <a title="Standard plot of julian date on X and magnitude on Y" href="{images_prefix}{starui.filename_no_suff_no_ext}_light.png">Normal</a>,
+            <a title="Lightcurve with empty spaces cut out, taking period into account. If period is 1 day, and we have a gap of 1 day and 5 minutes, we cut out the 1 day and leave the 5 minutes so that the shape of the curve is preserved" href="{images_prefix}{starui.filename_no_suff_no_ext}_lightpa.png">PA</a>,
+            <a title="All observations are plotted sequentially, without taking into account day/time" href="{images_prefix}{starui.filename_no_suff_no_ext}_lightcont.png">Continuous</a></li>{optional_phase}
+            <li>comparison stars: {optional_compstars}<a title="text list of comparison stars" href="{images_prefix}{starui.filename_no_suff_no_ext}_comps.txt">list</a></li>{optional_stats}
             </ul>
         </div>
     </div>
