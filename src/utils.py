@@ -380,9 +380,9 @@ def replace_spaces(a_string: str):
 def replace_underscores(a_string: str):
     return a_string.replace("_", " ")
 
-# if var type is L or period is -1/None then it's not periodic
+# if var type is L or period is -1 then it's not periodic
 def is_var_type_aperiodic(var_type, period: float):
-    if var_type in ['L', 'None']:
+    if var_type in ['L', 'None'] or period == -1:
         return True
     return False
 

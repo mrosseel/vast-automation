@@ -155,9 +155,9 @@ def get_ucac4_info(star, parsed_toml):
         )
         ed = ucac4.extradata
         B = color_get(ed, 'apass_mag_B')
-        Bf = float(B) if B is not '-' else 20
+        Bf = float(B) if B != '-' else 20
         V = color_get(ed, 'apass_mag_V')
-        Vf = float(V) if V is not '-' else 20
+        Vf = float(V) if V != '-' else 20
         # https://en.wikipedia.org/wiki/Color_index
         if Bf != 20 and Vf != 20:
             T = f"{4600*(1/(0.92*(Bf-Vf)+1.7)  + 1/(0.92*(Bf-Vf)+0.62)):.0f}"
