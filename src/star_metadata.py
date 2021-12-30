@@ -66,6 +66,7 @@ class SiteData(StarMetaData):
         period_err: str = None,
         source: str = None,
         epoch: str = None,
+        comments: str = None,
         key="SITE",
     ):
         super().__init__(key)
@@ -80,6 +81,7 @@ class SiteData(StarMetaData):
         self.period_err = period_err
         self.source = source
         self.epoch = epoch
+        self.comments = comments
 
     @staticmethod
     def _strip_if_string(arg, is_nan=True):

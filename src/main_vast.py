@@ -226,7 +226,7 @@ def run_do_rest(args):
             f"Creating HTML site with {len(selected_stars)} selected stars: {ids}"
         )
         hugo_site.run(
-            args.site, selected_stars, len(vsx_stars), referene_frame_path, resultdir
+            args.site, selected_stars, len(vsx_stars), referene_frame_path, resultdir, args.explore
         )
 
 
@@ -348,7 +348,7 @@ def write_augmented_all_stars(readdir: str, writedir: str, stardict: StarDict):
 
 
 # Main CSV file output, all data on selected stars, once with radec id, once with localid
-# naam, ra, dec, max, min, type, periode, epoch?
+# naam, ra, dec, max, min, type, periode, epoch
 def write_selected_files(
     resultdir: str, vastdir: str, selected_stars: List[StarDescription]
 ):
@@ -414,7 +414,7 @@ def write_selected_files(
             txt_path = Path(Path(star.result["phase"]).parent, "txt", starui.filename_no_ext + ".txt")
             try:
                 parsed_toml = toml.load(txt_path)
-                postfix = f"{format_string('minmax', parsed_toml)},{format_float_1(parsed_toml, 'min')},{format_float_1(parsed_toml, 'max')},{metadata.var_type},{format_float_5(parsed_toml, 'period')},{format_float_5(parsed_toml, 'period_err')},{format_string('epoch', parsed_toml)}"
+                postfix = f"{format_string('minmax', parsed_toml)},{format_float_1(parsed_toml, 'min')},{format_float_1(parsed_toml, 'max')},{metadata.var_type},{format_float_5(parsed_toml, 'period')},{format_float_5(parsed_toml, 'period_err')},{format_string('epoch', parsed_toml)},{metadata.comments}"
 
                 out_radec_catalog.write(
                     f"{metadata.our_name},{star.coords.ra.deg:.7f},{star.coords.dec.deg:.7f},{ucac4_name},False,{postfix}\n"
@@ -516,7 +516,7 @@ def construct_star_descriptions(vastdir: str, resultdir: str, wcs: WCS, args):
 
     return star_descriptions
 
-
+# read VaST candidate files and tag candidate stars
 def tag_candidates(vastdir: str, star_descriptions: List[StarDescription]):
     candidate_ids = get_autocandidates(vastdir)
     candidate_stars = do_calibration.select_star_descriptions(
@@ -627,6 +627,7 @@ def read_and_tag_localid(localid_catalog: str, stardict: StarDict):
                 "period",
                 "period_err",
                 "epoch",
+                "comments",
             ],
             dtype={"local_id": float, "minmax": str, "epoch": float},
             converters={"ucac4_force": bool(int())},
@@ -690,10 +691,12 @@ def read_and_tag_radec(radec_catalog: str, stars: List[StarDescription]):
                 "period",
                 "period_err",
                 "epoch",
+                "comments",
             ],
             dtype={
                 "ra": float,
                 "dec": float,
+                "ucac4_name": str,
                 "minmax": str,
                 "epoch": float,
             },
@@ -785,6 +788,7 @@ def add_site_metadata(the_star, row, separation=0):
             separation=separation,
             source="OWN",
             epoch=epoch,
+            comments=row["comments"],
         )
 
 def postprocess_csv_reads(the_star, row):

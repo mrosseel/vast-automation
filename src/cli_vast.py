@@ -132,6 +132,12 @@ if __name__ == "__main__":
         help="Igone that the ref frame jd is inside of the filter",
         action="store_true",
     )
+    parser.add_argument(
+        "--explore",
+        help="Changes the site to help in the initial exploration of new stars",
+        action="store_true",
+        default=False,
+    )
     args = parser.parse_args()
     datadir = utils.add_trailing_slash(args.datadir)
     datenow = datetime.now()

@@ -22,6 +22,7 @@ def run(
     len_vsx: int,
     reference_frame: Path,
     resultdir: str,
+    explore: bool,
 ):
     sitedir = f"{os.getcwd()}/site/vsx/"
     images_prefix = f"/images/{post_name}/"
@@ -36,7 +37,7 @@ def run(
         get_optional_preamble(images_prefix, staticimagesdir),
     )
     sorted_stars = utils.sort_selected(selected_stars)
-    part_block = partial(block, resultdir=resultdir, images_prefix=images_prefix)
+    part_block = partial(block, resultdir=resultdir, images_prefix=images_prefix, explore=explore)
     for star in sorted_stars:
         result += part_block(star)
     postdir = f"{sitedir}/content/posts/{post_name}/"
@@ -171,7 +172,7 @@ def get_ucac4_info(star, parsed_toml):
 
     return ucac4_name, ucac4_mag, ucac4_coords, ucac4_colors, ucac4_rgb
 
-def block(star: StarDescription, resultdir: str, images_prefix: str):
+def block(star: StarDescription, resultdir: str, images_prefix: str, explore: bool):
     try:
         is_vsx = star.has_metadata("VSX")
         starui: utils.StarUI = utils.get_star_or_catalog_name(star, suffix="_phase")
@@ -195,10 +196,13 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
         var_type_raw = get_from_toml('var_type', parsed_toml, UNKNOWN)
         var_type = f"{var_type_raw}"
         phase_url = f"{images_prefix}{starui.filename_no_ext}.png"
+        light_url = f"{images_prefix}{starui.filename_no_suff_no_ext}_lightmain.png"
         if utils.is_var_type_aperiodic(var_type, period) or utils.is_check(var_type):
-            main_url = f"{images_prefix}{starui.filename_no_suff_no_ext}_lightmain.png"
+            main_url = light_url
+            second_url = phase_url
         else:
             main_url = phase_url
+            second_url = light_url
         epoch = f"{parsed_toml['epoch']}" if 'epoch' in parsed_toml else UNKNOWN
         vsx_var_flag = f" ({parsed_toml['vsx_var_flag']})" if 'vsx_var_flag' in parsed_toml else ""
         tomlseparation = parsed_toml['separation'] if 'separation' in parsed_toml else None
@@ -240,14 +244,23 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             if "merr_vs_jd" in star.result
             else ""
         )
+        optional_explore = (
+            f'<div class="fl w-70 pa2 ba">'
+            f'   <img class="special-img-class" src="{second_url}" alt="{second_url}"/>'
+            f'</div>' if explore else ""
+        )
         # show extra phase link if the main image is not a phase diagram and the period is not -1
         optional_phase = (
             f'<li><a href="{phase_url}" alt="Phase diagram">Phase diagram</a></li>' if utils.is_check(var_type) else ""
+        )
+        optional_comments = (
+            f'<li>Comments: {parsed_toml["comments"]}' if "comments" in parsed_toml and explore else ""
         )
         result = f"""<div class="bb-l b--black-10 w-100">
         <div class="fl w-70 pa2 ba">
             <img class="special-img-class" src="{main_url}" alt="{main_url}"/>
         </div>
+        {optional_explore}
         <div class="fl w-30 pa2 ba">
             <ul>
             <li>{ucac4_name} (mag:{ucac4_mag})</li>
@@ -255,7 +268,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str):
             <li>coords: {utils.get_hms_dms_sober(star.coords)} (ours)</li>{separation}{points_removed}
             <li>period (d): {display_period}</li>{minmax}
             <li>mag. range: {mag_range}</li>
-            <li>{ucac4_colors}</li>
+            <li>{ucac4_colors}</li>{optional_comments}
             <li><a target="_blank" rel="noopener noreferrer" href="https://www.aavso.org/vsx/index.php?view=about.vartypessort">type</a>: {var_type_link}{vsx_var_flag}</li>
             {vsx_link}<li>epoch: {epoch}</li>
             <li><a href="{images_prefix}vsx_and_star_{starui.filename_no_suff_no_ext}.png">finder chart</a></li>

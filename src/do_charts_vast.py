@@ -319,7 +319,7 @@ def write_toml(
     ymin,
     ymax,
     t_start,
-    t_end
+    t_end,
 ):
     tomldict = {}
     photometry_metadata = star.get_metadata("PHOTOMETRY")
@@ -367,6 +367,8 @@ def write_toml(
             ] = f"{sitedata.var_min:.2f}-{sitedata.var_max:.2f} ({sitedata.source})"
         if sitedata.period_err is not None and not aperiodic:
             tomldict["period_err"] = sitedata.period_err
+        if sitedata.comments is not None:
+            tomldict["comments"] = sitedata.comments
 
     outputfile = f"{fullphasedir}/txt/{filename_no_ext}.txt"
     logging.debug(f"Writing toml to {outputfile}")

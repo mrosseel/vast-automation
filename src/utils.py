@@ -208,7 +208,7 @@ class MetadataSorter:
         name = names[idx]
         if name is None:
             result = -1, -1
-        elif isinstance(name, int) or name.isdigit():
+        elif isinstance(name, int) or isinstance(name, np.int64) or name.isdigit():
             result = 0, int(name)
         else:
             result = 1, self.get_string_number_part_or_default(name)
@@ -314,7 +314,7 @@ def get_star_or_catalog_name(star: StarDescription, suffix: str = "") -> StarUI:
         catalog_name, separation = star.local_id, None
     filename_no_suff_no_ext = (
         f"{int(catalog_name):05}"
-        if isinstance(catalog_name, int) or catalog_name.isdigit()
+        if isinstance(catalog_name, int) or isinstance(catalog_name, np.int64) or catalog_name.isdigit()
         else f"{catalog_name}"
     )
     filename_no_ext = f"{filename_no_suff_no_ext}{suffix}"
