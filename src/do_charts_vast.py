@@ -95,9 +95,9 @@ def plot_lightcurve_continuous(
         write_plot=write_plot,
     )
 
-def plot_lightcurve_main(star: StarDescription, curve: DataFrame, chartsdir, write_plot=True):
-    logging.debug(f"Plotting main lightcurve for {star.local_id}")
-    return _plot_lightcurve(star, curve, chartsdir, f"_lightmain", rotate=True, write_plot=write_plot, plot_width=18, plot_height=16,
+def plot_lightcurve(star: StarDescription, curve: DataFrame, chartsdir, write_plot=True):
+    logging.debug(f"Plotting lightcurve for {star.local_id}")
+    return _plot_lightcurve(star, curve, chartsdir, f"_light", rotate=True, write_plot=write_plot, plot_width=18, plot_height=16,
                             plot_dpi=80)
 
 
@@ -327,7 +327,7 @@ def write_toml(
     tomldict["vmag_err"] = float(photometry_metadata.vmag_err)
     tomldict["period"] = float(period.period)
     tomldict["period_origin"] = period.origin
-    tomldict["range"] = f"{ymin:.1f}-{ymax:.1f} (LS)"
+    tomldict["range"] = f"{ymin:.2f}-{ymax:.2f} (LS)"
     tomldict["coords"] = [star.coords.ra.deg, star.coords.dec.deg]
     if star.has_metadata("UCAC4"):
         ucac4 = star.get_metadata("UCAC4")
@@ -345,7 +345,7 @@ def write_toml(
         assert sitedata is not None
         tomldict["var_type"] = sitedata.var_type
         period = f"{float(sitedata.period):.5f}" if sitedata.period is not None else None
-        aperiodic = utils.is_var_type_aperiodic(sitedata.var_type, sitedata.period)
+        aperiodic = utils.is_var_type_aperiodic(sitedata.var_type, period)
         if aperiodic:
             tomldict["period"] = -1
         logging.debug(f"APERIODIC DEBUGGING: Star: {star.local_id}, Period: {period}, aperiodic: {aperiodic}, tomldict entry: {tomldict['period']}")
@@ -543,19 +543,11 @@ def read_vast_lightcurves(
             # logging.info(f"anova period is {anova_period}")
             # temp_dict['phase'] = plot_phase_diagram(star, df.copy(), phasedir, period=anova_period,
             #                                         epoch=epoch, suffix="b")
-        if do_light and "lightpa" not in star.result:
-            temp_dict["lightpa"] = plot_lightcurve_pa(
-                star, df.copy(), chartsdir, period
-            )
-            temp_dict["lightcont"] = plot_lightcurve_continuous(
-                star, df.copy(), chartsdir
-            )
-            sitedata: SiteData = star.get_metadata('SITE')
-            if sitedata and utils.is_var_type_aperiodic(sitedata.var_type, sitedata.period):
-                temp_dict['lightmain'] = plot_lightcurve_main(star, df.copy(), chartsdir)
+        if do_light and "light" not in star.result:
+            temp_dict["lightpa"] = plot_lightcurve_pa(star, df.copy(), chartsdir, period)
+            temp_dict["lightcont"] = plot_lightcurve_continuous(star, df.copy(), chartsdir)
+            temp_dict['light'] = plot_lightcurve(star, df.copy(), chartsdir)
 
-        if do_light_raw and "light" not in star.result:
-                temp_dict["light"] = plot_lightcurve_raw(star, df.copy(), chartsdir)
         if do_aavso and "aavso" not in star.result:
             settings = toml.load("settings.txt")
             temp_dict["aavso"] = do_aavso_report.report(

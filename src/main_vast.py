@@ -374,8 +374,8 @@ def write_selected_files(
     def format_float_5(atoml, arg: str):
         return format_float_arg(atoml, arg, 5)
 
-    def format_float_1(atoml, arg: str):
-        return format_float_arg(atoml, arg, 1)
+    def format_float_2(atoml, arg: str):
+        return format_float_arg(atoml, arg, 2)
 
     def format_string(arg: str, atoml):
         if arg in atoml:
@@ -414,7 +414,7 @@ def write_selected_files(
             txt_path = Path(Path(star.result["phase"]).parent, "txt", starui.filename_no_ext + ".txt")
             try:
                 parsed_toml = toml.load(txt_path)
-                postfix = f"{format_string('minmax', parsed_toml)},{format_float_1(parsed_toml, 'min')},{format_float_1(parsed_toml, 'max')},{metadata.var_type},{format_float_5(parsed_toml, 'period')},{format_float_5(parsed_toml, 'period_err')},{format_string('epoch', parsed_toml)},{metadata.comments}"
+                postfix = f"{format_string('minmax', parsed_toml)},{format_float_2(parsed_toml, 'min')},{format_float_2(parsed_toml, 'max')},{metadata.var_type},{format_float_5(parsed_toml, 'period')},{format_float_5(parsed_toml, 'period_err')},{format_string('epoch', parsed_toml)},{metadata.comments}"
 
                 out_radec_catalog.write(
                     f"{metadata.our_name},{star.coords.ra.deg:.7f},{star.coords.dec.deg:.7f},{ucac4_name},False,{postfix}\n"

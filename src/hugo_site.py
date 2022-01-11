@@ -70,7 +70,6 @@ def selective_copy_files(stars: List[StarDescription], destdir: str, resultdir: 
         copy(astar.result["light"], destdir) if "light" in astar.result else None
         copy(astar.result["lightpa"], destdir) if "lightpa" in astar.result else None
         copy(astar.result["lightcont"], destdir) if "lightcont" in astar.result else None
-        copy(astar.result["lightmain"], destdir) if "lightmain" in astar.result else None
         copy(astar.result["aavso"], destdir) if "aavso" in astar.result else None
     fieldcharts = f"{resultdir}fieldcharts/*.png"
     fieldcharts_glob = glob.glob(fieldcharts)
@@ -196,7 +195,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str, explore: bo
         var_type_raw = get_from_toml('var_type', parsed_toml, UNKNOWN)
         var_type = f"{var_type_raw}"
         phase_url = f"{images_prefix}{starui.filename_no_ext}.png"
-        light_url = f"{images_prefix}{starui.filename_no_suff_no_ext}_lightmain.png"
+        light_url = f"{images_prefix}{starui.filename_no_suff_no_ext}_light.png"
         if utils.is_var_type_aperiodic(var_type, period) or utils.is_check(var_type):
             main_url = light_url
             second_url = phase_url
@@ -259,8 +258,7 @@ def block(star: StarDescription, resultdir: str, images_prefix: str, explore: bo
         result = f"""<div class="bb-l b--black-10 w-100">
         <div class="fl w-70 pa2 ba">
             <img class="special-img-class" src="{main_url}" alt="{main_url}"/>
-        </div>
-        {optional_explore}
+        </div>{optional_explore}
         <div class="fl w-30 pa2 ba">
             <ul>
             <li>{ucac4_name} (mag:{ucac4_mag})</li>
