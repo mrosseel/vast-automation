@@ -523,7 +523,6 @@ def read_vast_lightcurves(
         )
         ymin, ymax, epoch_min, epoch_max, t_start, t_end = *calculate_min_max_epochs(df["floatJD"], df["realV"]),
         logging.debug(f"Debug for the min/max percentiles: {ymin}, {ymax}, {epoch_min}, {epoch_max}, {t_start}, {t_end}")
-        logging.debug(f"Calculating min/max/epochs: {ymin}, {ymax}, not used: {epoch_min}, {epoch_max}")
         write_toml(
             starui.filename_no_ext,
             phasedir,
@@ -595,7 +594,7 @@ def phase_dependent_outlier_removal(
         bucketmean = bucket.median()
         bucketstd = bucket.std()
         mask = abs(bucket - bucketmean) < stdev * bucketstd
-        maskresult = maskresult.append(bucket_all[mask])
+        maskresult = pd.concat([maskresult, bucket_all[mask]])
     return maskresult, len(df) - len(maskresult)
 
 

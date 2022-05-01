@@ -1,25 +1,11 @@
-[[source]]
-name = "pypi"
-url = "https://pypi.org/simple"
-verify_ssl = true
+[tool.poetry]
+name = "vast-automation"
+version = "0.1.0"
+description = ""
+authors = ["Mike Rosseel <mike.rosseel@gmail.com>"]
 
-[dev-packages]
-nbconvert = "*"
-nbformat = "*"
-jupyter-client = "*"
-jupyter-console = "*"
-jupyter-core = "*"
-nose2 = "*"
-notebook = "*"
-ipykernel = "*"
-ipython = "*"
-ipython-genutils = "*"
-coverage = "*"
-rope = "*"
-pylint = "*"
-black = "*"
-
-[packages]
+[tool.poetry.dependencies]
+python = ">=3.10,<3.11"
 appnope = "*"
 astropy = "*"
 attrs = "*"
@@ -61,7 +47,6 @@ python-dateutil = "*"
 pytz = "*"
 pyzmq = "*"
 requests = "*"
-scipy = "*"
 send2trash = "*"
 soupsieve = "*"
 testpath = "*"
@@ -75,6 +60,24 @@ gatspy = "*"
 ipdb = "*"
 ipykernel = "*"
 black = "*"
+scipy = "^1.8.0"
 
-[pipenv]
-allow_prereleases = true
+[tool.poetry.dev-dependencies]
+nbconvert = "*"
+nbformat = "*"
+jupyter-client = "*"
+jupyter-console = "*"
+jupyter-core = "*"
+nose2 = "*"
+notebook = "*"
+ipykernel = "*"
+ipython = "*"
+ipython-genutils = "*"
+coverage = "*"
+rope = "*"
+pylint = "*"
+black = "*"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
