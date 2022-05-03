@@ -161,7 +161,7 @@ class UCAC4:
                     "No ucac path passed, and no environment var, using default"
                 )
                 ucac_path = Path("./support/ucac4/UCAC4/")
-        logging.info("Ucac path is", ucac_path)
+        logging.info(f"Ucac path is {ucac_path}")
         # star id given by munipack
         self.ucac_path = ucac_path
         self.zones_cache = LRUCache(capacity=10)

@@ -611,35 +611,47 @@ def construct_vsx_mag_range(entry):
         f"{empty_if_nan(entry['min'])} {empty_if_nan(entry['u_min'])} {empty_if_nan(entry['n_min'])}"
     )
 
+def read_localid(localid_file) -> pd.DataFrame:
+   try:
+       # read the CSV file from disk
+       df = pd.read_csv(
+           localid_file,
+           sep=",",
+           comment="#",
+           names=[
+               "our_name",
+               "local_id",
+               "ucac4_name",
+               "ucac4_force",
+               "minmax",
+               "min",
+               "max",
+               "var_type",
+               "period",
+               "period_err",
+               "epoch",
+               "comments",
+           ],
+           dtype={"local_id": float, "minmax": str, "epoch": float},
+           converters={"ucac4_force": bool(int())},
+           skipinitialspace=True,
+           warn_bad_lines=True,
+       )
+       return df
+   except Exception as ex:
+       template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+       message = template.format(type(ex).__name__, ex.args)
+       logging.error(message)
+       logging.error(f"Could not read {localid_file}")
+       raise Exception("Could not read localid_file")
+
 
 # adds SELECTED, SITEDATA and UCAC4
 def read_and_tag_localid(localid_catalog: str, stardict: StarDict):
     """ used for the -l or --localidcatalog cli argument """
     try:
         # read the CSV file from disk
-        df = pd.read_csv(
-            localid_catalog,
-            sep=",",
-            comment="#",
-            names=[
-                "our_name",
-                "local_id",
-                "ucac4_name",
-                "ucac4_force",
-                "minmax",
-                "min",
-                "max",
-                "var_type",
-                "period",
-                "period_err",
-                "epoch",
-                "comments",
-            ],
-            dtype={"local_id": float, "minmax": str, "epoch": float},
-            converters={"ucac4_force": bool(int())},
-            skipinitialspace=True,
-            warn_bad_lines=True,
-        )
+        df = read_localid(localid_catalog)
         df = df.replace({np.nan: None})
         localid_to_int = df['local_id'].to_numpy(dtype=int)
         logging.info(f"Selecting {len(df)} stars added by {localid_catalog}: {localid_to_int}")

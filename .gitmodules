@@ -1,3 +1,9 @@
 [submodule "site/vsx/themes/gohugo-theme-ananke"]
 	path = site/vsx/themes/gohugo-theme-ananke
 	url = https://github.com/mrosseel/gohugo-theme-ananke.git
+[submodule "site/vsx/themes/themes/ananke"]
+	path = site/vsx/themes/themes/ananke
+	url = https://github.com/theNewDynamic/gohugo-theme-ananke.git
+[submodule "site/vsx/themes/ananke"]
+	path = site/vsx/themes/ananke
+	url = https://github.com/theNewDynamic/gohugo-theme-ananke.git
