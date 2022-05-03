@@ -12,6 +12,7 @@ import do_charts_field
 import do_charts_stats
 import do_compstars
 import reading
+from reading import trash_and_recreate_dir, create_dir
 import utils
 import utils_sd
 from utils import get_localid_to_sd_dict
