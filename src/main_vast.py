@@ -207,9 +207,9 @@ def run_do_rest(args):
     write_selected_files(resultdir, vastdir, selected_stars)
 
     # only create fieldcharts dir if we use it
+    fieldchartsdir = resultdir + "fieldcharts/"
     if args.field or args.stats:
-        fieldchartsdir = resultdir + "fieldcharts/"
-        trash_and_recreate_dir(fieldchartsdirs)
+        trash_and_recreate_dir(fieldchartsdir)
 
     if args.field:
         do_charts_field.run_standard_field_charts(
