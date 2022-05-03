@@ -152,8 +152,6 @@ def run_standard_field_charts(
     reference_fits_frame,
     comp_stars: ComparisonStars,
 ):
-    trash_and_recreate_dir(fieldchartsdirs)
-
     # setting the font size for titles/axes
     plt.rcParams.update({"axes.titlesize": "large", "axes.labelsize": "large"})
     fits_data, _, _ = reading.get_fits_data(reference_fits_frame)

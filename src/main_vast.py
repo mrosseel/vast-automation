@@ -40,7 +40,6 @@ def run_do_rest(args):
     thread_count = args.threads
     vastdir = utils.add_trailing_slash(args.datadir)
     resultdir = clean_and_create_resultdir(args.resultdir, vastdir)
-    fieldchartsdir = resultdir + "fieldcharts/"
     do_light = args.light
     do_phase = args.phase
     do_aavso = args.aavso
@@ -205,6 +204,12 @@ def run_do_rest(args):
         f"Writing selected files with {len(selected_stars)}  selected stars: {ids}"
     )
     write_selected_files(resultdir, vastdir, selected_stars)
+
+    # only create fieldcharts dir if we use it
+    if args.field or args.stats:
+        fieldchartsdir = resultdir + "fieldcharts/"
+        trash_and_recreate_dir(fieldchartsdirs)
+
     if args.field:
         do_charts_field.run_standard_field_charts(
             star_descriptions, wcs, fieldchartsdir, wcs_file, comp_stars
