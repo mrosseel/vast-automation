@@ -6,6 +6,9 @@ import utils
 from astropy.coordinates import SkyCoord
 from typing import List, Tuple, Dict
 import star_description
+from functools import partial
+from multiprocessing import cpu_count, Manager
+import multiprocessing as mp
 from star_description import StarDescription
 from star_metadata import CompStarData
 from ucac4 import UCAC4
@@ -54,23 +57,37 @@ def get_fixed_compstars(
     return [x.local_id for x in star_desc_result], star_desc_result
 
 
+def get_real_magnitudes(star, vastdir, ref_jd, star_realmag):
+    comp_magdict = reading.read_magdict_for_star(vastdir, star.local_id)
+    # logging.info(f"Read comp magdict for {star}: {read_comp_magdict}")
+    if ref_jd in comp_magdict:
+        star_realmag[star.local_id] = comp_magdict[ref_jd]
+
+
 def get_calculated_compstars(
-    vastdir, stardict: StarDict, ref_jd, maglimit=15, starlimit=1000
+    vastdir, stardict: StarDict, ref_jd, maglimit=15, starlimit=1000, nr_threads=cpu_count()
 ):
     logging.info("Getting calculated compstars...")
     likely = _get_list_of_likely_constant_stars(vastdir)
     likely_sd: List[StarDescription] = [stardict[x] for x in likely if x in stardict]
 
     star_realmag = {}
-    for star in tqdm.tqdm(
-        likely_sd,
-        desc="Getting real magnitudes of likely comparison stars",
-        unit="stars",
-    ):
-        comp_magdict = reading.read_magdict_for_star(vastdir, star.local_id)
-        # logging.info(f"Read comp magdict for {star}: {read_comp_magdict}")
-        if ref_jd in comp_magdict:
-            star_realmag[star.local_id] = comp_magdict[ref_jd]
+    desc="Getting real magnitudes of likely comparison stars"
+    func = partial(
+        get_real_magnitudes,
+        vastdir=vastdir,
+        ref_jd=ref_jd,
+        star_realmag=star_realmag,
+    )
+    pool = mp.Pool(nr_threads, maxtasksperchild=10)
+    chunk = max(1, len(likely_sd) // nr_threads*10)
+    with tqdm.tqdm(total=len(likely_sd), desc=desc, unit="stars") as pbar:
+        for _ in pool.imap_unordered(func, likely_sd, chunksize=chunk):
+            pbar.update(1)
+            pass
+    pool.close()
+    pool.join()
+    print(f"star_realmag is {star_realmag}")
 
     # restrict to maglimit
     mag_list = list(

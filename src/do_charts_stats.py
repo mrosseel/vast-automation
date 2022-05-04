@@ -99,7 +99,7 @@ def helper_plot_stars(
                 ms=2,
             )
         else:
-            fmt = "*r" if labels[idx] == "K" else "^b" if labels[idx] == "V" else "."
+            fmt = "*" if labels[idx] == "K" else "^" if labels[idx] == "V" else "."
             ax.plot(df["floatJD"], df["Vrel30"], fmt, color=colors[idx], markersize=2)
     fontp = FontProperties()
     fontp.set_size("18")
