@@ -80,7 +80,7 @@ def get_calculated_compstars(
         star_realmag=star_realmag,
     )
     pool = mp.Pool(nr_threads, maxtasksperchild=10)
-    chunk = max(1, len(likely_sd) // nr_threads*10)
+    chunk = 1 # max(1, len(likely_sd) // nr_threads*10)
     with tqdm.tqdm(total=len(likely_sd), desc=desc, unit="stars") as pbar:
         for _ in pool.imap_unordered(func, likely_sd, chunksize=chunk):
             pbar.update(1)
