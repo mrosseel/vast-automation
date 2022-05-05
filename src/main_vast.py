@@ -109,9 +109,9 @@ def run_do_rest(args):
 
     vsx_stars = utils.get_stars_with_metadata(star_descriptions, "VSX")
     logging.info(f"There are {len(vsx_stars)} vsx stars")
+    if args.allstars:
+        tag_all_stars_as_selected(star_descriptions)
     selected_stars = utils.get_stars_with_metadata(star_descriptions, "SELECTEDTAG")
-    # if args.selectvsx:
-    #     selected_stars = utils.concat_sd_lists(selected_stars, vsx_stars)
     logging.info(f"There are {len(selected_stars)} selected stars")
     compstar_needing_stars = utils.concat_sd_lists(
         selected_stars, vsx_stars, candidate_stars
@@ -595,6 +595,15 @@ def tag_candidates_as_selected(candidate_stars: List[StarDescription]):
         )
         logging.debug(f"site {the_star.get_metadata('SITE')}")
     logging.debug(f"Tagged {len(candidate_stars)} stars as selected candidate stars.")
+
+
+def tag_all_stars_as_selected(all_stars: List[StarDescription]):
+    for the_star in all_stars:
+        if the_star.has_metadata(
+            "SITE"
+        ):  # don't overwrite the SITE entry of SELECTEDFILE or VSX which has priority
+            continue
+        the_star.metadata = SelectedFileData()
 
 
 def construct_vsx_mag_range(entry):
