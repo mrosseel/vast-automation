@@ -52,19 +52,19 @@ This will generate many vast files in the vast directory
 
 ## Process VAST results
 
-Needed: python 3.7.7 (3.8 doesn't work yet)
+Needed: python 3.8+
 
 ### run the command
 
-*Install pipenv to manage the python dependencies.*
+*[Install poetry][https://python-poetry.org/docs/#installation] to manage the python dependencies.*
 
 Install the dependencies and the virtual environment (do this once):
 
-`pipenv install`
+`poetry install`
 
 Activate a python virtual environment (do this every time):
 
-`pipenv shell`
+`poetry shell`
 
 Run the actual processing software to get all options:
 
@@ -87,7 +87,7 @@ https://github.com/theNewDynamic/gohugo-theme-ananke
 
 Note that the fitsdir and apikey options are needed to perform automatic plate-solving via
 astrometry.net. If you prefer to do your own plate-solving, put the solved image as new-image.fits
-in the directory passed via *-d*
+in the directory passed via `-d`
 
 Note that the fitsdir should contain the same files as were used by VaST.
 
