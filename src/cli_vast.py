@@ -154,11 +154,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     datadir = utils.add_trailing_slash(args.datadir)
     datenow = datetime.now()
-    filehandler = f"{datadir}vastlog-{datenow:%Y%M%d-%H_%M_%S}.log"
-    fh = logging.FileHandler(filehandler)
-    fh.setLevel(logging.INFO)
-    # add the handlers to the logger
-    logger.addHandler(fh)
 
     # sanity checks
     # improve with: https://stackoverflow.com/questions/37471636/python-argument-parsing-validation-best-practices
@@ -173,6 +168,12 @@ if __name__ == "__main__":
     assert (
         os.path.exists(args.localidcatalog) if args.localidcatalog else True
     ), "local id catalog file does not exist"
+
+    filehandler = f"{datadir}vastlog-{datenow:%Y%M%d-%H_%M_%S}.log"
+    fh = logging.FileHandler(filehandler)
+    fh.setLevel(logging.INFO)
+    # add the handlers to the logger
+    logger.addHandler(fh)
 
     # if a certain type of stars are selected but not generated, issue a warning and correct the mistake
     args.candidates = corrrect_selected_mismatch("candidates", args.selectcandidates, args.candidates)
