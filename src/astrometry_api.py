@@ -46,7 +46,7 @@ class RequestError(Exception):
 
 
 class Client(object):
-    default_url = "http://nova.astrometry.net/api/"
+    default_url = "https://nova.astrometry.net/api/"
 
     def __init__(self, apiurl=default_url):
         self.session = None

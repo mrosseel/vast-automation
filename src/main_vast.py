@@ -49,48 +49,13 @@ def run_do_rest(args):
     wcs_file, wcs = reading.read_wcs_file(vastdir)
     ref_jd, _, _, reference_frame = reading.extract_reference_frame(vastdir)
     _, _, _, first_frame = reading.extract_first_frame(vastdir)
-    referene_frame_path = Path(reference_frame)
-    reference_frame_filename = referene_frame_path.name
+    reference_frame_path = Path(reference_frame)
+    reference_frame_filename = reference_frame_path.name
+    wcs_file, wcs = perform_astrometry_net(args, vastdir, wcs_file, wcs, reference_frame_filename)
     logging.info(f"The reference frame is '{reference_frame}' at JD: {ref_jd}")
     logging.info(f"The first frame is '{first_frame}'")
     logging.info(f"Reference header is '{wcs_file}'")
-    # Log filtering settings + check that reference frame is not inside of filter
-    if args.jdfilter:
-        logging.info(f"Filtering JD's: {args.jdfilter}")
-        ref_inside_filter = (
-            float(ref_jd) > args.jdfilter[0] and float(ref_jd) > args.jdfilter[1]
-        )
-        if ref_inside_filter:
-            if not args.jdrefignore:
-                assert not ref_inside_filter, "Reference frame JD is filtered"
-            else:
-                logging.info(
-                    "Reference frame JD is inside of the JD filter, but you indicated that's ok."
-                )
-
-    if not os.path.isfile(wcs_file):
-        full_ref_path = Path(args.fitsdir) / reference_frame_filename
-        if not args.fitsdir and args.apikey:
-            logging.error(
-                "There is no plate-solved reference frame {wcs_file}, please specify both --apikey "
-                "and --fitsdir."
-            )
-            sys.exit(0)
-        rotation = reading.extract_reference_frame_rotation(
-            vastdir, reference_frame_filename
-        )
-        assert (
-            rotation == 0.0
-        ), f"Error: rotation is {rotation} and should always be 0.0"
-        subprocess.Popen(
-            f"python3 ./src/astrometry_api.py --apikey={args.apikey} "
-            f"--upload={full_ref_path} --newfits={wcs_file} --private --no_commercial",
-            shell=True,
-        )
-        while not os.path.isfile(wcs_file):
-            logging.info(f"Waiting for the astrometry.net plate solve...")
-            time.sleep(10)
-        wcs_file, wcs = reading.read_wcs_file(vastdir)
+    check_that_reference_image_not_within_jdfilter(ref_jd, args.jdfilter, args.jdrefignore)
 
     star_descriptions = construct_star_descriptions(vastdir, resultdir, wcs, args)
     stardict = get_localid_to_sd_dict(star_descriptions)
@@ -232,8 +197,51 @@ def run_do_rest(args):
             f"Creating HTML site with {len(selected_stars)} selected stars: {ids}"
         )
         hugo_site.run(
-            args.site, selected_stars, len(vsx_stars), referene_frame_path, resultdir, args.explore
+            args.site, selected_stars, len(vsx_stars), reference_frame_path, resultdir, args.explore
         )
+
+# if there's no platesolved 'wcs' file, create one using astrometry.net
+def perform_astrometry_net(args, vastdir, wcs_file, wcs, reference_frame_filename):
+    if not os.path.isfile(wcs_file):
+        full_ref_path = Path(args.fitsdir) / reference_frame_filename
+        if not args.fitsdir and args.apikey:
+            logging.error(
+                "There is no plate-solved reference frame {wcs_file}, please specify both --apikey "
+                "and --fitsdir."
+            )
+            sys.exit(0)
+        rotation = reading.extract_reference_frame_rotation(
+            vastdir, reference_frame_filename
+        )
+        assert (
+            rotation == 0.0
+        ), f"Error: rotation is {rotation} and should always be 0.0"
+        subprocess.Popen(
+            f"python3 ./src/astrometry_api.py --apikey={args.apikey} "
+            f"--upload={full_ref_path} --newfits={wcs_file} --private --no_commercial",
+            shell=True,
+        )
+        while not os.path.isfile(wcs_file):
+            logging.info(f"Waiting for the astrometry.net plate solve...")
+            time.sleep(10)
+        wcs_file, wcs = reading.read_wcs_file(vastdir)
+    return wcs_file, wcs
+
+def check_that_reference_image_not_within_jdfilter(ref_jd, jdfilter, jdrefignore):
+    # Log filtering settings + check that reference frame is not inside of filter
+    if jdfilter:
+        logging.info(f"Filtering JD's: {jdfilter}")
+        ref_inside_filter = (
+            float(ref_jd) > jdfilter[0] and float(ref_jd) > jdfilter[1]
+        )
+        if ref_inside_filter:
+            if not jdrefignore:
+                assert not ref_inside_filter, "Reference frame JD is filtered"
+            else:
+                logging.info(
+                    "Reference frame JD is inside of the JD filter, but you indicated that's ok."
+                )
+
 
 
 # Either read UCAC4 check stars from a file, or calculate our own comparison stars

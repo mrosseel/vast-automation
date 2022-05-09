@@ -170,7 +170,7 @@ def get_stars_with_metadata(
     catalog_name: str,
     exclude: List[str] = [],
 ) -> List[star_description.StarDescription]:
-    # gets all stars which have a catalog of name catalog_name
+    # gets all stars which have a catalog of name 'catalog_name'
     assert isinstance(exclude, list) and isinstance(stars, list)
     return list(
         filter(
